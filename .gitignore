@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build / Next
+.next/
+out/
+build/
+dist/
+
+# Env (민감 정보)
+.env
+.env.local
+.env.*.local
+
+# Debug / IDE
+npm-debug.log*
+.DS_Store
+.idea
+.vscode
+*.log
+
+# Vercel
+.vercel
+
+# Embedded repo (제외)
+ChurchSolutions/
