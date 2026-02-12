@@ -248,11 +248,11 @@ function Card({ children, style, onClick }: { children: ReactNode; style?: CSSPr
   return <div onClick={onClick} style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden", transition: "all 0.2s", ...style }}>{children}</div>;
 }
 
-function Btn({ children, variant = "primary", size = "md", onClick, style, icon }: {
+function Btn({ children, variant = "primary", size = "md", onClick, style, icon, disabled }: {
   children?: ReactNode; variant?: "primary" | "secondary" | "ghost" | "danger" | "accent"; size?: "sm" | "md";
-  onClick?: (e?: React.MouseEvent) => void; style?: CSSProperties; icon?: ReactNode;
+  onClick?: (e?: React.MouseEvent) => void; style?: CSSProperties; icon?: ReactNode; disabled?: boolean;
 }) {
-  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap" };
+  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 8, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap", opacity: disabled ? 0.6 : 1 };
   const sizes: Record<string, CSSProperties> = { sm: { padding: "6px 12px", fontSize: 12 }, md: { padding: "8px 16px", fontSize: 13 } };
   const variants: Record<string, CSSProperties> = {
     primary: { background: C.blue, color: "#fff" },
@@ -261,7 +261,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style, icon 
     danger: { background: C.red, color: "#fff" },
     accent: { background: C.teal, color: "#fff" },
   };
-  return <button onClick={onClick} style={{ ...base, ...sizes[size], ...variants[variant], ...style }}>{icon}{children}</button>;
+  return <button type="button" disabled={disabled} onClick={disabled ? undefined : onClick} style={{ ...base, ...sizes[size], ...variants[variant], ...style }}>{icon}{children}</button>;
 }
 
 function Modal({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {

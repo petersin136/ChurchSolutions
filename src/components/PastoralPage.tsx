@@ -75,15 +75,15 @@ function SBadge({ children, variant = "gray" }: { children: ReactNode; variant?:
   return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600, color, background: bg, whiteSpace: "nowrap" }}>{children}</span>;
 }
 
-function Btn({ children, onClick, variant = "primary", size = "md", icon, style: s }: { children?: ReactNode; onClick?: (e?: React.MouseEvent) => void; variant?: string; size?: string; icon?: ReactNode; style?: CSSProperties }) {
-  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 10, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", transition: "all 0.15s", fontSize: size === "sm" ? 13 : 14, padding: size === "sm" ? "6px 14px" : "10px 20px" };
+function Btn({ children, onClick, variant = "primary", size = "md", icon, style: s, disabled }: { children?: ReactNode; onClick?: (e?: React.MouseEvent) => void; variant?: string; size?: string; icon?: ReactNode; style?: CSSProperties; disabled?: boolean }) {
+  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 10, cursor: disabled ? "not-allowed" : "pointer", fontWeight: 600, fontFamily: "inherit", transition: "all 0.15s", fontSize: size === "sm" ? 13 : 14, padding: size === "sm" ? "6px 14px" : "10px 20px", opacity: disabled ? 0.6 : 1 };
   const v: Record<string, CSSProperties> = {
     primary: { background: C.navy, color: "#fff" }, accent: { background: C.accent, color: "#fff" },
     success: { background: C.success, color: "#fff" }, danger: { background: C.danger, color: "#fff" },
     ghost: { background: "transparent", color: C.navy, border: `1px solid ${C.border}` },
     soft: { background: C.accentBg, color: C.accent },
   };
-  return <button onClick={onClick} style={{ ...base, ...(v[variant] || v.primary), ...s }}>{icon}{children}</button>;
+  return <button type="button" disabled={disabled} onClick={disabled ? undefined : onClick} style={{ ...base, ...(v[variant] || v.primary), ...s }}>{icon}{children}</button>;
 }
 
 function FormInput({ label, ...props }: { label?: string; [k: string]: unknown }) {
@@ -443,7 +443,8 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
     setDb(prev => {
       const att = { ...prev.attendance };
       if (!att[id]) att[id] = {};
-      const cur = (att[id][currentWeek] === "l" ? "n" : att[id][currentWeek]) || "n";
+      const raw = att[id][currentWeek];
+      const cur: AttStatus = (raw === "p" || raw === "a") ? raw : "n";
       const next = ({ n: "p", p: "a", a: "n" } as Record<string, AttStatus>)[cur] || "n";
       att[id] = { ...att[id], [currentWeek]: next };
       const labels: Record<string, string> = { p: "출석", a: "결석", n: "미기록" };
@@ -672,7 +673,8 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
     setDb(prev => {
       const att = { ...prev.attendance };
       if (!att[id]) att[id] = {};
-      const cur = (att[id][currentWeek] === "l" ? "n" : att[id][currentWeek]) || "n";
+      const raw = att[id][currentWeek];
+      const cur: AttStatus = (raw === "p" || raw === "a") ? raw : "n";
       const next = ({ n: "p", p: "a", a: "n" } as Record<string, AttStatus>)[cur] || "n";
       att[id] = { ...att[id], [currentWeek]: next };
       const labels: Record<string, string> = { p: "출석", a: "결석", n: "미기록" };
@@ -787,7 +789,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
                     </tr>
                     {gMembers.map(s => {
                       const att = db.attendance[s.id] || {};
-                      const ws = (att[currentWeek] === "l" ? "n" : att[currentWeek]) || "n";
+                      const ws: AttStatus = (att[currentWeek] === "p" || att[currentWeek] === "a") ? att[currentWeek] : "n";
                       const labels: Record<string, string> = { p: "출석", a: "결석", n: "미체크" };
                       const reason = db.attendanceReasons?.[s.id]?.[currentWeek] || "";
                       let streak = 0;
@@ -826,7 +828,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
               ) : (
                 pageMembers.map(s => {
                   const att = db.attendance[s.id] || {};
-                  const ws = (att[currentWeek] === "l" ? "n" : att[currentWeek]) || "n";
+                  const ws: AttStatus = (att[currentWeek] === "p" || att[currentWeek] === "a") ? att[currentWeek] : "n";
                   const labels: Record<string, string> = { p: "출석", a: "결석", n: "미체크" };
                   const reason = db.attendanceReasons?.[s.id]?.[currentWeek] || "";
                   let streak = 0;
@@ -1087,7 +1089,7 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
 
       {viewer && (
         <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: 16 }} onClick={() => setViewer(null)}>
-          <div style={{ background: C.surface, borderRadius: 16, maxWidth: "min(900px, 100%)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: C.card, borderRadius: 16, maxWidth: "min(900px, 100%)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
             <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.navy }}>{viewer.title}</h3>
               <div style={{ display: "flex", gap: 8 }}>
@@ -1477,7 +1479,7 @@ export function PastoralPage() {
       <Modal open={showNoteModal} onClose={() => setShowNoteModal(false)} title={noteTargetId ? (db.members.find(x => x.id === noteTargetId)?.name || "") + " — 기록 추가" : "기록 추가"} width={500}>
         {(() => {
           const activeMembers = db.members.filter(x => x.status !== "졸업/전출");
-          const groups = [...new Set(activeMembers.map(m => m.group).filter(Boolean))] as string[];
+          const groups = Array.from(new Set(activeMembers.map(m => m.group).filter(Boolean))) as string[];
           groups.sort();
           const deptList = getDepts(db);
           let filteredMembers = activeMembers;

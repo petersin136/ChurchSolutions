@@ -242,7 +242,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       member_id: m.id,
       week_num: parseInt(weekNum, 10),
       year,
-      status: status === "l" ? "n" : (status || "n"),
+      status: (status === "p" || status === "a") ? status : "n",
       reason: (reasons[parseInt(weekNum, 10)] || null) as string | null,
     }));
     if (rows.length > 0) {
