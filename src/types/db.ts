@@ -94,6 +94,8 @@ export interface DB {
   /** 결석 사유: memberId -> weekNum -> 사유 텍스트 */
   attendanceReasons?: Record<string, Record<number, string>>;
   notes: Record<string, Note[]>;
+  /** 기도 응답됨 키 목록 (타임라인/프로필 기도 구분용) */
+  answeredPrayerKeys?: string[];
   plans: Plan[];
   sermons: Sermon[];
   visits: Visit[];
@@ -116,6 +118,7 @@ export const DEFAULT_DB: DB = {
   attendance: {},
   attendanceReasons: {},
   notes: {},
+  answeredPrayerKeys: [],
   plans: [],
   sermons: [],
   visits: [],

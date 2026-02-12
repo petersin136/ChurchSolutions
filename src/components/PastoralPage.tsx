@@ -160,16 +160,24 @@ function AttDot({ status, onClick }: { status: string; onClick: () => void }) {
   return <div onClick={e => { e.stopPropagation(); onClick(); }} style={{ width: 14, height: 14, borderRadius: "50%", background: colors[s] || C.border, cursor: "pointer", transition: "transform 0.15s", border: `2px solid ${(colors[s] || C.border)}30` }} title={s === "p" ? "출석" : s === "a" ? "결석" : "미체크"} />;
 }
 
-function NoteCard({ n, mbrName, mbrDept, onClick }: { n: Note; mbrName?: string; mbrDept?: string; onClick?: () => void }) {
+function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: { n: Note; mbrName?: string; mbrDept?: string; onClick?: () => void; answered?: boolean; onToggleAnswered?: () => void }) {
   const borderColors: Record<string, string> = { memo: C.accent, prayer: C.purple, visit: C.teal, event: C.pink };
   const badgeV: Record<string, string> = { memo: "gray", prayer: "purple", visit: "teal", event: "pink" };
+  const isPrayer = n.type === "prayer";
   return (
-    <div onClick={onClick} style={{ background: C.bg, borderRadius: 10, padding: "14px 16px", borderLeft: `3px solid ${borderColors[n.type] || C.accent}`, marginBottom: 10, cursor: onClick ? "pointer" : "default" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 12, color: C.textFaint, fontWeight: 500 }}>{n.date}{mbrName ? ` · ${mbrName}` : ""}{mbrDept ? ` (${mbrDept})` : ""}</span>
-        <SBadge variant={badgeV[n.type] || "gray"}>{NOTE_ICONS[n.type] || "📝"} {NOTE_LABELS[n.type] || "메모"}</SBadge>
+    <div onClick={onClick} style={{ background: answered ? `${C.bg}ee` : C.bg, borderRadius: 10, padding: "14px 16px", borderLeft: `3px solid ${borderColors[n.type] || C.accent}`, marginBottom: 10, cursor: onClick ? "pointer" : "default" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
+        <span style={{ fontSize: 15, color: C.navy, fontWeight: 700 }}>{n.date}{mbrName ? ` · ${mbrName}` : ""}{mbrDept ? ` (${mbrDept})` : ""}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {isPrayer && onToggleAnswered && (
+            <button type="button" onClick={e => { e.stopPropagation(); onToggleAnswered(); }} style={{ padding: "4px 10px", fontSize: 12, border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, background: answered ? C.success : C.border, color: answered ? "#fff" : C.textMuted }}>
+              {answered ? "✓ 응답됨" : "응답됨 표시"}
+            </button>
+          )}
+          <SBadge variant={badgeV[n.type] || "gray"}>{NOTE_ICONS[n.type] || "📝"} {NOTE_LABELS[n.type] || "메모"}</SBadge>
+        </div>
       </div>
-      <div style={{ fontSize: 13, lineHeight: 1.6, color: C.text }}>{n.content}</div>
+      <div style={{ fontSize: 14, lineHeight: 1.6, color: C.text, textDecoration: answered ? "line-through" : undefined, opacity: answered ? 0.85 : 1 }}>{n.content}</div>
     </div>
   );
 }
@@ -302,8 +310,16 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 
   const deptColors = [C.accent, C.pink, C.purple, C.success, C.teal, C.orange, C.danger, C.warning];
 
+  const churchName = (db.settings.churchName || "").trim();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {churchName && (
+        <div style={{ padding: "12px 0 4px", borderBottom: `2px solid ${C.border}`, marginBottom: 4 }}>
+          <h2 style={{ margin: 0, fontSize: mob ? 20 : 24, fontWeight: 800, color: C.navy }}>{churchName}</h2>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: C.textMuted }}>목양 대시보드</p>
+        </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
         <StatCard label="전체 성도" value={`${total}명`} sub="활성 등록" color={C.accent} />
         <StatCard label="금주 출석률" value={`${rate}%`} sub={`${att}/${total}명 출석`} color={C.success} />
@@ -970,15 +986,24 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
   );
 }
 
+/** 기도 항목의 응답됨 저장용 키 (타임라인 vs 프로필 구분) */
+function getPrayerAnsweredKey(n: Note & { mbrId: string; isProfilePrayer?: boolean }): string {
+  if ((n as { isProfilePrayer?: boolean }).isProfilePrayer) return `profile\t${n.mbrId}\t${n.content}`;
+  return `note\t${n.mbrId}\t${n.date}\t${n.createdAt}\t${n.content}`;
+}
+
 /* ====== Notes ====== */
-function NotesSub({ db, openDetail, openNoteModal }: { db: DB; openDetail: (id: string) => void; openNoteModal: (id?: string) => void }) {
+function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; openDetail: (id: string) => void; openNoteModal: (id?: string) => void }) {
   const mob = useIsMobile();
   const [search, setSearch] = useState("");
   const [typeF, setTypeF] = useState("all");
 
+  const answeredSet = useMemo(() => new Set(db.answeredPrayerKeys || []), [db.answeredPrayerKeys]);
+
   const allNotes = useMemo(() => {
-    const a: (Note & { mbrName: string; mbrId: string; mbrDept: string })[] = [];
+    const a: (Note & { mbrName: string; mbrId: string; mbrDept: string; isProfilePrayer?: boolean })[] = [];
     const seen = new Set<string>();
+    // 타임라인 기록 (db.notes)
     Object.keys(db.notes).forEach(mid => {
       const mbr = db.members.find(x => x.id === mid);
       (db.notes[mid] || []).forEach(n => {
@@ -986,6 +1011,27 @@ function NotesSub({ db, openDetail, openNoteModal }: { db: DB; openDetail: (id: 
         if (seen.has(key)) return;
         seen.add(key);
         a.push({ ...n, mbrName: mbr?.name || "?", mbrId: mid, mbrDept: mbr?.dept || "" });
+      });
+    });
+    // 성도 프로필 기도제목(m.prayer) — 기록으로 추가한 적 없어도 기도/메모 탭에 표시
+    const today = new Date().toISOString().slice(0, 10);
+    db.members.forEach(m => {
+      const prayer = (m.prayer || "").trim();
+      if (!prayer || m.status === "졸업/전출") return;
+      const key = `${m.id}|profile|prayer|${prayer}`;
+      if (seen.has(key)) return;
+      const alreadyInNotes = (db.notes[m.id] || []).some(n => n.type === "prayer" && n.content === prayer);
+      if (alreadyInNotes) return;
+      seen.add(key);
+      a.push({
+        type: "prayer",
+        content: prayer,
+        date: m.createdAt?.slice(0, 10) || today,
+        createdAt: m.createdAt || today,
+        mbrName: m.name,
+        mbrId: m.id,
+        mbrDept: m.dept || "",
+        isProfilePrayer: true,
       });
     });
     return a;
@@ -997,6 +1043,31 @@ function NotesSub({ db, openDetail, openNoteModal }: { db: DB; openDetail: (id: 
     if (typeF !== "all") r = r.filter(n => n.type === typeF);
     return r.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   }, [allNotes, search, typeF]);
+
+  /** 월별·주별 그룹: { "2026-02": { label: "2026년 2월", weeks: { 1: [...], 2: [...] } } } */
+  const groupedByMonthWeek = useMemo(() => {
+    const map: Record<string, { label: string; weeks: Record<number, typeof filtered> }> = {};
+    filtered.forEach(n => {
+      const d = n.date || "";
+      const yearMonth = d.slice(0, 7);
+      const day = parseInt(d.slice(8, 10), 10) || 1;
+      const weekNum = Math.min(5, Math.ceil(day / 7));
+      if (!map[yearMonth]) {
+        const [y, m] = yearMonth.split("-");
+        map[yearMonth] = { label: `${y}년 ${parseInt(m, 10)}월`, weeks: { 1: [], 2: [], 3: [], 4: [], 5: [] } };
+      }
+      if (!map[yearMonth].weeks[weekNum]) map[yearMonth].weeks[weekNum] = [];
+      map[yearMonth].weeks[weekNum].push(n);
+    });
+    return map;
+  }, [filtered]);
+
+  const toggleAnswered = (key: string) => {
+    const list = db.answeredPrayerKeys || [];
+    const next = list.includes(key) ? list.filter(k => k !== key) : [...list, key];
+    setDb(prev => ({ ...prev, answeredPrayerKeys: next }));
+    persist();
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1013,8 +1084,44 @@ function NotesSub({ db, openDetail, openNoteModal }: { db: DB; openDetail: (id: 
         <Btn variant="accent" size="sm" onClick={() => openNoteModal()}>+ 기록</Btn>
       </div>
       <div>
-        {filtered.length ? filtered.slice(0, 50).map((n, i) => <NoteCard key={`${n.mbrId}-${n.date}-${n.type}-${n.createdAt}-${i}`} n={n} mbrName={n.mbrName} mbrDept={n.mbrDept} onClick={() => openDetail(n.mbrId)} />) : (
+        {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: 48, color: C.textMuted }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>📝</div><div style={{ fontSize: 17, fontWeight: 600 }}>기록이 없습니다</div></div>
+        ) : (
+          Object.keys(groupedByMonthWeek)
+            .sort((a, b) => b.localeCompare(a))
+            .map(yearMonth => {
+              const { label, weeks } = groupedByMonthWeek[yearMonth];
+              const monthNum = parseInt(yearMonth.slice(5, 7), 10);
+              return (
+                <div key={yearMonth} style={{ marginBottom: 28 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, marginBottom: 14, paddingBottom: 8, borderBottom: `2px solid ${C.border}` }}>{label}</h3>
+                  {[1, 2, 3, 4, 5].map(w => {
+                    const items = weeks[w] || [];
+                    if (items.length === 0) return null;
+                    return (
+                      <div key={w} style={{ marginBottom: 20 }}>
+                        <h4 style={{ fontSize: 14, fontWeight: 600, color: C.textMuted, marginBottom: 10 }}>{monthNum}월 {w}주차</h4>
+                        {items.slice(0, 50).map((n, i) => {
+                          const key = getPrayerAnsweredKey(n);
+                          const answered = n.type === "prayer" && answeredSet.has(key);
+                          return (
+                            <NoteCard
+                              key={`${n.mbrId}-${n.date}-${n.type}-${n.createdAt}-${i}`}
+                              n={n}
+                              mbrName={n.mbrName}
+                              mbrDept={n.mbrDept}
+                              onClick={() => openDetail(n.mbrId)}
+                              answered={n.type === "prayer" ? answered : undefined}
+                              onToggleAnswered={n.type === "prayer" ? () => toggleAnswered(key) : undefined}
+                            />
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })
         )}
       </div>
     </div>
@@ -1572,7 +1679,7 @@ export function PastoralPage() {
       }}>
         <div style={{ padding: "20px 16px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.08)", cursor: mob ? "default" : "pointer" }} onClick={() => !mob && setSideOpen(!sideOpen)}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icons.Church /></div>
-          <div><div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap" }}>슈퍼플래너</div><div style={{ fontSize: 11, opacity: 0.6, whiteSpace: "nowrap" }}>Pastoral Care</div></div>
+          <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}><div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(db.settings.churchName || "").trim() || "교회"}</div><div style={{ fontSize: 11, opacity: 0.6, whiteSpace: "nowrap" }}>목양</div></div>
         </div>
         <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
           {NAV_ITEMS.map(n => (
@@ -1607,7 +1714,7 @@ export function PastoralPage() {
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} />}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} />}
           {activeSub === "attendance" && <AttendanceSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} setCurrentWeek={setCurrentWeek} />}
-          {activeSub === "notes" && <NotesSub db={db} openDetail={openDetail} openNoteModal={openNoteModal} />}
+          {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openDetail={openDetail} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} currentWeek={currentWeek} openDetail={openDetail} />}
           {activeSub === "reports" && <ReportsSub db={db} currentWeek={currentWeek} toast={toast} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} />}
