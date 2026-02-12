@@ -989,29 +989,28 @@ function NewFamilySub({ db, currentWeek, openDetail }: { db: DB; currentWeek: nu
 /* ====== Reports ====== */
 function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; toast: (m: string, t?: string) => void }) {
   const mob = useIsMobile();
-  const expMembers = () => {
+  const [viewer, setViewer] = useState<{ title: string; csv: string; filename: string } | null>(null);
+
+  const getMembers = () => {
     const h = ["이름","부서","직분","상태","성별","생년월일","연락처","주소","가족관계","등록경로","기도제목","메모"];
     const rows = db.members.map(m => csvRow([m.name, m.dept || "", m.role || "", m.status || "", m.gender || "", m.birth || "", m.phone || "", m.address || "", m.family || "", m.source || "", m.prayer || "", m.memo || ""]));
-    dlCSV(csvRow(h) + "\n" + rows.join("\n"), `성도명단_${todayStr()}.csv`);
-    toast("다운로드 완료", "ok");
+    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `성도명단_${todayStr()}.csv` };
   };
-  const expAttendance = () => {
+  const getAttendance = () => {
     const h = ["이름","부서","상태", ...Array.from({ length: 52 }, (_, i) => `${i + 1}주`)];
     const rows = db.members.filter(m => m.status !== "졸업/전출").map(m => {
       const att = db.attendance[m.id] || {};
       const weeks = Array.from({ length: 52 }, (_, i) => ({ p: "O", a: "X" } as Record<string, string>)[att[i + 1] as string] || "");
       return csvRow([m.name, m.dept || "", m.status || "", ...weeks]);
     });
-    dlCSV(csvRow(h) + "\n" + rows.join("\n"), `출석부_${todayStr()}.csv`);
-    toast("다운로드 완료", "ok");
+    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `출석부_${todayStr()}.csv` };
   };
-  const expPrayers = () => {
+  const getPrayers = () => {
     const h = ["이름","부서","기도제목"];
     const rows = db.members.filter(m => m.prayer).map(m => csvRow([m.name, m.dept || "", m.prayer || ""]));
-    dlCSV(csvRow(h) + "\n" + rows.join("\n"), `기도제목_${todayStr()}.csv`);
-    toast("다운로드 완료", "ok");
+    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `기도제목_${todayStr()}.csv` };
   };
-  const expNotes = () => {
+  const getNotes = () => {
     const h = ["날짜","이름","부서","유형","내용"];
     const rows: string[] = [];
     Object.keys(db.notes).forEach(mid => {
@@ -1019,10 +1018,9 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
       (db.notes[mid] || []).forEach(n => rows.push(csvRow([n.date, mbr?.name || "", mbr?.dept || "", NOTE_LABELS[n.type] || "메모", n.content])));
     });
     rows.sort().reverse();
-    dlCSV(csvRow(h) + "\n" + rows.join("\n"), `기록전체_${todayStr()}.csv`);
-    toast("다운로드 완료", "ok");
+    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `기록전체_${todayStr()}.csv` };
   };
-  const expNewFamily = () => {
+  const getNewFamily = () => {
     const nf = db.members.filter(m => m.status === "새가족" || m.status === "정착중");
     const h = ["이름","등록일","경로","1주","2주","3주","4주","상태"];
     const rows = nf.map(m => {
@@ -1031,10 +1029,9 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
       const weeks = [0, 1, 2, 3].map(i => ({ p: "O", a: "X" } as Record<string, string>)[att[rw + i] as string] || "-");
       return csvRow([m.name, m.createdAt || "", m.source || "", ...weeks, m.status || ""]);
     });
-    dlCSV(csvRow(h) + "\n" + rows.join("\n"), `새가족현황_${todayStr()}.csv`);
-    toast("다운로드 완료", "ok");
+    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `새가족현황_${todayStr()}.csv` };
   };
-  const expFull = () => {
+  const getFull = () => {
     const m = db.members.filter(x => x.status !== "졸업/전출");
     let csv = `"${db.settings.churchName || "교회"} 목양 종합 보고서 (${todayStr()})"\n\n`;
     csv += '"=== 현황 요약 ==="\n';
@@ -1050,25 +1047,35 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
     csv += "\n";
     csv += '"=== 기도제목 ==="\n"이름","부서","기도제목"\n';
     m.filter(s => s.prayer).forEach(s => { csv += csvRow([s.name, s.dept || "", s.prayer || ""]) + "\n"; });
-    dlCSV(csv, `목양종합보고서_${todayStr()}.csv`);
+    return { csv, filename: `목양종합보고서_${todayStr()}.csv` };
+  };
+
+  const reportDefs = [
+    { icon: "👥", title: "성도 명단", desc: "전체 성도 정보", color: C.accent, getData: getMembers },
+    { icon: "📅", title: "출석 현황", desc: "52주 출석 기록", color: C.success, getData: getAttendance },
+    { icon: "🙏", title: "기도제목 목록", desc: "전 성도 기도제목", color: C.purple, getData: getPrayers },
+    { icon: "📝", title: "메모/기록 전체", desc: "메모, 심방, 경조사 기록", color: C.teal, getData: getNotes },
+    { icon: "🌱", title: "새가족 현황", desc: "새가족 4주 트래킹", color: C.pink, getData: getNewFamily },
+    { icon: "📊", title: "목양 종합 보고서", desc: "당회 제출용 종합 보고서", color: C.navy, getData: getFull },
+  ];
+
+  const openViewer = (r: typeof reportDefs[0]) => {
+    const { csv, filename } = r.getData();
+    setViewer({ title: r.title, csv, filename });
+  };
+
+  const doDownload = () => {
+    if (!viewer) return;
+    dlCSV(viewer.csv, viewer.filename);
     toast("다운로드 완료", "ok");
   };
 
-  const reports = [
-    { icon: "👥", title: "성도 명단", desc: "전체 성도 정보 엑셀 다운로드", color: C.accent, fn: expMembers },
-    { icon: "📅", title: "출석 현황", desc: "52주 출석 기록 전체 다운로드", color: C.success, fn: expAttendance },
-    { icon: "🙏", title: "기도제목 목록", desc: "전 성도 기도제목 다운로드", color: C.purple, fn: expPrayers },
-    { icon: "📝", title: "메모/기록 전체", desc: "메모, 심방, 경조사 기록 다운로드", color: C.teal, fn: expNotes },
-    { icon: "🌱", title: "새가족 현황", desc: "새가족 4주 트래킹 보고서", color: C.pink, fn: expNewFamily },
-    { icon: "📊", title: "목양 종합 보고서", desc: "당회 제출용 종합 보고서", color: C.navy, fn: expFull },
-  ];
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <Card><p style={{ margin: 0, color: C.textMuted, fontSize: mob ? 13 : 14 }}>원하는 보고서를 클릭하면 엑셀(CSV) 파일로 즉시 다운로드됩니다.</p></Card>
+      <Card><p style={{ margin: 0, color: C.textMuted, fontSize: mob ? 13 : 14 }}>보고서를 클릭하면 미리보기가 열립니다. 다운로드는 뷰어에서 버튼으로 받을 수 있습니다.</p></Card>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fit, minmax(280px, 1fr))", gap: mob ? 10 : 16 }}>
-        {reports.map((r, i) => (
-          <Card key={i} onClick={r.fn} style={{ cursor: "pointer", transition: "all 0.2s" }}>
+        {reportDefs.map((r, i) => (
+          <Card key={i} onClick={() => openViewer(r)} style={{ cursor: "pointer", transition: "all 0.2s" }}>
             <div style={{ display: "flex", alignItems: "center", gap: mob ? 12 : 16 }}>
               <div style={{ width: mob ? 42 : 52, height: mob ? 42 : 52, borderRadius: 14, background: `${r.color}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 20 : 24, flexShrink: 0 }}>{r.icon}</div>
               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 700, color: C.navy, fontSize: mob ? 14 : 16, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</div><div style={{ fontSize: mob ? 12 : 13, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</div></div>
@@ -1077,6 +1084,23 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
           </Card>
         ))}
       </div>
+
+      {viewer && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: 16 }} onClick={() => setViewer(null)}>
+          <div style={{ background: C.surface, borderRadius: 16, maxWidth: "min(900px, 100%)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.navy }}>{viewer.title}</h3>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Btn variant="primary" size="sm" onClick={doDownload}>📥 다운로드</Btn>
+                <Btn variant="ghost" size="sm" onClick={() => setViewer(null)}>닫기</Btn>
+              </div>
+            </div>
+            <div style={{ padding: 16, overflow: "auto", flex: 1, minHeight: 200 }}>
+              <pre style={{ margin: 0, fontSize: 12, fontFamily: "ui-monospace, monospace", whiteSpace: "pre-wrap", wordBreak: "break-all", color: C.text }}>{viewer.csv}</pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1191,6 +1215,8 @@ export function PastoralPage() {
 
   // Note form
   const [nDate, setNDate] = useState(todayStr()); const [nType, setNType] = useState<Note["type"]>("memo"); const [nContent, setNContent] = useState(""); const [nMbrSelect, setNMbrSelect] = useState("");
+  const [noteFilterBy, setNoteFilterBy] = useState<"all" | "group" | "dept">("all");
+  const [noteFilterValue, setNoteFilterValue] = useState("");
 
   const persist = useCallback(() => { saveDBToSupabase(db).catch(() => {}); }, [db]);
   useEffect(() => { if (db.members.length > 0 || db.settings.churchName) saveDBToSupabase(db).catch(() => {}); }, [db]);
@@ -1257,6 +1283,12 @@ export function PastoralPage() {
     setNoteTargetId(id || null);
     setNMbrSelect(id || db.members[0]?.id || "");
     setNDate(todayStr()); setNType("memo"); setNContent("");
+    if (id) {
+      const m = db.members.find(x => x.id === id);
+      if (m?.group) { setNoteFilterBy("group"); setNoteFilterValue(m.group); }
+      else if (m?.dept) { setNoteFilterBy("dept"); setNoteFilterValue(m.dept); }
+      else { setNoteFilterBy("all"); setNoteFilterValue(""); }
+    } else { setNoteFilterBy("all"); setNoteFilterValue(""); }
     setShowNoteModal(true);
   }, [db.members]);
 
@@ -1443,8 +1475,52 @@ export function PastoralPage() {
 
       {/* Note Modal */}
       <Modal open={showNoteModal} onClose={() => setShowNoteModal(false)} title={noteTargetId ? (db.members.find(x => x.id === noteTargetId)?.name || "") + " — 기록 추가" : "기록 추가"} width={500}>
-        <FormSelect label="대상 성도" value={nMbrSelect} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNMbrSelect(e.target.value)}
-          options={db.members.filter(x => x.status !== "졸업/전출").map(x => ({ value: x.id, label: `${x.name} (${x.dept || ""})` }))} />
+        {(() => {
+          const activeMembers = db.members.filter(x => x.status !== "졸업/전출");
+          const groups = [...new Set(activeMembers.map(m => m.group).filter(Boolean))] as string[];
+          groups.sort();
+          const deptList = getDepts(db);
+          let filteredMembers = activeMembers;
+          if (noteFilterBy === "group" && noteFilterValue) filteredMembers = activeMembers.filter(m => m.group === noteFilterValue);
+          else if (noteFilterBy === "dept" && noteFilterValue) filteredMembers = activeMembers.filter(m => m.dept === noteFilterValue);
+          const memberOptions = filteredMembers.length
+            ? filteredMembers.map(x => ({ value: x.id, label: `${x.name} (${x.dept || ""})` }))
+            : [{ value: "", label: "(해당 없음)" }];
+          return (
+            <>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+                <div style={{ flex: "1 1 140px" }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>범위</label>
+                  <select value={noteFilterBy} onChange={e => { const v = e.target.value as "all" | "group" | "dept"; setNoteFilterBy(v); setNoteFilterValue(""); setNMbrSelect(""); }} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: "#fff", cursor: "pointer" }}>
+                    <option value="all">전체</option>
+                    <option value="group">목장별</option>
+                    <option value="dept">부서별</option>
+                  </select>
+                </div>
+                {noteFilterBy === "group" && (
+                  <div style={{ flex: "1 1 160px" }}>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>목장</label>
+                    <select value={noteFilterValue} onChange={e => { setNoteFilterValue(e.target.value); setNMbrSelect(""); }} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: "#fff", cursor: "pointer" }}>
+                      <option value="">선택</option>
+                      {groups.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                )}
+                {noteFilterBy === "dept" && (
+                  <div style={{ flex: "1 1 160px" }}>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>부서</label>
+                    <select value={noteFilterValue} onChange={e => { setNoteFilterValue(e.target.value); setNMbrSelect(""); }} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: "#fff", cursor: "pointer" }}>
+                      <option value="">선택</option>
+                      {deptList.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+              <FormSelect label="대상 성도" value={nMbrSelect} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNMbrSelect(e.target.value)}
+                options={memberOptions} />
+            </>
+          );
+        })()}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <FormInput label="날짜" type="date" value={nDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNDate(e.target.value)} />
           <FormSelect label="유형" value={nType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNType(e.target.value as Note["type"])}
