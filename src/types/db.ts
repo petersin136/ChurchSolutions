@@ -2,6 +2,8 @@ export interface Settings {
   churchName: string;
   depts: string;
   fiscalStart: string;
+  /** 목장 목록 (쉼표 구분). 비어 있으면 성도 데이터에서 자동 추출 */
+  mokjangList?: string;
 }
 
 export interface Member {
@@ -105,6 +107,7 @@ export const DEFAULT_SETTINGS: Settings = {
   churchName: "",
   depts: "유아부,유치부,유년부,초등부,중등부,고등부,청년부,장년부",
   fiscalStart: "1",
+  mokjangList: "",
 };
 
 export const DEFAULT_DB: DB = {
