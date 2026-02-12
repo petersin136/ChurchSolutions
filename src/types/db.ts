@@ -23,7 +23,7 @@ export interface Member {
   createdAt?: string;
 }
 
-export type AttStatus = "p" | "a" | "l" | "n";
+export type AttStatus = "p" | "a" | "n";
 
 export interface Note {
   date: string;
@@ -89,6 +89,8 @@ export interface DB {
   settings: Settings;
   members: Member[];
   attendance: Record<string, Record<number, AttStatus>>;
+  /** 결석 사유: memberId -> weekNum -> 사유 텍스트 */
+  attendanceReasons?: Record<string, Record<number, string>>;
   notes: Record<string, Note[]>;
   plans: Plan[];
   sermons: Sermon[];
@@ -109,6 +111,7 @@ export const DEFAULT_DB: DB = {
   settings: { ...DEFAULT_SETTINGS },
   members: [],
   attendance: {},
+  attendanceReasons: {},
   notes: {},
   plans: [],
   sermons: [],
@@ -243,44 +246,107 @@ export function buildSampleDB(): DB {
     attendance[mid] = {};
     for (let w = wn - 7; w <= wn; w++) {
       const r = Math.random();
-      attendance[mid][w] = r < 0.72 ? "p" : r < 0.85 ? "a" : r < 0.95 ? "l" : "n";
+      attendance[mid][w] = r < 0.75 ? "p" : r < 0.92 ? "a" : "n";
     }
   }
 
-  /* 노트 (주요 교인) */
+  /* 노트 (기도제목·메모·심방·경조사 — 70명 분포) */
   const notes: Record<string, Note[]> = {};
   const noteData: [string, string, string, string][] = [
     ["m1", "prayer", "교회 건축 헌금 서약: 월 50만원", ago(14)],
     ["m1", "memo", "당회에서 건축위원장 추대", ago(7)],
+    ["m2", "prayer", "선교사 파송을 위한 기도", ago(5)],
     ["m3", "visit", "원로장로 자택 심방 - 건강 양호", ago(21)],
-    ["m8", "prayer", "이순자 권사 무릎 관절 수술 예정", ago(10)],
+    ["m3", "prayer", "건강 회복, 무릎 통증 완화", ago(10)],
+    ["m4", "prayer", "이순자 권사 무릎 관절 수술 예정", ago(10)],
+    ["m5", "prayer", "사업 축복 기도", ago(8)],
+    ["m6", "prayer", "어머니 건강 회복", ago(12)],
+    ["m7", "prayer", "은퇴 후 사역 준비", ago(6)],
+    ["m8", "prayer", "손주들의 건강과 신앙", ago(4)],
     ["m9", "visit", "1구역 모임 참석 독려 심방", ago(5)],
+    ["m9", "prayer", "남편의 건강 회복", ago(3)],
+    ["m10", "prayer", "자녀들의 신앙성장", ago(11)],
+    ["m11", "prayer", "교회 부흥을 위한 기도", ago(9)],
+    ["m12", "prayer", "다음 세대 사역 기도", ago(7)],
     ["m14", "prayer", "한경자 권사 독거 - 정기 안부 전화 필요", ago(3)],
+    ["m14", "memo", "독거 어르신 정기 연락 배정", ago(2)],
+    ["m17", "prayer", "가정의 평안", ago(15)],
+    ["m18", "prayer", "직장에서의 신앙생활", ago(4)],
+    ["m19", "prayer", "사업 안정 기도", ago(8)],
+    ["m20", "prayer", "자녀 진로 결정", ago(6)],
     ["m21", "memo", "홍선미 집사 - 남편 전도 집중 기도 요청", ago(8)],
+    ["m21", "prayer", "남편 구원 기도", ago(5)],
     ["m27", "visit", "박철수 집사 가정 심방 - 아내 교회 등록 권유", ago(12)],
+    ["m27", "prayer", "아내 교회 정착 기도", ago(3)],
     ["m28", "prayer", "최은정 집사 사별 후 심리상담 연계 필요", ago(6)],
+    ["m28", "memo", "자녀 돌봄 지원 논의", ago(4)],
     ["m29", "memo", "송미경 집사 - 구제비 50만원 당회 승인", ago(15)],
+    ["m29", "prayer", "가정에 평안과 지혜", ago(2)],
     ["m32", "event", "이정훈/김미선 새가족 등록 완료", ago(18)],
+    ["m32", "prayer", "새 교회 정착 기도", ago(10)],
     ["m33", "memo", "김미선 - 출산예정일 6월, 심방 예정", ago(4)],
+    ["m33", "prayer", "건강한 출산 기도", ago(2)],
     ["m37", "prayer", "김동현 청년 - 삼성전자 면접 합격 기도", ago(2)],
+    ["m37", "memo", "취업 멘토링 연결 (김성진 집사)", ago(9)],
     ["m41", "memo", "정하나 청년 - 새가족반 수료, 청년부 배정", ago(9)],
+    ["m41", "prayer", "새 교회 정착", ago(5)],
     ["m46", "prayer", "한태우 청년 - 군 제대 후 신앙 회복 중", ago(11)],
+    ["m46", "memo", "청년부 소그룹 3조 배정", ago(7)],
+    ["m49", "prayer", "수능 준비 기도", ago(6)],
+    ["m52", "prayer", "학업 집중 기도", ago(4)],
+    ["m59", "prayer", "유학 준비 기도", ago(8)],
+    ["m63", "prayer", "가정 예배 정착", ago(3)],
   ];
   for (const [mid, type, content, date] of noteData) {
     if (!notes[mid]) notes[mid] = [];
     notes[mid].push({ date, type: type as Note["type"], content, createdAt: date });
   }
 
-  /* 심방 기록 */
-  const visits: Visit[] = [
-    { id: "sv1", date: ago(7), memberId: "m3", type: "정기", content: "이재문 장로 자택 심방. 건강 양호하나 무릎 통증 호소. 기도 후 격려." },
-    { id: "sv2", date: ago(14), memberId: "m14", type: "위로", content: "한경자 권사 독거 심방. 외로움 호소. 구역 모임 참석 권유." },
-    { id: "sv3", date: ago(5), memberId: "m29", type: "위로", content: "송미경 집사 가정 심방. 남편 사업 어려움. 구제비 전달 및 기도." },
-    { id: "sv4", date: ago(18), memberId: "m32", type: "새가족", content: "이정훈/김미선 가정 첫 심방. 등록카드 작성. 이전교회 사랑의교회." },
-    { id: "sv5", date: ago(3), memberId: "m27", type: "정기", content: "박철수 집사 가정 방문. 아내 김수진씨 교회 등록 의사 표현." },
-    { id: "sv6", date: ago(10), memberId: "m28", type: "위로", content: "최은정 집사 사별 1주기. 심리상담 연계. 자녀 돌봄 지원 논의." },
-    { id: "sv7", date: ago(21), memberId: "m8", type: "병문안", content: "이순자 권사 무릎 수술 예정 병원 방문. 수술일 3/5 확정." },
+  /* 심방 기록 — 70명과 연동, 목장별 분포 */
+  const visitRows: [string, string, string, string][] = [
+    [ago(2), "m3", "정기", "이재문 장로 자택 심방. 건강 양호하나 무릎 통증 호소. 기도 후 격려."],
+    [ago(5), "m14", "위로", "한경자 권사 독거 심방. 외로움 호소. 구역 모임 참석 권유."],
+    [ago(8), "m29", "위로", "송미경 집사 가정 심방. 남편 사업 어려움. 구제비 전달 및 기도."],
+    [ago(18), "m32", "새가족", "이정훈/김미선 가정 첫 심방. 등록카드 작성. 이전교회 사랑의교회."],
+    [ago(4), "m27", "정기", "박철수 집사 가정 방문. 아내 김수진씨 교회 등록 의사 표현."],
+    [ago(11), "m28", "위로", "최은정 집사 사별 1주기. 심리상담 연계. 자녀 돌봄 지원 논의."],
+    [ago(21), "m8", "병문안", "이순자 권사 무릎 수술 예정 병원 방문. 수술일 3/5 확정."],
+    [ago(1), "m1", "정기", "김영수 장로 월례 심방. 건축 헌금 서약 확인. 당회 서기 역할 점검."],
+    [ago(6), "m2", "정기", "박성호 장로 자택. 선교 사역 논의. 필리핀 단기선교 참여 의사."],
+    [ago(9), "m4", "병문안", "이순자 권사 무릎 수술 후 회복 확인. 재가정 예정."],
+    [ago(12), "m9", "정기", "최미영 권사 1구역 모임 참석 독려 심방."],
+    [ago(15), "m10", "위로", "송옥순 권사 원로 권사 격려. 자녀 신앙 성장 기도."],
+    [ago(3), "m11", "정기", "박은실 권사 구역장 사역 점검. 교회 부흥 기도 제목 나눔."],
+    [ago(7), "m12", "정기", "정양숙 권사 주일학교 교장 심방. 다음 세대 사역 논의."],
+    [ago(14), "m13", "정기", "오정미 권사 찬양대 지휘 격려. 잠실동 자택."],
+    [ago(10), "m15", "위로", "한경자 권사 독거 정기 안부. 새벽기도 인도 격려."],
+    [ago(16), "m17", "정기", "윤서현 집사 교육부 교사 사역. 자녀 학업 기도."],
+    [ago(19), "m18", "정기", "황지영 집사 영상팀 봉사 점검. 직장 신앙생활 나눔."],
+    [ago(13), "m19", "정기", "신동수 집사 음향 봉사. 사업 안정 기도."],
+    [ago(20), "m20", "병문안", "안미라 집사 자녀 진로 상담. 가정 화목 기도."],
+    [ago(22), "m21", "정기", "류현수 집사 주차 봉사. 건강 회복 기도."],
+    [ago(17), "m22", "정기", "홍선미 집사 남편 구원 기도. 식사 봉사팀 격려."],
+    [ago(24), "m23", "정기", "서영진 집사 구역 봉사. 시어머니 간병 상황 나눔."],
+    [ago(23), "m25", "정기", "권태호 집사 재정위원. 은퇴 준비 기도."],
+    [ago(26), "m26", "정기", "장민아 집사 유치부 교사. 자녀 건강 기도."],
+    [ago(25), "m30", "정기", "김성진 집사 청년부 후원. 직장 승진 기도."],
+    [ago(27), "m33", "새가족", "김미선 출산 예정 심방. 산모 교실 안내."],
+    [ago(28), "m37", "정기", "김동현 청년 취업 준비. 면접 합격 기도."],
+    [ago(30), "m41", "새가족", "정하나 청년 새가족반 수료. 청년부 배정 완료."],
+    [ago(29), "m46", "정기", "한태우 청년 군 제대 후 신앙 회복. 소그룹 연결."],
+    [ago(31), "m49", "정기", "이서아 고등부 학생 학업 집중 기도."],
+    [ago(32), "m52", "정기", "강지호 중등부 학업 기도. 부모 강민호 집사 동반."],
+    [ago(33), "m55", "정기", "조아인 중등부 친구관계 기도."],
+    [ago(34), "m59", "정기", "박서연 청년 유학 준비 기도."],
+    [ago(35), "m63", "정기", "한민서 초등부 가정 심방. 부모 한지우 집사."],
   ];
+  const visits: Visit[] = visitRows.map(([date, memberId, type, content], i) => ({
+    id: `sv${i + 1}`,
+    date,
+    memberId,
+    type,
+    content,
+  }));
 
   /* 수입 (최근 3개월) */
   const income: Income[] = [];
@@ -334,7 +400,7 @@ export function buildSampleDB(): DB {
 
   return {
     settings: { churchName: "은혜교회", depts: "유아부,유치부,유년부,초등부,중등부,고등부,청년부,장년부", fiscalStart: "1" },
-    members, attendance, notes, plans: [], sermons: [], visits, income, expense, budget: {}, checklist: {},
+    members, attendance, attendanceReasons: {}, notes, plans: [], sermons: [], visits, income, expense, budget: {}, checklist: {},
   };
 }
 

@@ -41,10 +41,12 @@ CREATE TABLE IF NOT EXISTS attendance (
   member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
   week_num INTEGER NOT NULL,
   year INTEGER NOT NULL DEFAULT EXTRACT(YEAR FROM CURRENT_TIMESTAMP)::INTEGER,
-  status TEXT CHECK (status IN ('p', 'a', 'l', 'n')) DEFAULT 'n',
+  status TEXT CHECK (status IN ('p', 'a', 'n')) DEFAULT 'n',
+  reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(member_id, week_num, year)
 );
+-- 기존 DB에 reason 컬럼 추가 시: ALTER TABLE attendance ADD COLUMN IF NOT EXISTS reason TEXT;
 
 -- ─── 4. notes ───
 CREATE TABLE IF NOT EXISTS notes (

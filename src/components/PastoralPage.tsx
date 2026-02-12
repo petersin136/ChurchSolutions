@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB, Member, Note, AttStatus } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { loadDB, loadDBFromSupabase, saveDBToSupabase, getWeekNum } from "@/lib/store";
@@ -148,8 +148,9 @@ function Progress({ pct, color }: { pct: number; color: string }) {
 }
 
 function AttDot({ status, onClick }: { status: string; onClick: () => void }) {
-  const colors: Record<string, string> = { p: C.success, l: C.warning, a: C.danger, n: C.border };
-  return <div onClick={e => { e.stopPropagation(); onClick(); }} style={{ width: 14, height: 14, borderRadius: "50%", background: colors[status] || C.border, cursor: "pointer", transition: "transform 0.15s", border: `2px solid ${(colors[status] || C.border)}30` }} />;
+  const colors: Record<string, string> = { p: C.success, a: C.danger, n: C.border };
+  const s = status === "l" ? "n" : status;
+  return <div onClick={e => { e.stopPropagation(); onClick(); }} style={{ width: 14, height: 14, borderRadius: "50%", background: colors[s] || C.border, cursor: "pointer", transition: "transform 0.15s", border: `2px solid ${(colors[s] || C.border)}30` }} title={s === "p" ? "출석" : s === "a" ? "결석" : "미체크"} />;
 }
 
 function NoteCard({ n, mbrName, mbrDept, onClick }: { n: Note; mbrName?: string; mbrDept?: string; onClick?: () => void }) {
@@ -202,8 +203,14 @@ function compressPhoto(src: string, cb: (r: string) => void) {
    ============================================================ */
 
 /* ====== Dashboard ====== */
+type AttChartView = "year" | "month" | "week";
+
 function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
   const mob = useIsMobile();
+  const currentYear = new Date().getFullYear();
+  const [attChartView, setAttChartView] = useState<AttChartView>("month");
+  const [attChartYear, setAttChartYear] = useState(currentYear);
+
   const m = db.members.filter(x => x.status !== "졸업/전출");
   const total = m.length;
   const att = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "p").length;
@@ -211,6 +218,13 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
   const risk = m.filter(s => s.status === "위험" || s.status === "휴면").length;
   const prayers = m.filter(s => s.prayer && s.prayer.trim()).length;
   const rate = total > 0 ? Math.round(att / total * 100) : 0;
+
+  const weeklyAtt = useMemo(() => {
+    return Array.from({ length: 52 }, (_, i) => {
+      const w = i + 1;
+      return m.filter(s => (db.attendance[s.id] || {})[w] === "p").length;
+    });
+  }, [db, m]);
 
   const monthlyAtt = useMemo(() => {
     const data = new Array(12).fill(0);
@@ -224,6 +238,14 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
     });
     return data;
   }, [db, m]);
+
+  const annualSummary = useMemo(() => {
+    const totalPresent = weeklyAtt.reduce((s, v) => s + v, 0);
+    const weeksWithData = weeklyAtt.filter(v => v > 0).length;
+    const avgPerWeek = weeksWithData > 0 ? Math.round(totalPresent / weeksWithData) : 0;
+    const avgRate = total > 0 && weeksWithData > 0 ? Math.round((totalPresent / (weeksWithData * total)) * 100) : 0;
+    return { totalPresent, weeksWithData, avgPerWeek, avgRate };
+  }, [weeklyAtt, total]);
 
   const statusCounts = useMemo(() => {
     const r: Record<string, number> = {};
@@ -247,7 +269,6 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
   }, [db]);
 
   const deptColors = [C.accent, C.pink, C.purple, C.success, C.teal, C.orange, C.danger, C.warning];
-  const maxBar = Math.max(...monthlyAtt, 1);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -261,21 +282,70 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
         <Card style={{ padding: 0, overflow: "hidden" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: mob ? "12px 16px" : "16px 24px", borderBottom: `1px solid ${C.border}` }}>
-            <h4 style={{ margin: 0, fontSize: mob ? 14 : 16, fontWeight: 700, color: C.navy }}>월별 출석 추이</h4>
-            <SBadge variant="accent">2025년</SBadge>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: mob ? "12px 16px" : "16px 24px", borderBottom: `1px solid ${C.border}` }}>
+            <h4 style={{ margin: 0, fontSize: mob ? 14 : 16, fontWeight: 700, color: C.navy }}>출석 추이</h4>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <select value={attChartYear} onChange={e => setAttChartYear(Number(e.target.value))} style={{ height: 32, padding: "0 8px", fontSize: 12, border: `1px solid ${C.border}`, borderRadius: 8, background: "#fff", color: C.navy, cursor: "pointer" }}>
+                {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
+              </select>
+              <div style={{ display: "flex", gap: 2, background: C.bg, borderRadius: 8, padding: 2 }}>
+                {(["year", "month", "week"] as const).map(mode => (
+                  <button key={mode} type="button" onClick={() => setAttChartView(mode)} style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, border: "none", borderRadius: 6, background: attChartView === mode ? C.navy : "transparent", color: attChartView === mode ? "#fff" : C.textMuted, cursor: "pointer" }}>
+                    {mode === "year" ? "연간" : mode === "month" ? "월별" : "주별"}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div style={{ padding: "20px 24px 16px", display: "flex", alignItems: "end", gap: 6, height: 180 }}>
-            {monthlyAtt.map((v, i) => {
-              const h = Math.max(4, (v / maxBar) * 140);
-              return (
-                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontSize: 10, color: C.textMuted }}>{v || ""}</span>
-                  <div style={{ width: "100%", height: h, minHeight: 4, background: `linear-gradient(to top, ${C.accent}, ${C.accent}aa)`, borderRadius: "6px 6px 2px 2px", transition: "height 0.3s" }} />
-                  <span style={{ fontSize: 10, color: C.textMuted }}>{i + 1}월</span>
+          <div style={{ padding: "20px 24px 16px", minHeight: 180 }}>
+            {attChartView === "year" && (
+              <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
+                <div style={{ background: C.accentBg, borderRadius: 12, padding: 20, textAlign: "center" }}>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: C.accent }}>{annualSummary.totalPresent}</div>
+                  <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>총 출석 인원·주</div>
                 </div>
-              );
-            })}
+                <div style={{ background: C.successBg, borderRadius: 12, padding: 20, textAlign: "center" }}>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: C.success }}>{annualSummary.avgRate}%</div>
+                  <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>평균 출석률 (기록된 주)</div>
+                </div>
+                <div style={{ gridColumn: mob ? "1" : "1 / -1", fontSize: 13, color: C.textMuted }}>
+                  기록된 주: {annualSummary.weeksWithData}주 · 주당 평균 출석 {annualSummary.avgPerWeek}명
+                </div>
+              </div>
+            )}
+            {attChartView === "month" && (
+              <div style={{ display: "flex", alignItems: "end", gap: 6, height: 160 }}>
+                {monthlyAtt.map((v, i) => {
+                  const maxM = Math.max(...monthlyAtt, 1);
+                  const h = Math.max(4, (v / maxM) * 140);
+                  return (
+                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontSize: 10, color: C.textMuted }}>{v || ""}</span>
+                      <div style={{ width: "100%", height: h, minHeight: 4, background: `linear-gradient(to top, ${C.accent}, ${C.accent}aa)`, borderRadius: "6px 6px 2px 2px", transition: "height 0.3s" }} />
+                      <span style={{ fontSize: 10, color: C.textMuted }}>{i + 1}월</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {attChartView === "week" && (
+              <div style={{ overflowX: "auto", paddingBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "end", gap: 2, minWidth: mob ? 520 : 1040, height: 160 }}>
+                  {weeklyAtt.map((v, i) => {
+                    const maxW = Math.max(...weeklyAtt, 1);
+                    const h = Math.max(4, (v / maxW) * 140);
+                    return (
+                      <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                        <span style={{ fontSize: 9, color: C.textMuted }}>{v || ""}</span>
+                        <div style={{ width: "100%", height: h, minHeight: 4, background: `linear-gradient(to top, ${C.teal}, ${C.teal}aa)`, borderRadius: "4px 4px 0 0", transition: "height 0.3s" }} />
+                        <span style={{ fontSize: 9, color: C.textMuted }}>{i + 1}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 8 }}>1~52주 (가로 스크롤 가능)</div>
+              </div>
+            )}
           </div>
         </Card>
 
@@ -373,10 +443,10 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
     setDb(prev => {
       const att = { ...prev.attendance };
       if (!att[id]) att[id] = {};
-      const cur = att[id][currentWeek] || "n";
-      const next = ({ n: "p", p: "l", l: "a", a: "n" } as Record<string, AttStatus>)[cur] || "n";
+      const cur = (att[id][currentWeek] === "l" ? "n" : att[id][currentWeek]) || "n";
+      const next = ({ n: "p", p: "a", a: "n" } as Record<string, AttStatus>)[cur] || "n";
       att[id] = { ...att[id], [currentWeek]: next };
-      const labels: Record<string, string> = { p: "출석", l: "지각", a: "결석", n: "미기록" };
+      const labels: Record<string, string> = { p: "출석", a: "결석", n: "미기록" };
       toast(labels[next] + "으로 변경", "ok");
       return { ...prev, attendance: att };
     });
@@ -564,45 +634,108 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   );
 }
 
+/* 주차 → 해당 월 (1~12). 52주를 12개월로 나눔 */
+function getMonthFromWeek(w: number): number {
+  if (w < 1 || w > 52) return 1;
+  return Math.min(12, Math.ceil((w / 52) * 12));
+}
+function getWeeksInMonth(month: number): number[] {
+  if (month < 1 || month > 12) return [];
+  const start = Math.ceil(((month - 1) / 12) * 52) + 1;
+  const end = month === 12 ? 52 : Math.ceil((month / 12) * 52);
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
 /* ====== Attendance ====== */
 function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
   toast: (m: string, t?: string) => void; currentWeek: number; setCurrentWeek: (w: number) => void;
 }) {
   const mob = useIsMobile();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const [attYear, setAttYear] = useState(currentYear);
+  const [attMonth, setAttMonth] = useState(currentMonth);
   const [deptF, setDeptF] = useState("all");
   const depts = getDepts(db);
   let m = db.members.filter(x => x.status !== "졸업/전출");
   if (deptF !== "all") m = m.filter(x => x.dept === deptF);
 
+  const weeksInRange = useMemo(() => getWeeksInMonth(attMonth), [attMonth]);
+
   const present = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "p").length;
-  const late = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "l").length;
   const absent = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "a").length;
-  const unchecked = m.length - present - late - absent;
+  const unchecked = m.length - present - absent;
   const rate = m.length > 0 ? Math.round(present / m.length * 100) : 0;
 
   const cycleAtt = (id: string) => {
     setDb(prev => {
       const att = { ...prev.attendance };
       if (!att[id]) att[id] = {};
-      const cur = att[id][currentWeek] || "n";
-      const next = ({ n: "p", p: "l", l: "a", a: "n" } as Record<string, AttStatus>)[cur] || "n";
+      const cur = (att[id][currentWeek] === "l" ? "n" : att[id][currentWeek]) || "n";
+      const next = ({ n: "p", p: "a", a: "n" } as Record<string, AttStatus>)[cur] || "n";
       att[id] = { ...att[id], [currentWeek]: next };
-      const labels: Record<string, string> = { p: "출석", l: "지각", a: "결석", n: "미기록" };
+      const labels: Record<string, string> = { p: "출석", a: "결석", n: "미기록" };
       toast(labels[next] + "으로 변경", "ok");
       return { ...prev, attendance: att };
     });
     persist();
   };
 
+  const setAbsentReason = (memberId: string, reason: string) => {
+    setDb(prev => {
+      const nextReasons = { ...(prev.attendanceReasons || {}) };
+      if (!nextReasons[memberId]) nextReasons[memberId] = {};
+      nextReasons[memberId] = { ...nextReasons[memberId], [currentWeek]: reason };
+      return { ...prev, attendanceReasons: nextReasons };
+    });
+    persist();
+  };
+
+  const [viewModeAtt, setViewModeAtt] = useState<"list" | "group">("list");
+  const [pageAtt, setPageAtt] = useState(1);
+  const PAGE_SIZE_ATT = 10;
+  const groupedByMokjang = useMemo(() => {
+    const map: Record<string, typeof m> = {};
+    m.forEach(mem => {
+      const g = mem.group || "미배정";
+      if (!map[g]) map[g] = [];
+      map[g].push(mem);
+    });
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+  }, [m]);
+  const totalPagesAtt = Math.max(1, Math.ceil(m.length / PAGE_SIZE_ATT));
+  const currentPageAtt = Math.min(pageAtt, totalPagesAtt);
+  const pageMembers = m.slice((currentPageAtt - 1) * PAGE_SIZE_ATT, currentPageAtt * PAGE_SIZE_ATT);
+  const [absentReasonModal, setAbsentReasonModal] = useState<{ memberId: string; name: string } | null>(null);
+  const [absentReasonInput, setAbsentReasonInput] = useState("");
+
+  const goPrevWeek = () => {
+    const idx = weeksInRange.indexOf(currentWeek);
+    if (idx > 0) setCurrentWeek(weeksInRange[idx - 1]);
+    else if (currentWeek > 1) setCurrentWeek(currentWeek - 1);
+  };
+  const goNextWeek = () => {
+    const idx = weeksInRange.indexOf(currentWeek);
+    if (idx >= 0 && idx < weeksInRange.length - 1) setCurrentWeek(weeksInRange[idx + 1]);
+    else if (currentWeek < 52) setCurrentWeek(currentWeek + 1);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <Card>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: mob ? 8 : 12, marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Btn variant="ghost" size="sm" onClick={() => setCurrentWeek(Math.max(1, currentWeek - 1))} style={{ width: 32, height: 32, padding: 0, justifyContent: "center" }}>◀</Btn>
-            <span style={{ fontSize: mob ? 15 : 18, fontWeight: 700, minWidth: mob ? 60 : 80, textAlign: "center" }}>제{currentWeek}주</span>
-            <Btn variant="ghost" size="sm" onClick={() => setCurrentWeek(Math.min(52, currentWeek + 1))} style={{ width: 32, height: 32, padding: 0, justifyContent: "center" }}>▶</Btn>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: mob ? 8 : 12, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <select value={attYear} onChange={e => setAttYear(Number(e.target.value))} style={{ height: mob ? 34 : 38, padding: "0 10px", fontFamily: "inherit", fontSize: mob ? 12 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.navy, fontWeight: 600, cursor: "pointer" }}>
+              {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
+            </select>
+            <select value={attMonth} onChange={e => { const v = Number(e.target.value); setAttMonth(v); setCurrentWeek(getWeeksInMonth(v)[0] ?? 1); }} style={{ height: mob ? 34 : 38, padding: "0 10px", fontFamily: "inherit", fontSize: mob ? 12 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.navy, fontWeight: 600, cursor: "pointer" }}>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(mo => <option key={mo} value={mo}>{mo}월</option>)}
+            </select>
+            <span style={{ color: C.textMuted, fontSize: 12 }}>·</span>
+            <Btn variant="ghost" size="sm" onClick={goPrevWeek} style={{ width: 32, height: 32, padding: 0, justifyContent: "center" }}>◀</Btn>
+            <span style={{ fontSize: mob ? 15 : 18, fontWeight: 700, minWidth: mob ? 56 : 72, textAlign: "center" }}>제{currentWeek}주</span>
+            <Btn variant="ghost" size="sm" onClick={goNextWeek} style={{ width: 32, height: 32, padding: 0, justifyContent: "center" }}>▶</Btn>
           </div>
           <select value={deptF} onChange={e => setDeptF(e.target.value)} style={{ height: mob ? 36 : 40, padding: "0 12px", fontFamily: "inherit", fontSize: mob ? 12 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
             <option value="all">전체 부서</option>
@@ -610,7 +743,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
           </select>
         </div>
         {!mob && <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-          {Array.from({ length: 52 }, (_, i) => i + 1).map(w => {
+          {weeksInRange.map((w, idx) => {
             const hasData = db.members.some(x => db.attendance[x.id] && db.attendance[x.id][w]);
             const isActive = w === currentWeek;
             return (
@@ -620,15 +753,19 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
                 background: isActive ? C.accent : hasData ? C.accentBg : C.bg,
                 color: isActive ? "#fff" : hasData ? C.accent : C.textFaint,
                 border: isActive ? `1.5px solid ${C.accent}30` : "1.5px solid transparent", transition: "all 0.15s",
-              }}>{w}</div>
+              }}>{idx + 1}</div>
             );
           })}
         </div>}
       </Card>
 
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
+        <button type="button" onClick={() => setViewModeAtt("list")} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, background: viewModeAtt === "list" ? C.navy : C.bg, color: viewModeAtt === "list" ? "#fff" : C.text, cursor: "pointer" }}>📋 전체 목록</button>
+        <button type="button" onClick={() => setViewModeAtt("group")} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, background: viewModeAtt === "group" ? C.navy : C.bg, color: viewModeAtt === "group" ? "#fff" : C.text, cursor: "pointer" }}>🏠 목장별</button>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fit, minmax(180px, 1fr))", gap: mob ? 10 : 16 }}>
         <StatCard label="출석" value={`${present}명`} color={C.success} />
-        <StatCard label="지각" value={`${late}명`} color={C.orange} />
         <StatCard label="결석" value={`${absent}명`} color={C.danger} />
         <StatCard label="출석률" value={`${rate}%`} sub={`${unchecked}명 미체크`} color={C.accent} />
       </div>
@@ -637,43 +774,113 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead><tr style={{ background: C.bg }}>
-              {["이름","부서","상태","출석체크","연속출석"].map((h, i) => (
+              {["이름","부서","상태","출석체크","결석 사유","연속출석"].map((h, i) => (
                 <th key={i} style={{ padding: "12px 16px", textAlign: i === 3 ? "center" : "left", fontWeight: 600, fontSize: 13, color: C.navy, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr></thead>
             <tbody>
-              {m.map(s => {
-                const att = db.attendance[s.id] || {};
-                const ws = att[currentWeek] || "n";
-                const labels: Record<string, string> = { p: "출석", l: "지각", a: "결석", n: "미체크" };
-                let streak = 0;
-                for (let w = currentWeek; w >= 1; w--) { if (att[w] === "p") streak++; else break; }
-                return (
-                  <tr key={s.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
-                    <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden" }}>
-                          {s.photo ? <img src={s.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (s.name || "?")[0]}
+              {viewModeAtt === "group" ? (
+                groupedByMokjang.map(([gName, gMembers]) => (
+                  <React.Fragment key={gName}>
+                    <tr style={{ background: C.navy, color: "#fff" }}>
+                      <td colSpan={6} style={{ padding: "10px 16px", fontWeight: 700, fontSize: 14 }}>🏠 {gName} ({gMembers.length}명)</td>
+                    </tr>
+                    {gMembers.map(s => {
+                      const att = db.attendance[s.id] || {};
+                      const ws = (att[currentWeek] === "l" ? "n" : att[currentWeek]) || "n";
+                      const labels: Record<string, string> = { p: "출석", a: "결석", n: "미체크" };
+                      const reason = db.attendanceReasons?.[s.id]?.[currentWeek] || "";
+                      let streak = 0;
+                      for (let w = currentWeek; w >= 1; w--) { if (att[w] === "p") streak++; else break; }
+                      return (
+                        <tr key={s.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
+                          <td style={{ padding: "12px 16px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden" }}>
+                                {s.photo ? <img src={s.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (s.name || "?")[0]}
+                              </div>
+                              <strong style={{ color: C.navy }}>{s.name}</strong>
+                            </div>
+                          </td>
+                          <td style={{ padding: "12px 16px" }}><SBadge variant="gray">{s.dept}</SBadge></td>
+                          <td style={{ padding: "12px 16px" }}><SBadge variant={STATUS_BADGE[s.status || ""] || "gray"}>{s.status}</SBadge></td>
+                          <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                              <AttDot status={ws} onClick={() => cycleAtt(s.id)} />
+                              <span style={{ fontSize: 12, color: C.textMuted }}>{labels[ws]}</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: "12px 16px", maxWidth: 160 }}>
+                            {ws === "a" ? (
+                              <button type="button" onClick={() => { setAbsentReasonModal({ memberId: s.id, name: s.name }); setAbsentReasonInput(reason); }} style={{ fontSize: 12, background: reason ? C.bg : C.dangerBg, color: reason ? C.text : C.danger, border: "none", padding: "4px 10px", borderRadius: 6, cursor: "pointer", textAlign: "left", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={reason || "사유 입력"}>
+                                {reason ? reason : "+ 사유 입력"}
+                              </button>
+                            ) : <span style={{ color: C.textFaint }}>-</span>}
+                          </td>
+                          <td style={{ padding: "12px 16px" }}>{streak > 0 ? <SBadge variant="success">{streak}주 연속</SBadge> : <span style={{ color: C.textFaint }}>-</span>}</td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                ))
+              ) : (
+                pageMembers.map(s => {
+                  const att = db.attendance[s.id] || {};
+                  const ws = (att[currentWeek] === "l" ? "n" : att[currentWeek]) || "n";
+                  const labels: Record<string, string> = { p: "출석", a: "결석", n: "미체크" };
+                  const reason = db.attendanceReasons?.[s.id]?.[currentWeek] || "";
+                  let streak = 0;
+                  for (let w = currentWeek; w >= 1; w--) { if (att[w] === "p") streak++; else break; }
+                  return (
+                    <tr key={s.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden" }}>
+                            {s.photo ? <img src={s.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (s.name || "?")[0]}
+                          </div>
+                          <strong style={{ color: C.navy }}>{s.name}</strong>
                         </div>
-                        <strong style={{ color: C.navy }}>{s.name}</strong>
-                      </div>
-                    </td>
-                    <td style={{ padding: "12px 16px" }}><SBadge variant="gray">{s.dept}</SBadge></td>
-                    <td style={{ padding: "12px 16px" }}><SBadge variant={STATUS_BADGE[s.status || ""] || "gray"}>{s.status}</SBadge></td>
-                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                        <AttDot status={ws} onClick={() => cycleAtt(s.id)} />
-                        <span style={{ fontSize: 12, color: C.textMuted }}>{labels[ws]}</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: "12px 16px" }}>{streak > 0 ? <SBadge variant="success">{streak}주 연속</SBadge> : <span style={{ color: C.textFaint }}>-</span>}</td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td style={{ padding: "12px 16px" }}><SBadge variant="gray">{s.dept}</SBadge></td>
+                      <td style={{ padding: "12px 16px" }}><SBadge variant={STATUS_BADGE[s.status || ""] || "gray"}>{s.status}</SBadge></td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                          <AttDot status={ws} onClick={() => cycleAtt(s.id)} />
+                          <span style={{ fontSize: 12, color: C.textMuted }}>{labels[ws]}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 16px", maxWidth: 160 }}>
+                        {ws === "a" ? (
+                          <button type="button" onClick={() => { setAbsentReasonModal({ memberId: s.id, name: s.name }); setAbsentReasonInput(reason); }} style={{ fontSize: 12, background: reason ? C.bg : C.dangerBg, color: reason ? C.text : C.danger, border: "none", padding: "4px 10px", borderRadius: 6, cursor: "pointer", textAlign: "left", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={reason || "사유 입력"}>
+                            {reason ? reason : "+ 사유 입력"}
+                          </button>
+                        ) : <span style={{ color: C.textFaint }}>-</span>}
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>{streak > 0 ? <SBadge variant="success">{streak}주 연속</SBadge> : <span style={{ color: C.textFaint }}>-</span>}</td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </Card>
+      {viewModeAtt === "list" && m.length > PAGE_SIZE_ATT && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+          <Btn variant="ghost" size="sm" onClick={() => setPageAtt(p => Math.max(1, p - 1))} disabled={currentPageAtt <= 1}>이전</Btn>
+          <span style={{ fontSize: 13, color: C.textMuted }}>{currentPageAtt} / {totalPagesAtt} 페이지</span>
+          <Btn variant="ghost" size="sm" onClick={() => setPageAtt(p => Math.min(totalPagesAtt, p + 1))} disabled={currentPageAtt >= totalPagesAtt}>다음</Btn>
+        </div>
+      )}
+      {absentReasonModal && (
+        <Modal open={true} onClose={() => setAbsentReasonModal(null)} title={`결석 사유 · ${absentReasonModal.name}`} width={400}>
+          <FormTextarea label="사유 (선택)" value={absentReasonInput} onChange={setAbsentReasonInput} placeholder="예: 병원, 여행, 개인사정" style={{ minHeight: 80 }} />
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            <Btn variant="secondary" onClick={() => setAbsentReasonModal(null)}>취소</Btn>
+            <Btn onClick={() => { setAbsentReason(absentReasonModal.memberId, absentReasonInput.trim()); setAbsentReasonModal(null); setAbsentReasonInput(""); toast("저장되었습니다", "ok"); }}>저장</Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -759,7 +966,6 @@ function NewFamilySub({ db, currentWeek, openDetail }: { db: DB; currentWeek: nu
                   const s = att[w];
                   if (s === "p") return <SBadge variant="success">✓ 출석</SBadge>;
                   if (s === "a") return <SBadge variant="danger">✕ 결석</SBadge>;
-                  if (s === "l") return <SBadge variant="warning">△ 지각</SBadge>;
                   return <SBadge variant="gray">—</SBadge>;
                 });
                 return (
@@ -793,7 +999,7 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
     const h = ["이름","부서","상태", ...Array.from({ length: 52 }, (_, i) => `${i + 1}주`)];
     const rows = db.members.filter(m => m.status !== "졸업/전출").map(m => {
       const att = db.attendance[m.id] || {};
-      const weeks = Array.from({ length: 52 }, (_, i) => ({ p: "O", l: "△", a: "X" } as Record<string, string>)[att[i + 1] as string] || "");
+      const weeks = Array.from({ length: 52 }, (_, i) => ({ p: "O", a: "X" } as Record<string, string>)[att[i + 1] as string] || "");
       return csvRow([m.name, m.dept || "", m.status || "", ...weeks]);
     });
     dlCSV(csvRow(h) + "\n" + rows.join("\n"), `출석부_${todayStr()}.csv`);
@@ -822,7 +1028,7 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
     const rows = nf.map(m => {
       const att = db.attendance[m.id] || {};
       const rw = currentWeek;
-      const weeks = [0, 1, 2, 3].map(i => ({ p: "O", l: "△", a: "X" } as Record<string, string>)[att[rw + i] as string] || "-");
+      const weeks = [0, 1, 2, 3].map(i => ({ p: "O", a: "X" } as Record<string, string>)[att[rw + i] as string] || "-");
       return csvRow([m.name, m.createdAt || "", m.source || "", ...weeks, m.status || ""]);
     });
     dlCSV(csvRow(h) + "\n" + rows.join("\n"), `새가족현황_${todayStr()}.csv`);
@@ -989,11 +1195,17 @@ export function PastoralPage() {
   const persist = useCallback(() => { saveDBToSupabase(db).catch(() => {}); }, [db]);
   useEffect(() => { if (db.members.length > 0 || db.settings.churchName) saveDBToSupabase(db).catch(() => {}); }, [db]);
 
+  const toastIdRef = useRef(0);
+  const toastTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const toast = useCallback((msg: string, type = "ok") => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, msg, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2500);
+    const id = ++toastIdRef.current;
+    setToasts(prev => [...prev.slice(-2), { id, msg, type }]);
+    const tid = setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 2500);
+    toastTimeoutsRef.current.push(tid);
   }, []);
+  useEffect(() => () => { toastTimeoutsRef.current.forEach(clearTimeout); toastTimeoutsRef.current = []; }, []);
 
   const depts = getDepts(db);
 
@@ -1034,8 +1246,9 @@ export function PastoralPage() {
     if (typeof window !== "undefined" && !window.confirm("삭제하시겠습니까?")) return;
     setDb(prev => {
       const { [id]: _a, ...att } = prev.attendance;
+      const { [id]: _ar, ...attReasons } = prev.attendanceReasons || {};
       const { [id]: _n, ...notes } = prev.notes;
-      return { ...prev, members: prev.members.filter(m => m.id !== id), attendance: att, notes };
+      return { ...prev, members: prev.members.filter(m => m.id !== id), attendance: att, attendanceReasons: attReasons, notes };
     });
     setShowDetailModal(false); toast("삭제 완료", "warn");
   };

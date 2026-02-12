@@ -385,11 +385,13 @@ export function Modals({
       return;
     setDb((prev) => {
       const { [id]: _, ...att } = prev.attendance;
+      const { [id]: _r, ...attReasons } = prev.attendanceReasons || {};
       const { [id]: __, ...notes } = prev.notes;
       return {
         ...prev,
         members: prev.members.filter((m) => m.id !== id),
         attendance: att,
+        attendanceReasons: Object.keys(attReasons).length ? attReasons : undefined,
         notes,
       };
     });

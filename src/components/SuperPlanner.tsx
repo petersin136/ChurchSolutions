@@ -195,7 +195,7 @@ function exportReport(
             m.dept || "",
             m.role || "",
             m.status || "",
-            ...Array.from({ length: 52 }, (_, w) => att[w + 1] === "p" ? "출석" : att[w + 1] === "l" ? "지각" : att[w + 1] === "a" ? "결석" : ""),
+            ...Array.from({ length: 52 }, (_, w) => att[w + 1] === "p" ? "출석" : att[w + 1] === "a" ? "결석" : ""),
           ];
           csv += row.join(",") + "\n";
         });

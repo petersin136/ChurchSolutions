@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
+import type { DB } from "@/types/db";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -544,6 +545,166 @@ function VisitListSub({ db, openVisitModal }: { db: VCDB; openVisitModal: (id?: 
           })}
         </div>
       </Card>
+    </div>
+  );
+}
+
+const MAIN_VISIT_TYPES = ["정기", "위로", "새가족", "병문안", "경조사", "일반"];
+const PAGE_SIZE = 10;
+
+/* ----- 메인 DB 심방 목록 (70명 연동, 페이지네이션, 목장별) ----- */
+function MainDBVisitList({
+  mainDb,
+  setMainDb,
+  saveMain,
+  toast,
+}: {
+  mainDb: DB;
+  setMainDb: React.Dispatch<React.SetStateAction<DB>>;
+  saveMain: () => void;
+  toast: (m: string) => void;
+}) {
+  const mob = useIsMobile();
+  const [viewMode, setViewMode] = useState<"list" | "byGroup">("list");
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addDate, setAddDate] = useState(todayStr());
+  const [addMemberId, setAddMemberId] = useState("");
+  const [addType, setAddType] = useState("정기");
+  const [addContent, setAddContent] = useState("");
+
+  const getMember = (id: string) => mainDb.members.find(m => m.id === id) || { name: "(삭제됨)", group: "" };
+
+  const filtered = useMemo(() => {
+    let list = [...mainDb.visits].sort((a, b) => b.date.localeCompare(a.date));
+    if (filterType !== "all") list = list.filter(v => v.type === filterType);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(v => {
+        const m = getMember(v.memberId);
+        return m.name.toLowerCase().includes(q) || (v.content || "").toLowerCase().includes(q);
+      });
+    }
+    return list;
+  }, [mainDb.visits, mainDb.members, filterType, search]);
+
+  const byGroup = useMemo(() => {
+    const map: Record<string, typeof filtered> = {};
+    for (const v of filtered) {
+      const g = getMember(v.memberId).group || "(목장 미배정)";
+      if (!map[g]) map[g] = [];
+      map[g].push(v);
+    }
+    for (const g of Object.keys(map)) map[g].sort((a, b) => b.date.localeCompare(a.date));
+    return map;
+  }, [filtered, mainDb.members]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageList = viewMode === "list" ? filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE) : filtered;
+  const showPagination = viewMode === "list" && filtered.length > PAGE_SIZE;
+
+  const saveNewVisit = () => {
+    if (!addMemberId.trim()) { toast("성도를 선택하세요"); return; }
+    const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `v-${Date.now()}`;
+    setMainDb(prev => ({
+      ...prev,
+      visits: [{ id, date: addDate, memberId: addMemberId, type: addType, content: addContent.trim() }, ...prev.visits],
+    }));
+    saveMain();
+    setShowAddModal(false);
+    setAddMemberId(""); setAddDate(todayStr()); setAddType("정기"); setAddContent("");
+    toast("심방이 등록되었습니다");
+  };
+
+  const renderRow = (v: (typeof mainDb.visits)[0]) => {
+    const m = getMember(v.memberId);
+    return (
+      <div
+        key={v.id}
+        style={{ display: "flex", alignItems: "flex-start", gap: mob ? 10 : 16, padding: "14px 0", borderBottom: `1px solid ${C.borderLight}` }}
+      >
+        <div style={{ width: mob ? 40 : 48, height: mob ? 40 : 48, borderRadius: "50%", background: C.blueBg, color: C.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 14 : 18, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+            <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700 }}>{m.name}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: C.tealBg, color: C.teal }}>{v.type}</span>
+          </div>
+          <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDateFull(v.date)}</div>
+          {v.content && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.content}</div>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200 }}>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint }}>🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름, 내용 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
+        </div>
+        <Btn variant="primary" size="sm" onClick={() => setShowAddModal(true)}>＋ 심방 등록</Btn>
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <Chip label="전체 목록" active={viewMode === "list"} onClick={() => { setViewMode("list"); setPage(1); }} />
+        <Chip label="목장별 보기" active={viewMode === "byGroup"} onClick={() => setViewMode("byGroup")} />
+        <span style={{ fontSize: 12, color: C.textMuted, marginLeft: 8 }}>유형:</span>
+        <Chip label="전체" active={filterType === "all"} onClick={() => setFilterType("all")} />
+        {MAIN_VISIT_TYPES.map(t => <Chip key={t} label={t} active={filterType === t} onClick={() => setFilterType(t)} />)}
+      </div>
+      <Card>
+        <div style={{ padding: mob ? 14 : 22 }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>🏠</div><div style={{ fontSize: 14 }}>심방 기록이 없습니다</div></div>
+          ) : viewMode === "byGroup" ? (
+            Object.entries(byGroup).sort(([a], [b]) => a.localeCompare(b)).map(([groupName, list]) => (
+              <div key={groupName} style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.navy, marginBottom: 12, paddingBottom: 6, borderBottom: `2px solid ${C.blue}` }}>{groupName}</div>
+                {list.map(v => renderRow(v))}
+              </div>
+            ))
+          ) : (
+            <>
+              {pageList.map(v => renderRow(v))}
+              {showPagination && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.borderLight}` }}>
+                  <Btn variant="ghost" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}>이전</Btn>
+                  <span style={{ fontSize: 13, color: C.textMuted }}>{currentPage} / {totalPages} 페이지</span>
+                  <Btn variant="ghost" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>다음</Btn>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Card>
+
+      {showAddModal && (
+        <Modal open={true} onClose={() => setShowAddModal(false)} title="심방 등록" footer={
+          <>
+            <Btn variant="secondary" onClick={() => setShowAddModal(false)}>취소</Btn>
+            <Btn onClick={saveNewVisit}>저장</Btn>
+          </>
+        }>
+          <FormField label="날짜"><FInput type="date" value={addDate} onChange={setAddDate} /></FormField>
+          <FormField label="성도">
+            <FSelect value={addMemberId} onChange={setAddMemberId} style={{ maxHeight: 200 }}>
+              <option value="">선택</option>
+              {mainDb.members.map(m => (
+                <option key={m.id} value={m.id}>{m.group ? `[${m.group}] ` : ""}{m.name} {m.role ? `(${m.role})` : ""}</option>
+              ))}
+            </FSelect>
+          </FormField>
+          <FormField label="유형">
+            <FSelect value={addType} onChange={setAddType}>
+              {MAIN_VISIT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </FSelect>
+          </FormField>
+          <FormField label="내용"><FTextarea value={addContent} onChange={setAddContent} placeholder="심방 내용을 입력하세요" /></FormField>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -1161,7 +1322,13 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
   settings: { title: "설정", desc: "시스템 설정을 관리합니다" },
 };
 
-export function VisitCounselPage() {
+export interface VisitCounselPageProps {
+  mainDb?: DB;
+  setMainDb?: React.Dispatch<React.SetStateAction<DB>>;
+  saveMain?: () => void;
+}
+
+export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPageProps = {}) {
   const mob = useIsMobile();
   const [db, setDb] = useState<VCDB>(() => loadVC());
   const [activeSub, setActiveSub] = useState<SubPage>("dash");
@@ -1443,7 +1610,9 @@ export function VisitCounselPage() {
 
         <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 24 }}>
           {activeSub === "dash" && <DashSub db={db} goPage={handleNav} openVisitModal={openVisitModal} openCounselModal={openCounselModal} />}
-          {activeSub === "visits" && <VisitListSub db={db} openVisitModal={openVisitModal} />}
+          {activeSub === "visits" && mainDb != null && setMainDb && saveMain
+            ? <MainDBVisitList mainDb={mainDb} setMainDb={setMainDb} saveMain={saveMain} toast={toast} />
+            : activeSub === "visits" && <VisitListSub db={db} openVisitModal={openVisitModal} />}
           {activeSub === "counsels" && <CounselListSub db={db} openCounselModal={openCounselModal} />}
           {activeSub === "followup" && <FollowUpSub db={db} setDb={setDb} persist={persist} toast={toast} openVisitModal={openVisitModal} openCounselModal={openCounselModal} />}
           {activeSub === "prayers" && <PrayersSub db={db} setDb={setDb} persist={persist} toast={toast} openMemberDetail={openMemberDetail} openPrayerModal={() => { setShowPrayerModal(true); setEditPrayerId(null); setPMember(""); setPText(""); setPDate(todayStr()); setPCategory("other"); }} />}

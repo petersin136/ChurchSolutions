@@ -78,6 +78,7 @@ export function SettingsPage({
       settings: { ...db.settings },
       members: [],
       attendance: {},
+      attendanceReasons: {},
       notes: {},
       plans: [],
       sermons: [],

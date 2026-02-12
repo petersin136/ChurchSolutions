@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import type { DB, Member, Note, Plan, Sermon, Visit, Income, Expense, AttStatus, ChecklistItem } from "@/types/db";
-import { DEFAULT_DB } from "@/types/db";
+import { DEFAULT_DB, buildSampleDB } from "@/types/db";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -35,6 +35,7 @@ export async function loadDBFromSupabase(): Promise<DB> {
     },
     members: (membersRes.data ?? []).map((r: Record<string, unknown>) => toMember(r)),
     attendance: {},
+    attendanceReasons: {},
     notes: {},
     plans: (plansRes.data ?? []).map((r: Record<string, unknown>) => toPlan(r)),
     sermons: (sermonsRes.data ?? []).map((r: Record<string, unknown>) => toSermon(r)),
@@ -49,7 +50,14 @@ export async function loadDBFromSupabase(): Promise<DB> {
     const mid = r.member_id as string;
     const week = r.week_num as number;
     if (!db.attendance[mid]) db.attendance[mid] = {};
-    db.attendance[mid][week] = (r.status as AttStatus) || "n";
+    const status = r.status as string;
+    db.attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as AttStatus;
+    const reason = r.reason as string | undefined;
+    if (reason?.trim()) {
+      if (!db.attendanceReasons) db.attendanceReasons = {};
+      if (!db.attendanceReasons[mid]) db.attendanceReasons[mid] = {};
+      db.attendanceReasons[mid][week] = reason;
+    }
   });
 
   (notesRes.data ?? []).forEach((r: Record<string, unknown>) => {
@@ -76,6 +84,8 @@ export async function loadDBFromSupabase(): Promise<DB> {
     });
   });
 
+  // 교인이 10명 미만이면 70명 샘플로 채워서 예시 동작 보여주기
+  if (!membersRes.data?.length || membersRes.data.length < 10) return buildSampleDB();
   return db;
 }
 
@@ -227,11 +237,13 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
 
   for (const m of db.members) {
     if (!/^[0-9a-f-]{36}$/i.test(m.id)) continue;
+    const reasons = db.attendanceReasons?.[m.id] ?? {};
     const rows = Object.entries(db.attendance[m.id] ?? {}).map(([weekNum, status]) => ({
       member_id: m.id,
       week_num: parseInt(weekNum, 10),
       year,
-      status: status || "n",
+      status: status === "l" ? "n" : (status || "n"),
+      reason: (reasons[parseInt(weekNum, 10)] || null) as string | null,
     }));
     if (rows.length > 0) {
       await supabase.from("attendance").delete().eq("member_id", m.id).eq("year", year);
