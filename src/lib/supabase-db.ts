@@ -32,6 +32,8 @@ export async function loadDBFromSupabase(): Promise<DB> {
       churchName: settingsRow?.church_name ?? empty.settings.churchName,
       depts: settingsRow?.depts ?? empty.settings.depts,
       fiscalStart: settingsRow?.fiscal_start ?? empty.settings.fiscalStart,
+      address: (settingsRow as Record<string, unknown>)?.address as string | undefined ?? empty.settings.address,
+      pastor: (settingsRow as Record<string, unknown>)?.pastor as string | undefined ?? empty.settings.pastor,
     },
     members: (membersRes.data ?? []).map((r: Record<string, unknown>) => toMember(r)),
     attendance: {},
@@ -179,12 +181,16 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       church_name: db.settings.churchName,
       depts: db.settings.depts,
       fiscal_start: db.settings.fiscalStart,
+      ...(db.settings.address !== undefined && { address: db.settings.address }),
+      ...(db.settings.pastor !== undefined && { pastor: db.settings.pastor }),
     }).eq("id", existingSettings.data.id);
   } else {
     await supabase.from("settings").insert({
       church_name: db.settings.churchName,
       depts: db.settings.depts,
       fiscal_start: db.settings.fiscalStart,
+      ...(db.settings.address !== undefined && { address: db.settings.address }),
+      ...(db.settings.pastor !== undefined && { pastor: db.settings.pastor }),
     });
   }
 

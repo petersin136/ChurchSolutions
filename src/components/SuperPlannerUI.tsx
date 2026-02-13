@@ -120,7 +120,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
           className={`page ${currentPage === "finance" ? "active" : ""}`}
           id="page-finance"
         >
-          <FinancePage />
+          <FinancePage settings={db.settings} />
         </div>
         <div
           className={`page ${currentPage === "visit" ? "active" : ""}`}

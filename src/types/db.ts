@@ -4,6 +4,10 @@ export interface Settings {
   fiscalStart: string;
   /** 목장 목록 (쉼표 구분). 비어 있으면 성도 데이터에서 자동 추출 */
   mokjangList?: string;
+  /** 기부금 영수증용: 소재지 */
+  address?: string;
+  /** 기부금 영수증용: 담임목사 성함 */
+  pastor?: string;
 }
 
 export interface Member {
@@ -110,6 +114,8 @@ export const DEFAULT_SETTINGS: Settings = {
   depts: "유아부,유치부,유년부,초등부,중등부,고등부,청년부,장년부",
   fiscalStart: "1",
   mokjangList: "",
+  address: "",
+  pastor: "",
 };
 
 export const DEFAULT_DB: DB = {

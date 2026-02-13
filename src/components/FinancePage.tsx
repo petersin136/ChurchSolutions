@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, type CSSProperties, type ReactNode } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import * as XLSX from "xlsx";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -70,9 +71,16 @@ const EXPENSE_CATEGORIES: ExpCategory[] = [
 ];
 
 /* ---------- 데이터 타입 ---------- */
-interface Donor { id: string; name: string; phone: string; group: string; joinDate: string; note: string; }
+interface Donor { id: string; name: string; phone: string; group: string; joinDate: string; note: string; photoUrl?: string; }
 interface Offering { id: string; donorId: string; donorName: string; categoryId: string; amount: number; date: string; method: string; note: string; }
 interface Expense { id: string; categoryId: string; departmentId: string; amount: number; date: string; description: string; receipt: boolean; note: string; }
+
+/** 예결산: 연도별 항목별 예산 (income/expense by categoryId) */
+export type BudgetByYear = Record<string, { income: Record<string, number>; expense: Record<string, number> }>;
+
+/* ---------- 예결산 기본 항목 (요구사항 + 기존 카테고리와 매핑) ---------- */
+const BUDGET_INCOME_IDS = ["tithe", "thanks", "sunday", "special", "other"] as const; // 십일조, 감사헌금, 주일헌금, 특별헌금, 기타수입
+const BUDGET_EXPENSE_IDS = ["salary", "education_exp", "mission_exp", "rent", "event", "other_exp"] as const; // 목회활동비(인건비), 교육비, 선교비, 관리비, 수련회비(행사비), 기타지출
 
 /* ---------- 샘플 데이터 생성 ---------- */
 function generateSampleData() {
@@ -137,6 +145,7 @@ const Icons = {
   Report: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,
   Budget: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>,
   Export: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>,
+  Receipt: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h6M9 7h2"/></svg>,
   Plus: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>,
   Search: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
   X: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>,
@@ -645,6 +654,185 @@ function DonorTab({ donors, setDonors, offerings }: {
   );
 }
 
+/* ====== 헌금 현황 (교인별 통계 + 3개월 미헌금자) ====== */
+function getNinetyDaysAgo() { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().slice(0, 10); }
+
+function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
+  donors: Donor[]; offerings: Offering[]; categories: Category[];
+  onVisitSuggest?: (name: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [onlyNoGiving, setOnlyNoGiving] = useState(false);
+  const [sortKey, setSortKey] = useState<"name" | "total" | "lastDate" | "prevDate" | "thisMonth" | "last3Months">("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  type DonorStat = {
+    donor: Donor;
+    total: number;
+    lastDate: string | null;
+    prevDate: string | null;
+    thisMonth: number;
+    last3Months: number;
+    isNoGiving90: boolean;
+  };
+
+  const donorStats = useMemo(() => {
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const thisMonth = String(now.getMonth() + 1).padStart(2, "0");
+    const threeMonthsStart = new Date(now); threeMonthsStart.setMonth(threeMonthsStart.getMonth() - 3);
+    const threeStartStr = threeMonthsStart.toISOString().slice(0, 10);
+
+    const map = new Map<string, { total: number; dates: string[]; thisMonth: number; last3Months: number }>();
+    donors.forEach(d => map.set(d.id, { total: 0, dates: [], thisMonth: 0, last3Months: 0 }));
+
+    offerings.forEach(o => {
+      const cur = map.get(o.donorId);
+      if (!cur) return;
+      cur.total += o.amount;
+      if (!cur.dates.includes(o.date)) cur.dates.push(o.date);
+      if (o.date.slice(0, 7) === `${thisYear}-${thisMonth}`) cur.thisMonth += o.amount;
+      if (o.date >= threeStartStr) cur.last3Months += o.amount;
+    });
+
+    return donors.map(donor => {
+      const cur = map.get(donor.id)!;
+      const dates = [...(cur.dates || [])].sort((a, b) => b.localeCompare(a));
+      const lastDate = dates[0] || null;
+      const prevDate = dates[1] || null;
+      const isNoGiving90 = !lastDate || lastDate < getNinetyDaysAgo();
+      return {
+        donor,
+        total: cur?.total ?? 0,
+        lastDate,
+        prevDate,
+        thisMonth: cur?.thisMonth ?? 0,
+        last3Months: cur?.last3Months ?? 0,
+        isNoGiving90,
+      } as DonorStat;
+    });
+  }, [donors, offerings]);
+
+  const noGivingCount = useMemo(() => donorStats.filter(s => s.isNoGiving90).length, [donorStats]);
+
+  const filtered = useMemo(() => {
+    let list = onlyNoGiving ? donorStats.filter(s => s.isNoGiving90) : [...donorStats];
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(s => s.donor.name.toLowerCase().includes(q));
+    }
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "name") cmp = (a.donor.name || "").localeCompare(b.donor.name || "");
+      else if (sortKey === "total") cmp = a.total - b.total;
+      else if (sortKey === "lastDate") cmp = (a.lastDate || "").localeCompare(b.lastDate || "");
+      else if (sortKey === "prevDate") cmp = (a.prevDate || "").localeCompare(b.prevDate || "");
+      else if (sortKey === "thisMonth") cmp = a.thisMonth - b.thisMonth;
+      else if (sortKey === "last3Months") cmp = a.last3Months - b.last3Months;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return list;
+  }, [donorStats, onlyNoGiving, search, sortKey, sortDir]);
+
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const handleVisitSuggest = (name: string) => {
+    if (onVisitSuggest) { onVisitSuggest(name); return; }
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(name);
+      if (typeof window !== "undefined" && (window as unknown as { toast?: (m: string) => void }).toast) (window as unknown as { toast: (m: string) => void }).toast(`"${name}" 이름이 복사되었습니다. 심방 관리에서 검색해 주세요.`);
+    }
+    try { navigator.clipboard.writeText(name); } catch {}
+  };
+
+  const Th = ({ label, keyName, align = "left" }: { label: string; keyName: typeof sortKey; align?: "left" | "right" | "center" }) => (
+    <th style={{ padding: "12px 16px", textAlign: align, fontWeight: 600, color: C.navy, fontSize: 13, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap", cursor: "pointer" }} onClick={() => toggleSort(keyName)}>
+      {label} {sortKey === keyName ? (sortDir === "asc" ? "↑" : "↓") : ""}
+    </th>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {noGivingCount > 0 && (
+        <div
+          role="button"
+          onClick={() => setOnlyNoGiving(prev => !prev)}
+          style={{
+            padding: "14px 20px", borderRadius: 12, background: onlyNoGiving ? C.danger : C.dangerLight, color: onlyNoGiving ? "#fff" : C.danger,
+            fontWeight: 600, fontSize: 14, cursor: "pointer", border: `2px solid ${C.danger}`,
+          }}
+        >
+          ⚠️ 3개월 이상 미헌금 교인: {noGivingCount}명 {onlyNoGiving ? "(전체 보기 클릭)" : "(클릭 시 미헌금자만 보기)"}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ position: "relative" }}>
+          <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><Icons.Search /></div>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름 검색..."
+            style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", width: 200 }} />
+        </div>
+        {onlyNoGiving && <Button variant="soft" onClick={() => setOnlyNoGiving(false)}>전체 보기</Button>}
+      </div>
+
+      <Card style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: C.bg }}>
+                <Th label="교인" keyName="name" />
+                <Th label="누적 총액" keyName="total" align="right" />
+                <Th label="최근 헌금일" keyName="lastDate" align="center" />
+                <Th label="이전 헌금일" keyName="prevDate" align="center" />
+                <Th label="이번 달" keyName="thisMonth" align="right" />
+                <Th label="최근 3개월" keyName="last3Months" align="right" />
+                <th style={{ padding: "12px 16px", fontWeight: 600, color: C.navy, fontSize: 13, borderBottom: `1px solid ${C.border}` }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((s, i) => (
+                <tr
+                  key={s.donor.id}
+                  style={{
+                    borderBottom: i < filtered.length - 1 ? `1px solid ${C.borderLight}` : "none",
+                    background: s.isNoGiving90 ? "#fde8e8" : "transparent",
+                  }}
+                >
+                  <td style={{ padding: "12px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{
+                        width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
+                        background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: C.textMuted,
+                      }}>
+                        {s.donor.photoUrl ? <img src={s.donor.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : s.donor.name.charAt(0)}
+                      </div>
+                      <span style={{ fontWeight: 600, color: C.navy }}>{s.donor.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: C.accent }}>₩{fmt(s.total)}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "center" }}>{s.lastDate || "-"}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "center", color: C.textMuted }}>{s.prevDate || "-"}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "right" }}>₩{fmt(s.thisMonth)}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "right" }}>₩{fmt(s.last3Months)}</td>
+                  <td style={{ padding: "12px 16px" }}>
+                    {s.isNoGiving90 && (
+                      <Button size="sm" variant="soft" onClick={() => handleVisitSuggest(s.donor.name)}>심방 추천</Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {filtered.length === 0 && <div style={{ padding: 40, textAlign: "center", color: C.textMuted }}>조건에 맞는 교인이 없습니다</div>}
+      </Card>
+    </div>
+  );
+}
+
 /* ====== 지출 관리 ====== */
 function ExpenseTab({ expenses, setExpenses, departments, expenseCategories }: {
   expenses: Expense[]; setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
@@ -720,6 +908,98 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories }: {
   );
 }
 
+/* ====== 월별 결산 보고서 모달 ====== */
+function SettlementReportModal({ open, onClose, offerings, expenses, categories, expenseCategories, churchName = "교회" }: {
+  open: boolean; onClose: () => void; offerings: Offering[]; expenses: Expense[];
+  categories: Category[]; expenseCategories: ExpCategory[]; churchName?: string;
+}) {
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+
+  const data = useMemo(() => {
+    const y = year;
+    const m = month;
+    const monthStr = String(m).padStart(2, "0");
+    const offInMonth = offerings.filter(o => o.date.startsWith(`${y}-${monthStr}`));
+    const expInMonth = expenses.filter(e => e.date.startsWith(`${y}-${monthStr}`));
+    let prevCarry = 0;
+    offerings.forEach(o => { if (o.date < `${y}-${monthStr}-01`) prevCarry += o.amount; });
+    expenses.forEach(e => { if (e.date < `${y}-${monthStr}-01`) prevCarry -= e.amount; });
+    const incomeByCat = categories.map(c => ({ name: c.name, amount: offInMonth.filter(o => o.categoryId === c.id).reduce((s, o) => s + o.amount, 0), icon: c.icon })).filter(x => x.amount > 0);
+    const incomeTotal = offInMonth.reduce((s, o) => s + o.amount, 0);
+    const expenseByCat = expenseCategories.map(c => ({ name: c.name, amount: expInMonth.filter(e => e.categoryId === c.id).reduce((s, e) => s + e.amount, 0), icon: c.icon })).filter(x => x.amount > 0);
+    const expenseTotal = expInMonth.reduce((s, e) => s + e.amount, 0);
+    const balance = prevCarry + incomeTotal - expenseTotal;
+    return { prevCarry, incomeByCat, incomeTotal, expenseByCat, expenseTotal, balance };
+  }, [offerings, expenses, categories, expenseCategories, year, month]);
+
+  const handleSaveImage = async () => {
+    try {
+      const { toPng } = await import("html-to-image");
+      const el = document.getElementById("settlement-report-card");
+      if (!el) return;
+      const dataUrl = await toPng(el, { pixelRatio: 2, backgroundColor: "#ffffff" });
+      const a = document.createElement("a"); a.href = dataUrl; a.download = `결산보고서_${year}년_${month}월.png`; a.click();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleShare = async () => {
+    const text = `${churchName} ${year}년 ${month}월 결산\n수입: ₩${fmt(data.incomeTotal)}\n지출: ₩${fmt(data.expenseTotal)}\n잔액: ₩${fmt(data.balance)}`;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: `${churchName} 결산 보고서`, text });
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") navigator.clipboard?.writeText(text);
+      }
+    } else if (navigator.clipboard) navigator.clipboard.writeText(text);
+  };
+
+  if (!open) return null;
+  return (
+    <Modal open={open} onClose={onClose} title="월별 결산 보고서" width={560}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <Select label="년" options={[year, year - 1, year - 2].map(y => ({ value: String(y), label: `${y}년` }))} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(Number(e.target.value))} />
+          <Select label="월" options={MONTHS.map((_, i) => ({ value: String(i + 1), label: `${i + 1}월` }))} value={String(month)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMonth(Number(e.target.value))} />
+        </div>
+        <div id="settlement-report-card" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: C.navy }}>{churchName}</h3>
+            <p style={{ margin: "4px 0 0", fontSize: 15, color: C.textMuted }}>{year}년 {month}월 결산</p>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <tbody>
+              <tr><td style={{ padding: "8px 0", color: C.textMuted }}>전월 이월금</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 600 }}>₩{fmt(data.prevCarry)}</td></tr>
+              <tr><td colSpan={2} style={{ padding: "4px 0", borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textMuted }}>수입 항목별</td></tr>
+              {data.incomeByCat.map(c => (
+                <tr key={c.name}><td style={{ padding: "4px 0 4px 16px" }}>{c.icon} {c.name}</td><td style={{ padding: "4px 0", textAlign: "right" }}>₩{fmt(c.amount)}</td></tr>
+              ))}
+              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>수입 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.accent }}>₩{fmt(data.incomeTotal)}</td></tr>
+              <tr><td colSpan={2} style={{ padding: "4px 0", borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textMuted }}>지출 항목별</td></tr>
+              {data.expenseByCat.map(c => (
+                <tr key={c.name}><td style={{ padding: "4px 0 4px 16px" }}>{c.icon} {c.name}</td><td style={{ padding: "4px 0", textAlign: "right" }}>₩{fmt(c.amount)}</td></tr>
+              ))}
+              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>지출 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.danger }}>₩{fmt(data.expenseTotal)}</td></tr>
+              <tr><td colSpan={2} style={{ padding: "8px 0", borderTop: `2px solid ${C.border}` }}></td></tr>
+              <tr><td style={{ padding: "8px 0", fontWeight: 700, color: C.navy }}>잔액</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 800, color: data.balance >= 0 ? C.success : C.danger }}>₩{fmt(data.balance)}</td></tr>
+              <tr><td style={{ padding: "4px 0", fontSize: 12, color: C.textMuted }}>차월 이월금</td><td style={{ padding: "4px 0", textAlign: "right", fontWeight: 600 }}>₩{fmt(data.balance)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Button onClick={handleSaveImage} variant="accent">이미지로 저장</Button>
+          <Button onClick={handleShare} variant="soft">카카오톡 공유</Button>
+          <Button onClick={() => window.print()} variant="ghost">PDF / 인쇄</Button>
+          <Button variant="ghost" onClick={onClose}>닫기</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /* ====== 보고서 ====== */
 function ReportTab({ offerings, expenses, categories, departments, expenseCategories }: {
   offerings: Offering[]; expenses: Expense[]; categories: Category[];
@@ -727,6 +1007,7 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
 }) {
   const [reportType, setReportType] = useState("monthly");
   const [selectedPeriod, setSelectedPeriod] = useState("01");
+  const [showSettlement, setShowSettlement] = useState(false);
 
   const periodOptions = useMemo(() => {
     if (reportType === "weekly") { const w = []; for (let i = 1; i <= 52; i++) w.push({ value: String(i), label: `${i}주차` }); return w; }
@@ -777,6 +1058,9 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <Button onClick={() => setShowSettlement(true)} icon={<Icons.Report />}>결산 보고서</Button>
+      </div>
       <Card>
         <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontWeight: 600, color: C.navy }}>보고서 유형:</span>
@@ -822,6 +1106,249 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
           { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700 }}>₩{fmt(r.total as number)}</span> },
         ]} data={reportData.deptBreakdown as unknown as Record<string, unknown>[]} />
       </Card>
+      <SettlementReportModal open={showSettlement} onClose={() => setShowSettlement(false)} offerings={offerings} expenses={expenses} categories={categories} expenseCategories={expenseCategories} />
+    </div>
+  );
+}
+
+/* ====== 예결산 (예산 vs 실적) ====== */
+function BudgetActualTab({
+  offerings,
+  expenses,
+  categories,
+  expenseCategories,
+  budgetByYear,
+  setBudgetByYear,
+}: {
+  offerings: Offering[];
+  expenses: Expense[];
+  categories: Category[];
+  expenseCategories: ExpCategory[];
+  budgetByYear: BudgetByYear;
+  setBudgetByYear: React.Dispatch<React.SetStateAction<BudgetByYear>>;
+}) {
+  const mob = useIsMobile();
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState(currentYear);
+  const [mode, setMode] = useState<"input" | "compare">("compare");
+  const reportCardRef = useRef<HTMLDivElement>(null);
+
+  const yearStr = String(year);
+
+  const incomeCategories = useMemo(() => {
+    const used = new Set(offerings.map(o => o.categoryId));
+    const byId = new Map(categories.map(c => [c.id, c]));
+    const result = [...categories.filter(c => BUDGET_INCOME_IDS.includes(c.id as typeof BUDGET_INCOME_IDS[number]))];
+    BUDGET_INCOME_IDS.forEach(id => { if (!byId.has(id)) result.push({ id, name: id, color: C.textMuted, icon: "📋" }); });
+    used.forEach(id => { if (!result.some(c => c.id === id)) result.push(byId.get(id) || { id, name: id, color: C.textMuted, icon: "📋" }); });
+    return result;
+  }, [offerings, categories]);
+
+  const expenseCategoriesList = useMemo(() => {
+    const used = new Set(expenses.map(e => e.categoryId));
+    const byId = new Map(expenseCategories.map(c => [c.id, c]));
+    const result = [...expenseCategories.filter(c => BUDGET_EXPENSE_IDS.includes(c.id as typeof BUDGET_EXPENSE_IDS[number]))];
+    BUDGET_EXPENSE_IDS.forEach(id => { if (!byId.has(id)) result.push({ id, name: id, icon: "📋" }); });
+    used.forEach(id => { if (!result.some(c => c.id === id)) result.push(byId.get(id) || { id, name: id, icon: "📋" }); });
+    return result;
+  }, [expenses, expenseCategories]);
+
+  const actuals = useMemo(() => {
+    const income: Record<string, number> = {};
+    const expense: Record<string, number> = {};
+    offerings.filter(o => o.date.startsWith(yearStr)).forEach(o => { income[o.categoryId] = (income[o.categoryId] || 0) + o.amount; });
+    expenses.filter(e => e.date.startsWith(yearStr)).forEach(e => { expense[e.categoryId] = (expense[e.categoryId] || 0) + e.amount; });
+    return { income, expense };
+  }, [offerings, expenses, yearStr]);
+
+  const budgets = budgetByYear[yearStr] || { income: {}, expense: {} };
+
+  const saveBudget = (type: "income" | "expense", categoryId: string, value: number) => {
+    setBudgetByYear(prev => ({
+      ...prev,
+      [yearStr]: {
+        income: type === "income" ? { ...(prev[yearStr]?.income || {}), [categoryId]: value } : (prev[yearStr]?.income || {}),
+        expense: type === "expense" ? { ...(prev[yearStr]?.expense || {}), [categoryId]: value } : (prev[yearStr]?.expense || {}),
+      },
+    }));
+  };
+
+  const compareRows = useMemo(() => {
+    const incomeRows = incomeCategories.map(c => {
+      const bud = budgets.income[c.id] || 0;
+      const act = actuals.income[c.id] || 0;
+      const diff = bud - act;
+      const pct = bud > 0 ? Math.round((act / bud) * 100) : (act > 0 ? 100 : 0);
+      return { type: "수입" as const, name: c.name, budget: bud, actual: act, diff, pct, id: c.id };
+    });
+    const expenseRows = expenseCategoriesList.map(c => {
+      const bud = budgets.expense[c.id] || 0;
+      const act = actuals.expense[c.id] || 0;
+      const diff = bud - act;
+      const pct = bud > 0 ? Math.round((act / bud) * 100) : (act > 0 ? 100 : 0);
+      return { type: "지출" as const, name: c.name, budget: bud, actual: act, diff, pct, id: c.id };
+    });
+    const incBud = incomeRows.reduce((s, r) => s + r.budget, 0);
+    const incAct = incomeRows.reduce((s, r) => s + r.actual, 0);
+    const expBud = expenseRows.reduce((s, r) => s + r.budget, 0);
+    const expAct = expenseRows.reduce((s, r) => s + r.actual, 0);
+    const incomeTotal = { type: "수입" as const, name: "수입 합계", budget: incBud, actual: incAct, diff: incBud - incAct, pct: incBud > 0 ? Math.round((incAct / incBud) * 100) : 0, id: "_incomeTotal" };
+    const expenseTotal = { type: "지출" as const, name: "지출 합계", budget: expBud, actual: expAct, diff: expBud - expAct, pct: expBud > 0 ? Math.round((expAct / expBud) * 100) : 0, id: "_expenseTotal" };
+    const balance = { type: "수입" as const, name: "최종 잔액 (수입-지출)", budget: incBud - expBud, actual: incAct - expAct, diff: (incBud - expBud) - (incAct - expAct), pct: 0, id: "_balance" };
+    return [...incomeRows, incomeTotal, ...expenseRows, expenseTotal, balance];
+  }, [incomeCategories, expenseCategoriesList, budgets, actuals]);
+
+  const chartData = useMemo(() => {
+    const items: { name: string; 예산: number; 실적: number; type: string }[] = [];
+    incomeCategories.forEach(c => {
+      items.push({ name: c.name, 예산: budgets.income[c.id] || 0, 실적: actuals.income[c.id] || 0, type: "수입" });
+    });
+    expenseCategoriesList.forEach(c => {
+      items.push({ name: c.name, 예산: budgets.expense[c.id] || 0, 실적: actuals.expense[c.id] || 0, type: "지출" });
+    });
+    return items.filter(i => i.예산 > 0 || i.실적 > 0);
+  }, [incomeCategories, expenseCategoriesList, budgets, actuals]);
+
+  const handleSaveImage = async () => {
+    try {
+      const { toPng } = await import("html-to-image");
+      const el = document.getElementById("budget-actual-report-card");
+      if (!el) return;
+      const dataUrl = await toPng(el, { pixelRatio: 2, backgroundColor: "#ffffff" });
+      const a = document.createElement("a"); a.href = dataUrl; a.download = `예결산_${year}년.png`; a.click();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleShare = async () => {
+    const incomeTotal = compareRows.find(r => r.id === "_incomeTotal");
+    const expenseTotal = compareRows.find(r => r.id === "_expenseTotal");
+    const text = `${year}년 예결산\n수입 예산/실적: ₩${fmt(incomeTotal?.budget || 0)} / ₩${fmt(incomeTotal?.actual || 0)}\n지출 예산/실적: ₩${fmt(expenseTotal?.budget || 0)} / ₩${fmt(expenseTotal?.actual || 0)}`;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: `${year}년 예결산 보고서`, text });
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") navigator.clipboard?.writeText(text);
+      }
+    } else if (navigator.clipboard) navigator.clipboard.writeText(text);
+  };
+
+  const pctColor = (pct: number, isExpense: boolean) => {
+    if (pct === 0) return C.textMuted;
+    if (isExpense) {
+      if (pct < 80) return C.success;
+      if (pct <= 100) return C.warning;
+      return C.danger;
+    }
+    if (pct < 80) return C.danger;
+    if (pct <= 100) return C.warning;
+    return C.success;
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+        <Select label="연도" options={[currentYear, currentYear - 1, currentYear - 2].map(y => ({ value: String(y), label: `${y}년` }))} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(Number(e.target.value))} />
+        <div style={{ display: "flex", gap: 4, background: C.bg, borderRadius: 10, padding: 4 }}>
+          {(["input", "compare"] as const).map(m => (
+            <button key={m} type="button" onClick={() => setMode(m)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: mode === m ? C.navy : "transparent", color: mode === m ? "#fff" : C.textMuted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+              {m === "input" ? "예산 입력" : "비교 뷰"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {mode === "input" && (
+        <Card>
+          <h4 style={{ margin: "0 0 16px", color: C.navy }}>수입 항목 예산 ({year}년)</h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {incomeCategories.map(c => (
+              <BudgetInputRow key={c.id} label={`${c.icon} ${c.name}`} value={budgets.income[c.id] ?? ""} onSave={v => saveBudget("income", c.id, v)} />
+            ))}
+          </div>
+          <h4 style={{ margin: "24px 0 16px", color: C.navy }}>지출 항목 예산 ({year}년)</h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {expenseCategoriesList.map(c => (
+              <BudgetInputRow key={c.id} label={`${c.icon} ${c.name}`} value={budgets.expense[c.id] ?? ""} onSave={v => saveBudget("expense", c.id, v)} />
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {mode === "compare" && (
+        <>
+          <div id="budget-actual-report-card" ref={reportCardRef} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
+            <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: C.navy }}>{year}년 예산 vs 실적</h3>
+            <div style={{ overflowX: "auto", marginBottom: 24 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                <thead>
+                  <tr style={{ background: C.bg }}>
+                    <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: C.navy }}>구분</th>
+                    <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: C.navy }}>항목명</th>
+                    <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.navy }}>예산</th>
+                    <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.navy }}>실적</th>
+                    <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.navy }}>차이</th>
+                    <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.navy }}>집행률</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {compareRows.map((r, i) => (
+                    <tr key={r.id} style={{ borderBottom: r.id.startsWith("_") ? `2px solid ${C.border}` : `1px solid ${C.borderLight}`, background: r.id.startsWith("_") ? C.bg : "transparent" }}>
+                      <td style={{ padding: "10px 12px" }}>{r.type}</td>
+                      <td style={{ padding: "10px 12px", fontWeight: r.id.startsWith("_") ? 700 : 500 }}>{r.name}</td>
+                      <td style={{ padding: "10px 12px", textAlign: "right" }}>₩{fmt(r.budget)}</td>
+                      <td style={{ padding: "10px 12px", textAlign: "right", color: r.type === "수입" ? C.accent : C.danger }}>₩{fmt(r.actual)}</td>
+                      <td style={{ padding: "10px 12px", textAlign: "right" }}>₩{fmt(r.diff)}</td>
+                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: r.id.startsWith("_") ? C.navy : pctColor(r.pct, r.type === "지출") }}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {chartData.length > 0 && (
+              <div style={{ height: mob ? 280 : 320 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" height={60} />
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 10000).toFixed(0)}만`} />
+                    <Tooltip formatter={(v: number) => `₩${fmt(v)}`} />
+                    <Legend />
+                    <Bar dataKey="예산" fill="#9ca3af" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="실적" radius={[4, 4, 0, 0]}>
+                      {chartData.map((entry, index) => (
+                        <Cell key={index} fill={entry.type === "수입" ? C.accent : C.danger} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Button onClick={handleSaveImage} variant="accent">예결산 보고서 이미지 저장</Button>
+            <Button onClick={handleShare} variant="soft">카카오톡 공유</Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function BudgetInputRow({ label, value, onSave }: { label: string; value: number | ""; onSave: (v: number) => void }) {
+  const [input, setInput] = useState(value === "" ? "" : String(value));
+  useEffect(() => { setInput(value === "" ? "" : String(value)); }, [value]);
+  const handleSave = () => {
+    const n = parseInt(input, 10);
+    if (!Number.isNaN(n) && n >= 0) onSave(n);
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <span style={{ minWidth: 140, fontWeight: 500, color: C.navy }}>{label}</span>
+      <input type="number" value={input} onChange={e => setInput(e.target.value)} placeholder="0" min={0}
+        style={{ width: 140, padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit" }} />
+      <Button size="sm" onClick={handleSave}>저장</Button>
     </div>
   );
 }
@@ -1035,10 +1562,621 @@ function ExportTab({ offerings, expenses, categories, departments, expenseCatego
   );
 }
 
+/* ---------- 기부금 영수증 탭: 새 양식용 CSS ---------- */
+const RECEIPT_CSS = `
+  .receipt-wrapper-r { width: 680px; background: #fff; position: relative; padding: 0; box-shadow: 0 4px 24px rgba(0,0,0,0.08); font-family: 'Noto Sans KR', 'Pretendard', sans-serif; }
+  .receipt-header-r { background: linear-gradient(135deg, #1a2a4a 0%, #2c3e6b 100%); padding: 36px 48px 28px; position: relative; overflow: hidden; }
+  .receipt-header-r::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #c9a96e, #e8d5a3, #c9a96e); }
+  .receipt-header-r::before { content: '✝'; position: absolute; right: 40px; top: 50%; transform: translateY(-50%); font-size: 100px; color: rgba(255,255,255,0.04); font-weight: 300; }
+  .header-top-r { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .doc-type-r { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
+  .serial-number-r { font-size: 12px; color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 4px; }
+  .receipt-title-r { font-size: 32px; font-weight: 700; color: #fff; letter-spacing: 16px; text-align: center; margin-bottom: 4px; }
+  .receipt-subtitle-r { text-align: center; font-size: 12px; color: rgba(255,255,255,0.45); letter-spacing: 2px; }
+  .receipt-body-r { padding: 32px 48px 40px; }
+  .section-r { margin-bottom: 28px; }
+  .section-header-r { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #1a2a4a; }
+  .section-number-r { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #1a2a4a; color: #fff; font-size: 12px; font-weight: 700; border-radius: 50%; flex-shrink: 0; }
+  .section-title-r { font-size: 15px; font-weight: 700; color: #1a2a4a; letter-spacing: 2px; }
+  .info-table-r { width: 100%; border-collapse: collapse; }
+  .info-table-r tr { border-bottom: 1px solid #eee; }
+  .info-table-r tr:last-child { border-bottom: none; }
+  .info-table-r th { width: 120px; padding: 10px 16px; text-align: left; font-size: 13px; font-weight: 500; color: #666; background: #fafbfc; border-right: 1px solid #eee; vertical-align: middle; }
+  .info-table-r td { padding: 10px 16px; font-size: 14px; font-weight: 500; color: #222; vertical-align: middle; }
+  .info-table-r td.amount-r { font-weight: 700; font-size: 16px; color: #1a2a4a; }
+  .monthly-table-r { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  .monthly-table-r thead th { background: #1a2a4a; color: #fff; padding: 8px 12px; font-size: 12px; font-weight: 600; text-align: center; letter-spacing: 1px; }
+  .monthly-table-r thead th:first-child { border-radius: 6px 0 0 0; }
+  .monthly-table-r thead th:last-child { border-radius: 0 6px 0 0; }
+  .monthly-table-r tbody td { padding: 9px 12px; font-size: 13px; text-align: center; border-bottom: 1px solid #f0f0f0; color: #333; }
+  .monthly-table-r tbody tr:nth-child(even) { background: #fafbfc; }
+  .monthly-table-r tbody td.month-label-r { font-weight: 600; color: #1a2a4a; width: 60px; }
+  .monthly-table-r tbody td.month-amount-r { text-align: right; font-weight: 500; }
+  .monthly-table-r tbody td.month-amount-r.has-value-r { color: #1a2a4a; font-weight: 600; }
+  .monthly-table-r tbody td.month-amount-r.zero-r { color: #ccc; }
+  .monthly-table-r tfoot td { padding: 12px; font-size: 15px; font-weight: 700; border-top: 2px solid #1a2a4a; background: #f5f6f8; }
+  .monthly-table-r tfoot td.total-label-r { text-align: center; color: #1a2a4a; letter-spacing: 4px; }
+  .monthly-table-r tfoot td.total-amount-r { text-align: right; color: #1a2a4a; font-size: 17px; }
+  .certification-r { margin-top: 36px; padding-top: 28px; border-top: 1px solid #ddd; text-align: center; }
+  .cert-text-r { font-size: 14px; color: #444; line-height: 1.8; margin-bottom: 28px; }
+  .cert-text-r .law-ref-r { font-size: 11px; color: #999; display: block; margin-bottom: 8px; }
+  .cert-date-r { font-size: 16px; font-weight: 600; color: #1a2a4a; margin-bottom: 32px; letter-spacing: 2px; }
+  .signature-area-r { display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
+  .church-name-sign-r { font-size: 22px; font-weight: 700; color: #1a2a4a; letter-spacing: 6px; }
+  .pastor-sign-r { font-size: 14px; color: #555; letter-spacing: 2px; }
+  .seal-r { position: absolute; right: 60px; top: -10px; width: 72px; height: 72px; border: 3px solid #c62828; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-15deg); opacity: 0.7; }
+  .seal-inner-r { width: 58px; height: 58px; border: 1.5px solid #c62828; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; line-height: 1.1; }
+  .seal-text-r { font-size: 11px; font-weight: 700; color: #c62828; letter-spacing: 1px; }
+  .seal-text-sm-r { font-size: 8px; color: #c62828; letter-spacing: 0.5px; }
+  .receipt-footer-r { background: #fafbfc; padding: 16px 48px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+  .footer-left-r { font-size: 11px; color: #aaa; }
+  .footer-right-r { font-size: 10px; color: #ccc; }
+  .page-number-r { position: absolute; top: 12px; right: 16px; font-size: 10px; color: rgba(255,255,255,0.3); }
+  .usage-row-r { display: flex; gap: 20px; margin-top: 12px; padding: 10px 16px; background: #f9f9f9; border-radius: 6px; font-size: 12px; color: #888; }
+  .usage-row-r .label-r { font-weight: 600; color: #666; }
+  .usage-checkbox-r .box-r { width: 14px; height: 14px; border: 1.5px solid #aaa; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: #1a2a4a; }
+  .usage-checkbox-r .box-r.checked-r { background: #1a2a4a; border-color: #1a2a4a; color: #fff; }
+`;
+
+/* ====== 기부금 영수증 탭 ====== */
+function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offerings: Offering[]; settings?: { churchName?: string; address?: string; pastor?: string } }) {
+  const mob = useIsMobile();
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState(currentYear);
+  const [selectedDonorId, setSelectedDonorId] = useState<string>("");
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchSelected, setBatchSelected] = useState<Set<string>>(new Set());
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchIndex, setBatchIndex] = useState(0);
+  const [batchPdfList, setBatchPdfList] = useState<Donor[]>([]);
+  const [donorSearch, setDonorSearch] = useState("");
+  const pdfRef = useRef<{ addPage: () => void; addImage: (a: string, b: string, c: number, d: number, e: number, f: number) => void; save: (n: string) => void } | null>(null);
+
+  const yearStr = String(year);
+
+  const donorsWithOfferingsInYear = useMemo(() => {
+    const ids = new Set(offerings.filter(o => o.date.startsWith(yearStr)).map(o => o.donorId));
+    return donors.filter(d => ids.has(d.id)).sort((a, b) => a.name.localeCompare(b.name));
+  }, [donors, offerings, yearStr]);
+
+  const serialIndexMap = useMemo(() => {
+    const m = new Map<string, number>();
+    donorsWithOfferingsInYear.forEach((d, i) => m.set(d.id, i + 1));
+    return m;
+  }, [donorsWithOfferingsInYear]);
+
+  const selectedDonor = useMemo(() => donors.find(d => d.id === selectedDonorId), [donors, selectedDonorId]);
+
+  const { total, monthly } = useMemo(() => {
+    if (!selectedDonorId) return { total: 0, monthly: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] };
+    const list = offerings.filter(o => o.donorId === selectedDonorId && o.date.startsWith(yearStr));
+    const m = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    list.forEach(o => {
+      const month = parseInt(o.date.slice(5, 7), 10) - 1;
+      m[month] += o.amount;
+    });
+    return { total: m.reduce((s, v) => s + v, 0), monthly: m };
+  }, [selectedDonorId, offerings, yearStr]);
+
+  const filteredDonorsForSelect = useMemo(() => {
+    if (!donorSearch.trim()) return donors.sort((a, b) => a.name.localeCompare(b.name));
+    const q = donorSearch.toLowerCase();
+    return donors.filter(d => d.name.toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+  }, [donors, donorSearch]);
+
+  const receiptDonor = batchGenerating && batchPdfList[batchIndex] ? batchPdfList[batchIndex] : selectedDonor ?? null;
+  const receiptData = useMemo(() => {
+    if (!receiptDonor) return { total: 0, monthly: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] };
+    const list = offerings.filter(o => o.donorId === receiptDonor.id && o.date.startsWith(yearStr));
+    const m = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    list.forEach(o => { const month = parseInt(o.date.slice(5, 7), 10) - 1; m[month] += o.amount; });
+    return { total: m.reduce((s, v) => s + v, 0), monthly: m };
+  }, [receiptDonor, offerings, yearStr]);
+
+  const serialNumber = receiptDonor ? `${yearStr}-${String(serialIndexMap.get(receiptDonor.id) ?? 0).padStart(3, "0")}` : "";
+
+  const issueDate = useMemo(() => {
+    const t = new Date();
+    return `${t.getFullYear()}년 ${t.getMonth() + 1}월 ${t.getDate()}일`;
+  }, []);
+
+  const handleSaveImage = async () => {
+    if (!receiptDonor) return;
+    try {
+      const { toPng } = await import("html-to-image");
+      const el = document.getElementById("receipt-card");
+      if (!el) return;
+      const dataUrl = await toPng(el, { pixelRatio: 2, backgroundColor: "#ffffff" });
+      const a = document.createElement("a"); a.href = dataUrl; a.download = `기부금영수증_${receiptDonor.name}_${year}.png`; a.click();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const receiptChurchName = (settings?.churchName || "").trim() || "○○교회";
+  const receiptAddress = (settings?.address || "").trim() || "-";
+  const receiptPastor = (settings?.pastor || "").trim() || "○○○ 목사";
+  const receiptChurchNameSpaced = receiptChurchName.split("").join(" ");
+  const receiptPastorSpaced = receiptPastor.replace(/\s/g, " \u00A0");
+  const getLastDay = (y: number, m: number) => new Date(y, m, 0).getDate();
+  const handleShare = async () => {
+    if (!receiptDonor) return;
+    const text = `${receiptChurchName} 기부금 영수증\n${receiptDonor.name} / ${year}년 / ₩${receiptData.total.toLocaleString("ko-KR")}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "기부금 영수증", text });
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") navigator.clipboard?.writeText(text);
+      }
+    } else if (navigator.clipboard) navigator.clipboard.writeText(text);
+  };
+
+  const toggleBatchSelect = (id: string) => {
+    setBatchSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleBatchSelectAll = () => {
+    if (batchSelected.size >= donorsWithOfferingsInYear.length) setBatchSelected(new Set());
+    else setBatchSelected(new Set(donorsWithOfferingsInYear.map(d => d.id)));
+  };
+
+  useEffect(() => {
+    if (!batchGenerating || batchIndex >= batchPdfList.length) {
+      if (batchGenerating && batchPdfList.length > 0 && pdfRef.current) {
+        pdfRef.current.save(`기부금영수증_${year}년_일괄.pdf`);
+        pdfRef.current = null;
+      }
+      setBatchGenerating(false);
+      setBatchIndex(0);
+      setBatchPdfList([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const el = document.getElementById("receipt-card");
+      if (!el) {
+        setBatchIndex(i => i + 1);
+        return;
+      }
+      try {
+        const { toPng } = await import("html-to-image");
+        const { jsPDF } = await import("jspdf");
+        const dataUrl = await toPng(el, { pixelRatio: 2, backgroundColor: "#ffffff" });
+        if (batchIndex === 0) pdfRef.current = new jsPDF();
+        else pdfRef.current!.addPage();
+        pdfRef.current!.addImage(dataUrl, "PNG", 0, 0, 210, 297);
+      } catch (e) {
+        console.error(e);
+      }
+      setBatchIndex(i => i + 1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [batchGenerating, batchIndex, batchPdfList.length, year]);
+
+  const handleBatchPdf = () => {
+    const list = donorsWithOfferingsInYear.filter(d => batchSelected.has(d.id));
+    if (list.length === 0) return;
+    setBatchPdfList(list);
+    setBatchIndex(0);
+    pdfRef.current = null;
+    setBatchGenerating(true);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+        <Select label="연도" options={[currentYear, currentYear - 1, currentYear - 2].map(y => ({ value: String(y), label: `${y}년` }))} value={yearStr} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value)} />
+        <button type="button" onClick={() => setBatchMode(b => !b)} style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${C.border}`, background: batchMode ? C.navy : C.bg, color: batchMode ? "#fff" : C.navy, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+          {batchMode ? "개별 발행" : "일괄 발행"}
+        </button>
+      </div>
+
+      {!batchMode && (
+        <>
+          <Card>
+            <h4 style={{ margin: "0 0 12px", color: C.navy }}>교인 선택</h4>
+            <input type="text" value={donorSearch} onChange={e => setDonorSearch(e.target.value)} placeholder="이름으로 검색..."
+              style={{ width: "100%", maxWidth: 280, padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, marginBottom: 12 }} />
+            <select value={selectedDonorId} onChange={e => setSelectedDonorId(e.target.value)} style={{ width: "100%", maxWidth: 320, padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14 }}>
+              <option value="">선택하세요</option>
+              {filteredDonorsForSelect.map(d => (
+                <option key={d.id} value={d.id}>{d.name} {d.phone ? `(${d.phone})` : ""}</option>
+              ))}
+            </select>
+            {selectedDonor && total > 0 && (
+              <p style={{ margin: "12px 0 0", fontSize: 13, color: C.textMuted }}>{year}년 헌금 총액: ₩{total.toLocaleString("ko-KR")}</p>
+            )}
+          </Card>
+
+          {receiptDonor && (
+            <>
+              <div id="receipt-card" className="receipt-wrapper-r" style={{ margin: "0 auto", boxSizing: "border-box" }}>
+                <style dangerouslySetInnerHTML={{ __html: RECEIPT_CSS }} />
+                <div className="receipt-header-r">
+                  <span className="page-number-r">001/001</span>
+                  <div className="header-top-r">
+                    <span className="doc-type-r">소득세법 시행규칙 [별지 제45호의2서식]</span>
+                    <span className="serial-number-r">No. {serialNumber}</span>
+                  </div>
+                  <div className="receipt-title-r">기 부 금 영 수 증</div>
+                  <div className="receipt-subtitle-r">DONATION RECEIPT</div>
+                </div>
+                <div className="receipt-body-r">
+                  <div className="section-r">
+                    <div className="section-header-r">
+                      <span className="section-number-r">1</span>
+                      <span className="section-title-r">기 부 자</span>
+                    </div>
+                    <table className="info-table-r">
+                      <tbody>
+                        <tr>
+                          <th>성명 (법인명)</th>
+                          <td>{receiptDonor.name}</td>
+                          <th style={{ width: 120 }}>주민등록번호</th>
+                          <td>******-*******</td>
+                        </tr>
+                        <tr>
+                          <th>연락처</th>
+                          <td>{receiptDonor.phone || "-"}</td>
+                          <th>주소</th>
+                          <td>-</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="section-r">
+                    <div className="section-header-r">
+                      <span className="section-number-r">2</span>
+                      <span className="section-title-r">기 부 금 단 체</span>
+                    </div>
+                    <table className="info-table-r">
+                      <tbody>
+                        <tr>
+                          <th>단체명</th>
+                          <td>{receiptChurchName}</td>
+                          <th style={{ width: 120 }}>사업자등록번호</th>
+                          <td>-</td>
+                        </tr>
+                        <tr>
+                          <th>소재지</th>
+                          <td colSpan={3}>{receiptAddress}</td>
+                        </tr>
+                        <tr>
+                          <th>기부금 유형</th>
+                          <td>종교단체기부금</td>
+                          <th style={{ width: 120 }}>코드</th>
+                          <td>41</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="section-r">
+                    <div className="section-header-r">
+                      <span className="section-number-r">3</span>
+                      <span className="section-title-r">기 부 내 용</span>
+                    </div>
+                    <table className="info-table-r" style={{ marginBottom: 8 }}>
+                      <tbody>
+                        <tr>
+                          <th>기부 기간</th>
+                          <td>{year}. 01. 01 ~ {year}. 12. 31</td>
+                          <th style={{ width: 100 }}>기부 총액</th>
+                          <td className="amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="section-r">
+                    <div className="section-header-r">
+                      <span className="section-number-r">4</span>
+                      <span className="section-title-r">월 별 내 역</span>
+                    </div>
+                    <table className="monthly-table-r">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 50 }}>월</th>
+                          <th>연월일</th>
+                          <th style={{ width: 80 }}>구분</th>
+                          <th>품명</th>
+                          <th style={{ width: 140, textAlign: "right" }}>금 액 (원)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
+                          const lastDay = getLastDay(year, m);
+                          const dateStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+                          const amt = receiptData.monthly[m - 1];
+                          return (
+                            <tr key={m}>
+                              <td className="month-label-r">{m}월</td>
+                              <td>{dateStr}</td>
+                              <td>금전</td>
+                              <td>헌금</td>
+                              <td className={`month-amount-r ${amt > 0 ? "has-value-r" : "zero-r"}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan={4} className="total-label-r">합 계</td>
+                          <td className="total-amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                  <div className="usage-row-r">
+                    <span className="label-r">용도 :</span>
+                    <span className="usage-checkbox-r">
+                      <span className="box-r checked-r">✓</span> 세금공제신청용
+                    </span>
+                    <span className="usage-checkbox-r">
+                      <span className="box-r"></span> 기타 (용도의 사용불가)
+                    </span>
+                  </div>
+                  <div className="certification-r">
+                    <div className="cert-text-r">
+                      <span className="law-ref-r">「소득세법」 제34조, 「조세특례제한법」 제76조 · 제88조의4 및 「법인세법」 제24조에 따른 기부금을</span>
+                      위와 같이 기부하였음을 증명하여 주시기 바랍니다.
+                    </div>
+                    <div className="cert-date-r">{issueDate.replace(/년\s*/, " 년  ").replace(/월\s*/, " 월  ").replace(/일$/, " 일")}</div>
+                    <div style={{ textAlign: "right", marginBottom: 32, fontSize: 14, color: "#555" }}>
+                      신청인 &nbsp;&nbsp; <strong style={{ color: "#222", letterSpacing: 4 }}>{receiptDonor.name.split("").join(" ")}</strong> &nbsp;&nbsp; <span style={{ color: "#aaa" }}>(서명 또는 인)</span>
+                    </div>
+                    <div style={{ textAlign: "center", fontSize: 13, color: "#999", marginBottom: 16 }}>위와 같이 기부금을 기부하였음을 증명합니다.</div>
+                    <div className="signature-area-r">
+                      <div className="church-name-sign-r">{receiptChurchNameSpaced}</div>
+                      <div className="pastor-sign-r">담임목사 &nbsp; {receiptPastorSpaced}</div>
+                      <div className="seal-r">
+                        <div className="seal-inner-r">
+                          {receiptChurchName.endsWith("교회") && receiptChurchName.length > 2 ? (
+                            <>
+                              <span className="seal-text-sm-r">{receiptChurchName.slice(0, -2)}</span>
+                              <span className="seal-text-r">교회</span>
+                            </>
+                          ) : (
+                            <span className="seal-text-r">{receiptChurchName || "직인"}</span>
+                          )}
+                          <span className="seal-text-sm-r">직인</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="receipt-footer-r">
+                  <div className="footer-left-r">210mm × 297mm (일반용지 60g/㎡)</div>
+                  <div className="footer-right-r">Powered by 교회매니저</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginTop: 16 }}>
+                <Button onClick={handleSaveImage} variant="accent">이미지 저장</Button>
+                <Button onClick={handlePrint} variant="ghost">PDF 다운로드</Button>
+                <Button onClick={handleShare} variant="soft">카카오톡 공유</Button>
+              </div>
+            </>
+          )}
+          {selectedDonor && total === 0 && <p style={{ color: C.textMuted, fontSize: 14 }}>해당 연도 헌금 내역이 없습니다.</p>}
+        </>
+      )}
+
+      {batchMode && (
+        <>
+          <Card>
+            <h4 style={{ margin: "0 0 12px", color: C.navy }}>해당 연도 헌금 교인 ({donorsWithOfferingsInYear.length}명)</h4>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <input type="checkbox" checked={batchSelected.size === donorsWithOfferingsInYear.length && donorsWithOfferingsInYear.length > 0} onChange={toggleBatchSelectAll} style={{ width: 18, height: 18 }} />
+              <span style={{ fontSize: 13 }}>전체 선택/해제</span>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                <thead>
+                  <tr style={{ background: C.bg }}>
+                    <th style={{ padding: "10px 12px", textAlign: "left" }}></th>
+                    <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: C.navy }}>교인 이름</th>
+                    <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.navy }}>연간 헌금 총액</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {donorsWithOfferingsInYear.map(d => {
+                    const sum = offerings.filter(o => o.donorId === d.id && o.date.startsWith(yearStr)).reduce((s, o) => s + o.amount, 0);
+                    return (
+                      <tr key={d.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
+                        <td style={{ padding: "10px 12px" }}>
+                          <input type="checkbox" checked={batchSelected.has(d.id)} onChange={() => toggleBatchSelect(d.id)} style={{ width: 18, height: 18 }} />
+                        </td>
+                        <td style={{ padding: "10px 12px", fontWeight: 500 }}>{d.name}</td>
+                        <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>₩{sum.toLocaleString("ko-KR")}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {donorsWithOfferingsInYear.length === 0 && <p style={{ padding: 20, color: C.textMuted, textAlign: "center" }}>해당 연도 헌금 기록이 있는 교인이 없습니다.</p>}
+          </Card>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <Button onClick={handleBatchPdf} disabled={batchSelected.size === 0 || batchGenerating} variant="accent">
+              {batchGenerating ? `생성 중 (${batchIndex + 1}/${batchPdfList.length})...` : "선택한 교인 일괄 PDF 생성"}
+            </Button>
+          </div>
+          {batchGenerating && receiptDonor && (
+            <div id="receipt-card" className="receipt-wrapper-r" style={{ position: "absolute", left: -9999, top: 0, margin: 0, boxSizing: "border-box" }}>
+              <style dangerouslySetInnerHTML={{ __html: RECEIPT_CSS }} />
+              <div className="receipt-header-r">
+                <span className="page-number-r">001/001</span>
+                <div className="header-top-r">
+                  <span className="doc-type-r">소득세법 시행규칙 [별지 제45호의2서식]</span>
+                  <span className="serial-number-r">No. {serialNumber}</span>
+                </div>
+                <div className="receipt-title-r">기 부 금 영 수 증</div>
+                <div className="receipt-subtitle-r">DONATION RECEIPT</div>
+              </div>
+              <div className="receipt-body-r">
+                <div className="section-r">
+                  <div className="section-header-r">
+                    <span className="section-number-r">1</span>
+                    <span className="section-title-r">기 부 자</span>
+                  </div>
+                  <table className="info-table-r">
+                    <tbody>
+                      <tr>
+                        <th>성명 (법인명)</th>
+                        <td>{receiptDonor.name}</td>
+                        <th style={{ width: 120 }}>주민등록번호</th>
+                        <td>******-*******</td>
+                      </tr>
+                      <tr>
+                        <th>연락처</th>
+                        <td>{receiptDonor.phone || "-"}</td>
+                        <th>주소</th>
+                        <td>-</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="section-r">
+                  <div className="section-header-r">
+                    <span className="section-number-r">2</span>
+                    <span className="section-title-r">기 부 금 단 체</span>
+                  </div>
+                  <table className="info-table-r">
+                    <tbody>
+                      <tr>
+                        <th>단체명</th>
+                        <td>{receiptChurchName}</td>
+                        <th style={{ width: 120 }}>사업자등록번호</th>
+                        <td>-</td>
+                      </tr>
+                      <tr>
+                        <th>소재지</th>
+                        <td colSpan={3}>{receiptAddress}</td>
+                      </tr>
+                      <tr>
+                        <th>기부금 유형</th>
+                        <td>종교단체기부금</td>
+                        <th style={{ width: 120 }}>코드</th>
+                        <td>41</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="section-r">
+                  <div className="section-header-r">
+                    <span className="section-number-r">3</span>
+                    <span className="section-title-r">기 부 내 용</span>
+                  </div>
+                  <table className="info-table-r" style={{ marginBottom: 8 }}>
+                    <tbody>
+                      <tr>
+                        <th>기부 기간</th>
+                        <td>{year}. 01. 01 ~ {year}. 12. 31</td>
+                        <th style={{ width: 100 }}>기부 총액</th>
+                        <td className="amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div className="section-r">
+                  <div className="section-header-r">
+                    <span className="section-number-r">4</span>
+                    <span className="section-title-r">월 별 내 역</span>
+                  </div>
+                  <table className="monthly-table-r">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 50 }}>월</th>
+                        <th>연월일</th>
+                        <th style={{ width: 80 }}>구분</th>
+                        <th>품명</th>
+                        <th style={{ width: 140, textAlign: "right" }}>금 액 (원)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
+                        const lastDay = getLastDay(year, m);
+                        const dateStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+                        const amt = receiptData.monthly[m - 1];
+                        return (
+                          <tr key={m}>
+                            <td className="month-label-r">{m}월</td>
+                            <td>{dateStr}</td>
+                            <td>금전</td>
+                            <td>헌금</td>
+                            <td className={`month-amount-r ${amt > 0 ? "has-value-r" : "zero-r"}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colSpan={4} className="total-label-r">합 계</td>
+                        <td className="total-amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <div className="usage-row-r">
+                  <span className="label-r">용도 :</span>
+                  <span className="usage-checkbox-r">
+                    <span className="box-r checked-r">✓</span> 세금공제신청용
+                  </span>
+                  <span className="usage-checkbox-r">
+                    <span className="box-r"></span> 기타 (용도의 사용불가)
+                  </span>
+                </div>
+                <div className="certification-r">
+                  <div className="cert-text-r">
+                    <span className="law-ref-r">「소득세법」 제34조, 「조세특례제한법」 제76조 · 제88조의4 및 「법인세법」 제24조에 따른 기부금을</span>
+                    위와 같이 기부하였음을 증명하여 주시기 바랍니다.
+                  </div>
+                  <div className="cert-date-r">{issueDate.replace(/년\s*/, " 년  ").replace(/월\s*/, " 월  ").replace(/일$/, " 일")}</div>
+                  <div style={{ textAlign: "right", marginBottom: 32, fontSize: 14, color: "#555" }}>
+                    신청인 &nbsp;&nbsp; <strong style={{ color: "#222", letterSpacing: 4 }}>{receiptDonor.name.split("").join(" ")}</strong> &nbsp;&nbsp; <span style={{ color: "#aaa" }}>(서명 또는 인)</span>
+                  </div>
+                  <div style={{ textAlign: "center", fontSize: 13, color: "#999", marginBottom: 16 }}>위와 같이 기부금을 기부하였음을 증명합니다.</div>
+                  <div className="signature-area-r">
+                    <div className="church-name-sign-r">{receiptChurchNameSpaced}</div>
+                    <div className="pastor-sign-r">담임목사 &nbsp; {receiptPastorSpaced}</div>
+                    <div className="seal-r">
+                      <div className="seal-inner-r">
+                        {receiptChurchName.endsWith("교회") && receiptChurchName.length > 2 ? (
+                          <>
+                            <span className="seal-text-sm-r">{receiptChurchName.slice(0, -2)}</span>
+                            <span className="seal-text-r">교회</span>
+                          </>
+                        ) : (
+                          <span className="seal-text-r">{receiptChurchName || "직인"}</span>
+                        )}
+                        <span className="seal-text-sm-r">직인</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="receipt-footer-r">
+                <div className="footer-left-r">210mm × 297mm (일반용지 60g/㎡)</div>
+                <div className="footer-right-r">Powered by 교회매니저</div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ============================================================ */
 /* 메인 재정관리 컴포넌트                                         */
 /* ============================================================ */
-export function FinancePage() {
+/** 설정(교회이름, 소재지, 담임목사)은 재정 영수증에 사용. SuperPlanner에서 db.settings 전달 */
+export function FinancePage({ settings }: { settings?: { churchName?: string; address?: string; pastor?: string } }) {
   const mob = useIsMobile();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sampleData] = useState(() => generateSampleData());
@@ -1049,14 +2187,19 @@ export function FinancePage() {
 
   useEffect(() => { if (!mob) setSideOpen(true); else setSideOpen(false); }, [mob]);
 
+  const [budgetByYear, setBudgetByYear] = useState<BudgetByYear>({});
+
   const tabs = [
     { id: "dashboard", label: "대시보드", icon: <Icons.Dashboard /> },
     { id: "offering", label: "헌금 관리", icon: <Icons.Offering /> },
+    { id: "givingStatus", label: "헌금 현황", icon: <Icons.Donor /> },
     { id: "donor", label: "헌금자 관리", icon: <Icons.Donor /> },
     { id: "expense", label: "지출 관리", icon: <Icons.Expense /> },
     { id: "report", label: "보고서", icon: <Icons.Report /> },
+    { id: "budgetActual", label: "예결산", icon: <Icons.Budget /> },
     { id: "budget", label: "예산 계획", icon: <Icons.Budget /> },
     { id: "export", label: "엑셀 내보내기", icon: <Icons.Export /> },
+    { id: "receipt", label: "영수증", icon: <Icons.Receipt /> },
   ];
 
   const handleNav = (id: string) => { setActiveTab(id); if (mob) setSideOpen(false); };
@@ -1135,11 +2278,14 @@ export function FinancePage() {
         <div style={{ padding: mob ? 12 : 24 }}>
           {activeTab === "dashboard" && <DashboardTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} departments={DEFAULT_DEPARTMENTS} />}
           {activeTab === "offering" && <OfferingTab offerings={offerings} setOfferings={setOfferings} donors={donors} categories={DEFAULT_CATEGORIES} />}
+          {activeTab === "givingStatus" && <GivingStatusTab donors={donors} offerings={offerings} categories={DEFAULT_CATEGORIES} />}
           {activeTab === "donor" && <DonorTab donors={donors} setDonors={setDonors} offerings={offerings} />}
           {activeTab === "expense" && <ExpenseTab expenses={expenses} setExpenses={setExpenses} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} />}
           {activeTab === "report" && <ReportTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} />}
+          {activeTab === "budgetActual" && <BudgetActualTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} expenseCategories={EXPENSE_CATEGORIES} budgetByYear={budgetByYear} setBudgetByYear={setBudgetByYear} />}
           {activeTab === "budget" && <BudgetTab departments={DEFAULT_DEPARTMENTS} expenses={expenses} />}
           {activeTab === "export" && <ExportTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} donors={donors} />}
+          {activeTab === "receipt" && <ReceiptTab donors={donors} offerings={offerings} settings={settings} />}
         </div>
       </main>
     </div>

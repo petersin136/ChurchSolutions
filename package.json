@@ -3,16 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^4.1.0",
     "next": "^14.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "recharts": "^3.7.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

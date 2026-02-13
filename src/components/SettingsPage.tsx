@@ -156,6 +156,38 @@ export function SettingsPage({
             <option value="9">9월</option>
           </select>
         </div>
+        <div className="fg">
+          <label className="fl">소재지 (기부금 영수증용)</label>
+          <input
+            type="text"
+            className="fi"
+            placeholder="서울시 강남구 ○○로 123"
+            defaultValue={db.settings.address ?? ""}
+            onInput={(e) => {
+              setDb((prev) => ({
+                ...prev,
+                settings: { ...prev.settings, address: (e.target as HTMLInputElement).value },
+              }));
+              save();
+            }}
+          />
+        </div>
+        <div className="fg">
+          <label className="fl">담임목사 (기부금 영수증용)</label>
+          <input
+            type="text"
+            className="fi"
+            placeholder="홍길동 목사"
+            defaultValue={db.settings.pastor ?? ""}
+            onInput={(e) => {
+              setDb((prev) => ({
+                ...prev,
+                settings: { ...prev.settings, pastor: (e.target as HTMLInputElement).value },
+              }));
+              save();
+            }}
+          />
+        </div>
       </div>
 
       <div
