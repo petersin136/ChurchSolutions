@@ -694,7 +694,7 @@ function SettingsSub({ db, setDb, persist, toast, mob }: { db: PDB; setDb: (fn: 
 type SubPage = "dashboard" | "weekly" | "sermon" | "visit" | "checklist" | "counsel" | "report" | "settings";
 type TFn = (m: string, t?: string) => void;
 
-const NAV: { id: SubPage; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>; label: string; section?: string }[] = [
+const NAV: { id: SubPage; Icon: React.ComponentType<any>; label: string; section?: string }[] = [
   { id: "dashboard", Icon: LayoutDashboard, label: "대시보드", section: "플래너" },
   { id: "weekly", Icon: Calendar, label: "주간 일정" },
   { id: "sermon", Icon: BookOpen, label: "설교 준비" },

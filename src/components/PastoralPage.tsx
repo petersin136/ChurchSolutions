@@ -984,8 +984,10 @@ function getPrayerAnsweredKey(n: Note & { mbrId: string; isProfilePrayer?: boole
 /* ====== Notes ====== */
 function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; openDetail: (id: string) => void; openNoteModal: (id?: string) => void }) {
   const mob = useIsMobile();
+  const listRefNotes = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [typeF, setTypeF] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const answeredSet = useMemo(() => new Set(db.answeredPrayerKeys || []), [db.answeredPrayerKeys]);
 
@@ -1033,23 +1035,7 @@ function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; s
     return r.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
   }, [allNotes, search, typeF]);
 
-  /** 월별·주별 그룹: { "2026-02": { label: "2026년 2월", weeks: { 1: [...], 2: [...] } } } */
-  const groupedByMonthWeek = useMemo(() => {
-    const map: Record<string, { label: string; weeks: Record<number, typeof filtered> }> = {};
-    filtered.forEach(n => {
-      const d = n.date || "";
-      const yearMonth = d.slice(0, 7);
-      const day = parseInt(d.slice(8, 10), 10) || 1;
-      const weekNum = Math.min(5, Math.ceil(day / 7));
-      if (!map[yearMonth]) {
-        const [y, m] = yearMonth.split("-");
-        map[yearMonth] = { label: `${y}년 ${parseInt(m, 10)}월`, weeks: { 1: [], 2: [], 3: [], 4: [], 5: [] } };
-      }
-      if (!map[yearMonth].weeks[weekNum]) map[yearMonth].weeks[weekNum] = [];
-      map[yearMonth].weeks[weekNum].push(n);
-    });
-    return map;
-  }, [filtered]);
+  const paginatedNotes = useMemo(() => filtered.slice((currentPage - 1) * 10, currentPage * 10), [filtered, currentPage]);
 
   const toggleAnswered = (key: string) => {
     const list = db.answeredPrayerKeys || [];
@@ -1063,54 +1049,37 @@ function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; s
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
           <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted }}><Icons.Search /></div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름, 기도제목 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none" }} />
+          <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="이름, 기도제목 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none" }} />
         </div>
-        <select value={typeF} onChange={e => setTypeF(e.target.value)} style={{ height: mob ? 36 : 40, padding: "0 12px", fontFamily: "inherit", fontSize: mob ? 12 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+        <select value={typeF} onChange={e => { setTypeF(e.target.value); setCurrentPage(1); }} style={{ height: mob ? 36 : 40, padding: "0 12px", fontFamily: "inherit", fontSize: mob ? 12 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
           <option value="all">전체 유형</option>
           <option value="memo">📝 메모</option><option value="prayer">🙏 기도</option>
           <option value="visit">🏠 심방</option><option value="event">🎉 경조</option>
         </select>
         <Btn variant="accent" size="sm" onClick={() => openNoteModal()}>+ 기록</Btn>
       </div>
-      <div>
+      <div ref={listRefNotes}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: 48, color: C.textMuted }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>📝</div><div style={{ fontSize: 17, fontWeight: 600 }}>기록이 없습니다</div></div>
         ) : (
-          Object.keys(groupedByMonthWeek)
-            .sort((a, b) => b.localeCompare(a))
-            .map(yearMonth => {
-              const { label, weeks } = groupedByMonthWeek[yearMonth];
-              const monthNum = parseInt(yearMonth.slice(5, 7), 10);
+          <>
+            {paginatedNotes.map((n, i) => {
+              const key = getPrayerAnsweredKey(n);
+              const answered = n.type === "prayer" && answeredSet.has(key);
               return (
-                <div key={yearMonth} style={{ marginBottom: 28 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: C.navy, marginBottom: 14, paddingBottom: 8, borderBottom: `2px solid ${C.border}` }}>{label}</h3>
-                  {[1, 2, 3, 4, 5].map(w => {
-                    const items = weeks[w] || [];
-                    if (items.length === 0) return null;
-                    return (
-                      <div key={w} style={{ marginBottom: 20 }}>
-                        <h4 style={{ fontSize: 14, fontWeight: 600, color: C.textMuted, marginBottom: 10 }}>{monthNum}월 {w}주차</h4>
-                        {items.slice(0, 50).map((n, i) => {
-                          const key = getPrayerAnsweredKey(n);
-                          const answered = n.type === "prayer" && answeredSet.has(key);
-                          return (
-                            <NoteCard
-                              key={`${n.mbrId}-${n.date}-${n.type}-${n.createdAt}-${i}`}
-                              n={n}
-                              mbrName={n.mbrName}
-                              mbrDept={n.mbrDept}
-                              onClick={() => openDetail(n.mbrId)}
-                              answered={n.type === "prayer" ? answered : undefined}
-                              onToggleAnswered={n.type === "prayer" ? () => toggleAnswered(key) : undefined}
-                            />
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
+                <NoteCard
+                  key={`${n.mbrId}-${n.date}-${n.type}-${n.createdAt}-${i}`}
+                  n={n}
+                  mbrName={n.mbrName}
+                  mbrDept={n.mbrDept}
+                  onClick={() => openDetail(n.mbrId)}
+                  answered={n.type === "prayer" ? answered : undefined}
+                  onToggleAnswered={n.type === "prayer" ? () => toggleAnswered(key) : undefined}
+                />
               );
-            })
+            })}
+            <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRefNotes.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+          </>
         )}
       </div>
     </div>
@@ -1498,7 +1467,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
    ============================================================ */
 type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "reports" | "settings";
 
-const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>; label: string }[] = [
+const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dashboard", Icon: LayoutDashboard, label: "대시보드" },
   { id: "members", Icon: Users, label: "성도 관리" },
   { id: "attendance", Icon: CalendarCheck, label: "출석부" },

@@ -2365,7 +2365,7 @@ export function FinancePage({ settings }: { settings?: { churchName?: string; ad
 
   const [budgetByYear, setBudgetByYear] = useState<BudgetByYear>({});
 
-  const tabs: { id: string; label: string; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }> }[] = [
+  const tabs: { id: string; label: string; Icon: React.ComponentType<any> }[] = [
     { id: "dashboard", label: "대시보드", Icon: LayoutDashboard },
     { id: "offering", label: "헌금 관리", Icon: Wallet },
     { id: "givingStatus", label: "헌금 현황", Icon: Users },

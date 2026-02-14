@@ -1295,7 +1295,7 @@ function SettingsSub({ db, setDb, persist, toast }: { db: VCDB; setDb: React.Dis
    ============================================================ */
 type SubPage = "dash" | "visits" | "counsels" | "followup" | "prayers" | "members" | "timeline" | "report" | "handover" | "settings";
 
-const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>; label: string }[] = [
+const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dash", Icon: LayoutDashboard, label: "대시보드" },
   { id: "visits", Icon: Home, label: "심방 기록" },
   { id: "counsels", Icon: MessageCircle, label: "상담 기록" },

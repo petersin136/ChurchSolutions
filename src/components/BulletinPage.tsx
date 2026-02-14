@@ -373,7 +373,7 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
   settings: { title: "설정", desc: "교회 기본 정보" },
 };
 
-const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>; label: string }[] = [
+const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dash", Icon: LayoutDashboard, label: "대시보드" },
   { id: "edit", Icon: Pencil, label: "주보 편집" },
   { id: "history", Icon: FolderOpen, label: "지난 주보" },
