@@ -1318,7 +1318,7 @@ function BudgetActualTab({
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" height={60} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 10000).toFixed(0)}만`} />
-                    <Tooltip formatter={(v: number | undefined) => (v != null ? `₩${fmt(v)}` : "")} />
+                    <Tooltip formatter={(value) => `₩${fmt(Number(value))}`} />
                     <Legend />
                     <Bar dataKey="예산" fill="#9ca3af" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="실적" radius={[4, 4, 0, 0]}>
