@@ -967,8 +967,8 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
     <Modal open={open} onClose={onClose} title="월별 결산 보고서" width={560}>
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <Select label="년" options={[year, year - 1, year - 2].map(y => ({ value: String(y), label: `${y}년` }))} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(Number(e.target.value))} />
-          <Select label="월" options={MONTHS.map((_, i) => ({ value: String(i + 1), label: `${i + 1}월` }))} value={String(month)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMonth(Number(e.target.value))} />
+          <Select label="년" options={[{ value: year.toString(), label: `${year}년` }, { value: (year - 1).toString(), label: `${year - 1}년` }, { value: (year - 2).toString(), label: `${year - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(Number(e.target.value))} />
+          <Select label="월" options={MONTHS.map((_, i) => ({ value: (i + 1).toString(), label: `${i + 1}월` }))} value={String(month)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMonth(Number(e.target.value))} />
         </div>
         <div id="settlement-report-card" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -1254,7 +1254,7 @@ function BudgetActualTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-        <Select label="연도" options={[currentYear, currentYear - 1, currentYear - 2].map(y => ({ value: String(y), label: `${y}년` }))} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(Number(e.target.value))} />
+        <Select label="연도" options={[{ value: currentYear.toString(), label: `${currentYear}년` }, { value: (currentYear - 1).toString(), label: `${currentYear - 1}년` }, { value: (currentYear - 2).toString(), label: `${currentYear - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(Number(e.target.value))} />
         <div style={{ display: "flex", gap: 4, background: C.bg, borderRadius: 10, padding: 4 }}>
           {(["input", "compare"] as const).map(m => (
             <button key={m} type="button" onClick={() => setMode(m)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: mode === m ? C.navy : "transparent", color: mode === m ? "#fff" : C.textMuted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
@@ -1905,7 +1905,7 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-        <Select label="연도" options={[currentYear, currentYear - 1, currentYear - 2].map(y => ({ value: String(y), label: `${y}년` }))} value={yearStr} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value)} />
+        <Select label="연도" options={[{ value: currentYear.toString(), label: `${currentYear}년` }, { value: (currentYear - 1).toString(), label: `${currentYear - 1}년` }, { value: (currentYear - 2).toString(), label: `${currentYear - 2}년` }]} value={yearStr} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value)} />
         <button type="button" onClick={() => setBatchMode(b => !b)} style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${C.border}`, background: batchMode ? C.navy : C.bg, color: batchMode ? "#fff" : C.navy, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
           {batchMode ? "개별 발행" : "일괄 발행"}
         </button>
