@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { LayoutDashboard, Calendar, BookOpen, Home, CheckSquare, MessageCircle, TrendingUp, Settings, ClipboardList } from "lucide-react";
+import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 /* ============================================================
    교역자 슈퍼플래너 — 플래너
@@ -897,7 +898,7 @@ export function PlannerPage() {
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <FormInput label="날짜" type="date" value={fEvDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFEvDate(e.target.value)} />
+          <div style={{ marginBottom: 16 }}><CalendarDropdown label="날짜" value={fEvDate} onChange={setFEvDate} /></div>
           <FormInput label="시작 시간" type="time" value={fEvTime} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFEvTime(e.target.value)} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -913,7 +914,7 @@ export function PlannerPage() {
       </>}>
         <FormInput label="설교 제목" value={fSmTitle} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFSmTitle(e.target.value)} placeholder="설교 제목" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <FormInput label="설교 날짜" type="date" value={fSmDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFSmDate(e.target.value)} />
+          <div style={{ marginBottom: 16 }}><CalendarDropdown label="설교 날짜" value={fSmDate} onChange={setFSmDate} /></div>
           <FormSelect label="준비 상태" value={fSmStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFSmStatus(e.target.value)} options={Object.entries(SERMON_ST).map(([k, v]) => ({ value: k, label: v.label }))} />
         </div>
         <FormInput label="본문" value={fSmPassage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFSmPassage(e.target.value)} placeholder="예: 마태복음 5:1-12" />
@@ -933,7 +934,7 @@ export function PlannerPage() {
         <FormInput label="성도 이름" value={fViName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFViName(e.target.value)} placeholder="이름" />
         <FormInput label="심방 사유" value={fViReason} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFViReason(e.target.value)} placeholder="예: 수술 후 회복 심방" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <FormInput label="날짜" type="date" value={fViDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFViDate(e.target.value)} />
+          <div style={{ marginBottom: 16 }}><CalendarDropdown label="날짜" value={fViDate} onChange={setFViDate} /></div>
           <FormInput label="시간" type="time" value={fViTime} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFViTime(e.target.value)} />
         </div>
         <FormInput label="주소" value={fViAddr} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFViAddr(e.target.value)} placeholder="방문 주소" />
@@ -960,11 +961,11 @@ export function PlannerPage() {
       </>}>
         <FormInput label="상담자 이름" value={fCoName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFCoName(e.target.value)} placeholder="이름" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <FormInput label="날짜" type="date" value={fCoDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFCoDate(e.target.value)} />
+          <div style={{ marginBottom: 16 }}><CalendarDropdown label="날짜" value={fCoDate} onChange={setFCoDate} /></div>
           <FormSelect label="유형" value={fCoType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFCoType(e.target.value)} options={["가정","신앙","진로","건강","재정","기타"].map(t => ({ value: t, label: t }))} />
         </div>
         <FormTextarea label="상담 요약" value={fCoSumm} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFCoSumm(e.target.value)} placeholder="상담 내용 요약" style={{ minHeight: 120 }} />
-        <FormInput label="재상담 일정" type="date" value={fCoFollow} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFCoFollow(e.target.value)} />
+        <div style={{ marginBottom: 16 }}><CalendarDropdown label="재상담 일정" value={fCoFollow} onChange={setFCoFollow} /></div>
       </Modal>
 
       <Modal mob={mob} open={showQuickAdd} onClose={() => setShowQuickAdd(false)} title="빠른 등록">

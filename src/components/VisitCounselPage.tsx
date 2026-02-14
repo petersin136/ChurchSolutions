@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, 
 import type { DB } from "@/types/db";
 import { LayoutDashboard, Home, MessageCircle, Bell, Heart, User, ScrollText, TrendingUp, ClipboardList, Settings } from "lucide-react";
 import { Pagination } from "@/components/common/Pagination";
+import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -622,7 +623,7 @@ function MainDBVisitList({
             <Btn onClick={saveNewVisit}>저장</Btn>
           </>
         }>
-          <FormField label="날짜"><FInput type="date" value={addDate} onChange={setAddDate} /></FormField>
+          <FormField label="날짜"><CalendarDropdown value={addDate} onChange={setAddDate} /></FormField>
           <FormField label="성도">
             <FSelect value={addMemberId} onChange={setAddMemberId} style={{ maxHeight: 200 }}>
               <option value="">선택</option>
@@ -1592,7 +1593,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           </div>
         </FormField>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
-          <FormField label="날짜"><FInput type="date" value={vDate} onChange={setVDate} /></FormField>
+          <FormField label="날짜"><CalendarDropdown value={vDate} onChange={setVDate} /></FormField>
           <FormField label="시간"><FInput type="time" value={vTime} onChange={setVTime} /></FormField>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
@@ -1604,7 +1605,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         <hr style={{ margin: "12px 0", border: "none", borderTop: `1px solid ${C.borderLight}` }} />
         <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12 }}>🔔 후속 조치</div>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
-          <FormField label="후속 조치 일자"><FInput type="date" value={vFUDate} onChange={setVFUDate} /><div style={{ fontSize: 12, color: C.textFaint, marginTop: 4 }}>비워두면 후속 조치 없음</div></FormField>
+          <FormField label="후속 조치 일자"><CalendarDropdown value={vFUDate} onChange={setVFUDate} /><div style={{ fontSize: 12, color: C.textFaint, marginTop: 4 }}>비워두면 후속 조치 없음</div></FormField>
           <FormField label="조치 내용"><FInput value={vFUNote} onChange={setVFUNote} placeholder="예: 재방문, 연락 확인 등" /></FormField>
         </div>
         {editVisitId && vFUDate && <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 8 }}><input type="checkbox" checked={vFUDone} onChange={e => setVFUDone(e.target.checked)} /><span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>후속 조치 완료</span></label>}
@@ -1628,14 +1629,14 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           </div>
         </FormField>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
-          <FormField label="상담 날짜"><FInput type="date" value={cDate} onChange={setCDate} /></FormField>
+          <FormField label="상담 날짜"><CalendarDropdown value={cDate} onChange={setCDate} /></FormField>
           <FormField label="비공개 설정"><label style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", cursor: "pointer" }}><input type="checkbox" checked={cConf} onChange={e => setCConf(e.target.checked)} /><span style={{ fontSize: 13 }}>🔒 민감한 상담 (비공개)</span></label></FormField>
         </div>
         <FormField label="상담 내용"><FTextarea value={cSummary} onChange={setCSummary} placeholder={"상담 내용을 상세히 기록하세요\n\n- 상담 배경\n- 주요 논의 내용\n- 조언/권면 사항"} style={{ minHeight: 120 }} /></FormField>
         <hr style={{ margin: "12px 0", border: "none", borderTop: `1px solid ${C.borderLight}` }} />
         <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12 }}>🔔 후속 조치 / 재상담</div>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
-          <FormField label="재상담 / 후속 일자"><FInput type="date" value={cFUDate} onChange={setCFUDate} /><div style={{ fontSize: 12, color: C.textFaint, marginTop: 4 }}>비워두면 재상담 없음</div></FormField>
+          <FormField label="재상담 / 후속 일자"><CalendarDropdown value={cFUDate} onChange={setCFUDate} /><div style={{ fontSize: 12, color: C.textFaint, marginTop: 4 }}>비워두면 재상담 없음</div></FormField>
           <FormField label="조치 내용"><FInput value={cFUNote} onChange={setCFUNote} placeholder="예: 2차 상담, 전문 상담 연결 등" /></FormField>
         </div>
         {editCounselId && cFUDate && <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 8 }}><input type="checkbox" checked={cFUDone} onChange={e => setCFUDone(e.target.checked)} /><span style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>후속 조치 완료</span></label>}
@@ -1714,7 +1715,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         <FormField label="성도 선택"><FSelect value={pMember} onChange={setPMember}><option value="">-- 선택 --</option>{db.members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect></FormField>
         <FormField label="기도제목"><FTextarea value={pText} onChange={setPText} placeholder="기도제목을 입력하세요" style={{ minHeight: 80 }} /></FormField>
         <FormField label="분류"><FSelect value={pCategory} onChange={v => setPCategory(v as PrayerCategory)}>{Object.entries(PRAYER_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FSelect></FormField>
-        <FormField label="날짜"><FInput type="date" value={pDate} onChange={setPDate} /></FormField>
+        <FormField label="날짜"><CalendarDropdown value={pDate} onChange={setPDate} /></FormField>
       </Modal>
 
       {/* Memo Modal */}
@@ -1727,7 +1728,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         <FormField label="성도">{detailMemberId ? <div style={{ padding: "10px 14px", background: C.bg, borderRadius: 8, fontSize: 14 }}>{getMember(detailMemberId).name}</div> : <FSelect value={mMemberId} onChange={setMMemberId}><option value="">-- 선택 --</option>{db.members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect>}</FormField>
         <FormField label="메모 내용"><FTextarea value={mText} onChange={setMText} placeholder="행정 메모, 구역 배정, 멘토 연결 등" style={{ minHeight: 100 }} /></FormField>
         <FormField label="분류"><FSelect value={mCategory} onChange={v => setMCategory(v as MemoCategory)}>{Object.entries(MEMO_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FSelect></FormField>
-        <FormField label="날짜"><FInput type="date" value={mDate} onChange={setMDate} /></FormField>
+        <FormField label="날짜"><CalendarDropdown value={mDate} onChange={setMDate} /></FormField>
       </Modal>
 
       {/* Toasts */}

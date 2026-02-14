@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
-import type { DB, Member, Note, AttStatus } from "@/types/db";
+import type { DB, Member, Note, AttStatus, NewFamilyProgram } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum } from "@/lib/store";
 import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church } from "lucide-react";
 import { Pagination } from "@/components/common/Pagination";
+import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -133,74 +134,67 @@ function getDaysInMonth(year: number, month: number): number {
 const WHEEL_ITEM_HEIGHT = 44;
 const WHEEL_VISIBLE_COUNT = 5;
 
-const DRAG_THRESHOLD_PX = 8;
-
 function WheelColumn({ items, selected, onChange, format }: { items: number[]; selected: number; onChange: (value: number) => void; format: (n: number) => string }) {
-  const startYRef = useRef(0);
-  const committedRef = useRef(false);
-  const [offsetY, setOffsetY] = useState(0);
-  const [dragging, setDragging] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const skipScrollSyncRef = useRef(false);
   const selectedIndex = Math.max(0, Math.min(items.length - 1, items.indexOf(selected)));
-  const baseTranslateY = -selectedIndex * WHEEL_ITEM_HEIGHT;
 
-  const handleStart = useCallback((clientY: number) => {
-    startYRef.current = clientY;
-    committedRef.current = false;
-  }, []);
+  // 선택값이 바뀌면 스크롤 위치 맞추기 (예: 월 바꿀 때 일 컬럼)
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || skipScrollSyncRef.current) return;
+    el.scrollTop = selectedIndex * WHEEL_ITEM_HEIGHT;
+  }, [selectedIndex, items.length]);
 
-  const handleMove = useCallback((clientY: number) => {
-    setOffsetY(clientY - startYRef.current);
-  }, []);
-
-  const handleEnd = useCallback(() => {
-    if (committedRef.current) {
-      const movedItems = Math.round(offsetY / WHEEL_ITEM_HEIGHT);
-      let newIndex = selectedIndex - movedItems;
-      newIndex = Math.max(0, Math.min(items.length - 1, newIndex));
-      onChange(items[newIndex] ?? selected);
-      setOffsetY(0);
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const index = Math.round(el.scrollTop / WHEEL_ITEM_HEIGHT);
+    const clamped = Math.max(0, Math.min(items.length - 1, index));
+    const value = items[clamped];
+    if (value !== undefined && value !== selected) {
+      skipScrollSyncRef.current = true;
+      onChange(value);
+      setTimeout(() => { skipScrollSyncRef.current = false; }, 50);
     }
-    committedRef.current = false;
-    setDragging(false);
-  }, [offsetY, selectedIndex, items, selected, onChange]);
-
-  const listTranslateY = baseTranslateY + offsetY + WHEEL_ITEM_HEIGHT * 2;
+  }, [items, selected, onChange]);
 
   return (
-    <div
-      style={{
-        width: "33.33%",
-        height: WHEEL_ITEM_HEIGHT * WHEEL_VISIBLE_COUNT,
-        overflow: "hidden",
-        position: "relative",
-        userSelect: "none",
-        cursor: "grab",
-      }}
-      onTouchStart={(e) => handleStart(e.touches[0].clientY)}
-      onTouchMove={(e) => {
-        const clientY = e.touches[0].clientY;
-        if (!committedRef.current) {
-          if (Math.abs(clientY - startYRef.current) > DRAG_THRESHOLD_PX) {
-            committedRef.current = true;
-            setDragging(true);
-            e.preventDefault();
-            handleMove(clientY);
-          }
-          return;
-        }
-        e.preventDefault();
-        handleMove(clientY);
-      }}
-      onTouchEnd={handleEnd}
-      onMouseDown={(e) => {
-        handleStart(e.clientY);
-        committedRef.current = true;
-        setDragging(true);
-      }}
-      onMouseMove={(e) => dragging && handleMove(e.clientY)}
-      onMouseUp={handleEnd}
-      onMouseLeave={() => dragging && handleEnd()}
-    >
+    <div style={{ width: "33.33%", height: WHEEL_ITEM_HEIGHT * WHEEL_VISIBLE_COUNT, position: "relative" }}>
+      <div
+        ref={scrollRef}
+        className="wheel-column-scroll"
+        style={{
+          height: "100%",
+          overflowY: "auto",
+          overflowX: "hidden",
+          scrollSnapType: "y mandatory",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+        onScroll={handleScroll}
+      >
+        <div style={{ height: WHEEL_ITEM_HEIGHT * 2 }} />
+        {items.map((item) => (
+          <div
+            key={item}
+            style={{
+              height: WHEEL_ITEM_HEIGHT,
+              scrollSnapAlign: "center",
+              scrollSnapStop: "always",
+              lineHeight: `${WHEEL_ITEM_HEIGHT}px`,
+              textAlign: "center",
+              fontSize: item === selected ? 20 : 16,
+              fontWeight: item === selected ? 700 : 400,
+              color: item === selected ? "#111" : "#9ca3af",
+            }}
+          >
+            {format(item)}
+          </div>
+        ))}
+        <div style={{ height: WHEEL_ITEM_HEIGHT * 2 }} />
+      </div>
       <div
         style={{
           position: "absolute",
@@ -228,29 +222,6 @@ function WheelColumn({ items, selected, onChange, format }: { items: number[]; s
           zIndex: 2,
         }}
       />
-      <div
-        style={{
-          transform: `translateY(${listTranslateY}px)`,
-          transition: dragging ? "none" : "transform 0.3s ease-out",
-        }}
-      >
-        {items.map((item, i) => (
-          <div
-            key={item}
-            style={{
-              height: WHEEL_ITEM_HEIGHT,
-              lineHeight: `${WHEEL_ITEM_HEIGHT}px`,
-              textAlign: "center",
-              fontSize: item === selected ? 20 : 16,
-              fontWeight: item === selected ? 700 : 400,
-              color: item === selected ? "#111" : "#bbb",
-              transition: "all 0.2s",
-            }}
-          >
-            {format(item)}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -663,7 +634,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const [search, setSearch] = useState("");
   const [deptF, setDeptF] = useState("all");
   const [statusF, setStatusF] = useState("all");
-  const [viewMode, setViewMode] = useState<"list" | "group">("group");
+  const [viewMode, setViewMode] = useState<"list" | "group">("list");
   const [selectedMokjang, setSelectedMokjang] = useState<string | null>(null);
   const [pageGroup, setPageGroup] = useState(1);
   const [pageList, setPageList] = useState(1);
@@ -752,19 +723,10 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         )}
       </div>
 
-      {/* ─── 뷰 토글 (목록 먼저, 목장별 뒤) ─── */}
-      <div style={{ display: "flex", gap: 4, background: C.bg, borderRadius: 10, padding: 3, width: "fit-content" }}>
-        {([["list", "📋 목록"], ["group", "🏠 목장별"]] as const).map(([v, label]) => (
-          <button key={v} onClick={() => { setViewMode(v as "list" | "group"); setSelectedMokjang(null); if (v === "list") setPageList(1); }} style={{
-            padding: mob ? "6px 14px" : "7px 18px", borderRadius: 8, border: "none",
-            fontSize: mob ? 12 : 13, fontWeight: 600, fontFamily: "inherit",
-            background: viewMode === v ? C.card : "transparent",
-            color: viewMode === v ? C.navy : C.textMuted,
-            cursor: "pointer",
-            boxShadow: viewMode === v ? "0 1px 4px rgba(0,0,0,0.06)" : "none",
-            transition: "all 0.15s",
-          }}>{label}</button>
-        ))}
+      {/* ─── 뷰 토글 (전체 목록 / 목장별 — 출석부와 동일 스타일) ─── */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        <button type="button" onClick={() => { setViewMode("list"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "list" ? C.navy : C.bg, color: viewMode === "list" ? "#fff" : C.text, cursor: "pointer" }}>📋 전체 목록</button>
+        <button type="button" onClick={() => { setViewMode("group"); setSelectedMokjang(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "group" ? C.navy : C.bg, color: viewMode === "group" ? "#fff" : C.text, cursor: "pointer" }}>🏠 목장별</button>
       </div>
 
       {/* ─── 목장별 뷰: 목장 이름만 진열 → 클릭 시 목장원 표시 (10명 단위 페이지) ─── */}
@@ -1033,8 +995,8 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
       </Card>
 
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
-        <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, background: viewModeAtt === "list" ? C.navy : C.bg, color: viewModeAtt === "list" ? "#fff" : C.text, cursor: "pointer" }}>📋 전체 목록</button>
-        <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, background: viewModeAtt === "group" ? C.navy : C.bg, color: viewModeAtt === "group" ? "#fff" : C.text, cursor: "pointer" }}>🏠 목장별</button>
+        <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "list" ? C.navy : C.bg, color: viewModeAtt === "list" ? "#fff" : C.text, cursor: "pointer" }}>📋 전체 목록</button>
+        <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "group" ? C.navy : C.bg, color: viewModeAtt === "group" ? "#fff" : C.text, cursor: "pointer" }}>🏠 목장별</button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fit, minmax(180px, 1fr))", gap: mob ? 10 : 16 }}>
@@ -1285,63 +1247,331 @@ function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; s
 }
 
 /* ====== New Family ====== */
-function NewFamilySub({ db, currentWeek, openDetail }: { db: DB; currentWeek: number; openDetail: (id: string) => void }) {
+const VISIT_PATH_LABEL: Record<string, string> = { 지인소개: "지인소개", 전도: "전도", 인터넷검색: "인터넷검색", 자진방문: "자진방문", 기타: "기타" };
+
+const WEEK_CONFIG = [
+  { title: "1주차 - 환영 & 등록", desc: "환영 예배 참석, 새가족 등록카드 작성, 환영 선물 전달, 섬김이 배정", checks: ["새가족 등록카드 작성 완료", "환영 선물 전달", "섬김이 배정 완료", "기념 사진 촬영"] },
+  { title: "2주차 - 교회 안내 & 교제", desc: "교회 시설 안내, 예배 순서 안내, 기존 성도 3명 이상 소개, 식사 교제", checks: ["교회 시설 안내", "예배 순서 및 교회 생활 안내", "기존 성도 소개 (3명 이상)", "식사 교제"] },
+  { title: "3주차 - 양육 & 관계 형성", desc: "신앙 이야기 나눔, 기도 제목 공유, 소그룹/셀 참여 안내", checks: ["신앙 간증 나눔", "기도 제목 공유", "소그룹/셀 소개", "주중 연락 (전화/문자)"] },
+  { title: "4주차 - 수료 & 정착", desc: "정착 수료 확인, 구역/셀 배정, 수료 감사 기도, 교적부 정식 등록", checks: ["수료 확인", "구역/셀 배정", "수료 기념 기도", "교적부 정식 등록"] },
+];
+const MENTOR_ROLES = ["집사", "안수집사", "권사", "장로"];
+
+function getProgramWeekFromStart(startDate: string): number {
+  const start = new Date(startDate).getTime();
+  const now = Date.now();
+  const days = Math.floor((now - start) / (24 * 60 * 60 * 1000));
+  return Math.min(4, Math.max(1, Math.floor(days / 7) + 1));
+}
+
+function isProgramNeedAttention(program: NewFamilyProgram): boolean {
+  const week = getProgramWeekFromStart(program.program_start_date);
+  if (program.status !== "진행중") return false;
+  if (week >= 2 && !program.week1_completed) return true;
+  if (week >= 3 && !program.week2_completed) return true;
+  if (week >= 4 && !program.week3_completed) return true;
+  return false;
+}
+
+function NewFamilySub({ db, setDb, openProgramDetail, openMemberModal, toast }: {
+  db: DB; setDb: (fn: (prev: DB) => DB) => void; openProgramDetail: (memberId: string) => void; openMemberModal: (id?: string) => void; toast: (m: string, t?: string) => void;
+}) {
   const mob = useIsMobile();
   const listRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const nf = db.members.filter(m => m.status === "새가족" || m.status === "정착중");
-  const settled = db.members.filter(m => m.status === "정착").length;
-  const total = nf.length;
-  const paginatedNf = nf.slice((currentPage - 1) * 10, currentPage * 10);
+  const [filter, setFilter] = useState<"all" | "진행중" | "수료" | "중단" | "no_mentor">("all");
+
+  const programs = db.newFamilyPrograms || [];
+  const nfMembers = db.members.filter(m => m.status === "새가족" || m.status === "정착중");
+  const memberById = (id: string) => db.members.find(x => x.id === id)!;
+  const programByMember = (memberId: string) => programs.find(p => p.member_id === memberId);
+
+  const thisMonth = useMemo(() => {
+    const y = new Date().getFullYear();
+    const m = String(new Date().getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  }, []);
+  const thisMonthCount = useMemo(() => nfMembers.filter(m => (m.firstVisitDate || m.createdAt || "").slice(0, 7) === thisMonth).length, [nfMembers, thisMonth]);
+  const inProgressCount = useMemo(() => programs.filter(p => p.status === "진행중").length, [programs]);
+  const completedCount = useMemo(() => programs.filter(p => p.status === "수료").length, [programs]);
+  const needAttentionCount = useMemo(() => programs.filter(isProgramNeedAttention).length, [programs]);
+
+  // 새가족/정착중인데 프로그램이 없으면 자동 생성
+  useEffect(() => {
+    const missing = nfMembers.filter(m => !programs.some(p => p.member_id === m.id));
+    if (missing.length === 0) return;
+    setDb(prev => {
+      const existing = prev.newFamilyPrograms || [];
+      const toAdd: NewFamilyProgram[] = missing.map(m => ({
+        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "nfp_" + uid(),
+        member_id: m.id,
+        mentor_id: null,
+        program_start_date: m.firstVisitDate || m.createdAt || todayStr(),
+        week1_completed: false, week1_date: null, week1_note: null,
+        week2_completed: false, week2_date: null, week2_note: null,
+        week3_completed: false, week3_date: null, week3_note: null,
+        week4_completed: false, week4_date: null, week4_note: null,
+        status: "진행중",
+        cell_group_assigned: null,
+      }));
+      return { ...prev, newFamilyPrograms: [...existing, ...toAdd] };
+    });
+  }, [nfMembers, programs]);
+
+  const filteredList = useMemo(() => {
+    let list = nfMembers.map(m => ({ member: m, program: programByMember(m.id) })).filter(x => x.program != null) as { member: Member; program: NewFamilyProgram }[];
+    if (filter === "진행중") list = list.filter(x => x.program.status === "진행중");
+    else if (filter === "수료") list = list.filter(x => x.program.status === "수료");
+    else if (filter === "중단") list = list.filter(x => x.program.status === "중단");
+    else if (filter === "no_mentor") list = list.filter(x => !x.program.mentor_id);
+    return list;
+  }, [nfMembers, programs, filter]);
+
+  const paginated = useMemo(() => filteredList.slice((currentPage - 1) * 10, currentPage * 10), [filteredList, currentPage]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sql = `-- Supabase SQL 에디터에서 실행
+CREATE TABLE IF NOT EXISTS new_family_program (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  member_id uuid NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  mentor_id uuid REFERENCES members(id) ON DELETE SET NULL,
+  program_start_date date NOT NULL,
+  week1_completed boolean DEFAULT false, week1_date date, week1_note text,
+  week2_completed boolean DEFAULT false, week2_date date, week2_note text,
+  week3_completed boolean DEFAULT false, week3_date date, week3_note text,
+  week4_completed boolean DEFAULT false, week4_date date, week4_note text,
+  status text DEFAULT '진행중' CHECK (status IN ('진행중', '수료', '중단')),
+  cell_group_assigned text, created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_new_family_program_member_id ON new_family_program(member_id);
+CREATE INDEX IF NOT EXISTS idx_new_family_program_mentor_id ON new_family_program(mentor_id);
+CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(status);`;
+      console.log("[새가족] Supabase CREATE TABLE 쿼리:\n", sql);
+    }
+  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
-        <StatCard label="현재 새가족" value={`${total}명`} color={C.accent} />
-        <StatCard label="정착 완료" value={`${settled}명`} color={C.success} />
-        <StatCard label="정착률" value={`${(total + settled) > 0 ? Math.round(settled / (total + settled) * 100) : 0}%`} color={C.purple} />
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 12 }}>
+        <Card style={{ padding: 16 }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>🆕</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.navy }}>{thisMonthCount}명</div>
+          <div style={{ fontSize: 12, color: C.textMuted }}>이번 달 새가족</div>
+        </Card>
+        <Card style={{ padding: 16 }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>📋</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.blue }}>{inProgressCount}명</div>
+          <div style={{ fontSize: 12, color: C.textMuted }}>정착 진행중</div>
+        </Card>
+        <Card style={{ padding: 16 }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>🎓</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.success }}>{completedCount}명</div>
+          <div style={{ fontSize: 12, color: C.textMuted }}>수료 완료</div>
+        </Card>
+        <Card style={{ padding: 16 }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>⚠️</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.orange }}>{needAttentionCount}명</div>
+          <div style={{ fontSize: 12, color: C.textMuted }}>관리 필요</div>
+        </Card>
       </div>
-      <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
-          <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.navy }}>새가족 트래킹 (4주)</h4>
+
+      <div ref={listRef}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          {(["all", "진행중", "수료", "중단", "no_mentor"] as const).map(f => (
+            <button key={f} type="button" onClick={() => { setFilter(f); setCurrentPage(1); }} style={{
+              padding: "8px 14px", borderRadius: 20, border: `1px solid ${filter === f ? C.blue : C.border}`,
+              background: filter === f ? C.blueBg : "#fff", color: filter === f ? C.blue : C.text,
+              fontSize: 13, fontWeight: 600, cursor: "pointer",
+            }}>{f === "all" ? "전체" : f === "no_mentor" ? "섬김이 미배정" : f}</button>
+          ))}
         </div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead><tr style={{ background: C.bg }}>
-              {["이름","등록일","경로","1주","2주","3주","4주","상태"].map((h, i) => (
-                <th key={i} style={{ padding: "12px 16px", textAlign: i >= 3 && i <= 6 ? "center" : "left", fontWeight: 600, fontSize: 13, color: C.navy, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
-              ))}
-            </tr></thead>
-            <tbody>
-              {nf.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 32, textAlign: "center", color: C.textMuted }}>새가족이 없습니다</td></tr>
-              ) : paginatedNf.map(m => {
-                const att = db.attendance[m.id] || {};
-                const regWeek = currentWeek;
-                const weeks = [0, 1, 2, 3].map(i => {
-                  const w = regWeek + i;
-                  const s = att[w];
-                  if (s === "p") return <SBadge variant="success">✓ 출석</SBadge>;
-                  if (s === "a") return <SBadge variant="danger">✕ 결석</SBadge>;
-                  return <SBadge variant="gray">—</SBadge>;
-                });
-                return (
-                  <tr key={m.id} onClick={() => openDetail(m.id)} style={{ cursor: "pointer", borderBottom: `1px solid ${C.borderLight}` }}>
-                    <td style={{ padding: "12px 16px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</td>
-                    <td style={{ padding: "12px 16px" }}>{m.createdAt ? m.createdAt.slice(0, 10) : "-"}</td>
-                    <td style={{ padding: "12px 16px" }}>{m.source || "-"}</td>
-                    {weeks.map((w, i) => <td key={i} style={{ padding: "12px 16px", textAlign: "center" }}>{w}</td>)}
-                    <td style={{ padding: "12px 16px" }}><SBadge variant={STATUS_BADGE[m.status || ""] || "gray"}>{m.status}</SBadge></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-      <Pagination totalItems={nf.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+
+        {filteredList.length === 0 ? (
+          <Card style={{ padding: 48, textAlign: "center", color: C.textMuted }}>새가족이 없습니다. 상단 "+ 새가족 등록"으로 등록하세요.</Card>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {paginated.map(({ member, program }) => {
+              const mentor = program.mentor_id ? memberById(program.mentor_id) : null;
+              const done = [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed].filter(Boolean).length;
+              const needAttention = isProgramNeedAttention(program);
+              return (
+                <Card key={member.id} onClick={() => openProgramDetail(member.id)} style={{ cursor: "pointer", padding: 16 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, overflow: "hidden", flexShrink: 0 }}>
+                        {member.photo ? <img src={member.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (member.name || "?")[0]}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 16, color: C.navy, display: "flex", alignItems: "center", gap: 6 }}>
+                          {member.name}
+                          {needAttention && <span style={{ color: C.orange }} title="2주 이상 미완료">⚠️</span>}
+                        </div>
+                        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>
+                          첫 방문일 {member.firstVisitDate || member.createdAt || "-"} · {VISIT_PATH_LABEL[member.visitPath || ""] || member.visitPath || "-"}
+                        </div>
+                      </div>
+                    </div>
+                    <SBadge variant={program.status === "수료" ? "success" : program.status === "중단" ? "gray" : "accent"}>{program.status}</SBadge>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    {mentor ? <span style={{ fontSize: 13, color: C.text }}>섬김이: {mentor.name}</span> : <span style={{ fontSize: 13, fontWeight: 600, color: C.danger }}>섬김이 미배정</span>}
+                  </div>
+                  <div style={{ height: 6, background: C.borderLight, borderRadius: 3, overflow: "hidden", display: "flex" }}>
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} style={{ flex: 1, height: "100%", background: [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed][i - 1] ? C.success : C.borderLight, marginRight: i < 4 ? 2 : 0 }} />
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6 }}>{done}/4주 완료</div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+        {filteredList.length > 10 && (
+          <Pagination totalItems={filteredList.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+        )}
       </div>
     </div>
+  );
+}
+
+function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, toast, mob }: {
+  db: DB; setDb: (fn: (prev: DB) => DB) => void; memberId: string; onClose: () => void; toast: (m: string, t?: string) => void; mob: boolean;
+}) {
+  const member = db.members.find(m => m.id === memberId);
+  const program = (db.newFamilyPrograms || []).find(p => p.member_id === memberId);
+  const [showMentorSelect, setShowMentorSelect] = useState(false);
+  const [weekChecks, setWeekChecks] = useState<[boolean[], boolean[], boolean[], boolean[]]>(() =>
+    program ? [
+      [program.week1_completed, program.week1_completed, program.week1_completed, program.week1_completed],
+      [program.week2_completed, program.week2_completed, program.week2_completed, program.week2_completed],
+      [program.week3_completed, program.week3_completed, program.week3_completed, program.week3_completed],
+      [program.week4_completed, program.week4_completed, program.week4_completed, program.week4_completed],
+    ] : [[false, false, false, false], [false, false, false, false], [false, false, false, false], [false, false, false, false]]
+  );
+
+  const mentor = program?.mentor_id ? db.members.find(m => m.id === program.mentor_id) : null;
+  const mentorCandidates = useMemo(() => db.members.filter(m => m.id !== memberId && MENTOR_ROLES.some(r => (m.role || "").includes(r)) && (m.dept === "장년부" || !m.dept)), [db.members, memberId]);
+  const currentWeekNum = program ? getProgramWeekFromStart(program.program_start_date) : 1;
+  const allFourDone = program?.week1_completed && program?.week2_completed && program?.week3_completed && program?.week4_completed;
+
+  const updateProgram = useCallback((patch: Partial<NewFamilyProgram>) => {
+    setDb(prev => ({
+      ...prev,
+      newFamilyPrograms: (prev.newFamilyPrograms || []).map(p => p.member_id === memberId ? { ...p, ...patch } : p),
+    }));
+  }, [memberId, setDb]);
+
+  const setWeekCheck = useCallback((weekIndex: 0 | 1 | 2 | 3, checkIndex: number, value: boolean) => {
+    setWeekChecks(prev => {
+      const next = prev.map((arr, wi) => wi === weekIndex ? arr.map((c, i) => i === checkIndex ? value : c) : arr) as [boolean[], boolean[], boolean[], boolean[]];
+      return next;
+    });
+  }, []);
+
+  const setWeekCompletedFromChecks = useCallback((weekIndex: 0 | 1 | 2 | 3, date: string | null, note: string | null) => {
+    const checks = weekChecks[weekIndex];
+    const allChecked = checks.every(Boolean);
+    if (!program || !allChecked || !date) return;
+    const key = ["week1", "week2", "week3", "week4"][weekIndex] as "week1" | "week2" | "week3" | "week4";
+    updateProgram({
+      [`${key}_completed`]: true,
+      [`${key}_date`]: date,
+      [`${key}_note`]: note || null,
+    });
+  }, [program, weekChecks, updateProgram]);
+
+  const handleComplete = useCallback(() => {
+    if (!allFourDone) return;
+    if (!program?.cell_group_assigned?.trim()) {
+      toast("구역/셀 배정을 입력하세요", "err");
+      return;
+    }
+    updateProgram({ status: "수료" });
+    toast("수료 처리되었습니다", "ok");
+    onClose();
+  }, [allFourDone, program?.cell_group_assigned, updateProgram, toast, onClose]);
+
+  if (!member || !program) return null;
+
+  return (
+    <Modal open onClose={onClose} title="정착 프로그램 상세" width={mob ? undefined : 520}>
+      <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 20, overflow: "hidden", flexShrink: 0 }}>
+            {member.photo ? <img src={member.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (member.name || "?")[0]}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 18, color: C.navy }}>{member.name}</div>
+            <div style={{ fontSize: 13, color: C.textMuted }}>첫 방문일 {member.firstVisitDate || program.program_start_date}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+              {mentor ? <span style={{ fontSize: 13 }}>섬김이: {mentor.name}</span> : <span style={{ fontSize: 13, color: C.danger, fontWeight: 600 }}>섬김이 미배정</span>}
+              <Btn size="sm" variant="secondary" onClick={() => setShowMentorSelect(true)}>섬김이 배정</Btn>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ position: "relative", paddingLeft: 24 }}>
+        <div style={{ position: "absolute", left: 11, top: 12, bottom: 12, width: 2, background: "#e5e7eb", borderRadius: 1 }} />
+        {WEEK_CONFIG.map((week, wi) => {
+          const completed = [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed][wi];
+          const isCurrent = currentWeekNum === wi + 1 && program.status === "진행중";
+          const dateKey = [`week1_date`, `week2_date`, `week3_date`, `week4_date`][wi] as keyof NewFamilyProgram;
+          const noteKey = [`week1_note`, `week2_note`, `week3_note`, `week4_note`][wi] as keyof NewFamilyProgram;
+          const dateVal = program[dateKey] as string | null;
+          const noteVal = program[noteKey] as string | null;
+          return (
+            <div key={wi} style={{ position: "relative", marginBottom: 20 }}>
+              <div style={{ position: "absolute", left: -24, top: 4, width: 24, height: 24, borderRadius: "50%", background: completed ? "#22c55e" : isCurrent ? "#3b82f6" : "#d1d5db", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, boxShadow: isCurrent ? "0 0 0 3px rgba(59,130,246,0.3)" : undefined, animation: isCurrent ? "pulse 1.5s ease-in-out infinite" : undefined }}>{completed ? "✓" : wi + 1}</div>
+              <Card style={{ padding: 16, background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: C.navy, marginBottom: 6 }}>{week.title}</div>
+                <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>{week.desc}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+                  {week.checks.map((label, ci) => (
+                    <label key={ci} style={{ display: "flex", alignItems: "center", gap: 8, cursor: completed ? "default" : "pointer", fontSize: 13 }}>
+                      <input type="checkbox" checked={completed ? true : weekChecks[wi][ci]} onChange={e => !completed && setWeekCheck(wi as 0 | 1 | 2 | 3, ci, e.target.checked)} style={{ width: 18, height: 18, accentColor: C.blue }} />
+                      <span>□ {label}</span>
+                    </label>
+                  ))}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ marginBottom: 0 }}><CalendarDropdown label="완료일" value={dateVal || ""} onChange={(v) => { updateProgram({ [dateKey]: v || null }); if (weekChecks[wi].every(Boolean) && v) setWeekCompletedFromChecks(wi as 0 | 1 | 2 | 3, v, noteVal); }} /></div>
+                  <textarea placeholder="메모" value={noteVal || ""} onChange={e => updateProgram({ [noteKey]: e.target.value || null })} style={{ width: "100%", padding: 10, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, minHeight: 60, resize: "vertical" }} />
+                  {wi === 3 && <div style={{ marginTop: 8 }}><FormInput label="구역/셀 배정" value={program.cell_group_assigned || ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProgram({ cell_group_assigned: e.target.value || null })} placeholder="예: 1구역 A셀" /></div>}
+                </div>
+              </Card>
+            </div>
+          );
+        })}
+      </div>
+
+      {program.status === "진행중" && allFourDone && (
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+          <Btn onClick={handleComplete}>🎓 수료 처리</Btn>
+          {!program.cell_group_assigned?.trim() && <span style={{ marginLeft: 8, fontSize: 13, color: C.orange }}>구역/셀 배정 후 수료 가능</span>}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 16 }}>
+        <Btn variant="ghost" onClick={onClose}>닫기</Btn>
+      </div>
+
+      {showMentorSelect && (
+        <Modal open onClose={() => setShowMentorSelect(false)} title="섬김이 선택">
+          <div style={{ maxHeight: 320, overflowY: "auto" }}>
+            {mentorCandidates.length === 0 ? <div style={{ padding: 24, textAlign: "center", color: C.textMuted }}>장년부 집사/권사/장로가 없습니다</div> : mentorCandidates.map(m => (
+              <button key={m.id} type="button" onClick={() => { updateProgram({ mentor_id: m.id }); setShowMentorSelect(false); toast("섬김이 배정되었습니다"); }} style={{ display: "block", width: "100%", padding: "12px 16px", textAlign: "left", border: "none", borderBottom: `1px solid ${C.borderLight}`, background: program.mentor_id === m.id ? C.blueBg : "#fff", color: C.navy, fontSize: 14, cursor: "pointer", borderRadius: 0 }}>
+                {m.name} ({m.role || ""} {m.dept || ""})
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}`}</style>
+    </Modal>
   );
 }
 
@@ -1688,7 +1918,7 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   members: { title: "성도 관리", desc: "성도의 삶을 기억하고 돌봅니다", addLabel: "+ 성도 등록" },
   attendance: { title: "출석부", desc: "52주 출석 기록을 관리합니다" },
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기록" },
-  newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹" },
+  newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
   reports: { title: "보고서", desc: "엑셀 보고서를 즉시 다운로드합니다" },
   settings: { title: "설정", desc: "교회 정보 및 데이터 관리" },
 };
@@ -1707,6 +1937,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [editMbrId, setEditMbrId] = useState<string | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [programDetailMemberId, setProgramDetailMemberId] = useState<string | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
 
@@ -1716,6 +1947,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [fAddr, setFAddr] = useState(""); const [fFamily, setFFamily] = useState(""); const [fStatus, setFStatus] = useState("새가족");
   const [fSource, setFSource] = useState(""); const [fPrayer, setFPrayer] = useState(""); const [fMemo, setFMemo] = useState("");
   const [fGroup, setFGroup] = useState(""); const [fPhoto, setFPhoto] = useState("");
+  const [fVisitPath, setFVisitPath] = useState(""); const [fReferrerId, setFReferrerId] = useState(""); const [fJob, setFJob] = useState(""); const [fFirstVisitDate, setFFirstVisitDate] = useState(todayStr());
   const [showBirthPicker, setShowBirthPicker] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
 
@@ -1757,24 +1989,49 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       setFAddr(m.address || ""); setFFamily(m.family || ""); setFStatus(m.status || "새가족");
       setFSource(m.source || ""); setFPrayer(m.prayer || ""); setFMemo(m.memo || ""); setFPhoto(m.photo || "");
       setFGroup(m.group && mokjangOptions.includes(m.group) ? m.group : (m.group || ""));
+      setFVisitPath(m.visitPath || ""); setFReferrerId(m.referrerId || ""); setFJob(m.job || ""); setFFirstVisitDate(m.firstVisitDate || todayStr());
     } else {
       setFName(""); setFDept(depts[0] || ""); setFRole(""); setFBirth(""); setFGender("");
       setFPhone(""); setFAddr(""); setFFamily(""); setFStatus("새가족"); setFSource("");
       setFPrayer(""); setFMemo(""); setFPhoto("");
       setFGroup("");
+      setFVisitPath(""); setFReferrerId(""); setFJob(""); setFFirstVisitDate(todayStr());
     }
     setShowMemberModal(true);
   }, [db.members, db.settings.mokjangList, depts]);
 
   const saveMember = () => {
     if (!fName.trim()) { toast("이름을 입력하세요", "err"); return; }
-    const data: Partial<Member> = { name: fName.trim(), dept: fDept, role: fRole.trim(), birth: fBirth, gender: fGender, phone: fPhone.trim(), address: fAddr.trim(), family: fFamily.trim(), status: fStatus, source: fSource, prayer: fPrayer.trim(), memo: fMemo.trim(), photo: fPhoto, group: fGroup || undefined };
+    const data: Partial<Member> = {
+      name: fName.trim(), dept: fDept, role: fRole.trim(), birth: fBirth, gender: fGender, phone: fPhone.trim(),
+      address: fAddr.trim(), family: fFamily.trim(), status: fStatus, source: fSource, prayer: fPrayer.trim(), memo: fMemo.trim(), photo: fPhoto, group: fGroup || undefined,
+      visitPath: fVisitPath || undefined, referrerId: fReferrerId || undefined, job: fJob.trim() || undefined, firstVisitDate: fFirstVisitDate || undefined,
+    };
     if (editMbrId) {
       setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === editMbrId ? { ...m, ...data } : m) }));
       toast("수정 완료", "ok");
     } else {
       const newId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "mb_" + uid();
-      setDb(prev => ({ ...prev, members: [...prev.members, { ...data, id: newId, createdAt: todayStr() } as Member] }));
+      const startDate = fFirstVisitDate || todayStr();
+      setDb(prev => {
+        const next = { ...prev, members: [...prev.members, { ...data, id: newId, createdAt: todayStr() } as Member] };
+        if (fStatus === "새가족" || fStatus === "정착중") {
+          const program: NewFamilyProgram = {
+            id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "nfp_" + uid(),
+            member_id: newId,
+            mentor_id: null,
+            program_start_date: startDate,
+            week1_completed: false, week1_date: null, week1_note: null,
+            week2_completed: false, week2_date: null, week2_note: null,
+            week3_completed: false, week3_date: null, week3_note: null,
+            week4_completed: false, week4_date: null, week4_note: null,
+            status: "진행중",
+            cell_group_assigned: null,
+          };
+          next.newFamilyPrograms = [...(prev.newFamilyPrograms || []), program];
+        }
+        return next;
+      });
       toast("등록 완료", "ok");
     }
     setShowBirthPicker(false);
@@ -1796,11 +2053,13 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       const { [id]: _a, ...att } = prev.attendance;
       const { [id]: _ar, ...attReasons } = prev.attendanceReasons || {};
       const { [id]: _n, ...notes } = prev.notes;
-      const next = { ...prev, members: prev.members.filter(m => m.id !== id), attendance: att, attendanceReasons: attReasons, notes };
+      const newFamilyPrograms = (prev.newFamilyPrograms || []).filter(p => p.member_id !== id);
+      const next = { ...prev, members: prev.members.filter(m => m.id !== id), attendance: att, attendanceReasons: attReasons, notes, newFamilyPrograms };
       saveDb?.(next).catch(() => toast("저장 실패", "err"));
       return next;
     });
     setShowDetailModal(false);
+    setProgramDetailMemberId(null);
     toast("삭제 완료", "warn");
   };
 
@@ -1850,7 +2109,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   };
 
   const topAdd = () => {
-    if (activeSub === "dashboard" || activeSub === "members") openMemberModal();
+    if (activeSub === "dashboard" || activeSub === "members" || activeSub === "newfamily") openMemberModal();
     else if (activeSub === "notes") openNoteModal();
   };
 
@@ -1914,7 +2173,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} />}
           {activeSub === "attendance" && <AttendanceSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} setCurrentWeek={setCurrentWeek} />}
           {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openDetail={openDetail} openNoteModal={openNoteModal} />}
-          {activeSub === "newfamily" && <NewFamilySub db={db} currentWeek={currentWeek} openDetail={openDetail} />}
+          {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
           {activeSub === "reports" && <ReportsSub db={db} currentWeek={currentWeek} toast={toast} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} />}
         </div>
@@ -1981,6 +2240,21 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           { value: "", label: "선택" }, { value: "기존교인자녀", label: "기존 교인 자녀" }, { value: "전도", label: "전도" },
           { value: "전입", label: "타교회 전입" }, { value: "지인소개", label: "지인 소개" }, { value: "기타", label: "기타" },
         ]} />
+        {(fStatus === "새가족" || fStatus === "정착중") && (
+          <>
+            <FormSelect label="방문경로" value={fVisitPath} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFVisitPath(e.target.value)} options={[
+              { value: "", label: "선택" }, { value: "지인소개", label: "지인소개" }, { value: "전도", label: "전도" }, { value: "인터넷검색", label: "인터넷검색" }, { value: "자진방문", label: "자진방문" }, { value: "기타", label: "기타" },
+            ]} />
+            {fVisitPath === "지인소개" && (
+              <FormSelect label="소개자" value={fReferrerId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFReferrerId(e.target.value)} options={[
+                { value: "", label: "선택" },
+                ...db.members.filter(x => x.status !== "새가족" && x.id !== editMbrId).map(m => ({ value: m.id, label: `${m.name} (${m.dept || ""})` })),
+              ]} />
+            )}
+            <FormInput label="직업" value={fJob} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFJob(e.target.value)} placeholder="직업" />
+            <div style={{ marginBottom: 16 }}><CalendarDropdown label="첫 방문일" value={fFirstVisitDate} onChange={setFFirstVisitDate} /></div>
+          </>
+        )}
         <FormSelect label="목장" value={fGroup} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGroup(e.target.value)} options={[
           { value: "", label: "미배정" },
           ...getMokjangList(db).map(g => ({ value: g, label: g })),
@@ -1993,6 +2267,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           <Btn onClick={saveMember}>저장</Btn>
         </div>
       </Modal>
+
+      {/* New Family Program Detail Modal */}
+      {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} toast={toast} mob={mob} />}
 
       {/* Detail Modal */}
       <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} title="상세 정보" width={500}>
@@ -2092,7 +2369,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           );
         })()}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <FormInput label="날짜" type="date" value={nDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNDate(e.target.value)} />
+          <div style={{ marginBottom: 16 }}><CalendarDropdown label="날짜" value={nDate} onChange={setNDate} /></div>
           <FormSelect label="유형" value={nType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNType(e.target.value as Note["type"])}
             options={[{ value: "memo", label: "📝 메모" }, { value: "prayer", label: "🙏 기도제목" }, { value: "visit", label: "🏠 심방" }, { value: "event", label: "🎉 경조사" }]} />
         </div>

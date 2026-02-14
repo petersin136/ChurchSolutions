@@ -59,6 +59,7 @@
   }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-thumb { background: var(--text3); border-radius: var(--radius-full); }
+  .wheel-column-scroll::-webkit-scrollbar { display: none; }
 }
 
 @layer components {

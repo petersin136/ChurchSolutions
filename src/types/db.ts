@@ -29,6 +29,37 @@ export interface Member {
   group?: string;
   photo?: string;
   createdAt?: string;
+  /** 새가족: 방문경로 (지인소개/전도/인터넷검색/자진방문/기타) */
+  visitPath?: string;
+  /** 새가족: 소개자 member id (방문경로가 지인소개일 때) */
+  referrerId?: string;
+  /** 새가족: 직업 */
+  job?: string;
+  /** 새가족: 첫 방문일 YYYY-MM-DD */
+  firstVisitDate?: string;
+}
+
+/** 정착 프로그램 4주 과정 (new_family_program) */
+export interface NewFamilyProgram {
+  id: string;
+  member_id: string;
+  mentor_id: string | null;
+  program_start_date: string;
+  week1_completed: boolean;
+  week1_date: string | null;
+  week1_note: string | null;
+  week2_completed: boolean;
+  week2_date: string | null;
+  week2_note: string | null;
+  week3_completed: boolean;
+  week3_date: string | null;
+  week3_note: string | null;
+  week4_completed: boolean;
+  week4_date: string | null;
+  week4_note: string | null;
+  status: "진행중" | "수료" | "중단";
+  cell_group_assigned: string | null;
+  created_at?: string;
 }
 
 export type AttStatus = "p" | "a" | "n";
@@ -109,6 +140,8 @@ export interface DB {
   expense: Expense[];
   budget: Record<string, number>;
   checklist: Record<string, ChecklistItem[]>;
+  /** 새가족 정착 프로그램 (4주 과정) */
+  newFamilyPrograms?: NewFamilyProgram[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -135,6 +168,7 @@ export const DEFAULT_DB: DB = {
   expense: [],
   budget: {},
   checklist: {},
+  newFamilyPrograms: [],
 };
 
 /** 시드/샘플 자동 생성 비활성화 — 호출 시 빈 DB 반환 (더미 데이터 생성 안 함) */

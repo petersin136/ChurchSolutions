@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 import { LayoutDashboard, Wallet, Users, Receipt, FileText, PieChart, Download, FileSignature, Church } from "lucide-react";
 import { Pagination } from "@/components/common/Pagination";
+import { CalendarDropdown } from "@/components/CalendarDropdown";
 import type { DB, Member, Income as DBIncome, Expense as DBExpense } from "@/types/db";
 
 /* ---------- useIsMobile ---------- */
@@ -625,7 +626,7 @@ function OfferingTab({ offerings, setOfferings, donors, categories }: {
           <Select label="헌금 항목" value={form.categoryId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, categoryId: e.target.value }))}
             options={categories.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))} />
           <Input label="금액 (원)" type="number" value={form.amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="100000" />
-          <Input label="날짜" type="date" value={form.date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, date: e.target.value }))} className="input-date-ios" />
+          <CalendarDropdown label="날짜" value={form.date} onChange={(v) => setForm(f => ({ ...f, date: v }))} />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <label style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>헌금 방법</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -733,7 +734,7 @@ function DonorTab({ donors, setDonors, offerings }: {
           <Input label="이름" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="홍길동" />
           <Input label="연락처" value={form.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="010-0000-0000" />
           <Input label="소속 (부서/구역)" value={form.group} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, group: e.target.value }))} placeholder="장년부" />
-          <Input label="등록일" type="date" value={form.joinDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, joinDate: e.target.value }))} />
+          <CalendarDropdown label="등록일" value={form.joinDate} onChange={(v) => setForm(f => ({ ...f, joinDate: v }))} />
           <Input label="메모" value={form.note} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, note: e.target.value }))} placeholder="직분, 특이사항 등" />
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
             <Button variant="ghost" onClick={() => setShowAdd(false)}>취소</Button>
@@ -994,7 +995,7 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories }: {
           <Select label="지출 항목" value={form.categoryId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, categoryId: e.target.value }))}
             options={expenseCategories.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))} />
           <Input label="금액 (원)" type="number" value={form.amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="500000" />
-          <Input label="날짜" type="date" value={form.date} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, date: e.target.value }))} />
+          <CalendarDropdown label="날짜" value={form.date} onChange={(v) => setForm(f => ({ ...f, date: v }))} />
           <Input label="내용" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, description: e.target.value }))} placeholder="지출 내용" />
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input type="checkbox" checked={form.receipt} onChange={e => setForm(f => ({ ...f, receipt: e.target.checked }))}

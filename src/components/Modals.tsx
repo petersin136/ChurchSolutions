@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import type { DB, Member, Note } from "@/types/db";
 import { getDepts } from "@/lib/store";
 import { CATS_INCOME, CATS_EXPENSE } from "@/types/db";
+import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 const STATUS_MAP: Record<string, string> = {
   새가족: "badge-blue",
@@ -694,13 +695,7 @@ export function Modals({
             </div>
             <div className="fg-row">
               <div className="fg">
-                <label className="fl">생년월일</label>
-                <input
-                  type="date"
-                  className="fi"
-                  value={mBirth}
-                  onChange={(e) => setMBirth(e.target.value)}
-                />
+                <CalendarDropdown label="생년월일" value={mBirth} onChange={setMBirth} />
               </div>
               <div className="fg">
                 <label className="fl">성별</label>
@@ -1104,13 +1099,7 @@ export function Modals({
           </div>
           <div className="modal-body">
             <div className="fg">
-              <label className="fl">날짜</label>
-              <input
-                type="date"
-                className="fi"
-                value={noteDate}
-                onChange={(e) => setNoteDate(e.target.value)}
-              />
+              <CalendarDropdown label="날짜" value={noteDate} onChange={setNoteDate} />
             </div>
             <div className="fg">
               <label className="fl">유형</label>
@@ -1230,13 +1219,7 @@ export function Modals({
             </div>
             <div className="fg-row">
               <div className="fg">
-                <label className="fl">날짜</label>
-                <input
-                  type="date"
-                  className="fi"
-                  value={pDate}
-                  onChange={(e) => setPDate(e.target.value)}
-                />
+                <CalendarDropdown label="날짜" value={pDate} onChange={setPDate} />
               </div>
               <div className="fg">
                 <label className="fl">시간</label>
@@ -1312,13 +1295,7 @@ export function Modals({
           </div>
           <div className="modal-body">
             <div className="fg">
-              <label className="fl">설교 날짜</label>
-              <input
-                type="date"
-                className="fi"
-                value={sDate}
-                onChange={(e) => setSDate(e.target.value)}
-              />
+              <CalendarDropdown label="설교 날짜" value={sDate} onChange={setSDate} />
             </div>
             <div className="fg">
               <label className="fl">예배</label>
@@ -1426,13 +1403,7 @@ export function Modals({
           </div>
           <div className="modal-body">
             <div className="fg">
-              <label className="fl">날짜</label>
-              <input
-                type="date"
-                className="fi"
-                value={vDate}
-                onChange={(e) => setVDate(e.target.value)}
-              />
+              <CalendarDropdown label="날짜" value={vDate} onChange={setVDate} />
             </div>
             <div className="fg">
               <label className="fl">대상 성도</label>
@@ -1510,13 +1481,7 @@ export function Modals({
           </div>
           <div className="modal-body">
             <div className="fg">
-              <label className="fl">날짜 *</label>
-              <input
-                type="date"
-                className="fi"
-                value={incDate}
-                onChange={(e) => setIncDate(e.target.value)}
-              />
+              <CalendarDropdown label="날짜 *" value={incDate} onChange={setIncDate} />
             </div>
             <div className="fg">
               <label className="fl">유형 *</label>
@@ -1615,13 +1580,7 @@ export function Modals({
           </div>
           <div className="modal-body">
             <div className="fg">
-              <label className="fl">날짜 *</label>
-              <input
-                type="date"
-                className="fi"
-                value={expDate}
-                onChange={(e) => setExpDate(e.target.value)}
-              />
+              <CalendarDropdown label="날짜 *" value={expDate} onChange={setExpDate} />
             </div>
             <div className="fg">
               <label className="fl">계정과목 *</label>
