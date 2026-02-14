@@ -8,6 +8,8 @@ export interface Settings {
   address?: string;
   /** 기부금 영수증용: 담임목사 성함 */
   pastor?: string;
+  /** 기부금 영수증용: 사업자등록번호(고유번호) */
+  businessNumber?: string;
 }
 
 export interface Member {
@@ -116,6 +118,7 @@ export const DEFAULT_SETTINGS: Settings = {
   mokjangList: "",
   address: "",
   pastor: "",
+  businessNumber: "",
 };
 
 export const DEFAULT_DB: DB = {

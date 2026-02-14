@@ -71,7 +71,7 @@ const EXPENSE_CATEGORIES: ExpCategory[] = [
 ];
 
 /* ---------- 데이터 타입 ---------- */
-interface Donor { id: string; name: string; phone: string; group: string; joinDate: string; note: string; photoUrl?: string; }
+interface Donor { id: string; name: string; phone: string; group: string; joinDate: string; note: string; photoUrl?: string; address?: string; residentNumber?: string; }
 interface Offering { id: string; donorId: string; donorName: string; categoryId: string; amount: number; date: string; method: string; note: string; }
 interface Expense { id: string; categoryId: string; departmentId: string; amount: number; date: string; description: string; receipt: boolean; note: string; }
 
@@ -97,40 +97,45 @@ function generateSampleData() {
 
   const offerings: Offering[] = [];
   const catIds = DEFAULT_CATEGORIES.map(c => c.id);
-  for (let m = 0; m < 12; m++) {
-    const numEntries = 15 + Math.floor(Math.random() * 20);
-    for (let i = 0; i < numEntries; i++) {
-      const donor = donors[Math.floor(Math.random() * donors.length)];
-      const cat = catIds[Math.floor(Math.random() * catIds.length)];
-      const day = 1 + Math.floor(Math.random() * 28);
-      const amounts = [10000, 20000, 30000, 50000, 100000, 150000, 200000, 300000, 500000, 1000000];
-      offerings.push({
-        id: uid(), donorId: donor.id, donorName: donor.name, categoryId: cat,
-        amount: amounts[Math.floor(Math.random() * amounts.length)],
-        date: `2025-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,
-        method: ["현금","계좌이체","온라인"][Math.floor(Math.random()*3)],
-        note: "",
-      });
+  const currentYear = new Date().getFullYear();
+  for (const year of [currentYear, currentYear - 1]) {
+    for (let m = 0; m < 12; m++) {
+      const numEntries = 15 + Math.floor(Math.random() * 20);
+      for (let i = 0; i < numEntries; i++) {
+        const donor = donors[Math.floor(Math.random() * donors.length)];
+        const cat = catIds[Math.floor(Math.random() * catIds.length)];
+        const day = 1 + Math.floor(Math.random() * 28);
+        const amounts = [10000, 20000, 30000, 50000, 100000, 150000, 200000, 300000, 500000, 1000000];
+        offerings.push({
+          id: uid(), donorId: donor.id, donorName: donor.name, categoryId: cat,
+          amount: amounts[Math.floor(Math.random() * amounts.length)],
+          date: `${year}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,
+          method: ["현금","계좌이체","온라인"][Math.floor(Math.random()*3)],
+          note: "",
+        });
+      }
     }
   }
 
   const expenses: Expense[] = [];
   const expCatIds = EXPENSE_CATEGORIES.map(c => c.id);
   const deptIds = DEFAULT_DEPARTMENTS.map(d => d.id);
-  for (let m = 0; m < 12; m++) {
-    const numExp = 8 + Math.floor(Math.random() * 10);
-    for (let i = 0; i < numExp; i++) {
-      const cat = expCatIds[Math.floor(Math.random() * expCatIds.length)];
-      const dept = deptIds[Math.floor(Math.random() * deptIds.length)];
-      const day = 1 + Math.floor(Math.random() * 28);
-      const amounts = [30000, 50000, 100000, 150000, 200000, 300000, 500000, 800000, 1000000, 2000000];
-      expenses.push({
-        id: uid(), categoryId: cat, departmentId: dept,
-        amount: amounts[Math.floor(Math.random() * amounts.length)],
-        date: `2025-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,
-        description: `${EXPENSE_CATEGORIES.find(c=>c.id===cat)?.name || ""} 지출`,
-        receipt: Math.random() > 0.3, note: "",
-      });
+  for (const year of [currentYear, currentYear - 1]) {
+    for (let m = 0; m < 12; m++) {
+      const numExp = 8 + Math.floor(Math.random() * 10);
+      for (let i = 0; i < numExp; i++) {
+        const cat = expCatIds[Math.floor(Math.random() * expCatIds.length)];
+        const dept = deptIds[Math.floor(Math.random() * deptIds.length)];
+        const day = 1 + Math.floor(Math.random() * 28);
+        const amounts = [30000, 50000, 100000, 150000, 200000, 300000, 500000, 800000, 1000000, 2000000];
+        expenses.push({
+          id: uid(), categoryId: cat, departmentId: dept,
+          amount: amounts[Math.floor(Math.random() * amounts.length)],
+          date: `${year}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,
+          description: `${EXPENSE_CATEGORIES.find(c=>c.id===cat)?.name || ""} 지출`,
+          receipt: Math.random() > 0.3, note: "",
+        });
+      }
     }
   }
   return { donors, offerings, expenses };
@@ -1604,10 +1609,14 @@ const RECEIPT_CSS = `
   .signature-area-r { display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
   .church-name-sign-r { font-size: 22px; font-weight: 700; color: #1a2a4a; letter-spacing: 6px; }
   .pastor-sign-r { font-size: 14px; color: #555; letter-spacing: 2px; }
-  .seal-r { position: absolute; right: 60px; top: -10px; width: 72px; height: 72px; border: 3px solid #c62828; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-15deg); opacity: 0.7; }
-  .seal-inner-r { width: 58px; height: 58px; border: 1.5px solid #c62828; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; line-height: 1.1; }
-  .seal-text-r { font-size: 11px; font-weight: 700; color: #c62828; letter-spacing: 1px; }
-  .seal-text-sm-r { font-size: 8px; color: #c62828; letter-spacing: 0.5px; }
+  .seal-r { position: absolute; right: 50px; top: -5px; width: 75px; height: 75px; border: 2.5px solid #b33a2b; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-12deg); opacity: 0.7; filter: blur(0.3px) contrast(1.2) saturate(0.85); box-shadow: 0 0 0 1px rgba(179,58,43,0.3), inset 0 0 3px rgba(179,58,43,0.15), 1px 1px 2px rgba(179,58,43,0.1); background: radial-gradient(ellipse at 30% 40%, rgba(179,58,43,0.06) 0%, transparent 70%), radial-gradient(ellipse at 70% 60%, rgba(179,58,43,0.04) 0%, transparent 60%); }
+  .seal-r::before { content: ""; position: absolute; width: 3px; height: 2px; background: rgba(179,58,43,0.25); border-radius: 50%; top: -4px; right: 12px; filter: blur(0.5px); }
+  .seal-r::after { content: ""; position: absolute; width: 2px; height: 3px; background: rgba(179,58,43,0.2); border-radius: 50%; bottom: 5px; left: -3px; filter: blur(0.4px); }
+  .seal-inner-r { width: 62px; height: 62px; border: 1.2px solid #b33a2b; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; line-height: 1.15; filter: blur(0.2px); background: radial-gradient(ellipse at 60% 30%, rgba(179,58,43,0.05) 0%, transparent 50%); }
+  .seal-text-r { color: #b33a2b; text-shadow: 0 0 0.5px rgba(179,58,43,0.5), 0.3px 0.3px 0.3px rgba(179,58,43,0.2); font-family: "Noto Serif KR", "Noto Serif", Georgia, serif; }
+  .seal-line1-r { font-size: 8px; font-weight: 600; letter-spacing: 1.5px; }
+  .seal-line2-r { font-size: 12px; font-weight: 800; letter-spacing: 2px; }
+  .seal-line3-r { font-size: 7px; font-weight: 400; letter-spacing: 3px; }
   .receipt-footer-r { background: #fafbfc; padding: 16px 48px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
   .footer-left-r { font-size: 11px; color: #aaa; }
   .footer-right-r { font-size: 10px; color: #ccc; }
@@ -1616,10 +1625,33 @@ const RECEIPT_CSS = `
   .usage-row-r .label-r { font-weight: 600; color: #666; }
   .usage-checkbox-r .box-r { width: 14px; height: 14px; border: 1.5px solid #aaa; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: #1a2a4a; }
   .usage-checkbox-r .box-r.checked-r { background: #1a2a4a; border-color: #1a2a4a; color: #fff; }
+  .donation-table-r thead th { background: #1a2a4a; color: #fff; padding: 8px 10px; font-size: 11px; font-weight: 600; text-align: center; }
+  .donation-table-r tbody td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid #f0f0f0; }
+  .donation-table-r tbody td.text-left-r { text-align: left; }
+  .donation-table-r tbody td.text-right-r { text-align: right; font-weight: 500; }
+  .donation-table-r tbody td.text-right-r.has-value-r { color: #1a2a4a; font-weight: 600; }
+  .donation-table-r tfoot td { padding: 10px; font-size: 14px; font-weight: 700; border-top: 2px solid #1a2a4a; background: #f5f6f8; }
+  .donation-table-r tfoot .total-label-r { text-align: center; color: #1a2a4a; }
+  .donation-table-r tfoot .total-amount-r { text-align: right; color: #1a2a4a; }
+  .receipt-pages-container { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 20px 0; }
+  .receipt-page { width: 210mm; min-height: 297mm; height: 297mm; box-sizing: border-box; padding: 15mm 18mm; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.08); break-after: page; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
+  .receipt-page:last-child { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
 `;
 
+/** 기부금 영수증 설정 (설정에서 값 로드, 없으면 기본값) */
+const RECEIPT_CONFIG_DEFAULTS = {
+  churchName: "○○교회",
+  businessNumber: "000-00-00000",
+  churchAddress: "서울시 ○○구 ○○로 00",
+  legalBasis: "소득세법 제34조제1항",
+  representativeName: "○○○",
+  donationType: "종교단체기부금",
+  donationCode: "41",
+  donationCategory: "금전",
+} as const;
+
 /* ====== 기부금 영수증 탭 ====== */
-function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offerings: Offering[]; settings?: { churchName?: string; address?: string; pastor?: string } }) {
+function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offerings: Offering[]; settings?: { churchName?: string; address?: string; pastor?: string; businessNumber?: string } }) {
   const mob = useIsMobile();
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
@@ -1680,14 +1712,83 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
     return `${t.getFullYear()}년 ${t.getMonth() + 1}월 ${t.getDate()}일`;
   }, []);
 
+  useEffect(() => {
+    if (!receiptDonor) return;
+    const id = "receipt-global-styles";
+    if (document.getElementById(id)) return;
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = RECEIPT_CSS;
+    document.head.appendChild(style);
+    return () => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    };
+  }, [receiptDonor]);
+
+  const captureReceiptPages = useCallback(async (): Promise<HTMLCanvasElement[]> => {
+    const pages = document.querySelectorAll("#receipt-card .receipt-page");
+    if (!pages.length) throw new Error("영수증 영역을 찾을 수 없습니다.");
+    pages[0].scrollIntoView({ behavior: "instant", block: "start" });
+    await new Promise(r => requestAnimationFrame(r));
+    await new Promise(r => setTimeout(r, 150));
+    const html2canvas = (await import("html2canvas")).default;
+    const canvases: HTMLCanvasElement[] = [];
+    for (let i = 0; i < pages.length; i++) {
+      const canvas = await html2canvas(pages[i] as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+      canvases.push(canvas);
+    }
+    return canvases;
+  }, []);
+
   const handleSaveImage = async () => {
     if (!receiptDonor) return;
     try {
-      const { toPng } = await import("html-to-image");
-      const el = document.getElementById("receipt-card");
-      if (!el) return;
-      const dataUrl = await toPng(el, { pixelRatio: 2, backgroundColor: "#ffffff" });
-      const a = document.createElement("a"); a.href = dataUrl; a.download = `기부금영수증_${receiptDonor.name}_${year}.png`; a.click();
+      const canvases = await captureReceiptPages();
+      const gap = 24;
+      const totalHeight = canvases.reduce((s, c) => s + c.height, 0) + gap * (canvases.length - 1);
+      const w = canvases[0].width;
+      const full = document.createElement("canvas");
+      full.width = w;
+      full.height = totalHeight;
+      const ctx = full.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillRect(0, 0, w, totalHeight);
+        let y = 0;
+        canvases.forEach(c => {
+          ctx.drawImage(c, 0, y);
+          y += c.height + gap;
+        });
+      }
+      const a = document.createElement("a");
+      a.href = full.toDataURL("image/png");
+      a.download = `기부금영수증_${receiptDonor.name}_${year}.png`;
+      a.click();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!receiptDonor) return;
+    try {
+      const { jsPDF } = await import("jspdf");
+      const canvases = await captureReceiptPages();
+      const pdf = new jsPDF({ unit: "mm", format: "a4" });
+      const a4W = 210;
+      const a4H = 297;
+      canvases.forEach((canvas, i) => {
+        if (i > 0) pdf.addPage();
+        const dataUrl = canvas.toDataURL("image/png");
+        pdf.addImage(dataUrl, "PNG", 0, 0, a4W, a4H);
+      });
+      pdf.save(`기부금영수증_${receiptDonor.name}_${year}.pdf`);
     } catch (e) {
       console.error(e);
     }
@@ -1697,15 +1798,37 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
     window.print();
   };
 
-  const receiptChurchName = (settings?.churchName || "").trim() || "○○교회";
-  const receiptAddress = (settings?.address || "").trim() || "-";
-  const receiptPastor = (settings?.pastor || "").trim() || "○○○ 목사";
-  const receiptChurchNameSpaced = receiptChurchName.split("").join(" ");
-  const receiptPastorSpaced = receiptPastor.replace(/\s/g, " \u00A0");
+  const cfg = {
+    churchName: (settings?.churchName || "").trim() || RECEIPT_CONFIG_DEFAULTS.churchName,
+    businessNumber: (settings?.businessNumber || "").trim() || "-",
+    churchAddress: (settings?.address || "").trim() || "-",
+    legalBasis: RECEIPT_CONFIG_DEFAULTS.legalBasis,
+    representativeName: (settings?.pastor || "").trim() || RECEIPT_CONFIG_DEFAULTS.representativeName,
+    donationType: RECEIPT_CONFIG_DEFAULTS.donationType,
+    donationCode: RECEIPT_CONFIG_DEFAULTS.donationCode,
+    donationCategory: RECEIPT_CONFIG_DEFAULTS.donationCategory,
+  };
+  const receiptChurchNameSpaced = cfg.churchName.split("").join(" ");
+  const receiptPastorSpaced = cfg.representativeName.replace(/\s/g, " \u00A0");
+  const donorAddress = (receiptDonor && "address" in receiptDonor && (receiptDonor as Donor).address) ? (receiptDonor as Donor).address : "-";
+  const donorResidentNumber = "******-*******";
+  const getSealLines = (name: string): [string, string, string] => {
+    if (!name?.trim()) return ["직인", "", ""];
+    const n = name.trim();
+    if (n.endsWith("교회")) {
+      const prefix = n.slice(0, -2);
+      if (prefix.length <= 2) return [prefix, "교회", "직인"];
+      if (prefix.length <= 4) return [prefix, "교회", "직인"];
+      const firstLen = prefix.length >= 6 ? 4 : 3;
+      return [prefix.slice(0, firstLen), prefix.slice(firstLen) + "교회", "직인"];
+    }
+    return [n, "직인", ""];
+  };
+  const sealLines = getSealLines(cfg.churchName);
   const getLastDay = (y: number, m: number) => new Date(y, m, 0).getDate();
   const handleShare = async () => {
     if (!receiptDonor) return;
-    const text = `${receiptChurchName} 기부금 영수증\n${receiptDonor.name} / ${year}년 / ₩${receiptData.total.toLocaleString("ko-KR")}`;
+    const text = `${cfg.churchName} 기부금 영수증\n${receiptDonor.name} / ${year}년 / ₩${receiptData.total.toLocaleString("ko-KR")}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "기부금 영수증", text });
@@ -1740,23 +1863,33 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
       return;
     }
     const timer = setTimeout(async () => {
-      const el = document.getElementById("receipt-card");
-      if (!el) {
+      const pages = document.querySelectorAll("#receipt-card-batch .receipt-page");
+      if (!pages.length) {
         setBatchIndex(i => i + 1);
         return;
       }
       try {
-        const { toPng } = await import("html-to-image");
+        const html2canvas = (await import("html2canvas")).default;
         const { jsPDF } = await import("jspdf");
-        const dataUrl = await toPng(el, { pixelRatio: 2, backgroundColor: "#ffffff" });
-        if (batchIndex === 0) pdfRef.current = new jsPDF();
-        else pdfRef.current!.addPage();
-        pdfRef.current!.addImage(dataUrl, "PNG", 0, 0, 210, 297);
+        const a4W = 210;
+        const a4H = 297;
+        for (let p = 0; p < pages.length; p++) {
+          const canvas = await html2canvas(pages[p] as HTMLElement, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            logging: false,
+          });
+          if (batchIndex === 0 && p === 0) pdfRef.current = new jsPDF();
+          else pdfRef.current!.addPage();
+          const dataUrl = canvas.toDataURL("image/png");
+          pdfRef.current!.addImage(dataUrl, "PNG", 0, 0, a4W, a4H);
+        }
       } catch (e) {
         console.error(e);
       }
       setBatchIndex(i => i + 1);
-    }, 350);
+    }, 400);
     return () => clearTimeout(timer);
   }, [batchGenerating, batchIndex, batchPdfList.length, year]);
 
@@ -1797,167 +1930,217 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
 
           {receiptDonor && (
             <>
-              <div id="receipt-card" className="receipt-wrapper-r" style={{ margin: "0 auto", boxSizing: "border-box" }}>
+              <div id="receipt-card" className="receipt-wrapper-r" style={{ margin: "0 auto", boxSizing: "border-box", background: "transparent" }}>
                 <style dangerouslySetInnerHTML={{ __html: RECEIPT_CSS }} />
-                <div className="receipt-header-r">
-                  <span className="page-number-r">001/001</span>
-                  <div className="header-top-r">
-                    <span className="doc-type-r">소득세법 시행규칙 [별지 제45호의2서식]</span>
-                    <span className="serial-number-r">No. {serialNumber}</span>
-                  </div>
-                  <div className="receipt-title-r">기 부 금 영 수 증</div>
-                  <div className="receipt-subtitle-r">DONATION RECEIPT</div>
-                </div>
-                <div className="receipt-body-r">
-                  <div className="section-r">
-                    <div className="section-header-r">
-                      <span className="section-number-r">1</span>
-                      <span className="section-title-r">기 부 자</span>
+                <div className="receipt-pages-container">
+                  {/* 페이지 1: 헤더 + ①②③ + ④ 기간/총액 + 테이블 1~6월 */}
+                  <div className="receipt-page" data-receipt-page="1">
+                    <div className="receipt-header-r" style={{ margin: "0 -18mm" }}>
+                      <span className="page-number-r">001/002</span>
+                      <div className="header-top-r">
+                        <span className="doc-type-r">소득세법 시행규칙 [별지 제45호의2서식] &lt;개정 2026. 1. 2.&gt;</span>
+                        <span className="serial-number-r">No. {serialNumber}</span>
+                      </div>
+                      <div className="receipt-title-r">기 부 금 영 수 증</div>
+                      <div className="receipt-subtitle-r">DONATION RECEIPT</div>
                     </div>
-                    <table className="info-table-r">
-                      <tbody>
-                        <tr>
-                          <th>성명 (법인명)</th>
-                          <td>{receiptDonor.name}</td>
-                          <th style={{ width: 120 }}>주민등록번호</th>
-                          <td>******-*******</td>
-                        </tr>
-                        <tr>
-                          <th>연락처</th>
-                          <td>{receiptDonor.phone || "-"}</td>
-                          <th>주소</th>
-                          <td>-</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="section-r">
-                    <div className="section-header-r">
-                      <span className="section-number-r">2</span>
-                      <span className="section-title-r">기 부 금 단 체</span>
-                    </div>
-                    <table className="info-table-r">
-                      <tbody>
-                        <tr>
-                          <th>단체명</th>
-                          <td>{receiptChurchName}</td>
-                          <th style={{ width: 120 }}>사업자등록번호</th>
-                          <td>-</td>
-                        </tr>
-                        <tr>
-                          <th>소재지</th>
-                          <td colSpan={3}>{receiptAddress}</td>
-                        </tr>
-                        <tr>
-                          <th>기부금 유형</th>
-                          <td>종교단체기부금</td>
-                          <th style={{ width: 120 }}>코드</th>
-                          <td>41</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="section-r">
-                    <div className="section-header-r">
-                      <span className="section-number-r">3</span>
-                      <span className="section-title-r">기 부 내 용</span>
-                    </div>
-                    <table className="info-table-r" style={{ marginBottom: 8 }}>
-                      <tbody>
-                        <tr>
-                          <th>기부 기간</th>
-                          <td>{year}. 01. 01 ~ {year}. 12. 31</td>
-                          <th style={{ width: 100 }}>기부 총액</th>
-                          <td className="amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="section-r">
-                    <div className="section-header-r">
-                      <span className="section-number-r">4</span>
-                      <span className="section-title-r">월 별 내 역</span>
-                    </div>
-                    <table className="monthly-table-r">
-                      <thead>
-                        <tr>
-                          <th style={{ width: 50 }}>월</th>
-                          <th>연월일</th>
-                          <th style={{ width: 80 }}>구분</th>
-                          <th>품명</th>
-                          <th style={{ width: 140, textAlign: "right" }}>금 액 (원)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
-                          const lastDay = getLastDay(year, m);
-                          const dateStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-                          const amt = receiptData.monthly[m - 1];
-                          return (
-                            <tr key={m}>
-                              <td className="month-label-r">{m}월</td>
-                              <td>{dateStr}</td>
-                              <td>금전</td>
-                              <td>헌금</td>
-                              <td className={`month-amount-r ${amt > 0 ? "has-value-r" : "zero-r"}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                      <tfoot>
-                        <tr>
-                          <td colSpan={4} className="total-label-r">합 계</td>
-                          <td className="total-amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                  <div className="usage-row-r">
-                    <span className="label-r">용도 :</span>
-                    <span className="usage-checkbox-r">
-                      <span className="box-r checked-r">✓</span> 세금공제신청용
-                    </span>
-                    <span className="usage-checkbox-r">
-                      <span className="box-r"></span> 기타 (용도의 사용불가)
-                    </span>
-                  </div>
-                  <div className="certification-r">
-                    <div className="cert-text-r">
-                      <span className="law-ref-r">「소득세법」 제34조, 「조세특례제한법」 제76조 · 제88조의4 및 「법인세법」 제24조에 따른 기부금을</span>
-                      위와 같이 기부하였음을 증명하여 주시기 바랍니다.
-                    </div>
-                    <div className="cert-date-r">{issueDate.replace(/년\s*/, " 년  ").replace(/월\s*/, " 월  ").replace(/일$/, " 일")}</div>
-                    <div style={{ textAlign: "right", marginBottom: 32, fontSize: 14, color: "#555" }}>
-                      신청인 &nbsp;&nbsp; <strong style={{ color: "#222", letterSpacing: 4 }}>{receiptDonor.name.split("").join(" ")}</strong> &nbsp;&nbsp; <span style={{ color: "#aaa" }}>(서명 또는 인)</span>
-                    </div>
-                    <div style={{ textAlign: "center", fontSize: 13, color: "#999", marginBottom: 16 }}>위와 같이 기부금을 기부하였음을 증명합니다.</div>
-                    <div className="signature-area-r">
-                      <div className="church-name-sign-r">{receiptChurchNameSpaced}</div>
-                      <div className="pastor-sign-r">담임목사 &nbsp; {receiptPastorSpaced}</div>
-                      <div className="seal-r">
-                        <div className="seal-inner-r">
-                          {receiptChurchName.endsWith("교회") && receiptChurchName.length > 2 ? (
-                            <>
-                              <span className="seal-text-sm-r">{receiptChurchName.slice(0, -2)}</span>
-                              <span className="seal-text-r">교회</span>
-                            </>
-                          ) : (
-                            <span className="seal-text-r">{receiptChurchName || "직인"}</span>
-                          )}
-                          <span className="seal-text-sm-r">직인</span>
+                    <div className="receipt-body-r" style={{ flex: 1, paddingTop: 24 }}>
+                      <div className="section-r">
+                        <div className="section-header-r">
+                          <span className="section-number-r">1</span>
+                          <span className="section-title-r">기 부 자</span>
                         </div>
+                        <table className="info-table-r">
+                          <tbody>
+                            <tr>
+                              <th>성명 (법인명)</th>
+                              <td>{receiptDonor.name}</td>
+                              <th style={{ width: 140 }}>주민등록번호 (사업자등록번호)</th>
+                              <td>{donorResidentNumber}</td>
+                            </tr>
+                            <tr>
+                              <th>주소 (소재지)</th>
+                              <td colSpan={3}>{donorAddress}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="section-r">
+                        <div className="section-header-r">
+                          <span className="section-number-r">2</span>
+                          <span className="section-title-r">기 부 금 단 체</span>
+                        </div>
+                        <table className="info-table-r">
+                          <tbody>
+                            <tr>
+                              <th>단체명</th>
+                              <td>{cfg.churchName}</td>
+                              <th style={{ width: 140 }}>사업자등록번호 (고유번호)</th>
+                              <td>{cfg.businessNumber}</td>
+                            </tr>
+                            <tr>
+                              <th>소재지</th>
+                              <td colSpan={3}>{cfg.churchAddress}</td>
+                            </tr>
+                            <tr>
+                              <th>기부금공제대상 기부금단체 근거법령</th>
+                              <td colSpan={3}>{cfg.legalBasis}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="section-r">
+                        <div className="section-header-r">
+                          <span className="section-number-r">3</span>
+                          <span className="section-title-r">기 부 금 모 집 처</span>
+                        </div>
+                        <table className="info-table-r">
+                          <tbody>
+                            <tr>
+                              <th>단체명</th>
+                              <td>-</td>
+                              <th style={{ width: 140 }}>사업자등록번호</th>
+                              <td>-</td>
+                            </tr>
+                            <tr>
+                              <th>소재지</th>
+                              <td colSpan={3}>-</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="section-r">
+                        <div className="section-header-r">
+                          <span className="section-number-r">4</span>
+                          <span className="section-title-r">기 부 내 용</span>
+                        </div>
+                        <table className="info-table-r" style={{ marginBottom: 8 }}>
+                          <tbody>
+                            <tr>
+                              <th>기부 기간</th>
+                              <td>{year}. 01. 01 ~ {year}. 12. 31</td>
+                              <th style={{ width: 100 }}>기부 총액</th>
+                              <td className="amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <table className="donation-table-r monthly-table-r">
+                          <thead>
+                            <tr>
+                              <th style={{ width: 90 }}>유형</th>
+                              <th style={{ width: 50 }}>코드</th>
+                              <th style={{ width: 60 }}>구분</th>
+                              <th style={{ width: 95 }}>연월일</th>
+                              <th>내용 (품명/수량/단가)</th>
+                              <th style={{ width: 110, textAlign: "right" }}>금액</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[1, 2, 3, 4, 5, 6].map((m, idx) => {
+                              const lastDay = getLastDay(year, m);
+                              const dateStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+                              const amt = receiptData.monthly[m - 1];
+                              const typeVal = idx === 0 ? cfg.donationType : '"';
+                              return (
+                                <tr key={m}>
+                                  <td className="text-left-r">{typeVal}</td>
+                                  <td>{cfg.donationCode}</td>
+                                  <td>{cfg.donationCategory}</td>
+                                  <td>{dateStr}</td>
+                                  <td className="text-left-r">헌금</td>
+                                  <td className={`text-right-r ${amt > 0 ? "has-value-r" : ""}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="receipt-footer-r">
-                  <div className="footer-left-r">210mm × 297mm (일반용지 60g/㎡)</div>
-                  <div className="footer-right-r">Powered by 교회매니저</div>
+                  {/* 페이지 2: 테이블 7~12월 + 계 + 용도 + 증명 + 서명 */}
+                  <div className="receipt-page" data-receipt-page="2">
+                    <div style={{ fontSize: 10, color: "#999", textAlign: "right", marginBottom: 8 }}>002/002</div>
+                    <div className="receipt-body-r" style={{ paddingTop: 0, flex: 1 }}>
+                      <div className="section-r">
+                        <table className="donation-table-r monthly-table-r">
+                          <thead>
+                            <tr>
+                              <th style={{ width: 90 }}>유형</th>
+                              <th style={{ width: 50 }}>코드</th>
+                              <th style={{ width: 60 }}>구분</th>
+                              <th style={{ width: 95 }}>연월일</th>
+                              <th>내용 (품명/수량/단가)</th>
+                              <th style={{ width: 110, textAlign: "right" }}>금액</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[7, 8, 9, 10, 11, 12].map((m, idx) => {
+                              const lastDay = getLastDay(year, m);
+                              const dateStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+                              const amt = receiptData.monthly[m - 1];
+                              const typeVal = idx === 0 ? '"' : '"';
+                              return (
+                                <tr key={m}>
+                                  <td className="text-left-r">{typeVal}</td>
+                                  <td>{cfg.donationCode}</td>
+                                  <td>{cfg.donationCategory}</td>
+                                  <td>{dateStr}</td>
+                                  <td className="text-left-r">헌금</td>
+                                  <td className={`text-right-r ${amt > 0 ? "has-value-r" : ""}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                          <tfoot>
+                            <tr>
+                              <td colSpan={5} className="total-label-r">계</td>
+                              <td className="total-amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                      <div className="usage-row-r">
+                        <span className="label-r">용도 :</span>
+                        <span className="usage-checkbox-r">
+                          <span className="box-r checked-r">✓</span> 세금공제신청용
+                        </span>
+                        <span className="usage-checkbox-r">
+                          <span className="box-r"></span> 기타 (용도의 사용불가)
+                        </span>
+                      </div>
+                      <div className="certification-r">
+                        <div className="cert-text-r">
+                          <span className="law-ref-r">「소득세법」 제34조, 「조세특례제한법」 제76조 · 제88조의4 및 「법인세법」 제24조에 따른 기부금을</span>
+                          위와 같이 기부하였음을 증명하여 주시기 바랍니다.
+                        </div>
+                        <div className="cert-date-r">{issueDate.replace(/년\s*/, " 년  ").replace(/월\s*/, " 월  ").replace(/일$/, " 일")}</div>
+                        <div style={{ textAlign: "right", marginBottom: 32, fontSize: 14, color: "#555" }}>
+                          신청인 &nbsp;&nbsp; <strong style={{ color: "#222", letterSpacing: 4 }}>{receiptDonor.name.split("").join(" ")}</strong> &nbsp;&nbsp; <span style={{ color: "#aaa" }}>(서명 또는 인)</span>
+                        </div>
+                        <div style={{ textAlign: "center", fontSize: 13, color: "#999", marginBottom: 16 }}>위와 같이 기부금을 기부하였음을 증명합니다.</div>
+                        <div className="signature-area-r">
+                          <div className="church-name-sign-r">{receiptChurchNameSpaced}</div>
+                          <div className="pastor-sign-r">담임목사 &nbsp; {receiptPastorSpaced}</div>
+                          <div className="seal-r">
+                            <div className="seal-inner-r">
+                              {sealLines[0] && <span className="seal-text-r seal-line1-r">{sealLines[0]}</span>}
+                              {sealLines[1] && <span className="seal-text-r seal-line2-r">{sealLines[1]}</span>}
+                              {sealLines[2] && <span className="seal-text-r seal-line3-r">{sealLines[2]}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="receipt-footer-r" style={{ margin: "24px -18mm 0", marginTop: "auto" }}>
+                      <div className="footer-left-r">210mm × 297mm (일반용지 60g/㎡)</div>
+                      <div className="footer-right-r">Powered by 교회매니저</div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginTop: 16 }}>
                 <Button onClick={handleSaveImage} variant="accent">이미지 저장</Button>
-                <Button onClick={handlePrint} variant="ghost">PDF 다운로드</Button>
+                <Button onClick={handleDownloadPdf} variant="ghost">PDF 다운로드</Button>
                 <Button onClick={handleShare} variant="soft">카카오톡 공유</Button>
               </div>
             </>
@@ -2007,162 +2190,99 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
             </Button>
           </div>
           {batchGenerating && receiptDonor && (
-            <div id="receipt-card" className="receipt-wrapper-r" style={{ position: "absolute", left: -9999, top: 0, margin: 0, boxSizing: "border-box" }}>
+            <div id="receipt-card-batch" className="receipt-wrapper-r" style={{ position: "absolute", left: -9999, top: 0, background: "transparent" }}>
               <style dangerouslySetInnerHTML={{ __html: RECEIPT_CSS }} />
-              <div className="receipt-header-r">
-                <span className="page-number-r">001/001</span>
-                <div className="header-top-r">
-                  <span className="doc-type-r">소득세법 시행규칙 [별지 제45호의2서식]</span>
-                  <span className="serial-number-r">No. {serialNumber}</span>
-                </div>
-                <div className="receipt-title-r">기 부 금 영 수 증</div>
-                <div className="receipt-subtitle-r">DONATION RECEIPT</div>
-              </div>
-              <div className="receipt-body-r">
-                <div className="section-r">
-                  <div className="section-header-r">
-                    <span className="section-number-r">1</span>
-                    <span className="section-title-r">기 부 자</span>
+              <div className="receipt-pages-container">
+                <div className="receipt-page" data-receipt-page="1">
+                  <div className="receipt-header-r" style={{ margin: "0 -18mm" }}>
+                    <span className="page-number-r">001/002</span>
+                    <div className="header-top-r">
+                      <span className="doc-type-r">소득세법 시행규칙 [별지 제45호의2서식] &lt;개정 2026. 1. 2.&gt;</span>
+                      <span className="serial-number-r">No. {serialNumber}</span>
+                    </div>
+                    <div className="receipt-title-r">기 부 금 영 수 증</div>
+                    <div className="receipt-subtitle-r">DONATION RECEIPT</div>
                   </div>
-                  <table className="info-table-r">
-                    <tbody>
-                      <tr>
-                        <th>성명 (법인명)</th>
-                        <td>{receiptDonor.name}</td>
-                        <th style={{ width: 120 }}>주민등록번호</th>
-                        <td>******-*******</td>
-                      </tr>
-                      <tr>
-                        <th>연락처</th>
-                        <td>{receiptDonor.phone || "-"}</td>
-                        <th>주소</th>
-                        <td>-</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className="section-r">
-                  <div className="section-header-r">
-                    <span className="section-number-r">2</span>
-                    <span className="section-title-r">기 부 금 단 체</span>
-                  </div>
-                  <table className="info-table-r">
-                    <tbody>
-                      <tr>
-                        <th>단체명</th>
-                        <td>{receiptChurchName}</td>
-                        <th style={{ width: 120 }}>사업자등록번호</th>
-                        <td>-</td>
-                      </tr>
-                      <tr>
-                        <th>소재지</th>
-                        <td colSpan={3}>{receiptAddress}</td>
-                      </tr>
-                      <tr>
-                        <th>기부금 유형</th>
-                        <td>종교단체기부금</td>
-                        <th style={{ width: 120 }}>코드</th>
-                        <td>41</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className="section-r">
-                  <div className="section-header-r">
-                    <span className="section-number-r">3</span>
-                    <span className="section-title-r">기 부 내 용</span>
-                  </div>
-                  <table className="info-table-r" style={{ marginBottom: 8 }}>
-                    <tbody>
-                      <tr>
-                        <th>기부 기간</th>
-                        <td>{year}. 01. 01 ~ {year}. 12. 31</td>
-                        <th style={{ width: 100 }}>기부 총액</th>
-                        <td className="amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className="section-r">
-                  <div className="section-header-r">
-                    <span className="section-number-r">4</span>
-                    <span className="section-title-r">월 별 내 역</span>
-                  </div>
-                  <table className="monthly-table-r">
-                    <thead>
-                      <tr>
-                        <th style={{ width: 50 }}>월</th>
-                        <th>연월일</th>
-                        <th style={{ width: 80 }}>구분</th>
-                        <th>품명</th>
-                        <th style={{ width: 140, textAlign: "right" }}>금 액 (원)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
-                        const lastDay = getLastDay(year, m);
-                        const dateStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-                        const amt = receiptData.monthly[m - 1];
-                        return (
-                          <tr key={m}>
-                            <td className="month-label-r">{m}월</td>
-                            <td>{dateStr}</td>
-                            <td>금전</td>
-                            <td>헌금</td>
-                            <td className={`month-amount-r ${amt > 0 ? "has-value-r" : "zero-r"}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colSpan={4} className="total-label-r">합 계</td>
-                        <td className="total-amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-                <div className="usage-row-r">
-                  <span className="label-r">용도 :</span>
-                  <span className="usage-checkbox-r">
-                    <span className="box-r checked-r">✓</span> 세금공제신청용
-                  </span>
-                  <span className="usage-checkbox-r">
-                    <span className="box-r"></span> 기타 (용도의 사용불가)
-                  </span>
-                </div>
-                <div className="certification-r">
-                  <div className="cert-text-r">
-                    <span className="law-ref-r">「소득세법」 제34조, 「조세특례제한법」 제76조 · 제88조의4 및 「법인세법」 제24조에 따른 기부금을</span>
-                    위와 같이 기부하였음을 증명하여 주시기 바랍니다.
-                  </div>
-                  <div className="cert-date-r">{issueDate.replace(/년\s*/, " 년  ").replace(/월\s*/, " 월  ").replace(/일$/, " 일")}</div>
-                  <div style={{ textAlign: "right", marginBottom: 32, fontSize: 14, color: "#555" }}>
-                    신청인 &nbsp;&nbsp; <strong style={{ color: "#222", letterSpacing: 4 }}>{receiptDonor.name.split("").join(" ")}</strong> &nbsp;&nbsp; <span style={{ color: "#aaa" }}>(서명 또는 인)</span>
-                  </div>
-                  <div style={{ textAlign: "center", fontSize: 13, color: "#999", marginBottom: 16 }}>위와 같이 기부금을 기부하였음을 증명합니다.</div>
-                  <div className="signature-area-r">
-                    <div className="church-name-sign-r">{receiptChurchNameSpaced}</div>
-                    <div className="pastor-sign-r">담임목사 &nbsp; {receiptPastorSpaced}</div>
-                    <div className="seal-r">
-                      <div className="seal-inner-r">
-                        {receiptChurchName.endsWith("교회") && receiptChurchName.length > 2 ? (
-                          <>
-                            <span className="seal-text-sm-r">{receiptChurchName.slice(0, -2)}</span>
-                            <span className="seal-text-r">교회</span>
-                          </>
-                        ) : (
-                          <span className="seal-text-r">{receiptChurchName || "직인"}</span>
-                        )}
-                        <span className="seal-text-sm-r">직인</span>
-                      </div>
+                  <div className="receipt-body-r" style={{ flex: 1, paddingTop: 24 }}>
+                    <div className="section-r">
+                      <div className="section-header-r"><span className="section-number-r">1</span><span className="section-title-r">기 부 자</span></div>
+                      <table className="info-table-r">
+                        <tbody>
+                          <tr><th>성명 (법인명)</th><td>{receiptDonor.name}</td><th style={{ width: 140 }}>주민등록번호 (사업자등록번호)</th><td>{donorResidentNumber}</td></tr>
+                          <tr><th>주소 (소재지)</th><td colSpan={3}>{donorAddress}</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="section-r">
+                      <div className="section-header-r"><span className="section-number-r">2</span><span className="section-title-r">기 부 금 단 체</span></div>
+                      <table className="info-table-r">
+                        <tbody>
+                          <tr><th>단체명</th><td>{cfg.churchName}</td><th style={{ width: 140 }}>사업자등록번호 (고유번호)</th><td>{cfg.businessNumber}</td></tr>
+                          <tr><th>소재지</th><td colSpan={3}>{cfg.churchAddress}</td></tr>
+                          <tr><th>기부금공제대상 기부금단체 근거법령</th><td colSpan={3}>{cfg.legalBasis}</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="section-r">
+                      <div className="section-header-r"><span className="section-number-r">3</span><span className="section-title-r">기 부 금 모 집 처</span></div>
+                      <table className="info-table-r">
+                        <tbody>
+                          <tr><th>단체명</th><td>-</td><th style={{ width: 140 }}>사업자등록번호</th><td>-</td></tr>
+                          <tr><th>소재지</th><td colSpan={3}>-</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="section-r">
+                      <div className="section-header-r"><span className="section-number-r">4</span><span className="section-title-r">기 부 내 용</span></div>
+                      <table className="info-table-r" style={{ marginBottom: 8 }}>
+                        <tbody><tr><th>기부 기간</th><td>{year}. 01. 01 ~ {year}. 12. 31</td><th style={{ width: 100 }}>기부 총액</th><td className="amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td></tr></tbody>
+                      </table>
+                      <table className="donation-table-r monthly-table-r">
+                        <thead><tr><th style={{ width: 90 }}>유형</th><th style={{ width: 50 }}>코드</th><th style={{ width: 60 }}>구분</th><th style={{ width: 95 }}>연월일</th><th>내용 (품명/수량/단가)</th><th style={{ width: 110, textAlign: "right" }}>금액</th></tr></thead>
+                        <tbody>
+                          {[1, 2, 3, 4, 5, 6].map((m, idx) => {
+                            const lastDay = getLastDay(year, m);
+                            const dateStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+                            const amt = receiptData.monthly[m - 1];
+                            return (<tr key={m}><td className="text-left-r">{idx === 0 ? cfg.donationType : '"'}</td><td>{cfg.donationCode}</td><td>{cfg.donationCategory}</td><td>{dateStr}</td><td className="text-left-r">헌금</td><td className={`text-right-r ${amt > 0 ? "has-value-r" : ""}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td></tr>);
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="receipt-footer-r">
-                <div className="footer-left-r">210mm × 297mm (일반용지 60g/㎡)</div>
-                <div className="footer-right-r">Powered by 교회매니저</div>
+                <div className="receipt-page" data-receipt-page="2">
+                  <div style={{ fontSize: 10, color: "#999", textAlign: "right", marginBottom: 8 }}>002/002</div>
+                  <div className="receipt-body-r" style={{ paddingTop: 0, flex: 1 }}>
+                    <div className="section-r">
+                      <table className="donation-table-r monthly-table-r">
+                        <thead><tr><th style={{ width: 90 }}>유형</th><th style={{ width: 50 }}>코드</th><th style={{ width: 60 }}>구분</th><th style={{ width: 95 }}>연월일</th><th>내용 (품명/수량/단가)</th><th style={{ width: 110, textAlign: "right" }}>금액</th></tr></thead>
+                        <tbody>
+                          {[7, 8, 9, 10, 11, 12].map((m, idx) => {
+                            const lastDay = getLastDay(year, m);
+                            const dateStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+                            const amt = receiptData.monthly[m - 1];
+                            return (<tr key={m}><td className="text-left-r">"</td><td>{cfg.donationCode}</td><td>{cfg.donationCategory}</td><td>{dateStr}</td><td className="text-left-r">헌금</td><td className={`text-right-r ${amt > 0 ? "has-value-r" : ""}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td></tr>);
+                          })}
+                        </tbody>
+                        <tfoot><tr><td colSpan={5} className="total-label-r">계</td><td className="total-amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td></tr></tfoot>
+                      </table>
+                    </div>
+                    <div className="usage-row-r"><span className="label-r">용도 :</span><span className="usage-checkbox-r"><span className="box-r checked-r">✓</span> 세금공제신청용</span><span className="usage-checkbox-r"><span className="box-r"></span> 기타 (용도의 사용불가)</span></div>
+                    <div className="certification-r">
+                      <div className="cert-text-r"><span className="law-ref-r">「소득세법」 제34조, 「조세특례제한법」 제76조 · 제88조의4 및 「법인세법」 제24조에 따른 기부금을</span> 위와 같이 기부하였음을 증명하여 주시기 바랍니다.</div>
+                      <div className="cert-date-r">{issueDate.replace(/년\s*/, " 년  ").replace(/월\s*/, " 월  ").replace(/일$/, " 일")}</div>
+                      <div style={{ textAlign: "right", marginBottom: 32, fontSize: 14, color: "#555" }}>신청인 &nbsp;&nbsp; <strong style={{ color: "#222", letterSpacing: 4 }}>{receiptDonor.name.split("").join(" ")}</strong> &nbsp;&nbsp; <span style={{ color: "#aaa" }}>(서명 또는 인)</span></div>
+                      <div style={{ textAlign: "center", fontSize: 13, color: "#999", marginBottom: 16 }}>위와 같이 기부금을 기부하였음을 증명합니다.</div>
+                      <div className="signature-area-r">
+                        <div className="church-name-sign-r">{receiptChurchNameSpaced}</div>
+                        <div className="pastor-sign-r">담임목사 &nbsp; {receiptPastorSpaced}</div>
+                        <div className="seal-r"><div className="seal-inner-r">{sealLines[0] && <span className="seal-text-r seal-line1-r">{sealLines[0]}</span>}{sealLines[1] && <span className="seal-text-r seal-line2-r">{sealLines[1]}</span>}{sealLines[2] && <span className="seal-text-r seal-line3-r">{sealLines[2]}</span>}</div></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="receipt-footer-r" style={{ margin: "24px -18mm 0", marginTop: "auto" }}><div className="footer-left-r">210mm × 297mm (일반용지 60g/㎡)</div><div className="footer-right-r">Powered by 교회매니저</div></div>
+                </div>
               </div>
             </div>
           )}
@@ -2175,8 +2295,8 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
 /* ============================================================ */
 /* 메인 재정관리 컴포넌트                                         */
 /* ============================================================ */
-/** 설정(교회이름, 소재지, 담임목사)은 재정 영수증에 사용. SuperPlanner에서 db.settings 전달 */
-export function FinancePage({ settings }: { settings?: { churchName?: string; address?: string; pastor?: string } }) {
+/** 설정(교회이름, 소재지, 담임목사, 사업자등록번호)은 재정 영수증에 사용. SuperPlanner에서 db.settings 전달 */
+export function FinancePage({ settings }: { settings?: { churchName?: string; address?: string; pastor?: string; businessNumber?: string } }) {
   const mob = useIsMobile();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sampleData] = useState(() => generateSampleData());

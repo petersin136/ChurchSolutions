@@ -156,8 +156,49 @@ export function SettingsPage({
             <option value="9">9월</option>
           </select>
         </div>
+      </div>
+
+      <div className="card card-body-padded" style={{ marginTop: 16 }}>
+        <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
+          📋 교회 정보 (기부금 영수증용)
+        </h4>
+        <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6, marginBottom: 12 }}>
+          아래 항목은 설정 시에는 <strong>필수가 아니며</strong> 비워 두어도 됩니다.
+          다만 <strong>기부금 영수증 발행 시에는 반드시 필요</strong>하며, 공란이 있으면 영수증에 &quot;-&quot;로 표시됩니다.
+        </p>
+        <details style={{ marginBottom: 16 }}>
+          <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--text2)" }}>
+            영수증 양식 참고 이미지 보기
+          </summary>
+          <div style={{ marginTop: 12, padding: 12, background: "var(--bg2)", borderRadius: 8 }}>
+            <img
+              src="/receipt-reference.png"
+              alt="기부금 영수증 양식 참고"
+              style={{ maxWidth: "100%", height: "auto", border: "1px solid var(--border)", borderRadius: 4 }}
+            />
+            <p style={{ fontSize: 11, color: "var(--text2)", marginTop: 8 }}>
+              ② 기부금 단체: 단체명(교회 이름), 사업자등록번호, 소재지가 영수증에 표시됩니다.
+            </p>
+          </div>
+        </details>
         <div className="fg">
-          <label className="fl">소재지 (기부금 영수증용)</label>
+          <label className="fl">사업자등록번호 (고유번호)</label>
+          <input
+            type="text"
+            className="fi"
+            placeholder="000-00-00000"
+            defaultValue={db.settings.businessNumber ?? ""}
+            onInput={(e) => {
+              setDb((prev) => ({
+                ...prev,
+                settings: { ...prev.settings, businessNumber: (e.target as HTMLInputElement).value },
+              }));
+              save();
+            }}
+          />
+        </div>
+        <div className="fg">
+          <label className="fl">소재지</label>
           <input
             type="text"
             className="fi"
@@ -173,7 +214,7 @@ export function SettingsPage({
           />
         </div>
         <div className="fg">
-          <label className="fl">담임목사 (기부금 영수증용)</label>
+          <label className="fl">담임목사</label>
           <input
             type="text"
             className="fi"
