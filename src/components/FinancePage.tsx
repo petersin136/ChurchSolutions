@@ -188,16 +188,17 @@ function Badge({ children, color = C.accent, bg }: { children: ReactNode; color?
   );
 }
 
-function Button({ children, onClick, variant = "primary", size = "md", icon, style: extraStyle }: {
+function Button({ children, onClick, variant = "primary", size = "md", icon, disabled, style: extraStyle }: {
   children: ReactNode; onClick?: () => void; variant?: string; size?: string;
-  icon?: ReactNode; style?: CSSProperties;
+  icon?: ReactNode; disabled?: boolean; style?: CSSProperties;
 }) {
   const base: CSSProperties = {
     display: "inline-flex", alignItems: "center", gap: 6,
-    border: "none", borderRadius: 10, cursor: "pointer",
+    border: "none", borderRadius: 10, cursor: disabled ? "not-allowed" : "pointer",
     fontWeight: 600, fontFamily: "inherit", transition: "all 0.15s ease",
     fontSize: size === "sm" ? 13 : 14,
     padding: size === "sm" ? "6px 14px" : "10px 20px",
+    opacity: disabled ? 0.6 : 1,
   };
   const variants: Record<string, CSSProperties> = {
     primary: { background: C.navy, color: "#fff" },
@@ -208,7 +209,7 @@ function Button({ children, onClick, variant = "primary", size = "md", icon, sty
     soft: { background: C.accentLight, color: C.accent },
   };
   return (
-    <button onClick={onClick} style={{ ...base, ...(variants[variant] || variants.primary), ...extraStyle }}>
+    <button type="button" onClick={onClick} disabled={disabled} style={{ ...base, ...(variants[variant] || variants.primary), ...extraStyle }}>
       {icon}{children}
     </button>
   );
