@@ -1905,7 +1905,18 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-        <Select label="연도" options={[{ value: currentYear.toString(), label: `${currentYear}년` }, { value: (currentYear - 1).toString(), label: `${currentYear - 1}년` }, { value: (currentYear - 2).toString(), label: `${currentYear - 2}년` }]} value={yearStr} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value)} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>연도</label>
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            style={{ padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", color: C.navy, background: "#fff", outline: "none", cursor: "pointer" }}
+          >
+            <option value={currentYear}>{currentYear}년</option>
+            <option value={currentYear - 1}>{currentYear - 1}년</option>
+            <option value={currentYear - 2}>{currentYear - 2}년</option>
+          </select>
+        </div>
         <button type="button" onClick={() => setBatchMode(b => !b)} style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${C.border}`, background: batchMode ? C.navy : C.bg, color: batchMode ? "#fff" : C.navy, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
           {batchMode ? "개별 발행" : "일괄 발행"}
         </button>
