@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
+import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown } from "lucide-react";
+import { Pagination } from "@/components/common/Pagination";
 
 function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
@@ -371,17 +373,19 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
   settings: { title: "설정", desc: "교회 기본 정보" },
 };
 
-const NAV_ITEMS: { id: SubPage; icon: string; label: string }[] = [
-  { id: "dash", icon: "📊", label: "대시보드" },
-  { id: "edit", icon: "✏️", label: "주보 편집" },
-  { id: "history", icon: "📁", label: "지난 주보" },
-  { id: "settings", icon: "⚙️", label: "설정" },
+const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>; label: string }[] = [
+  { id: "dash", Icon: LayoutDashboard, label: "대시보드" },
+  { id: "edit", Icon: Pencil, label: "주보 편집" },
+  { id: "history", Icon: FolderOpen, label: "지난 주보" },
+  { id: "settings", Icon: Settings, label: "설정" },
 ];
 
 export function BulletinPage() {
   const mob = useIsMobile();
   const [db, setDb] = useState<BulletinDB>(() => loadBulletin());
   const [activeSub, setActiveSub] = useState<SubPage>("dash");
+  const [currentPageHistory, setCurrentPageHistory] = useState(1);
+  const listRefHistory = useRef<HTMLDivElement>(null);
   const [sideOpen, setSideOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const dashPreviewRef = useRef<HTMLDivElement>(null);
@@ -411,6 +415,7 @@ export function BulletinPage() {
 
   const handleNav = (id: SubPage) => {
     setActiveSub(id);
+    if (id === "history") setCurrentPageHistory(1);
     if (mob) setSideOpen(false);
   };
 
@@ -537,35 +542,39 @@ export function BulletinPage() {
         zIndex: 100,
         ...(mob ? { position: "fixed", top: 0, left: 0, bottom: 0, transform: sideOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
       }}>
-        <div style={{ padding: "22px 18px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ padding: "22px 18px", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.9)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#f97316,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>📰</div>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}><Newspaper size={20} strokeWidth={1.5} /></div>
             <div><div style={{ fontWeight: 700, fontSize: 17 }}>주보 시스템</div><div style={{ fontSize: 11, opacity: 0.5 }}>교회 주보 자동 생성</div></div>
           </div>
         </div>
         <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
           <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "14px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>주보 관리</div>
-          {NAV_ITEMS.map(n => (
-            <button key={n.id} onClick={() => handleNav(n.id)} style={{
-              display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: activeSub === n.id ? "rgba(59,130,246,0.15)" : "transparent",
-              color: activeSub === n.id ? C.blue : "rgba(255,255,255,0.7)", fontWeight: activeSub === n.id ? 600 : 500, fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
-            }}>
-              <span style={{ width: 20, textAlign: "center", fontSize: 15 }}>{n.icon}</span>{n.label}
-            </button>
-          ))}
+          {NAV_ITEMS.map(n => {
+            const isActive = activeSub === n.id;
+            const Icon = n.Icon;
+            return (
+              <button key={n.id} onClick={() => handleNav(n.id)} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500, fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
+              }}>
+                <Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} />{n.label}
+              </button>
+            );
+          })}
           <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "14px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>역할별</div>
           {secEntries.map(([k, v]) => (
             <button key={k} onClick={() => scrollToSection(k)} style={{
               display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent",
-              color: "rgba(255,255,255,0.7)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
+              color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
             }}>
-              <span style={{ width: 20, textAlign: "center" }}>{v.icon}</span>{v.name}
+              <span style={{ width: 20, textAlign: "center", fontSize: 14 }}>{v.icon}</span>{v.name}
               <span style={{ marginLeft: "auto", fontSize: 10, padding: "1px 6px", borderRadius: 10, background: db.current[k]?.submitted ? C.green : C.red, color: "#fff" }}>{db.current[k]?.submitted ? "✓" : "✗"}</span>
             </button>
           ))}
           <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "14px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>출력</div>
-          <button onClick={printBulletin} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent", color: "rgba(255,255,255,0.7)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}><span style={{ width: 20, textAlign: "center" }}>🖨️</span>인쇄</button>
-          <button onClick={downloadPDF} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent", color: "rgba(255,255,255,0.7)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}><span style={{ width: 20, textAlign: "center" }}>📄</span>PDF 저장</button>
+          <button onClick={printBulletin} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}><Printer size={20} strokeWidth={1.5} style={{ flexShrink: 0 }} />인쇄</button>
+          <button onClick={downloadPDF} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}><FileDown size={20} strokeWidth={1.5} style={{ flexShrink: 0 }} />PDF 저장</button>
         </nav>
         <div style={{ padding: "14px 18px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>주보 자동 생성 v1.0</div>
       </aside>
@@ -748,10 +757,10 @@ export function BulletinPage() {
           )}
 
           {activeSub === "history" && (
-            <Card>
+            <div ref={listRefHistory}><Card>
               <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}>📁 지난 주보 목록</div>
               <div style={{ padding: 18 }}>
-                {db.history.length === 0 ? <div style={{ color: C.textFaint, textAlign: "center", padding: 40 }}>저장된 주보가 없습니다. 편집에서 저장하면 여기에 표시됩니다.</div> : db.history.slice().reverse().map(h => (
+                {db.history.length === 0 ? <div style={{ color: C.textFaint, textAlign: "center", padding: 40 }}>저장된 주보가 없습니다. 편집에서 저장하면 여기에 표시됩니다.</div> : db.history.slice().reverse().slice((currentPageHistory - 1) * 10, currentPageHistory * 10).map(h => (
                   <div key={h.key} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 0", borderBottom: `1px solid ${C.borderLight}` }}>
                     <span style={{ fontSize: 24 }}>📰</span>
                     <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 700 }}>{h.date || h.key}</div><div style={{ fontSize: 13, color: C.textMuted }}>{h.sermonTitle || "제목 없음"} · 저장: {h.savedAt || ""}</div></div>
@@ -759,7 +768,8 @@ export function BulletinPage() {
                   </div>
                 ))}
               </div>
-            </Card>
+              <Pagination totalItems={db.history.length} itemsPerPage={10} currentPage={currentPageHistory} onPageChange={(p) => { setCurrentPageHistory(p); listRefHistory.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            </Card></div>
           )}
 
           {activeSub === "settings" && (

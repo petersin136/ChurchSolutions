@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB } from "@/types/db";
+import { LayoutDashboard, Home, MessageCircle, Bell, Heart, User, ScrollText, TrendingUp, ClipboardList, Settings } from "lucide-react";
+import { Pagination } from "@/components/common/Pagination";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -565,6 +567,7 @@ function MainDBVisitList({
   toast: (m: string) => void;
 }) {
   const mob = useIsMobile();
+  const listRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<"list" | "byGroup">("list");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -644,7 +647,7 @@ function MainDBVisitList({
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200 }}>
           <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint }}>🔍</span>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름, 내용 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
+          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="이름, 내용 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
         </div>
         <Btn variant="primary" size="sm" onClick={() => setShowAddModal(true)}>＋ 심방 등록</Btn>
       </div>
@@ -652,10 +655,10 @@ function MainDBVisitList({
         <Chip label="전체 목록" active={viewMode === "list"} onClick={() => { setViewMode("list"); setPage(1); }} />
         <Chip label="목장별 보기" active={viewMode === "byGroup"} onClick={() => setViewMode("byGroup")} />
         <span style={{ fontSize: 12, color: C.textMuted, marginLeft: 8 }}>유형:</span>
-        <Chip label="전체" active={filterType === "all"} onClick={() => setFilterType("all")} />
-        {MAIN_VISIT_TYPES.map(t => <Chip key={t} label={t} active={filterType === t} onClick={() => setFilterType(t)} />)}
+        <Chip label="전체" active={filterType === "all"} onClick={() => { setFilterType("all"); setPage(1); }} />
+        {MAIN_VISIT_TYPES.map(t => <Chip key={t} label={t} active={filterType === t} onClick={() => { setFilterType(t); setPage(1); }} />)}
       </div>
-      <Card>
+      <div ref={listRef}><Card>
         <div style={{ padding: mob ? 14 : 22 }}>
           {filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>🏠</div><div style={{ fontSize: 14 }}>심방 기록이 없습니다</div></div>
@@ -669,17 +672,13 @@ function MainDBVisitList({
           ) : (
             <>
               {pageList.map(v => renderRow(v))}
-              {showPagination && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.borderLight}` }}>
-                  <Btn variant="ghost" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}>이전</Btn>
-                  <span style={{ fontSize: 13, color: C.textMuted }}>{currentPage} / {totalPages} 페이지</span>
-                  <Btn variant="ghost" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>다음</Btn>
-                </div>
+              {viewMode === "list" && (
+                <Pagination totalItems={filtered.length} itemsPerPage={PAGE_SIZE} currentPage={currentPage} onPageChange={(p) => { setPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
               )}
             </>
           )}
         </div>
-      </Card>
+      </Card></div>
 
       {showAddModal && (
         <Modal open={true} onClose={() => setShowAddModal(false)} title="심방 등록" footer={
@@ -1296,17 +1295,17 @@ function SettingsSub({ db, setDb, persist, toast }: { db: VCDB; setDb: React.Dis
    ============================================================ */
 type SubPage = "dash" | "visits" | "counsels" | "followup" | "prayers" | "members" | "timeline" | "report" | "handover" | "settings";
 
-const NAV_ITEMS: { id: SubPage; icon: string; label: string }[] = [
-  { id: "dash", icon: "📊", label: "대시보드" },
-  { id: "visits", icon: "🏠", label: "심방 기록" },
-  { id: "counsels", icon: "💬", label: "상담 기록" },
-  { id: "followup", icon: "🔔", label: "후속 조치" },
-  { id: "prayers", icon: "🙏", label: "기도제목" },
-  { id: "members", icon: "👤", label: "성도별 이력" },
-  { id: "timeline", icon: "📜", label: "전체 타임라인" },
-  { id: "report", icon: "📈", label: "월간 보고서" },
-  { id: "handover", icon: "📋", label: "인수인계 보고서" },
-  { id: "settings", icon: "⚙️", label: "설정" },
+const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>; label: string }[] = [
+  { id: "dash", Icon: LayoutDashboard, label: "대시보드" },
+  { id: "visits", Icon: Home, label: "심방 기록" },
+  { id: "counsels", Icon: MessageCircle, label: "상담 기록" },
+  { id: "followup", Icon: Bell, label: "후속 조치" },
+  { id: "prayers", Icon: Heart, label: "기도제목" },
+  { id: "members", Icon: User, label: "성도별 이력" },
+  { id: "timeline", Icon: ScrollText, label: "전체 타임라인" },
+  { id: "report", Icon: TrendingUp, label: "월간 보고서" },
+  { id: "handover", Icon: ClipboardList, label: "인수인계 보고서" },
+  { id: "settings", Icon: Settings, label: "설정" },
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
@@ -1538,51 +1537,67 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         overflow: "hidden", flexShrink: 0, zIndex: 100,
         ...(mob ? { position: "fixed", top: 0, left: 0, bottom: 0, transform: sideOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
       }}>
-        <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg,${C.teal},${C.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🏠</div>
+        <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.9)" }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Home size={20} strokeWidth={1.5} /></div>
           <div><div style={{ fontWeight: 700, fontSize: 18, letterSpacing: -0.5, whiteSpace: "nowrap" }}>심방 · 상담</div><div style={{ fontSize: 12, opacity: 0.5, whiteSpace: "nowrap" }}>교역자 기록 관리 시스템</div></div>
         </div>
         <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>심방/상담</div>
-          {NAV_ITEMS.slice(0, 5).map(n => (
-            <button key={n.id} onClick={() => handleNav(n.id)} style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-              borderRadius: 8, border: "none", background: activeSub === n.id ? "rgba(59,130,246,0.15)" : "transparent",
-              color: activeSub === n.id ? C.blue : "rgba(255,255,255,0.7)", fontWeight: activeSub === n.id ? 600 : 500,
-              fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap", position: "relative",
-            }}>
-              <span style={{ width: 20, textAlign: "center", fontSize: 16 }}>{n.icon}</span><span>{n.label}</span>
-              {n.id === "dash" && overdueCnt > 0 && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{overdueCnt}</span>}
-              {n.id === "followup" && allFU.length > 0 && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{allFU.length}</span>}
-            </button>
-          ))}
+          {NAV_ITEMS.slice(0, 5).map(n => {
+            const isActive = activeSub === n.id;
+            const Icon = n.Icon;
+            return (
+              <button key={n.id} onClick={() => handleNav(n.id)} style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
+                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap", position: "relative",
+              }}>
+                <Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span>
+                {n.id === "dash" && overdueCnt > 0 && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{overdueCnt}</span>}
+                {n.id === "followup" && allFU.length > 0 && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{allFU.length}</span>}
+              </button>
+            );
+          })}
           <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>성도 관리</div>
-          {NAV_ITEMS.slice(5, 7).map(n => (
-            <button key={n.id} onClick={() => handleNav(n.id)} style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-              borderRadius: 8, border: "none", background: activeSub === n.id ? "rgba(59,130,246,0.15)" : "transparent",
-              color: activeSub === n.id ? C.blue : "rgba(255,255,255,0.7)", fontWeight: activeSub === n.id ? 600 : 500,
-              fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap",
-            }}><span style={{ width: 20, textAlign: "center", fontSize: 16 }}>{n.icon}</span><span>{n.label}</span></button>
-          ))}
+          {NAV_ITEMS.slice(5, 7).map(n => {
+            const isActive = activeSub === n.id;
+            const Icon = n.Icon;
+            return (
+              <button key={n.id} onClick={() => handleNav(n.id)} style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
+                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap",
+              }}><Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span></button>
+            );
+          })}
           <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>보고</div>
-          {NAV_ITEMS.slice(7, 9).map(n => (
-            <button key={n.id} onClick={() => handleNav(n.id)} style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-              borderRadius: 8, border: "none", background: activeSub === n.id ? "rgba(59,130,246,0.15)" : "transparent",
-              color: activeSub === n.id ? C.blue : "rgba(255,255,255,0.7)", fontWeight: activeSub === n.id ? 600 : 500,
-              fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap",
-            }}><span style={{ width: 20, textAlign: "center", fontSize: 16 }}>{n.icon}</span><span>{n.label}</span></button>
-          ))}
+          {NAV_ITEMS.slice(7, 9).map(n => {
+            const isActive = activeSub === n.id;
+            const Icon = n.Icon;
+            return (
+              <button key={n.id} onClick={() => handleNav(n.id)} style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
+                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap",
+              }}><Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span></button>
+            );
+          })}
           <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>설정</div>
-          {NAV_ITEMS.slice(9).map(n => (
-            <button key={n.id} onClick={() => handleNav(n.id)} style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-              borderRadius: 8, border: "none", background: activeSub === n.id ? "rgba(59,130,246,0.15)" : "transparent",
-              color: activeSub === n.id ? C.blue : "rgba(255,255,255,0.7)", fontWeight: activeSub === n.id ? 600 : 500,
-              fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap",
-            }}><span style={{ width: 20, textAlign: "center", fontSize: 16 }}>{n.icon}</span><span>{n.label}</span></button>
-          ))}
+          {NAV_ITEMS.slice(9).map(n => {
+            const isActive = activeSub === n.id;
+            const Icon = n.Icon;
+            return (
+              <button key={n.id} onClick={() => handleNav(n.id)} style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
+                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap",
+              }}><Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span></button>
+            );
+          })}
         </nav>
         <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>심방/상담 관리 v1.0</div>
       </aside>

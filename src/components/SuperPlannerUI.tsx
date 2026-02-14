@@ -10,6 +10,7 @@ import { BulletinPage } from "./BulletinPage";
 import { SettingsPage } from "./SettingsPage";
 import { Toast } from "./Toast";
 import { Modals } from "./Modals";
+import { Users, CalendarCheck, Wallet, Heart, FileText, Settings } from "lucide-react";
 
 const PAGE_LABELS: Record<PageId, string> = {
   pastoral: "목양노트",
@@ -144,39 +145,42 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
 
       <nav className="tab-bar">
         {(["pastoral", "planner", "finance", "visit", "bulletin", "settings"] as const).map(
-          (page) => (
-            <button
-              key={page}
-              type="button"
-              className={`tab-item ${currentPage === page ? "active" : ""}`}
-              onClick={() => setCurrentPage(page)}
-            >
-              <span className="tab-icon">
-                {page === "pastoral"
-                  ? "🐑"
-                  : page === "planner"
-                    ? "📋"
-                    : page === "finance"
-                      ? "💰"
-                      : page === "visit"
-                        ? "🏠"
-                        : page === "bulletin"
-                          ? "📰"
-                          : "⚙️"}
-              </span>
-              {page === "pastoral"
-                ? "목양"
-                : page === "planner"
-                  ? "플래너"
-                  : page === "finance"
-                    ? "재정"
-                    : page === "visit"
-                      ? "심방"
-                      : page === "bulletin"
-                        ? "주보"
-                        : "설정"}
-            </button>
-          )
+          (page) => {
+            const isActive = currentPage === page;
+            const iconColor = isActive ? "#3b82f6" : "#9ca3af";
+            const strokeWidth = isActive ? 2 : 1.5;
+            const iconProps = { size: 24, strokeWidth, style: { color: iconColor } as React.CSSProperties };
+            return (
+              <button
+                key={page}
+                type="button"
+                className={`tab-item ${isActive ? "active" : ""}`}
+                onClick={() => setCurrentPage(page)}
+              >
+                <span className="tab-icon">
+                  {page === "pastoral" && <Users {...iconProps} />}
+                  {page === "planner" && <CalendarCheck {...iconProps} />}
+                  {page === "finance" && <Wallet {...iconProps} />}
+                  {page === "visit" && <Heart {...iconProps} />}
+                  {page === "bulletin" && <FileText {...iconProps} />}
+                  {page === "settings" && <Settings {...iconProps} />}
+                </span>
+                <span className="tab-label">
+                  {page === "pastoral"
+                    ? "목양"
+                    : page === "planner"
+                      ? "플래너"
+                      : page === "finance"
+                        ? "재정"
+                        : page === "visit"
+                          ? "심방"
+                          : page === "bulletin"
+                            ? "주보"
+                            : "설정"}
+                </span>
+              </button>
+            );
+          }
         )}
       </nav>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { LayoutDashboard, Calendar, BookOpen, Home, CheckSquare, MessageCircle, TrendingUp, Settings, ClipboardList } from "lucide-react";
 
 /* ============================================================
    교역자 슈퍼플래너 — 플래너
@@ -693,15 +694,15 @@ function SettingsSub({ db, setDb, persist, toast, mob }: { db: PDB; setDb: (fn: 
 type SubPage = "dashboard" | "weekly" | "sermon" | "visit" | "checklist" | "counsel" | "report" | "settings";
 type TFn = (m: string, t?: string) => void;
 
-const NAV: { id: SubPage; icon: string; label: string; section?: string }[] = [
-  { id: "dashboard", icon: "📊", label: "대시보드", section: "플래너" },
-  { id: "weekly", icon: "📅", label: "주간 일정" },
-  { id: "sermon", icon: "📖", label: "설교 준비" },
-  { id: "visit", icon: "🏠", label: "심방 관리" },
-  { id: "checklist", icon: "✅", label: "주간 체크리스트" },
-  { id: "counsel", icon: "💬", label: "상담 기록", section: "관리" },
-  { id: "report", icon: "📈", label: "주간 보고서" },
-  { id: "settings", icon: "⚙️", label: "설정" },
+const NAV: { id: SubPage; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>; label: string; section?: string }[] = [
+  { id: "dashboard", Icon: LayoutDashboard, label: "대시보드", section: "플래너" },
+  { id: "weekly", Icon: Calendar, label: "주간 일정" },
+  { id: "sermon", Icon: BookOpen, label: "설교 준비" },
+  { id: "visit", Icon: Home, label: "심방 관리" },
+  { id: "checklist", Icon: CheckSquare, label: "주간 체크리스트" },
+  { id: "counsel", Icon: MessageCircle, label: "상담 기록", section: "관리" },
+  { id: "report", Icon: TrendingUp, label: "주간 보고서" },
+  { id: "settings", Icon: Settings, label: "설정" },
 ];
 const PAGE_META: Record<SubPage, [string, string]> = {
   dashboard: ["대시보드", "이번 주 사역 현황을 확인하세요"],
@@ -849,28 +850,32 @@ export function PlannerPage() {
         overflow: "hidden", zIndex: 100,
         ...(mob ? { position: "fixed", top: 0, left: 0, bottom: 0, transform: sideOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
       }}>
-        <div style={{ padding: "20px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 36, height: 36, background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>📋</div>
+        <div style={{ padding: "20px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.9)" }}>
+          <div style={{ width: 36, height: 36, background: "rgba(255,255,255,0.1)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><ClipboardList size={20} strokeWidth={1.5} /></div>
           <div><div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.5 }}>슈퍼플래너</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>교역자 통합 관리</div></div>
         </div>
         <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
-          {NAV.map(n => (
-            <div key={n.id}>
-              {n.section && <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>{n.section}</div>}
-              <button onClick={() => handleNavClick(n.id)} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-                borderRadius: 8, border: "none", width: "100%",
-                background: activeSub === n.id ? "rgba(59,130,246,0.15)" : "transparent",
-                color: activeSub === n.id ? C.blue : "rgba(255,255,255,0.7)",
-                fontWeight: activeSub === n.id ? 600 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-                marginBottom: 2, transition: "all 0.15s", textAlign: "left",
-              }}>
-                <span style={{ width: 20, textAlign: "center", fontSize: 16, flexShrink: 0 }}>{n.icon}</span>
-                <span>{n.label}</span>
-                {n.id === "weekly" && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{weekEvCount}</span>}
-              </button>
-            </div>
-          ))}
+          {NAV.map(n => {
+            const isActive = activeSub === n.id;
+            const Icon = n.Icon;
+            return (
+              <div key={n.id}>
+                {n.section && <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>{n.section}</div>}
+                <button onClick={() => handleNavClick(n.id)} style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                  borderRadius: 8, border: "none", width: "100%",
+                  background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                  color: isActive ? "#fff" : "rgba(255,255,255,0.5)",
+                  fontWeight: isActive ? 600 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+                  marginBottom: 2, transition: "all 0.15s", textAlign: "left",
+                }}>
+                  <Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} />
+                  <span>{n.label}</span>
+                  {n.id === "weekly" && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{weekEvCount}</span>}
+                </button>
+              </div>
+            );
+          })}
         </nav>
         <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>교역자 슈퍼플래너 v1.0</div>
       </aside>

@@ -3,6 +3,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import * as XLSX from "xlsx";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+import { LayoutDashboard, Wallet, Users, Receipt, FileText, PieChart, Download, FileSignature, Church } from "lucide-react";
+import { Pagination } from "@/components/common/Pagination";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -502,11 +504,13 @@ function DashboardTab({ offerings, expenses, categories, departments }: {
   );
 }
 
-/* ====== 헌금 관리 ====== */
+/* ====== 헌금 관리 (거래입력) ====== */
 function OfferingTab({ offerings, setOfferings, donors, categories }: {
   offerings: Offering[]; setOfferings: React.Dispatch<React.SetStateAction<Offering[]>>;
   donors: Donor[]; categories: Category[];
 }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
@@ -538,19 +542,20 @@ function OfferingTab({ offerings, setOfferings, donors, categories }: {
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ position: "relative" }}>
             <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><Icons.Search /></div>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="헌금자 검색..."
+            <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="헌금자 검색..."
               style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", width: 200 }} />
           </div>
           <Select options={[{ value: "all", label: "전체 항목" }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
-            value={filterCat} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterCat(e.target.value)} />
+            value={filterCat} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterCat(e.target.value); setCurrentPage(1); }} />
           <Select options={[{ value: "all", label: "전체 월" }, ...MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }))]}
-            value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterMonth(e.target.value)} />
+            value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterMonth(e.target.value); setCurrentPage(1); }} />
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <Badge color={C.accent}>합계: ₩{fmt(filteredTotal)}</Badge>
           <Button onClick={() => setShowAdd(true)} icon={<Icons.Plus />}>헌금 등록</Button>
         </div>
       </div>
+      <div ref={listRef}>
       <Table
         columns={[
           { label: "날짜", key: "date" },
@@ -560,10 +565,11 @@ function OfferingTab({ offerings, setOfferings, donors, categories }: {
           { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.accent }}>₩{fmt(r.amount as number)}</span> },
           { label: "", align: "center", render: (r) => <button onClick={() => handleDelete(r.id as string)} style={{ background: "none", border: "none", cursor: "pointer", color: C.textMuted, fontSize: 12, padding: 4 }}>삭제</button> },
         ]}
-        data={filtered.slice(0, 50) as unknown as Record<string, unknown>[]}
+        data={filtered.slice((currentPage - 1) * 10, currentPage * 10) as unknown as Record<string, unknown>[]}
         emptyMsg="헌금 내역이 없습니다"
       />
-      {filtered.length > 50 && <div style={{ textAlign: "center", color: C.textMuted, fontSize: 13 }}>{filtered.length}건 중 50건 표시</div>}
+      <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+      </div>
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="헌금 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Select label="헌금자" value={form.donorId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, donorId: e.target.value }))}
@@ -589,6 +595,8 @@ function OfferingTab({ offerings, setOfferings, donors, categories }: {
 function DonorTab({ donors, setDonors, offerings }: {
   donors: Donor[]; setDonors: React.Dispatch<React.SetStateAction<Donor[]>>; offerings: Offering[];
 }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({ name: "", phone: "", group: "", joinDate: todayStr(), note: "" });
@@ -609,6 +617,8 @@ function DonorTab({ donors, setDonors, offerings }: {
     return result.sort((a, b) => (donorStats[b.id]?.total || 0) - (donorStats[a.id]?.total || 0));
   }, [donors, search, donorStats]);
 
+  const paginatedDonors = useMemo(() => filtered.slice((currentPage - 1) * 10, currentPage * 10), [filtered, currentPage]);
+
   const handleAdd = () => {
     if (!form.name) return;
     setDonors(prev => [...prev, { id: uid(), ...form }]);
@@ -621,7 +631,7 @@ function DonorTab({ donors, setDonors, offerings }: {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div style={{ position: "relative" }}>
           <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><Icons.Search /></div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름 또는 연락처 검색..."
+          <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="이름 또는 연락처 검색..."
             style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", width: 260 }} />
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -629,6 +639,7 @@ function DonorTab({ donors, setDonors, offerings }: {
           <Button onClick={() => setShowAdd(true)} icon={<Icons.Plus />}>헌금자 등록</Button>
         </div>
       </div>
+      <div ref={listRef}>
       <Table
         columns={[
           { label: "이름", render: (r) => <span style={{ fontWeight: 600 }}>{r.name as string}</span> },
@@ -640,9 +651,11 @@ function DonorTab({ donors, setDonors, offerings }: {
           { label: "최근 헌금일", render: (r) => <span>{donorStats[r.id as string]?.lastDate || "-"}</span> },
           { label: "메모", render: (r) => (r.note as string) ? <span style={{ color: C.textMuted, fontSize: 12 }}>{r.note as string}</span> : <span>-</span> },
         ]}
-        data={filtered as unknown as Record<string, unknown>[]}
+        data={paginatedDonors as unknown as Record<string, unknown>[]}
         emptyMsg="등록된 헌금자가 없습니다"
       />
+      <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+      </div>
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="헌금자 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Input label="이름" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="홍길동" />
@@ -667,6 +680,8 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
   donors: Donor[]; offerings: Offering[]; categories: Category[];
   onVisitSuggest?: (name: string) => void;
 }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [onlyNoGiving, setOnlyNoGiving] = useState(false);
   const [sortKey, setSortKey] = useState<"name" | "total" | "lastDate" | "prevDate" | "thisMonth" | "last3Months">("name");
@@ -740,6 +755,8 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
     return list;
   }, [donorStats, onlyNoGiving, search, sortKey, sortDir]);
 
+  const paginatedFiltered = useMemo(() => filtered.slice((currentPage - 1) * 10, currentPage * 10), [filtered, currentPage]);
+
   const toggleSort = (key: typeof sortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("asc"); }
@@ -778,13 +795,13 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
       <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative" }}>
           <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><Icons.Search /></div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름 검색..."
+          <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="이름 검색..."
             style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", width: 200 }} />
         </div>
-        {onlyNoGiving && <Button variant="soft" onClick={() => setOnlyNoGiving(false)}>전체 보기</Button>}
+        {onlyNoGiving && <Button variant="soft" onClick={() => { setOnlyNoGiving(false); setCurrentPage(1); }}>전체 보기</Button>}
       </div>
 
-      <Card style={{ padding: 0, overflow: "hidden" }}>
+      <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
@@ -799,11 +816,11 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((s, i) => (
+              {paginatedFiltered.map((s, i) => (
                 <tr
                   key={s.donor.id}
                   style={{
-                    borderBottom: i < filtered.length - 1 ? `1px solid ${C.borderLight}` : "none",
+                    borderBottom: i < paginatedFiltered.length - 1 ? `1px solid ${C.borderLight}` : "none",
                     background: s.isNoGiving90 ? "#fde8e8" : "transparent",
                   }}
                 >
@@ -834,7 +851,10 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
           </table>
         </div>
         {filtered.length === 0 && <div style={{ padding: 40, textAlign: "center", color: C.textMuted }}>조건에 맞는 교인이 없습니다</div>}
-      </Card>
+        {filtered.length > 0 && (
+          <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+        )}
+      </Card></div>
     </div>
   );
 }
@@ -844,6 +864,8 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories }: {
   expenses: Expense[]; setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   departments: Department[]; expenseCategories: ExpCategory[];
 }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [filterDept, setFilterDept] = useState("all");
   const [filterMonth, setFilterMonth] = useState("all");
@@ -870,15 +892,16 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories }: {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Select options={[{ value: "all", label: "전체 부서" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
-            value={filterDept} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterDept(e.target.value)} />
+            value={filterDept} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterDept(e.target.value); setCurrentPage(1); }} />
           <Select options={[{ value: "all", label: "전체 월" }, ...MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }))]}
-            value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterMonth(e.target.value)} />
+            value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterMonth(e.target.value); setCurrentPage(1); }} />
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <Badge color={C.danger}>합계: ₩{fmt(filteredTotal)}</Badge>
           <Button onClick={() => setShowAdd(true)} variant="accent" icon={<Icons.Plus />}>지출 등록</Button>
         </div>
       </div>
+      <div ref={listRef}>
       <Table
         columns={[
           { label: "날짜", key: "date" },
@@ -888,8 +911,10 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories }: {
           { label: "영수증", align: "center", render: (r) => <span>{r.receipt ? "✅" : "❌"}</span> },
           { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.danger }}>₩{fmt(r.amount as number)}</span> },
         ]}
-        data={filtered.slice(0, 50) as unknown as Record<string, unknown>[]}
+        data={filtered.slice((currentPage - 1) * 10, currentPage * 10) as unknown as Record<string, unknown>[]}
       />
+      <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+      </div>
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="지출 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Select label="부서" value={form.departmentId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, departmentId: e.target.value }))}
@@ -922,6 +947,8 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  const [pageIncome, setPageIncome] = useState(1);
+  const [pageExpense, setPageExpense] = useState(1);
 
   const data = useMemo(() => {
     const y = year;
@@ -939,6 +966,9 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
     const balance = prevCarry + incomeTotal - expenseTotal;
     return { prevCarry, incomeByCat, incomeTotal, expenseByCat, expenseTotal, balance };
   }, [offerings, expenses, categories, expenseCategories, year, month]);
+
+  const paginatedIncome = useMemo(() => data.incomeByCat.slice((pageIncome - 1) * 10, pageIncome * 10), [data.incomeByCat, pageIncome]);
+  const paginatedExpense = useMemo(() => data.expenseByCat.slice((pageExpense - 1) * 10, pageExpense * 10), [data.expenseByCat, pageExpense]);
 
   const handleSaveImage = async () => {
     try {
@@ -968,8 +998,8 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
     <Modal open={open} onClose={onClose} title="월별 결산 보고서" width={560}>
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <Select label="년" options={[{ value: year.toString(), label: `${year}년` }, { value: (year - 1).toString(), label: `${year - 1}년` }, { value: (year - 2).toString(), label: `${year - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(Number(e.target.value))} />
-          <Select label="월" options={MONTHS.map((_, i) => ({ value: (i + 1).toString(), label: `${i + 1}월` }))} value={String(month)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMonth(Number(e.target.value))} />
+          <Select label="년" options={[{ value: year.toString(), label: `${year}년` }, { value: (year - 1).toString(), label: `${year - 1}년` }, { value: (year - 2).toString(), label: `${year - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setYear(Number(e.target.value)); setPageIncome(1); setPageExpense(1); }} />
+          <Select label="월" options={MONTHS.map((_, i) => ({ value: (i + 1).toString(), label: `${i + 1}월` }))} value={String(month)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setMonth(Number(e.target.value)); setPageIncome(1); setPageExpense(1); }} />
         </div>
         <div id="settlement-report-card" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -980,14 +1010,16 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
             <tbody>
               <tr><td style={{ padding: "8px 0", color: C.textMuted }}>전월 이월금</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 600 }}>₩{fmt(data.prevCarry)}</td></tr>
               <tr><td colSpan={2} style={{ padding: "4px 0", borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textMuted }}>수입 항목별</td></tr>
-              {data.incomeByCat.map(c => (
+              {paginatedIncome.map(c => (
                 <tr key={c.name}><td style={{ padding: "4px 0 4px 16px" }}>{c.icon} {c.name}</td><td style={{ padding: "4px 0", textAlign: "right" }}>₩{fmt(c.amount)}</td></tr>
               ))}
+              {data.incomeByCat.length > 10 && <tr><td colSpan={2} style={{ padding: 8 }}><Pagination totalItems={data.incomeByCat.length} itemsPerPage={10} currentPage={pageIncome} onPageChange={setPageIncome} /></td></tr>}
               <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>수입 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.accent }}>₩{fmt(data.incomeTotal)}</td></tr>
               <tr><td colSpan={2} style={{ padding: "4px 0", borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textMuted }}>지출 항목별</td></tr>
-              {data.expenseByCat.map(c => (
+              {paginatedExpense.map(c => (
                 <tr key={c.name}><td style={{ padding: "4px 0 4px 16px" }}>{c.icon} {c.name}</td><td style={{ padding: "4px 0", textAlign: "right" }}>₩{fmt(c.amount)}</td></tr>
               ))}
+              {data.expenseByCat.length > 10 && <tr><td colSpan={2} style={{ padding: 8 }}><Pagination totalItems={data.expenseByCat.length} itemsPerPage={10} currentPage={pageExpense} onPageChange={setPageExpense} /></td></tr>}
               <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>지출 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.danger }}>₩{fmt(data.expenseTotal)}</td></tr>
               <tr><td colSpan={2} style={{ padding: "8px 0", borderTop: `2px solid ${C.border}` }}></td></tr>
               <tr><td style={{ padding: "8px 0", fontWeight: 700, color: C.navy }}>잔액</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 800, color: data.balance >= 0 ? C.success : C.danger }}>₩{fmt(data.balance)}</td></tr>
@@ -1134,9 +1166,11 @@ function BudgetActualTab({
   setBudgetByYear: React.Dispatch<React.SetStateAction<BudgetByYear>>;
 }) {
   const mob = useIsMobile();
+  const listRefCompare = useRef<HTMLDivElement>(null);
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [mode, setMode] = useState<"input" | "compare">("compare");
+  const [currentPageCompare, setCurrentPageCompare] = useState(1);
   const reportCardRef = useRef<HTMLDivElement>(null);
 
   const yearStr = String(year);
@@ -1204,6 +1238,8 @@ function BudgetActualTab({
     return [...incomeRows, incomeTotal, ...expenseRows, expenseTotal, balance];
   }, [incomeCategories, expenseCategoriesList, budgets, actuals]);
 
+  const paginatedCompareRows = useMemo(() => compareRows.slice((currentPageCompare - 1) * 10, currentPageCompare * 10), [compareRows, currentPageCompare]);
+
   const chartData = useMemo(() => {
     const items: { name: string; 예산: number; 실적: number; type: string }[] = [];
     incomeCategories.forEach(c => {
@@ -1255,7 +1291,7 @@ function BudgetActualTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-        <Select label="연도" options={[{ value: currentYear.toString(), label: `${currentYear}년` }, { value: (currentYear - 1).toString(), label: `${currentYear - 1}년` }, { value: (currentYear - 2).toString(), label: `${currentYear - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(Number(e.target.value))} />
+        <Select label="연도" options={[{ value: currentYear.toString(), label: `${currentYear}년` }, { value: (currentYear - 1).toString(), label: `${currentYear - 1}년` }, { value: (currentYear - 2).toString(), label: `${currentYear - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setYear(Number(e.target.value)); setCurrentPageCompare(1); }} />
         <div style={{ display: "flex", gap: 4, background: C.bg, borderRadius: 10, padding: 4 }}>
           {(["input", "compare"] as const).map(m => (
             <button key={m} type="button" onClick={() => setMode(m)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: mode === m ? C.navy : "transparent", color: mode === m ? "#fff" : C.textMuted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
@@ -1284,7 +1320,7 @@ function BudgetActualTab({
 
       {mode === "compare" && (
         <>
-          <div id="budget-actual-report-card" ref={reportCardRef} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
+          <div ref={listRefCompare}><div id="budget-actual-report-card" ref={reportCardRef} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
             <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: C.navy }}>{year}년 예산 vs 실적</h3>
             <div style={{ overflowX: "auto", marginBottom: 24 }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -1299,7 +1335,7 @@ function BudgetActualTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {compareRows.map((r, i) => (
+                  {paginatedCompareRows.map((r, i) => (
                     <tr key={r.id} style={{ borderBottom: r.id.startsWith("_") ? `2px solid ${C.border}` : `1px solid ${C.borderLight}`, background: r.id.startsWith("_") ? C.bg : "transparent" }}>
                       <td style={{ padding: "10px 12px" }}>{r.type}</td>
                       <td style={{ padding: "10px 12px", fontWeight: r.id.startsWith("_") ? 700 : 500 }}>{r.name}</td>
@@ -1312,6 +1348,7 @@ function BudgetActualTab({
                 </tbody>
               </table>
             </div>
+            <Pagination totalItems={compareRows.length} itemsPerPage={10} currentPage={currentPageCompare} onPageChange={(p) => { setCurrentPageCompare(p); listRefCompare.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
             {chartData.length > 0 && (
               <div style={{ height: mob ? 280 : 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -1331,7 +1368,7 @@ function BudgetActualTab({
                 </ResponsiveContainer>
               </div>
             )}
-          </div>
+          </div></div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Button onClick={handleSaveImage} variant="accent">예결산 보고서 이미지 저장</Button>
             <Button onClick={handleShare} variant="soft">카카오톡 공유</Button>
@@ -1654,8 +1691,10 @@ const RECEIPT_CONFIG_DEFAULTS = {
 /* ====== 기부금 영수증 탭 ====== */
 function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offerings: Offering[]; settings?: { churchName?: string; address?: string; pastor?: string; businessNumber?: string } }) {
   const mob = useIsMobile();
+  const listRefBatch = useRef<HTMLDivElement>(null);
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
+  const [currentPageBatch, setCurrentPageBatch] = useState(1);
   const [selectedDonorId, setSelectedDonorId] = useState<string>("");
   const [batchMode, setBatchMode] = useState(false);
   const [batchSelected, setBatchSelected] = useState<Set<string>>(new Set());
@@ -1677,6 +1716,8 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
     donorsWithOfferingsInYear.forEach((d, i) => m.set(d.id, i + 1));
     return m;
   }, [donorsWithOfferingsInYear]);
+
+  const paginatedBatchDonors = useMemo(() => donorsWithOfferingsInYear.slice((currentPageBatch - 1) * 10, currentPageBatch * 10), [donorsWithOfferingsInYear, currentPageBatch]);
 
   const selectedDonor = useMemo(() => donors.find(d => d.id === selectedDonorId), [donors, selectedDonorId]);
 
@@ -1910,7 +1951,7 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
           <label style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>연도</label>
           <select
             value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
+            onChange={(e) => { setYear(Number(e.target.value)); setCurrentPageBatch(1); }}
             style={{ padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", color: C.navy, background: "#fff", outline: "none", cursor: "pointer" }}
           >
             <option value={currentYear}>{currentYear}년</option>
@@ -2163,7 +2204,7 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
 
       {batchMode && (
         <>
-          <Card>
+          <div ref={listRefBatch}><Card>
             <h4 style={{ margin: "0 0 12px", color: C.navy }}>해당 연도 헌금 교인 ({donorsWithOfferingsInYear.length}명)</h4>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <input type="checkbox" checked={batchSelected.size === donorsWithOfferingsInYear.length && donorsWithOfferingsInYear.length > 0} onChange={toggleBatchSelectAll} style={{ width: 18, height: 18 }} />
@@ -2179,7 +2220,7 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
                   </tr>
                 </thead>
                 <tbody>
-                  {donorsWithOfferingsInYear.map(d => {
+                  {paginatedBatchDonors.map(d => {
                     const sum = offerings.filter(o => o.donorId === d.id && o.date.startsWith(yearStr)).reduce((s, o) => s + o.amount, 0);
                     return (
                       <tr key={d.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
@@ -2195,7 +2236,10 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
               </table>
             </div>
             {donorsWithOfferingsInYear.length === 0 && <p style={{ padding: 20, color: C.textMuted, textAlign: "center" }}>해당 연도 헌금 기록이 있는 교인이 없습니다.</p>}
-          </Card>
+            {donorsWithOfferingsInYear.length > 0 && (
+              <Pagination totalItems={donorsWithOfferingsInYear.length} itemsPerPage={10} currentPage={currentPageBatch} onPageChange={(p) => { setCurrentPageBatch(p); listRefBatch.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            )}
+          </Card></div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <Button onClick={handleBatchPdf} disabled={batchSelected.size === 0 || batchGenerating} variant="accent">
               {batchGenerating ? `생성 중 (${batchIndex + 1}/${batchPdfList.length})...` : "선택한 교인 일괄 PDF 생성"}
@@ -2321,17 +2365,17 @@ export function FinancePage({ settings }: { settings?: { churchName?: string; ad
 
   const [budgetByYear, setBudgetByYear] = useState<BudgetByYear>({});
 
-  const tabs = [
-    { id: "dashboard", label: "대시보드", icon: <Icons.Dashboard /> },
-    { id: "offering", label: "헌금 관리", icon: <Icons.Offering /> },
-    { id: "givingStatus", label: "헌금 현황", icon: <Icons.Donor /> },
-    { id: "donor", label: "헌금자 관리", icon: <Icons.Donor /> },
-    { id: "expense", label: "지출 관리", icon: <Icons.Expense /> },
-    { id: "report", label: "보고서", icon: <Icons.Report /> },
-    { id: "budgetActual", label: "예결산", icon: <Icons.Budget /> },
-    { id: "budget", label: "예산 계획", icon: <Icons.Budget /> },
-    { id: "export", label: "엑셀 내보내기", icon: <Icons.Export /> },
-    { id: "receipt", label: "영수증", icon: <Icons.Receipt /> },
+  const tabs: { id: string; label: string; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }> }[] = [
+    { id: "dashboard", label: "대시보드", Icon: LayoutDashboard },
+    { id: "offering", label: "헌금 관리", Icon: Wallet },
+    { id: "givingStatus", label: "헌금 현황", Icon: Users },
+    { id: "donor", label: "헌금자 관리", Icon: Users },
+    { id: "expense", label: "지출 관리", Icon: Receipt },
+    { id: "report", label: "보고서", Icon: FileText },
+    { id: "budgetActual", label: "예결산", Icon: PieChart },
+    { id: "budget", label: "예산 계획", Icon: PieChart },
+    { id: "export", label: "엑셀 내보내기", Icon: Download },
+    { id: "receipt", label: "영수증", Icon: FileSignature },
   ];
 
   const handleNav = (id: string) => { setActiveTab(id); if (mob) setSideOpen(false); };
@@ -2361,28 +2405,35 @@ export function FinancePage({ settings }: { settings?: { churchName?: string; ad
         }} onClick={() => !mob && setSideOpen(!sideOpen)}>
           <div style={{
             width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)",
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-          }}><Icons.Church /></div>
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "rgba(255,255,255,0.9)",
+          }}><Church size={20} strokeWidth={1.5} /></div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap" }}>교회 재정관리</div>
             <div style={{ fontSize: 11, opacity: 0.6, whiteSpace: "nowrap" }}>Church Finance</div>
           </div>
         </div>
         <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
-          {tabs.map(tab => (
-            <button key={tab.id} onClick={() => handleNav(tab.id)}
-              style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "10px 14px",
-                borderRadius: 10, border: "none",
-                background: activeTab === tab.id ? "rgba(255,255,255,0.12)" : "transparent",
-                color: activeTab === tab.id ? "#fff" : "rgba(255,255,255,0.6)",
-                fontWeight: activeTab === tab.id ? 600 : 400,
-                fontSize: 13, cursor: "pointer", fontFamily: "inherit",
-                transition: "all 0.15s", textAlign: "left",
-                whiteSpace: "nowrap",
-              }}>{tab.icon}<span>{tab.label}</span></button>
-          ))}
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id;
+            const Icon = tab.Icon;
+            return (
+              <button key={tab.id} onClick={() => handleNav(tab.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "10px 14px",
+                  borderRadius: 10, border: "none",
+                  background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                  color: isActive ? "#fff" : "rgba(255,255,255,0.5)",
+                  fontWeight: isActive ? 600 : 400,
+                  fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+                  transition: "all 0.15s", textAlign: "left",
+                  whiteSpace: "nowrap",
+                }}>
+                <Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </nav>
         <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, opacity: 0.4 }}>
           v1.0 MVP · 2025

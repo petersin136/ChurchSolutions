@@ -4,6 +4,8 @@ import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSPrope
 import type { DB, Member, Note, AttStatus } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { loadDB, loadDBFromSupabase, saveDBToSupabase, getWeekNum } from "@/lib/store";
+import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church } from "lucide-react";
+import { Pagination } from "@/components/common/Pagination";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -459,6 +461,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   openMemberModal: (id?: string) => void; openDetail: (id: string) => void; openNoteModal: (id: string) => void;
 }) {
   const mob = useIsMobile();
+  const listRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [deptF, setDeptF] = useState("all");
   const [statusF, setStatusF] = useState("all");
@@ -521,15 +524,15 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
           <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted }}><Icons.Search /></div>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름, 연락처 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none" }} />
+          <input value={search} onChange={e => { setSearch(e.target.value); setPageList(1); setPageGroup(1); }} placeholder="이름, 연락처 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none" }} />
         </div>
         {mob ? (
           <div style={{ display: "flex", gap: 6, width: "100%" }}>
-            <select value={deptF} onChange={e => setDeptF(e.target.value)} style={{ flex: 1, height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ flex: 1, height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
               <option value="all">전체 부서</option>
               {depts.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-            <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ flex: 1, height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ flex: 1, height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
               <option value="all">전체 상태</option>
               {["새가족","정착중","정착","간헐","위험","휴면"].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -537,11 +540,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
           </div>
         ) : (
           <>
-            <select value={deptF} onChange={e => setDeptF(e.target.value)} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
               <option value="all">전체 부서</option>
               {depts.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-            <select value={statusF} onChange={e => setStatusF(e.target.value)} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
               <option value="all">전체 상태</option>
               {["새가족","정착중","정착","간헐","위험","휴면"].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -583,7 +586,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             </div>
           ) : (
             /* 선택된 목장의 목장원 (10명 단위 페이지) — 테이블로 한눈에 */
-            <Card style={{ padding: 0, overflow: "hidden" }}>
+            <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ padding: "14px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                 <button type="button" onClick={() => { setSelectedMokjang(null); setPageGroup(1); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "none", background: "transparent", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 목장 목록</button>
                 <span style={{ color: C.navy, fontWeight: 700 }}>🏠 {selectedMokjang} ({selectedGroupMembers.length}명)</span>
@@ -627,14 +630,10 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                   </tbody>
                 </table>
               </div>
-            </Card>
+            </Card></div>
           )}
-          {viewMode === "group" && selectedMokjang && selectedGroupMembers.length > PAGE_SIZE_MEM && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-              <Btn variant="ghost" size="sm" onClick={() => setPageGroup(p => Math.max(1, p - 1))} disabled={currentPageGroup <= 1}>이전</Btn>
-              <span style={{ fontSize: 13, color: C.textMuted }}>{currentPageGroup} / {totalPagesGroup} 페이지</span>
-              <Btn variant="ghost" size="sm" onClick={() => setPageGroup(p => Math.min(totalPagesGroup, p + 1))} disabled={currentPageGroup >= totalPagesGroup}>다음</Btn>
-            </div>
+          {viewMode === "group" && selectedMokjang && (
+            <Pagination totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroup(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
           )}
         </>
       )}
@@ -642,7 +641,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       {/* ─── 기존 목록 뷰 ─── */}
       {viewMode === "list" && (
         <>
-          <Card style={{ padding: 0, overflow: "hidden" }}>
+          <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
                 <thead>
@@ -692,13 +691,9 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                 </tbody>
               </table>
             </div>
-          </Card>
-          {viewMode === "list" && filtered.length > PAGE_SIZE_MEM && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-              <Btn variant="ghost" size="sm" onClick={() => setPageList(p => Math.max(1, p - 1))} disabled={currentPageList <= 1}>이전</Btn>
-              <span style={{ fontSize: 13, color: C.textMuted }}>{currentPageList} / {totalPagesList} 페이지</span>
-              <Btn variant="ghost" size="sm" onClick={() => setPageList(p => Math.min(totalPagesList, p + 1))} disabled={currentPageList >= totalPagesList}>다음</Btn>
-            </div>
+          </Card></div>
+          {viewMode === "list" && (
+            <Pagination totalItems={filtered.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageList} onPageChange={(p) => { setPageList(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
           )}
         </>
       )}
@@ -724,6 +719,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
   toast: (m: string, t?: string) => void; currentWeek: number; setCurrentWeek: (w: number) => void;
 }) {
   const mob = useIsMobile();
+  const listRefAtt = useRef<HTMLDivElement>(null);
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
   const [attYear, setAttYear] = useState(currentYear);
@@ -849,7 +845,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
         <StatCard label="출석률" value={`${rate}%`} sub={`${unchecked}명 미체크`} color={C.accent} />
       </div>
 
-      <Card style={{ padding: 0, overflow: "hidden" }}>
+      <div ref={listRefAtt}><Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead><tr style={{ background: C.bg }}>
@@ -959,20 +955,13 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
           </table>
         </div>
       </Card>
-      {viewModeAtt === "list" && m.length > PAGE_SIZE_ATT && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-          <Btn variant="ghost" size="sm" onClick={() => setPageAtt(p => Math.max(1, p - 1))} disabled={currentPageAtt <= 1}>이전</Btn>
-          <span style={{ fontSize: 13, color: C.textMuted }}>{currentPageAtt} / {totalPagesAtt} 페이지</span>
-          <Btn variant="ghost" size="sm" onClick={() => setPageAtt(p => Math.min(totalPagesAtt, p + 1))} disabled={currentPageAtt >= totalPagesAtt}>다음</Btn>
-        </div>
+      {viewModeAtt === "list" && (
+        <Pagination totalItems={m.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageAtt} onPageChange={(p) => { setPageAtt(p); listRefAtt.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
       )}
-      {viewModeAtt === "group" && selectedMokjangAtt && selectedGroupMembers.length > PAGE_SIZE_ATT && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-          <Btn variant="ghost" size="sm" onClick={() => setPageGroupAtt(p => Math.max(1, p - 1))} disabled={currentPageGroup <= 1}>이전</Btn>
-          <span style={{ fontSize: 13, color: C.textMuted }}>{currentPageGroup} / {totalPagesGroup} 페이지</span>
-          <Btn variant="ghost" size="sm" onClick={() => setPageGroupAtt(p => Math.min(totalPagesGroup, p + 1))} disabled={currentPageGroup >= totalPagesGroup}>다음</Btn>
-        </div>
+      {viewModeAtt === "group" && selectedMokjangAtt && (
+        <Pagination totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroupAtt(p); listRefAtt.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
       )}
+      </div>
       {absentReasonModal && (
         <Modal open={true} onClose={() => setAbsentReasonModal(null)} title={`결석 사유 · ${absentReasonModal.name}`} width={400}>
           <FormTextarea label="사유 (선택)" value={absentReasonInput} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAbsentReasonInput(e.target.value)} placeholder="예: 병원, 여행, 개인사정" style={{ minHeight: 80 }} />
@@ -1131,9 +1120,12 @@ function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; s
 /* ====== New Family ====== */
 function NewFamilySub({ db, currentWeek, openDetail }: { db: DB; currentWeek: number; openDetail: (id: string) => void }) {
   const mob = useIsMobile();
+  const listRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const nf = db.members.filter(m => m.status === "새가족" || m.status === "정착중");
   const settled = db.members.filter(m => m.status === "정착").length;
   const total = nf.length;
+  const paginatedNf = nf.slice((currentPage - 1) * 10, currentPage * 10);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1142,7 +1134,7 @@ function NewFamilySub({ db, currentWeek, openDetail }: { db: DB; currentWeek: nu
         <StatCard label="정착 완료" value={`${settled}명`} color={C.success} />
         <StatCard label="정착률" value={`${(total + settled) > 0 ? Math.round(settled / (total + settled) * 100) : 0}%`} color={C.purple} />
       </div>
-      <Card style={{ padding: 0, overflow: "hidden" }}>
+      <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
           <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.navy }}>새가족 트래킹 (4주)</h4>
         </div>
@@ -1156,7 +1148,7 @@ function NewFamilySub({ db, currentWeek, openDetail }: { db: DB; currentWeek: nu
             <tbody>
               {nf.length === 0 ? (
                 <tr><td colSpan={8} style={{ padding: 32, textAlign: "center", color: C.textMuted }}>새가족이 없습니다</td></tr>
-              ) : nf.map(m => {
+              ) : paginatedNf.map(m => {
                 const att = db.attendance[m.id] || {};
                 const regWeek = currentWeek;
                 const weeks = [0, 1, 2, 3].map(i => {
@@ -1180,6 +1172,8 @@ function NewFamilySub({ db, currentWeek, openDetail }: { db: DB; currentWeek: nu
           </table>
         </div>
       </Card>
+      <Pagination totalItems={nf.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+      </div>
     </div>
   );
 }
@@ -1187,7 +1181,9 @@ function NewFamilySub({ db, currentWeek, openDetail }: { db: DB; currentWeek: nu
 /* ====== Reports ====== */
 function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; toast: (m: string, t?: string) => void }) {
   const mob = useIsMobile();
+  const listRefReport = useRef<HTMLDivElement>(null);
   const [viewer, setViewer] = useState<{ title: string; csv: string; filename: string } | null>(null);
+  const [currentPageReport, setCurrentPageReport] = useState(1);
 
   const getMembers = () => {
     const h = ["이름","부서","직분","상태","성별","생년월일","연락처","주소","가족관계","등록경로","기도제목","메모"];
@@ -1259,6 +1255,7 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
 
   const openViewer = (r: typeof reportDefs[0]) => {
     const { csv, filename } = r.getData();
+    setCurrentPageReport(1);
     setViewer({ title: r.title, csv, filename });
   };
 
@@ -1286,41 +1283,44 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
       {viewer && (() => {
         const rows = parseCSVToRows(viewer.csv);
         const hasTable = rows.length >= 1 && rows[0].length >= 1;
+        const dataRows = hasTable ? rows.slice(1) : [];
+        const totalReportRows = dataRows.length;
+        const paginatedReportRows = dataRows.slice((currentPageReport - 1) * 10, currentPageReport * 10);
         return (
-          <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: 16 }} onClick={() => setViewer(null)}>
+          <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: 16 }} onClick={() => { setViewer(null); setCurrentPageReport(1); }}>
             <div style={{ background: C.card, borderRadius: 16, maxWidth: "min(95vw, 1000px)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
               <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
                 <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.navy }}>{viewer.title}</h3>
                 <div style={{ display: "flex", gap: 8 }}>
                   <Btn variant="primary" size="sm" onClick={doDownload}>📥 다운로드</Btn>
-                  <Btn variant="ghost" size="sm" onClick={() => setViewer(null)}>닫기</Btn>
+                  <Btn variant="ghost" size="sm" onClick={() => { setViewer(null); setCurrentPageReport(1); }}>닫기</Btn>
                 </div>
               </div>
-              <div style={{ padding: 16, overflow: "auto", flex: 1, minHeight: 200 }}>
+              <div ref={listRefReport} style={{ padding: 16, overflow: "auto", flex: 1, minHeight: 200 }}>
                 {hasTable ? (
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: rows[0].length > 10 ? 800 : undefined }}>
-                    <thead>
-                      <tr style={{ background: C.bg }}>
-                        {rows[0].map((cell, j) => (
-                          <th key={j} style={{ padding: "8px 10px", textAlign: "left", fontWeight: 600, color: C.navy, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap" }}>{cell}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.slice(1, 101).map((row, i) => (
-                        <tr key={i} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
-                          {row.map((cell, j) => (
-                            <td key={j} style={{ padding: "6px 10px", color: C.text, whiteSpace: "nowrap", maxWidth: j >= 3 && row.length > 10 ? 32 : undefined, overflow: "hidden", textOverflow: "ellipsis" }} title={cell}>{cell || "—"}</td>
+                  <>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: rows[0].length > 10 ? 800 : undefined }}>
+                      <thead>
+                        <tr style={{ background: C.bg }}>
+                          {rows[0].map((cell, j) => (
+                            <th key={j} style={{ padding: "8px 10px", textAlign: "left", fontWeight: 600, color: C.navy, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap" }}>{cell}</th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {paginatedReportRows.map((row, i) => (
+                          <tr key={i} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
+                            {row.map((cell, j) => (
+                              <td key={j} style={{ padding: "6px 10px", color: C.text, whiteSpace: "nowrap", maxWidth: j >= 3 && row.length > 10 ? 32 : undefined, overflow: "hidden", textOverflow: "ellipsis" }} title={cell}>{cell || "—"}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <Pagination totalItems={totalReportRows} itemsPerPage={10} currentPage={currentPageReport} onPageChange={(p) => { setCurrentPageReport(p); listRefReport.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+                  </>
                 ) : (
                   <pre style={{ margin: 0, fontSize: 12, fontFamily: "ui-monospace, monospace", whiteSpace: "pre-wrap", wordBreak: "break-all", color: C.text }}>{viewer.csv}</pre>
-                )}
-                {hasTable && rows.length > 101 && (
-                  <p style={{ margin: "12px 0 0", fontSize: 12, color: C.textMuted }}>상위 100행만 표시합니다. 전체는 다운로드로 확인하세요.</p>
                 )}
               </div>
             </div>
@@ -1498,14 +1498,14 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
    ============================================================ */
 type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "reports" | "settings";
 
-const NAV_ITEMS: { id: SubPage; icon: string; label: string }[] = [
-  { id: "dashboard", icon: "📊", label: "대시보드" },
-  { id: "members", icon: "👥", label: "성도 관리" },
-  { id: "attendance", icon: "📅", label: "출석부" },
-  { id: "notes", icon: "📝", label: "기도/메모" },
-  { id: "newfamily", icon: "🌱", label: "새가족 관리" },
-  { id: "reports", icon: "📋", label: "보고서" },
-  { id: "settings", icon: "⚙️", label: "설정" },
+const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>; label: string }[] = [
+  { id: "dashboard", Icon: LayoutDashboard, label: "대시보드" },
+  { id: "members", Icon: Users, label: "성도 관리" },
+  { id: "attendance", Icon: CalendarCheck, label: "출석부" },
+  { id: "notes", Icon: StickyNote, label: "기도/메모" },
+  { id: "newfamily", Icon: Sprout, label: "새가족 관리" },
+  { id: "reports", Icon: FileText, label: "보고서" },
+  { id: "settings", Icon: Settings, label: "설정" },
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: string }> = {
@@ -1677,20 +1677,24 @@ export function PastoralPage() {
         overflow: "hidden", flexShrink: 0, zIndex: 100,
         ...(mob ? { position: "fixed", top: 0, left: 0, bottom: 0, transform: sideOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
       }}>
-        <div style={{ padding: "20px 16px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.08)", cursor: mob ? "default" : "pointer" }} onClick={() => !mob && setSideOpen(!sideOpen)}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icons.Church /></div>
+        <div style={{ padding: "20px 16px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.08)", cursor: mob ? "default" : "pointer", color: "rgba(255,255,255,0.9)" }} onClick={() => !mob && setSideOpen(!sideOpen)}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Church size={20} strokeWidth={1.5} /></div>
           <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}><div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(db.settings.churchName || "").trim() || "교회"}</div><div style={{ fontSize: 11, opacity: 0.6, whiteSpace: "nowrap" }}>목양</div></div>
         </div>
         <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
-          {NAV_ITEMS.map(n => (
-            <button key={n.id} onClick={() => handleNav(n.id)} style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-              borderRadius: 10, border: "none", background: activeSub === n.id ? "rgba(255,255,255,0.12)" : "transparent",
-              color: activeSub === n.id ? "#fff" : "rgba(255,255,255,0.6)", fontWeight: activeSub === n.id ? 600 : 400,
-              fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-              textAlign: "left", whiteSpace: "nowrap",
-            }}><span style={{ fontSize: 16 }}>{n.icon}</span><span>{n.label}</span></button>
-          ))}
+          {NAV_ITEMS.map(n => {
+            const isActive = activeSub === n.id;
+            const Icon = n.Icon;
+            return (
+              <button key={n.id} onClick={() => handleNav(n.id)} style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                borderRadius: 10, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 400,
+                fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                textAlign: "left", whiteSpace: "nowrap",
+              }}><Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span></button>
+            );
+          })}
         </nav>
         <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, opacity: 0.4 }}>v1.0 MVP · 2025</div>
       </aside>
