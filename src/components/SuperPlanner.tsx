@@ -8,20 +8,52 @@ import { SuperPlannerUI } from "./SuperPlannerUI";
 
 export type PageId = "pastoral" | "planner" | "finance" | "visit" | "bulletin" | "settings";
 
+const PAGE_IDS: PageId[] = ["pastoral", "planner", "finance", "visit", "bulletin", "settings"];
+const STORAGE_KEY_PAGE = "superplanner_page";
+
 export interface ToastItem {
   id: number;
   msg: string;
   type: "ok" | "err" | "warn";
 }
 
+function getInitialPage(): PageId {
+  if (typeof window === "undefined") return "pastoral";
+  const saved = window.localStorage.getItem(STORAGE_KEY_PAGE);
+  if (saved && PAGE_IDS.includes(saved as PageId)) return saved as PageId;
+  return "pastoral";
+}
+
 export default function SuperPlanner() {
   const [db, setDb] = useState<DB>(() => DEFAULT_DB);
-  const [currentPage, setCurrentPage] = useState<PageId>("pastoral");
+  const [dbLoaded, setDbLoaded] = useState(false);
+  const [currentPage, setCurrentPage] = useState<PageId>(getInitialPage);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   useEffect(() => {
-    loadDBFromSupabase().then(setDb).catch(() => setDb(loadDB()));
+    loadDBFromSupabase()
+      .then((d) => {
+        setDb(d);
+        setDbLoaded(true);
+      })
+      .catch(() => {
+        setDb(loadDB());
+        setDbLoaded(true);
+      });
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(STORAGE_KEY_PAGE, currentPage);
+  }, [currentPage]);
+
+  useEffect(() => {
+    if (!dbLoaded) return;
+    const t = setTimeout(() => {
+      saveDBToSupabase(db).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [db, dbLoaded]);
 
   const save = useCallback(() => {
     saveDBToSupabase(db).catch(() => {});
@@ -56,6 +88,14 @@ export default function SuperPlanner() {
     (type: string) => exportReport(db, type, toast),
     [db, toast]
   );
+
+  if (!dbLoaded) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font)" }}>
+        <p style={{ fontSize: 15, color: "var(--text2)" }}>데이터 불러오는 중...</p>
+      </div>
+    );
+  }
 
   return React.createElement(SuperPlannerUI, {
     currentPage,
@@ -104,8 +144,8 @@ function exportReport(
       csv = `${churchName} 월간 재정 보고서 (${month})\n\n`;
       csv += "=== 수입 ===\n유형,금액\n";
       CATS_INCOME.forEach((c) => {
-        const t = mInc.filter((r) => r.type === c).reduce((s, r) => s + (Number(r.amount) || 0), 0);
-        if (t) csv += `${c},${t}\n`;
+        const t = mInc.filter((r) => r.type === c.id || r.type === c.name).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+        if (t) csv += `${c.name},${t}\n`;
       });
       csv += `수입 합계,${totalInc}\n\n`;
       csv += "=== 지출 ===\n계정과목,금액\n";

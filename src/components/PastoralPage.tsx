@@ -3,7 +3,8 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB, Member, Note, AttStatus } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
-import { loadDB, loadDBFromSupabase, saveDBToSupabase, getWeekNum } from "@/lib/store";
+import { saveDBToSupabase, getWeekNum } from "@/lib/store";
+import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church } from "lucide-react";
 import { Pagination } from "@/components/common/Pagination";
 
@@ -72,6 +73,7 @@ const Icons = {
   X: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>,
   Export: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>,
   Church: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2v4M10 6h4M8 6v4l-5 3v9h18v-9l-5-3V6"/><rect x="10" y="16" width="4" height="6"/></svg>,
+  Camera: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>,
 };
 
 /* ---------- Shared UI ---------- */
@@ -120,6 +122,202 @@ function FormTextarea({ label, ...props }: { label?: string; [k: string]: unknow
     <div style={{ marginBottom: 16 }}>
       {label && <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>{label}</label>}
       <textarea {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", color: C.text, background: "#fff", outline: "none", resize: "vertical", minHeight: 72, ...(props.style as CSSProperties || {}) }} />
+    </div>
+  );
+}
+
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
+const WHEEL_ITEM_HEIGHT = 44;
+const WHEEL_VISIBLE_COUNT = 5;
+
+const DRAG_THRESHOLD_PX = 8;
+
+function WheelColumn({ items, selected, onChange, format }: { items: number[]; selected: number; onChange: (value: number) => void; format: (n: number) => string }) {
+  const startYRef = useRef(0);
+  const committedRef = useRef(false);
+  const [offsetY, setOffsetY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const selectedIndex = Math.max(0, Math.min(items.length - 1, items.indexOf(selected)));
+  const baseTranslateY = -selectedIndex * WHEEL_ITEM_HEIGHT;
+
+  const handleStart = useCallback((clientY: number) => {
+    startYRef.current = clientY;
+    committedRef.current = false;
+  }, []);
+
+  const handleMove = useCallback((clientY: number) => {
+    setOffsetY(clientY - startYRef.current);
+  }, []);
+
+  const handleEnd = useCallback(() => {
+    if (committedRef.current) {
+      const movedItems = Math.round(offsetY / WHEEL_ITEM_HEIGHT);
+      let newIndex = selectedIndex - movedItems;
+      newIndex = Math.max(0, Math.min(items.length - 1, newIndex));
+      onChange(items[newIndex] ?? selected);
+      setOffsetY(0);
+    }
+    committedRef.current = false;
+    setDragging(false);
+  }, [offsetY, selectedIndex, items, selected, onChange]);
+
+  const listTranslateY = baseTranslateY + offsetY + WHEEL_ITEM_HEIGHT * 2;
+
+  return (
+    <div
+      style={{
+        width: "33.33%",
+        height: WHEEL_ITEM_HEIGHT * WHEEL_VISIBLE_COUNT,
+        overflow: "hidden",
+        position: "relative",
+        userSelect: "none",
+        cursor: "grab",
+      }}
+      onTouchStart={(e) => handleStart(e.touches[0].clientY)}
+      onTouchMove={(e) => {
+        const clientY = e.touches[0].clientY;
+        if (!committedRef.current) {
+          if (Math.abs(clientY - startYRef.current) > DRAG_THRESHOLD_PX) {
+            committedRef.current = true;
+            setDragging(true);
+            e.preventDefault();
+            handleMove(clientY);
+          }
+          return;
+        }
+        e.preventDefault();
+        handleMove(clientY);
+      }}
+      onTouchEnd={handleEnd}
+      onMouseDown={(e) => {
+        handleStart(e.clientY);
+        committedRef.current = true;
+        setDragging(true);
+      }}
+      onMouseMove={(e) => dragging && handleMove(e.clientY)}
+      onMouseUp={handleEnd}
+      onMouseLeave={() => dragging && handleEnd()}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: 0,
+          right: 0,
+          height: WHEEL_ITEM_HEIGHT,
+          transform: "translateY(-50%)",
+          borderTop: "1px solid #e5e7eb",
+          borderBottom: "1px solid #e5e7eb",
+          background: "rgba(59,130,246,0.06)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, transparent 30%, transparent 70%, rgba(255,255,255,0.9) 100%)",
+          pointerEvents: "none",
+          zIndex: 2,
+        }}
+      />
+      <div
+        style={{
+          transform: `translateY(${listTranslateY}px)`,
+          transition: dragging ? "none" : "transform 0.3s ease-out",
+        }}
+      >
+        {items.map((item, i) => (
+          <div
+            key={item}
+            style={{
+              height: WHEEL_ITEM_HEIGHT,
+              lineHeight: `${WHEEL_ITEM_HEIGHT}px`,
+              textAlign: "center",
+              fontSize: item === selected ? 20 : 16,
+              fontWeight: item === selected ? 700 : 400,
+              color: item === selected ? "#111" : "#bbb",
+              transition: "all 0.2s",
+            }}
+          >
+            {format(item)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DateWheelPicker({ value, onChange, onConfirm }: { value: string; onChange: (v: string) => void; onConfirm: () => void }) {
+  const parse = (v: string) => {
+    const match = v && /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+    if (match) return { y: parseInt(match[1], 10), m: parseInt(match[2], 10), d: parseInt(match[3], 10) };
+    return { y: 2000, m: 1, d: 1 };
+  };
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const toStr = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`;
+
+  const parsed = parse(value);
+  const [year, setYear] = useState(parsed.y);
+  const [month, setMonth] = useState(parsed.m);
+  const [day, setDay] = useState(parsed.d);
+  const years = useMemo(() => Array.from({ length: 2025 - 1940 + 1 }, (_, i) => 1940 + i), []);
+  const months = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), []);
+  const daysInCur = useMemo(() => getDaysInMonth(year, month), [year, month]);
+  const days = useMemo(() => Array.from({ length: daysInCur }, (_, i) => i + 1), [daysInCur]);
+
+  useEffect(() => {
+    const { y, m, d } = parse(value);
+    setYear(y);
+    setMonth(m);
+    setDay(Math.min(d, getDaysInMonth(y, m)));
+  }, [value]);
+
+  const handleYearChange = useCallback((v: number) => {
+    setYear(v);
+    const maxD = getDaysInMonth(v, month);
+    setDay((d) => Math.min(d, maxD));
+    onChange(toStr(v, month, Math.min(day, maxD)));
+  }, [month, day, onChange]);
+
+  const handleMonthChange = useCallback((v: number) => {
+    setMonth(v);
+    const maxD = getDaysInMonth(year, v);
+    setDay((d) => Math.min(d, maxD));
+    onChange(toStr(year, v, Math.min(day, maxD)));
+  }, [year, day, onChange]);
+
+  const handleDayChange = useCallback((v: number) => {
+    setDay(v);
+    onChange(toStr(year, month, v));
+  }, [year, month, onChange]);
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", position: "relative" }}>
+      <div style={{ display: "flex", width: "100%" }}>
+        <WheelColumn items={years} selected={year} onChange={handleYearChange} format={(n) => `${n}년`} />
+        <WheelColumn items={months} selected={month} onChange={handleMonthChange} format={(n) => `${n}월`} />
+        <WheelColumn items={days} selected={Math.min(day, daysInCur)} onChange={handleDayChange} format={(n) => `${n}일`} />
+      </div>
+      <div style={{ padding: "12px 16px", borderTop: "1px solid #e5e7eb" }}>
+        <button
+          type="button"
+          onClick={() => {
+            onChange(toStr(year, month, Math.min(day, getDaysInMonth(year, month))));
+            onConfirm();
+          }}
+          style={{ width: "100%", padding: "12px", background: C.navy, color: "#fff", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: "pointer" }}
+        >
+          확인
+        </button>
+      </div>
     </div>
   );
 }
@@ -612,12 +810,12 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                         <tr key={m.id} onClick={() => openDetail(m.id)} style={{ cursor: "pointer", borderBottom: `1px solid ${C.borderLight}`, transition: "background 0.1s" }}
                           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.bg; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                          <td style={{ padding: "10px 14px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <td style={{ padding: "10px 14px", minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                               <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, background: isLeader ? `linear-gradient(135deg, ${C.accent}, ${C.purple})` : `linear-gradient(135deg, ${C.accentBg}, ${C.tealBg})`, color: isLeader ? "#fff" : C.accent, overflow: "hidden", flexShrink: 0 }}>
                                 {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
                               </div>
-                              <div><div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontWeight: 700, fontSize: 14, color: C.navy }}>{m.name}</span>{isLeader && <span style={{ fontSize: 10, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "2px 6px", borderRadius: 8 }}>목자</span>}</div><div style={{ fontSize: 12, color: C.textMuted }}>{m.role || ""}</div></div>
+                              <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ fontWeight: 700, fontSize: 14, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{m.name}</span>{isLeader && <span style={{ fontSize: 10, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>목자</span>}</div><div style={{ fontSize: 12, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
                             </div>
                           </td>
                           <td style={{ padding: "10px 14px" }}><SBadge variant="gray">{m.dept || "-"}</SBadge></td>
@@ -668,12 +866,12 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                       <tr key={m.id} onClick={() => openDetail(m.id)} style={{ cursor: "pointer", borderBottom: `1px solid ${C.borderLight}`, transition: "background 0.1s" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.bg; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                        <td style={{ padding: "12px 16px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <td style={{ padding: "12px 16px", minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                             <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
                               {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
                             </div>
-                            <div><div style={{ fontWeight: 600, color: C.navy }}>{m.name}</div><div style={{ fontSize: 12, color: C.textMuted }}>{m.role || ""}</div></div>
+                            <div style={{ minWidth: 0 }}><div style={{ fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div><div style={{ fontSize: 12, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
                           </div>
                         </td>
                         <td style={{ padding: "12px 16px" }}><SBadge variant="gray">{m.dept || "-"}</SBadge></td>
@@ -884,12 +1082,12 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
                       for (let w = currentWeek; w >= 1; w--) { if (att[w] === "p") streak++; else break; }
                       return (
                         <tr key={s.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
-                          <td style={{ padding: "12px 16px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                              <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden" }}>
+                          <td style={{ padding: "12px 16px", minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                              <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
                                 {s.photo ? <img src={s.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (s.name || "?")[0]}
                               </div>
-                              <strong style={{ color: C.navy }}>{s.name}</strong>
+                              <strong style={{ color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", minWidth: 0 }}>{s.name}</strong>
                             </div>
                           </td>
                           <td style={{ padding: "12px 16px" }}><SBadge variant="gray">{s.dept}</SBadge></td>
@@ -923,12 +1121,12 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
                   for (let w = currentWeek; w >= 1; w--) { if (att[w] === "p") streak++; else break; }
                   return (
                     <tr key={s.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
-                      <td style={{ padding: "12px 16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden" }}>
+                      <td style={{ padding: "12px 16px", minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                          <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
                             {s.photo ? <img src={s.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (s.name || "?")[0]}
                           </div>
-                          <strong style={{ color: C.navy }}>{s.name}</strong>
+                          <strong style={{ color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", minWidth: 0 }}>{s.name}</strong>
                         </div>
                       </td>
                       <td style={{ padding: "12px 16px" }}><SBadge variant="gray">{s.dept}</SBadge></td>
@@ -1129,7 +1327,7 @@ function NewFamilySub({ db, currentWeek, openDetail }: { db: DB; currentWeek: nu
                 });
                 return (
                   <tr key={m.id} onClick={() => openDetail(m.id)} style={{ cursor: "pointer", borderBottom: `1px solid ${C.borderLight}` }}>
-                    <td style={{ padding: "12px 16px", fontWeight: 600 }}>{m.name}</td>
+                    <td style={{ padding: "12px 16px", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</td>
                     <td style={{ padding: "12px 16px" }}>{m.createdAt ? m.createdAt.slice(0, 10) : "-"}</td>
                     <td style={{ padding: "12px 16px" }}>{m.source || "-"}</td>
                     {weeks.map((w, i) => <td key={i} style={{ padding: "12px 16px", textAlign: "center" }}>{w}</td>)}
@@ -1387,14 +1585,22 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
     if (typeof window !== "undefined") location.reload();
   };
 
+  const handleSaveSettings = () => {
+    persist();
+    saveDb(db).then(() => toast("저장되었습니다", "ok")).catch(() => toast("저장 실패", "err"));
+  };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: mob ? "100%" : 600 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: mob ? "100%" : 960 }}>
       <Card>
         <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 14 : 20 }}>⚙️ 교회 설정</h4>
         <FormInput label="교회 이름" value={db.settings.churchName || ""} placeholder="○○교회"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, churchName: e.target.value } })); persist(); }} />
         <FormInput label="부서 목록 (쉼표 구분)" value={db.settings.depts || ""} placeholder="유아부,유치부,유년부,초등부,중등부,고등부,청년부,장년부"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, depts: e.target.value } })); persist(); }} />
+        <div style={{ marginTop: 12 }}>
+          <Btn onClick={handleSaveSettings}>저장</Btn>
+        </div>
       </Card>
       <Card>
         <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 12 : 16 }}>🏠 목장 관리</h4>
@@ -1425,8 +1631,8 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
             ) : (
               <ul style={{ margin: 0, padding: 0, listStyle: "none", maxHeight: 200, overflowY: "auto" }}>
                 {db.members.filter(m => (m.group || "") === mokjangManage).map(m => (
-                  <li key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: `1px solid ${C.borderLight}`, fontSize: 14 }}>
-                    <span style={{ fontWeight: 600, color: C.navy }}>{m.name}</span>
+                  <li key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: `1px solid ${C.borderLight}`, fontSize: 14, minWidth: 0 }}>
+                    <span style={{ fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span>
                     <span style={{ fontSize: 12, color: C.textMuted }}>{m.dept || ""} {m.role || ""}</span>
                     <button type="button" onClick={() => removeMemberFromMokjang(m.id)} style={{ padding: "4px 10px", fontSize: 12, border: "none", background: C.dangerBg || "#fee", color: C.danger, borderRadius: 6, cursor: "pointer" }}>목장에서 제거</button>
                   </li>
@@ -1487,19 +1693,14 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   settings: { title: "설정", desc: "교회 정보 및 데이터 관리" },
 };
 
-export function PastoralPage() {
+export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const mob = useIsMobile();
-  const [db, setDb] = useState<DB>(() => loadDB());
   const [activeSub, setActiveSub] = useState<SubPage>("dashboard");
   const [sideOpen, setSideOpen] = useState(false);
   const [currentWeek, setCurrentWeek] = useState(getWeekNum);
 
   useEffect(() => { if (!mob) setSideOpen(true); else setSideOpen(false); }, [mob]);
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: string }[]>([]);
-
-  useEffect(() => {
-    loadDBFromSupabase().then(setDb).catch(() => setDb(loadDB()));
-  }, []);
 
   // Modals
   const [showMemberModal, setShowMemberModal] = useState(false);
@@ -1515,15 +1716,21 @@ export function PastoralPage() {
   const [fAddr, setFAddr] = useState(""); const [fFamily, setFFamily] = useState(""); const [fStatus, setFStatus] = useState("새가족");
   const [fSource, setFSource] = useState(""); const [fPrayer, setFPrayer] = useState(""); const [fMemo, setFMemo] = useState("");
   const [fGroup, setFGroup] = useState(""); const [fPhoto, setFPhoto] = useState("");
+  const [showBirthPicker, setShowBirthPicker] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
+
+  const formatBirthDisplay = (birth: string) => {
+    if (!birth || !/^\d{4}-\d{2}-\d{2}$/.test(birth)) return "생년월일 선택";
+    const [y, m, d] = birth.split("-");
+    return `${y}년 ${parseInt(m, 10)}월 ${parseInt(d, 10)}일`;
+  };
 
   // Note form
   const [nDate, setNDate] = useState(todayStr()); const [nType, setNType] = useState<Note["type"]>("memo"); const [nContent, setNContent] = useState(""); const [nMbrSelect, setNMbrSelect] = useState("");
   const [noteFilterBy, setNoteFilterBy] = useState<"all" | "group" | "dept">("all");
   const [noteFilterValue, setNoteFilterValue] = useState("");
 
-  const persist = useCallback(() => { saveDBToSupabase(db).catch(() => {}); }, [db]);
-  useEffect(() => { if (db.members.length > 0 || db.settings.churchName) saveDBToSupabase(db).catch(() => {}); }, [db]);
+  const persist = useCallback(() => { /* 부모에서 db 변경 시 자동 저장 */ }, []);
 
   const toastIdRef = useRef(0);
   const toastTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -1570,6 +1777,14 @@ export function PastoralPage() {
       setDb(prev => ({ ...prev, members: [...prev.members, { ...data, id: newId, createdAt: todayStr() } as Member] }));
       toast("등록 완료", "ok");
     }
+    setShowBirthPicker(false);
+    setShowMemberModal(false);
+  };
+
+  const closeMemberModal = () => {
+    const hasInput = fName.trim() || fRole.trim() || fBirth || fPhone.trim() || fAddr.trim() || fFamily.trim() || fPrayer.trim() || fMemo.trim() || fPhoto;
+    if (hasInput && typeof window !== "undefined" && !window.confirm("작성 중인 내용이 있습니다. 닫으시겠습니까?")) return;
+    setShowBirthPicker(false);
     setShowMemberModal(false);
   };
 
@@ -1581,9 +1796,12 @@ export function PastoralPage() {
       const { [id]: _a, ...att } = prev.attendance;
       const { [id]: _ar, ...attReasons } = prev.attendanceReasons || {};
       const { [id]: _n, ...notes } = prev.notes;
-      return { ...prev, members: prev.members.filter(m => m.id !== id), attendance: att, attendanceReasons: attReasons, notes };
+      const next = { ...prev, members: prev.members.filter(m => m.id !== id), attendance: att, attendanceReasons: attReasons, notes };
+      saveDb?.(next).catch(() => toast("저장 실패", "err"));
+      return next;
     });
-    setShowDetailModal(false); toast("삭제 완료", "warn");
+    setShowDetailModal(false);
+    toast("삭제 완료", "warn");
   };
 
   const openNoteModal = useCallback((id?: string) => {
@@ -1614,13 +1832,21 @@ export function PastoralPage() {
     setShowNoteModal(false); toast("기록 저장 완료", "ok");
   };
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    const fd = new FormData(); fd.append("file", file);
-    fetch("/api/upload-photo", { method: "POST", body: fd })
-      .then(r => r.json())
-      .then(data => { if (data.url) setFPhoto(data.url); else toast("업로드 실패", "err"); })
-      .catch(() => toast("업로드 실패", "err"));
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImage(file, 400, 0.7);
+      const fd = new FormData();
+      fd.append("file", compressed);
+      const r = await fetch("/api/upload-photo", { method: "POST", body: fd });
+      const data = await r.json();
+      if (data.url) setFPhoto(data.url);
+      else toast("업로드 실패", "err");
+    } catch {
+      toast("사진 압축 또는 업로드 실패", "err");
+    }
+    e.target.value = "";
   };
 
   const topAdd = () => {
@@ -1640,7 +1866,7 @@ export function PastoralPage() {
 
       {/* Sidebar */}
       <aside style={{
-        width: mob ? 240 : (sideOpen ? 240 : 64), background: C.navy, color: "#fff",
+        width: mob ? 240 : (sideOpen ? 240 : 64), background: "#1a1f36", color: "#fff",
         display: "flex", flexDirection: "column",
         transition: mob ? "transform 0.3s ease" : "width 0.25s ease",
         overflow: "hidden", flexShrink: 0, zIndex: 100,
@@ -1656,10 +1882,10 @@ export function PastoralPage() {
             const Icon = n.Icon;
             return (
               <button key={n.id} onClick={() => handleNav(n.id)} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                borderRadius: 10, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 400,
-                fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
+                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s",
                 textAlign: "left", whiteSpace: "nowrap",
               }}><Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span></button>
             );
@@ -1697,14 +1923,51 @@ export function PastoralPage() {
       {/* ===== MODALS ===== */}
 
       {/* Member Modal */}
-      <Modal open={showMemberModal} onClose={() => setShowMemberModal(false)} title={editMbrId ? "성도 수정" : "성도 등록"}>
+      <Modal open={showMemberModal} onClose={closeMemberModal} title={editMbrId ? "성도 수정" : "성도 등록"}>
+        {/* 프로필 사진 — 맨 위, 원형 100px, 가운데 */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          <div
+            onClick={() => photoRef.current?.click()}
+            style={{
+              width: 100, height: 100, borderRadius: "50%", background: "#f3f4f6", cursor: "pointer",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0,
+            }}
+          >
+            {fPhoto ? (
+              <img src={fPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <>
+                <div style={{ color: C.textMuted, marginBottom: 4 }}><Icons.Camera /></div>
+                <span style={{ fontSize: 11, color: C.textMuted }}>사진 등록</span>
+              </>
+            )}
+          </div>
+          <input ref={photoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhoto} />
+        </div>
         <FormInput label="이름 *" value={fName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFName(e.target.value)} placeholder="이름" />
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
           <FormSelect label="부서" value={fDept} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFDept(e.target.value)} options={depts.map(d => ({ value: d, label: d }))} />
           <FormInput label="직분/학년" value={fRole} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFRole(e.target.value)} placeholder="예: 집사, 3학년" />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
-          <FormInput label="생년월일" type="date" value={fBirth} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFBirth(e.target.value)} />
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>생년월일</label>
+            <div
+              onClick={() => setShowBirthPicker((v) => !v)}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: "#fff", color: fBirth ? C.text : C.textMuted, cursor: "pointer" }}
+            >
+              {formatBirthDisplay(fBirth)}
+            </div>
+            {showBirthPicker && (
+              <div style={{ marginTop: 12 }}>
+                <DateWheelPicker
+                  value={fBirth || "2000-01-01"}
+                  onChange={(v) => setFBirth(v)}
+                  onConfirm={() => setShowBirthPicker(false)}
+                />
+              </div>
+            )}
+          </div>
           <FormSelect label="성별" value={fGender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGender(e.target.value)} options={[{ value: "", label: "선택" }, { value: "남", label: "남" }, { value: "여", label: "여" }]} />
         </div>
         <FormInput label="연락처" type="tel" value={fPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFPhone(e.target.value)} placeholder="010-0000-0000" />
@@ -1723,19 +1986,10 @@ export function PastoralPage() {
           ...getMokjangList(db).map(g => ({ value: g, label: g })),
           ...(fGroup && !getMokjangList(db).includes(fGroup) ? [{ value: fGroup, label: fGroup }] : []),
         ]} />
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>프로필 사진</label>
-          <div onClick={() => photoRef.current?.click()} style={{ border: `2px dashed ${C.border}`, borderRadius: 10, padding: 20, textAlign: "center", cursor: "pointer" }}>
-            <div style={{ fontSize: 28, opacity: 0.5, marginBottom: 4 }}>📷</div>
-            <div style={{ fontSize: 13, color: C.textMuted }}>사진 선택 (자동 압축)</div>
-          </div>
-          <input ref={photoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhoto} />
-          {fPhoto && <img src={fPhoto} alt="" style={{ width: 64, height: 64, borderRadius: 10, objectFit: "cover", border: `2px solid ${C.border}`, marginTop: 8 }} />}
-        </div>
         <FormTextarea label="기도제목" value={fPrayer} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFPrayer(e.target.value)} placeholder="이 성도를 위한 기도제목" />
         <FormTextarea label="특이사항 메모" value={fMemo} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFMemo(e.target.value)} placeholder="사업장 개업, 병원치료, 가정문제, 진학, 취업 등" />
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
-          <Btn variant="ghost" onClick={() => setShowMemberModal(false)}>취소</Btn>
+          <Btn variant="ghost" onClick={closeMemberModal}>취소</Btn>
           <Btn onClick={saveMember}>저장</Btn>
         </div>
       </Modal>

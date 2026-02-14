@@ -365,6 +365,38 @@
   .d-row .d-icon { font-size: 17px; flex-shrink: 0; }
   .d-row .d-label { font-size: 11px; color: var(--text2); font-weight: 500; }
   .d-row .d-value { font-size: 13px; margin-top: 1px; }
+
+  /* 날짜 입력 iOS 스타일 (사이트 전체) */
+  input[type="date"],
+  input.input-date-ios[type="date"] {
+    font-size: 17px;
+    font-family: var(--font);
+    color: var(--text1);
+    padding: 12px 14px;
+    padding-right: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+    color-scheme: light;
+  }
+  input[type="date"]:focus,
+  input.input-date-ios[type="date"]:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: 4px;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
 }
 
 @media (min-width: 640px) {

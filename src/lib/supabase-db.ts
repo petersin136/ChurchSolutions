@@ -1,8 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import type { DB, Member, Note, Plan, Sermon, Visit, Income, Expense, AttStatus, ChecklistItem } from "@/types/db";
-import { DEFAULT_DB, buildSampleDB } from "@/types/db";
+import { DEFAULT_DB } from "@/types/db";
 
 const CURRENT_YEAR = new Date().getFullYear();
+
+/** 전체 삭제용 조건 (PostgREST는 조건 없이 delete 불가일 수 있음) */
+const MATCH_ALL_ID = "00000000-0000-0000-0000-000000000000";
 
 /** Supabase에서 전체 DB 로드 */
 export async function loadDBFromSupabase(): Promise<DB> {
@@ -87,8 +90,7 @@ export async function loadDBFromSupabase(): Promise<DB> {
     });
   });
 
-  // 교인이 10명 미만이면 70명 샘플로 채워서 예시 동작 보여주기
-  if (!membersRes.data?.length || membersRes.data.length < 10) return buildSampleDB();
+  // Supabase에서 불러온 데이터만 사용. 샘플로 덮어쓰지 않음 (교회 이름·금액이 바뀌는 문제 방지)
   return db;
 }
 
@@ -171,30 +173,93 @@ function toExpense(r: Record<string, unknown>): Expense {
   };
 }
 
-/** DB 전체를 Supabase에 저장 */
+/** 전체 초기화: 외래키 의존 순서대로 자식 테이블 먼저 삭제 (권장: 서버 /api/reset 사용) */
+export async function clearAllInSupabase(): Promise<void> {
+  if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.");
+  const tablesInOrder = [
+    { table: "attendance", column: "week_num", value: -1 },
+    { table: "notes", column: "member_id", value: MATCH_ALL_ID },
+    { table: "visits", column: "id", value: MATCH_ALL_ID },
+    { table: "income", column: "id", value: MATCH_ALL_ID },
+    { table: "expense", column: "id", value: MATCH_ALL_ID },
+    { table: "budget", column: "year", value: -1 },
+    { table: "checklist", column: "week_key", value: "__none__" },
+    { table: "plans", column: "id", value: MATCH_ALL_ID },
+    { table: "sermons", column: "id", value: MATCH_ALL_ID },
+    { table: "members", column: "id", value: MATCH_ALL_ID },
+  ];
+  for (const { table, column, value } of tablesInOrder) {
+    const { error } = await supabase.from(table).delete().neq(column, value);
+    if (error) throw new Error(`${table} 초기화 실패: ${error.message}`);
+  }
+}
+
+/** 목양(교인·출석·노트)만 초기화: attendance → notes → members (권장: /api/reset?scope=pastoral) */
+export async function clearPastoralInSupabase(): Promise<void> {
+  if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local을 확인하세요.");
+  const { error: e1 } = await supabase.from("attendance").delete().gte("week_num", 0);
+  if (e1) throw new Error(`attendance 초기화 실패: ${e1.message}`);
+  const { error: e2 } = await supabase.from("notes").delete().neq("member_id", MATCH_ALL_ID);
+  if (e2) throw new Error(`notes 초기화 실패: ${e2.message}`);
+  const { error: e3 } = await supabase.from("members").delete().neq("id", MATCH_ALL_ID);
+  if (e3) throw new Error(`members 초기화 실패: ${e3.message}`);
+}
+
+/** 재정(수입·지출·예산)만 Supabase에서 비우기 (권장: /api/reset?scope=finance) */
+export async function clearFinanceInSupabase(): Promise<void> {
+  if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local을 확인하세요.");
+  const { error: e1 } = await supabase.from("income").delete().neq("id", MATCH_ALL_ID);
+  if (e1) throw new Error(`income 초기화 실패: ${e1.message}`);
+  const { error: e2 } = await supabase.from("expense").delete().neq("id", MATCH_ALL_ID);
+  if (e2) throw new Error(`expense 초기화 실패: ${e2.message}`);
+  const { error: e3 } = await supabase.from("budget").delete().gte("year", 0);
+  if (e3) throw new Error(`budget 초기화 실패: ${e3.message}`);
+}
+
+/** 심방/상담만 초기화: visits (권장: /api/reset?scope=visits) */
+export async function clearVisitsInSupabase(): Promise<void> {
+  if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local을 확인하세요.");
+  const { error } = await supabase.from("visits").delete().neq("id", MATCH_ALL_ID);
+  if (error) throw new Error(`visits 초기화 실패: ${error.message}`);
+}
+
+/** 설정(교회 정보)만 Supabase에 저장. 저장 버튼 클릭 시 이 함수만 호출하면 요청 수가 적어 실패 가능성이 낮음 */
+export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<void> {
+  if (!supabase) return;
+  const { data: existing } = await supabase.from("settings").select("id").limit(1).maybeSingle();
+  const payload = {
+    church_name: settings.churchName,
+    depts: settings.depts,
+    fiscal_start: settings.fiscalStart,
+    ...(settings.address !== undefined && { address: settings.address }),
+    ...(settings.pastor !== undefined && { pastor: settings.pastor }),
+    ...(settings.businessNumber !== undefined && { business_number: settings.businessNumber }),
+  };
+  if (existing?.id) {
+    const { error } = await supabase.from("settings").update(payload).eq("id", existing.id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from("settings").insert(payload);
+    if (error) throw new Error(error.message);
+  }
+}
+
+/** DB 전체를 Supabase에 저장. 설정(settings)은 클라이언트 PATCH 400 방지를 위해 저장하지 않음 — 설정 탭에서 "저장" 시 /api/settings 사용 */
 export async function saveDBToSupabase(db: DB): Promise<void> {
   if (!supabase) return;
   const year = CURRENT_YEAR;
 
-  const existingSettings = await supabase.from("settings").select("id").limit(1).maybeSingle();
-  if (existingSettings.data?.id) {
-    await supabase.from("settings").update({
-      church_name: db.settings.churchName,
-      depts: db.settings.depts,
-      fiscal_start: db.settings.fiscalStart,
-      ...(db.settings.address !== undefined && { address: db.settings.address }),
-      ...(db.settings.pastor !== undefined && { pastor: db.settings.pastor }),
-      ...(db.settings.businessNumber !== undefined && { business_number: db.settings.businessNumber }),
-    }).eq("id", existingSettings.data.id);
-  } else {
-    await supabase.from("settings").insert({
-      church_name: db.settings.churchName,
-      depts: db.settings.depts,
-      fiscal_start: db.settings.fiscalStart,
-      ...(db.settings.address !== undefined && { address: db.settings.address }),
-      ...(db.settings.pastor !== undefined && { pastor: db.settings.pastor }),
-      ...(db.settings.businessNumber !== undefined && { business_number: db.settings.businessNumber }),
-    });
+  // 로컬에서 삭제된 교인을 Supabase에서도 삭제 (새로고침 시 다시 나타나지 않도록)
+  const keepMemberIds = new Set(db.members.map((m) => m.id));
+  const { data: existingMembers } = await supabase.from("members").select("id");
+  if (existingMembers?.length) {
+    for (const row of existingMembers as { id: string }[]) {
+      const id = row?.id;
+      if (!id || keepMemberIds.has(id)) continue;
+      await supabase.from("attendance").delete().eq("member_id", id);
+      await supabase.from("notes").delete().eq("member_id", id);
+      await supabase.from("members").delete().eq("id", id);
+    }
   }
 
   for (const m of db.members) {

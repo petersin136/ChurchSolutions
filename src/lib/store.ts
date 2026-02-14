@@ -1,7 +1,15 @@
 import type { DB } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 
-export { loadDBFromSupabase, saveDBToSupabase } from "@/lib/supabase-db";
+export {
+  loadDBFromSupabase,
+  saveDBToSupabase,
+  saveSettingsToSupabase,
+  clearAllInSupabase,
+  clearPastoralInSupabase,
+  clearFinanceInSupabase,
+  clearVisitsInSupabase,
+} from "@/lib/supabase-db";
 
 /** SSR 또는 초기 상태용 (클라이언트에서는 loadDBFromSupabase 사용) */
 export function loadDB(): DB {

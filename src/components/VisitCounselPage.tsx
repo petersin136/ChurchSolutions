@@ -154,89 +154,24 @@ const MEMO_CATEGORIES: Record<MemoCategory, string> = {
   admin: "행정", assignment: "배정", connection: "연결", notable: "특이사항", other: "기타",
 };
 
-/* ---------- Sample Data (교인 DB와 동기화) ---------- */
-function buildSample(): VCDB {
+/** 초기화 후 또는 저장 없을 때 — 심방/상담/기도/메모 비움 */
+function buildEmpty(): VCDB {
   return {
-    settings: { name: "김은혜", role: "담임목사", church: "은혜교회" },
-    members: [
-      { id: "m1", name: "김영수", group: "1구역", role: "장로", phone: "010-1234-5678", note: "당회 서기, 재정위원" },
-      { id: "m2", name: "박성호", group: "2구역", role: "장로", phone: "010-2345-6781", note: "당회장" },
-      { id: "m3", name: "이재문", group: "3구역", role: "장로", phone: "010-3456-7892", note: "원로장로, 무릎 통증" },
-      { id: "m4", name: "이순자", group: "1구역", role: "권사", phone: "010-8901-2347", note: "여전도회 회장, 무릎수술 예정" },
-      { id: "m5", name: "최미영", group: "1구역", role: "권사", phone: "010-9012-3458", note: "구역장" },
-      { id: "m6", name: "송옥순", group: "2구역", role: "권사", phone: "010-0123-4569", note: "원로권사, 독거" },
-      { id: "m7", name: "한경자", group: "3구역", role: "권사", phone: "010-4444-5555", note: "독거, 새벽기도 인도" },
-      { id: "m8", name: "박철수", group: "2구역", role: "집사", phone: "010-8080-9090", note: "안내팀장, 아내 미등록" },
-      { id: "m9", name: "최은정", group: "1구역", role: "집사", phone: "010-9090-0101", note: "사별, 자녀 양육" },
-      { id: "m10", name: "송미경", group: "1구역", role: "집사", phone: "010-0101-1212", note: "남편 사업 부도" },
-      { id: "m11", name: "홍선미", group: "2구역", role: "집사", phone: "010-2020-3030", note: "남편 미신자" },
-      { id: "m12", name: "한지우", group: "3구역", role: "집사", phone: "010-5656-6767", note: "선교위원" },
-      { id: "m13", name: "김동현", group: "청년", role: "청년", phone: "010-7878-8989", note: "청년부 회장, 취업준비" },
-      { id: "m14", name: "이수빈", group: "청년", role: "청년", phone: "010-8989-9090", note: "고시 준비" },
-      { id: "m15", name: "한태우", group: "청년", role: "청년", phone: "010-7272-8383", note: "군 제대 후 복귀" },
-      { id: "m16", name: "정하나", group: "새가족", role: "새가족", phone: "010-1515-2626", note: "2주째 출석" },
-      { id: "m17", name: "이정훈", group: "새가족", role: "새가족", phone: "010-3434-4545", note: "이전교회: 사랑의교회" },
-      { id: "m18", name: "김미선", group: "새가족", role: "새가족", phone: "010-4545-5656", note: "이정훈 부인, 임신 중" },
-      { id: "m19", name: "정대현", group: "2구역", role: "안수집사", phone: "010-4567-8903", note: "주차봉사팀장" },
-      { id: "m20", name: "강민호", group: "3구역", role: "안수집사", phone: "010-6789-0125", note: "선교위원, 어머니 건강" },
-    ],
-    visits: [
-      { id: "v1", memberId: "m4", type: "sick", date: dateOffset(-1), time: "14:00", location: "서울대병원", summary: "이순자 권사 무릎 수술 전 심방. 수술일 3/5 확정. 기도 후 격려.", prayerNote: "수술 성공과 빠른 회복", status: "completed", followUpDate: dateOffset(6), followUpNote: "수술 후 회복 확인", followUpDone: false },
-      { id: "v2", memberId: "m17", type: "new_family", date: dateOffset(-3), time: "11:00", location: "마포구 합정동 자택", summary: "이정훈/김미선 가정 첫 심방. 등록카드 작성 완료. 가족: 부부. 아내 임신 6개월.", prayerNote: "새 교회 정착, 건강한 출산", status: "completed", followUpDate: dateOffset(4), followUpNote: "2주차 정착 확인", followUpDone: false },
-      { id: "v3", memberId: "m3", type: "regular", date: dateOffset(2), time: "15:00", location: "송파구 잠실동 자택", summary: "", prayerNote: "건강 회복 기도", status: "scheduled", followUpDate: "", followUpNote: "", followUpDone: false },
-      { id: "v4", memberId: "m10", type: "crisis", date: dateOffset(-7), time: "10:00", location: "종로구 부암동 자택", summary: "남편 사업 부도로 가정 경제 위기. 당회 구제비 50만원 전달. 심리상담 연계.", prayerNote: "가정에 평안과 지혜를 주시도록", status: "completed", followUpDate: dateOffset(-1), followUpNote: "구제비 전달 확인", followUpDone: true },
-      { id: "v5", memberId: "m2", type: "regular", date: dateOffset(-14), time: "10:00", location: "서초구 반포동 자택", summary: "박성호 장로 월례심방. 선교헌금 증액 논의. 필리핀 단기선교 참여 의사.", prayerNote: "", status: "completed", followUpDate: "", followUpNote: "", followUpDone: false },
-      { id: "v6", memberId: "m7", type: "routine", date: dateOffset(-5), time: "15:00", location: "중구 필동 자택", summary: "한경자 권사 독거 심방. 외로움 호소. 구역모임 참석 적극 권유. 건강 양호.", prayerNote: "외로움 극복, 교제의 기쁨", status: "completed", followUpDate: dateOffset(10), followUpNote: "구역모임 참석 확인", followUpDone: false },
-      { id: "v7", memberId: "m8", type: "regular", date: dateOffset(-10), time: "19:00", location: "강남구 개포동 자택", summary: "박철수 집사 가정 방문. 아내 김수진씨 교회 등록 관심 표현. 새가족반 안내.", prayerNote: "아내 구원과 교회 정착", status: "completed", followUpDate: dateOffset(3), followUpNote: "아내 주일예배 참석 여부", followUpDone: false },
-      { id: "v8", memberId: "m9", type: "routine", date: dateOffset(-12), time: "14:00", location: "서초구 양재동 자택", summary: "최은정 집사 사별 1주기 심방. 심리적 안정 회복 중. 자녀 잘 성장.", prayerNote: "치유와 회복, 자녀 양육 지혜", status: "completed", followUpDate: "", followUpNote: "", followUpDone: false },
-      { id: "v9", memberId: "m16", type: "new_family", date: dateOffset(1), time: "14:00", location: "교회 사무실", summary: "", prayerNote: "교회 정착", status: "scheduled", followUpDate: "", followUpNote: "", followUpDone: false },
-      { id: "v10", memberId: "m20", type: "sick", date: dateOffset(-4), time: "16:00", location: "세브란스병원", summary: "강민호 안수집사 어머니 입원 병문안. 경과 관찰 중. 기도.", prayerNote: "어머니 건강 회복", status: "completed", followUpDate: dateOffset(7), followUpNote: "퇴원 후 자택심방", followUpDone: false },
-    ],
-    counsels: [
-      { id: "c1", memberId: "m10", type: "family", date: dateOffset(-5), summary: "송미경 집사 - 남편 사업 실패 후 부부 갈등 심화. 개별 상담 우선 진행. 구제비 전달 완료.", confidential: true, followUpDate: dateOffset(2), followUpNote: "2차 상담", followUpDone: false },
-      { id: "c2", memberId: "m13", type: "career", date: dateOffset(-10), summary: "김동현 청년 - IT업계 취업준비 6개월째. 면접 탈락 반복으로 우울감 호소. 이력서 코칭 연결.", confidential: false, followUpDate: dateOffset(-3), followUpNote: "면접 결과 확인", followUpDone: false },
-      { id: "c3", memberId: "m15", type: "faith", date: dateOffset(-8), summary: "한태우 청년 - 군 복무 중 신앙 회의. 제대 후 교회 복귀 희망. 소그룹 연결 진행.", confidential: false, followUpDate: dateOffset(5), followUpNote: "소그룹 참여 확인", followUpDone: false },
-      { id: "c4", memberId: "m9", type: "health", date: dateOffset(-20), summary: "최은정 집사 - 사별 후 우울감. 전문 심리상담 연계. 자녀 돌봄 지원 논의.", confidential: true, followUpDate: dateOffset(-5), followUpNote: "심리상담 경과 확인", followUpDone: true },
-      { id: "c5", memberId: "m18", type: "family", date: dateOffset(-2), summary: "김미선 새가족 - 임신 중 불안감. 남편과 함께 기도. 산모교실 안내.", confidential: false, followUpDate: dateOffset(7), followUpNote: "건강 상태 확인", followUpDone: false },
-      { id: "c6", memberId: "m11", type: "family", date: dateOffset(-15), summary: "홍선미 집사 - 남편 전도 방법 상담. 가정예배 시작 권유. 남편 성향 파악.", confidential: false, followUpDate: dateOffset(0), followUpNote: "가정예배 진행 여부", followUpDone: false },
-      { id: "c7", memberId: "m14", type: "career", date: dateOffset(-18), summary: "이수빈 청년 - 사법고시 3년째 준비. 경제적 어려움과 심리적 압박. 장학금 지원 논의.", confidential: false, followUpDate: dateOffset(-4), followUpNote: "시험 결과 확인", followUpDone: false },
-    ],
-    prayers: [
-      { id: "pr1", memberId: "m4", text: "이순자 권사 무릎 수술 성공과 빠른 회복", date: dateOffset(-2), category: "health", status: "active" },
-      { id: "pr2", memberId: "m17", text: "이정훈/김미선 가정 새 교회 정착", date: dateOffset(-3), category: "settlement", status: "active" },
-      { id: "pr3", memberId: "m3", text: "이재문 장로 건강 회복과 무릎 통증 완화", date: dateOffset(-5), category: "health", status: "active" },
-      { id: "pr4", memberId: "m10", text: "송미경 집사 가정에 평안과 경제적 회복", date: dateOffset(-7), category: "family", status: "active" },
-      { id: "pr5", memberId: "m13", text: "김동현 청년 취업 성공 (IT 분야)", date: dateOffset(-10), category: "career", status: "active" },
-      { id: "pr6", memberId: "m15", text: "한태우 청년 신앙 회복과 교회 정착", date: dateOffset(-8), category: "faith", status: "active" },
-      { id: "pr7", memberId: "m12", text: "한지우 집사 선교 헌신과 가정 축복", date: dateOffset(-5), category: "mission", status: "active" },
-      { id: "pr8", memberId: "m2", text: "박성호 장로 선교 사역과 건강", date: dateOffset(-14), category: "mission", status: "active" },
-      { id: "pr9", memberId: "m9", text: "최은정 집사 치유와 자녀 양육 지혜", date: dateOffset(-20), category: "health", status: "active" },
-      { id: "pr10", memberId: "m7", text: "한경자 권사 독거 외로움 극복", date: dateOffset(-6), category: "other", status: "active" },
-      { id: "pr11", memberId: "m8", text: "박철수 집사 아내 구원과 교회 등록", date: dateOffset(-11), category: "family", status: "active" },
-      { id: "pr12", memberId: "m18", text: "김미선 건강한 출산과 태아 건강", date: dateOffset(-2), category: "health", status: "active" },
-      { id: "pr13", memberId: "m20", text: "강민호 안수집사 어머니 건강 회복", date: dateOffset(-4), category: "health", status: "active" },
-      { id: "pr14", memberId: "m11", text: "홍선미 집사 남편 구원", date: dateOffset(-15), category: "family", status: "active" },
-      { id: "pr15", memberId: "m14", text: "이수빈 청년 고시 합격", date: dateOffset(-18), category: "career", status: "active" },
-    ],
-    memos: [
-      { id: "me1", memberId: "m10", text: "당회에서 구제비 50만원 승인 (2/6)", date: dateOffset(-6), category: "admin" },
-      { id: "me2", memberId: "m16", text: "정하나 청년 - 새가족반 수료, 청년부 배정", date: dateOffset(-4), category: "assignment" },
-      { id: "me3", memberId: "m13", text: "김동현 → 김성진 집사(IT) 이력서 멘토링 연결", date: dateOffset(-9), category: "connection" },
-      { id: "me4", memberId: "m4", text: "이순자 권사 수술일 3/5 확정. 병원: 서울대병원", date: dateOffset(-1), category: "notable" },
-      { id: "me5", memberId: "m15", text: "한태우 청년 - 청년부 소그룹 3조 배정", date: dateOffset(-7), category: "assignment" },
-      { id: "me6", memberId: "m17", text: "이정훈/김미선 가정 - 1구역 배정 완료", date: dateOffset(-3), category: "assignment" },
-      { id: "me7", memberId: "m8", text: "박철수 집사 아내 김수진씨 3/2 주일예배 참석 예정", date: dateOffset(-2), category: "notable" },
-      { id: "me8", memberId: "m9", text: "최은정 집사 - 전문 심리상담센터 연계 완료 (마음치유상담소)", date: dateOffset(-12), category: "connection" },
-    ],
+    settings: { name: "", role: "", church: "" },
+    members: [],
+    visits: [],
+    counsels: [],
+    prayers: [],
+    memos: [],
   };
 }
 
 /* ---------- DB Load / Save ---------- */
 const VC_KEY = "visit_counsel_db";
 function loadVC(): VCDB {
-  if (typeof window === "undefined") return buildSample();
+  if (typeof window === "undefined") return buildEmpty();
   const s = localStorage.getItem(VC_KEY);
-  const db = s ? JSON.parse(s) : buildSample();
+  const db = s ? JSON.parse(s) : buildEmpty();
   if (!Array.isArray(db.prayers)) db.prayers = [];
   if (!Array.isArray(db.memos)) db.memos = [];
   return db;
@@ -389,7 +324,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal }: { db: VCDB; g
                 <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, marginBottom: 8, border: `1px solid ${C.borderLight}`, borderLeft: `3px solid ${cls}`, background: clsBg }}>
                   <span style={{ fontSize: 20 }}>{f.kind === "visit" ? "🏠" : "💬"}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{m.name}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div>
                     <div style={{ fontSize: 12, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.note || f.originType}</div>
                   </div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: cls, flexShrink: 0 }}>{relDate(f.date)}</div>
@@ -439,9 +374,9 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal }: { db: VCDB; g
                 <div key={v.id} onClick={() => openVisitModal(v.id)} style={{ display: "flex", alignItems: "flex-start", gap: mob ? 10 : 16, padding: "14px 0", borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer" }}>
                   <div style={{ width: mob ? 40 : 48, height: mob ? 40 : 48, borderRadius: "50%", background: st.bg, color: st.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 14 : 18, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                      <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700 }}>{m.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: vt.bg, color: vt.color }}>{vt.icon} {vt.label}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0 }}>
+                      <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: vt.bg, color: vt.color, flexShrink: 0 }}>{vt.icon} {vt.label}</span>
                     </div>
                     <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDate(v.date)} {v.time || ""} · {v.location || ""}</div>
                     {v.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.summary}</div>}
@@ -472,9 +407,9 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal }: { db: VCDB; g
                 <div key={c.id} onClick={() => openCounselModal(c.id)} style={{ display: "flex", alignItems: "flex-start", gap: mob ? 10 : 16, padding: "14px 0", borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer" }}>
                   <div style={{ width: mob ? 40 : 48, height: mob ? 40 : 48, borderRadius: "50%", background: ct.bg, color: ct.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 14 : 18, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
-                      <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700 }}>{m.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: ct.bg, color: ct.color }}>{ct.icon} {ct.label}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: ct.bg, color: ct.color, flexShrink: 0 }}>{ct.icon} {ct.label}</span>
                       {c.confidential && <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>🔒 비공개</span>}
                     </div>
                     <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDate(c.date)}</div>
@@ -530,9 +465,9 @@ function VisitListSub({ db, openVisitModal }: { db: VCDB; openVisitModal: (id?: 
               <div key={v.id} onClick={() => openVisitModal(v.id)} style={{ display: "flex", alignItems: "flex-start", gap: mob ? 10 : 16, padding: "14px 0", borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer" }}>
                 <div style={{ width: mob ? 40 : 48, height: mob ? 40 : 48, borderRadius: "50%", background: st.bg, color: st.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 14 : 18, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                    <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700 }}>{m.name}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: vt.bg, color: vt.color }}>{vt.icon} {vt.label}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0 }}>
+                    <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: vt.bg, color: vt.color, flexShrink: 0 }}>{vt.icon} {vt.label}</span>
                   </div>
                   <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDateFull(v.date)} {v.time || ""} · {v.location || ""}</div>
                   {v.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.summary}</div>}
@@ -631,9 +566,9 @@ function MainDBVisitList({
       >
         <div style={{ width: mob ? 40 : 48, height: mob ? 40 : 48, borderRadius: "50%", background: C.blueBg, color: C.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 14 : 18, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-            <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700 }}>{m.name}</span>
-            <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: C.tealBg, color: C.teal }}>{v.type}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0 }}>
+            <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: C.tealBg, color: C.teal, flexShrink: 0 }}>{v.type}</span>
           </div>
           <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDateFull(v.date)}</div>
           {v.content && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.content}</div>}
@@ -746,10 +681,10 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
               <div key={c.id} onClick={() => openCounselModal(c.id)} style={{ display: "flex", alignItems: "flex-start", gap: mob ? 10 : 16, padding: "14px 0", borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer" }}>
                 <div style={{ width: mob ? 40 : 48, height: mob ? 40 : 48, borderRadius: "50%", background: ct.bg, color: ct.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 14 : 18, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
-                    <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700 }}>{m.name}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: ct.bg, color: ct.color }}>{ct.icon} {ct.label}</span>
-                    {c.confidential && <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>🔒 비공개</span>}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: ct.bg, color: ct.color, flexShrink: 0 }}>{ct.icon} {ct.label}</span>
+                    {c.confidential && <span style={{ fontSize: 11, color: C.red, fontWeight: 600, flexShrink: 0 }}>🔒 비공개</span>}
                   </div>
                   <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDateFull(c.date)}</div>
                   {c.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{c.summary}</div>}
@@ -818,7 +753,7 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
               <div key={f.refId + f.kind} onClick={() => f.kind === "visit" ? openVisitModal(f.refId) : openCounselModal(f.refId)} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, marginBottom: 8, border: `1px solid ${C.borderLight}`, borderLeft: `3px solid ${borderColor}`, background: bgColor, cursor: "pointer" }}>
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{f.kind === "visit" ? "🏠" : "💬"}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{m.name} <span style={{ fontSize: 12, color: C.textFaint, fontWeight: 400 }}>· {f.originType}</span></div>
+                  <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} <span style={{ fontSize: 12, color: C.textFaint, fontWeight: 400 }}>· {f.originType}</span></div>
                   <div style={{ fontSize: 12, color: C.textMuted }}>{f.note || "후속 조치 필요"}</div>
                   <div style={{ fontSize: 11, color: C.textFaint, marginTop: 2 }}>원래 기록: {fmtDate(f.originDate)}</div>
                 </div>
@@ -905,9 +840,9 @@ function PrayersSub({
                 <div style={{ padding: mob ? 14 : 22, display: "flex", alignItems: "flex-start", gap: mob ? 12 : 16 }}>
                   <div style={{ width: mob ? 40 : 48, height: mob ? 40 : 48, borderRadius: "50%", background: isActive ? C.purpleBg : C.greenBg, color: isActive ? C.purple : C.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 14 : 18, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                      <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700 }}>{m.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: C.borderLight, color: C.textMuted }}>{PRAYER_CATEGORIES[p.category]}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, minWidth: 0, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: C.borderLight, color: C.textMuted, flexShrink: 0 }}>{PRAYER_CATEGORIES[p.category]}</span>
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: isActive ? C.purpleBg : C.greenBg, color: isActive ? C.purple : C.green }}>{PRAYER_STATUS_LABELS[p.status]}</span>
                     </div>
                     <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{p.text}</div>
@@ -952,7 +887,7 @@ function MembersSub({ db, openMemberDetail }: { db: VCDB; openMemberDetail: (id:
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ width: mob ? 48 : 56, height: mob ? 48 : 56, borderRadius: "50%", background: C.blueBg, color: C.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 20 : 24, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: mob ? 15 : 17, fontWeight: 700 }}>{m.name} <span style={{ fontSize: 13, fontWeight: 400, color: C.textMuted }}>{m.role} · {m.group}</span></div>
+                  <div style={{ fontSize: mob ? 15 : 17, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} <span style={{ fontSize: 13, fontWeight: 400, color: C.textMuted }}>{m.role} · {m.group}</span></div>
                   <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>📱 {m.phone}{m.note ? ` · ${m.note}` : ""}</div>
                   <div style={{ display: "flex", gap: mob ? 12 : 20, marginTop: 8 }}>
                     {[{ v: vc, l: "심방" }, { v: cc, l: "상담" }, { v: lastV ? fmtShort(lastV.date) : "-", l: "최근 심방" }, { v: lastC ? fmtShort(lastC.date) : "-", l: "최근 상담" }].map((s, i) => (
@@ -1025,7 +960,7 @@ function TimelineSub({ db, openVisitModal, openCounselModal }: { db: VCDB; openV
                     <div style={{ position: "absolute", left: -28, top: 2, width: 16, height: 16, borderRadius: "50%", border: `3px solid ${completed ? C.green : dotColor}`, background: completed ? C.green : "#fff", zIndex: 1 }} />
                     <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>{fmtDateFull(item._date)} {vItem ? vItem.time || "" : ""}</div>
                     <div onClick={() => isVisit ? openVisitModal(item.id) : openCounselModal(item.id)} style={{ background: C.bg, borderRadius: 8, padding: "12px 16px", marginTop: 6, border: `1px solid ${C.borderLight}`, cursor: "pointer", transition: "all 0.2s" }}>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{isVisit ? "🏠" : "💬"} {m.name} · {vItem ? (VISIT_TYPES[vItem.type]?.label || "") : ((COUNSEL_TYPES[cItem!.type]?.label || "") + " 상담")}{cItem?.confidential ? " 🔒" : ""}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isVisit ? "🏠" : "💬"} {m.name} · {vItem ? (VISIT_TYPES[vItem.type]?.label || "") : ((COUNSEL_TYPES[cItem!.type]?.label || "") + " 상담")}{cItem?.confidential ? " 🔒" : ""}</div>
                       {item.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, lineHeight: 1.5 }}>{item.summary}</div>}
                       <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                         {vItem && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 12, background: VISIT_TYPES[vItem.type]?.bg, color: VISIT_TYPES[vItem.type]?.color }}>{VISIT_TYPES[vItem.type]?.label}</span>}
@@ -1132,7 +1067,7 @@ function ReportSub({ db, toast }: { db: VCDB; toast: (m: string) => void }) {
           <div style={{ marginBottom: 24 }}>
             {completed.length ? completed.map(v => {
               const m = getMember(v.memberId);
-              return <div key={v.id} style={{ padding: 12, background: C.bg, borderRadius: 8, marginBottom: 8 }}><div style={{ fontWeight: 600 }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 12, color: C.purple, marginTop: 4 }}>🙏 {v.prayerNote}</div>}</div>;
+              return <div key={v.id} style={{ padding: 12, background: C.bg, borderRadius: 8, marginBottom: 8 }}><div style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 12, color: C.purple, marginTop: 4 }}>🙏 {v.prayerNote}</div>}</div>;
             }) : <div style={{ color: C.textFaint }}>완료된 심방 없음</div>}
           </div>
 
@@ -1140,7 +1075,7 @@ function ReportSub({ db, toast }: { db: VCDB; toast: (m: string) => void }) {
           <div>
             {allFU.length ? allFU.map(f => {
               const m = getMember(f.memberId);
-              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: daysFromNow(f.date) < 0 ? C.redBg : C.bg, borderRadius: 8 }}><span style={{ fontSize: 13, fontWeight: 600 }}>{m.name}</span><span style={{ fontSize: 12, color: C.textMuted, flex: 1 }}>{f.note || f.originType}</span><span style={{ fontSize: 12, fontWeight: 600, color: daysFromNow(f.date) < 0 ? C.red : C.blue }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
+              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: daysFromNow(f.date) < 0 ? C.redBg : C.bg, borderRadius: 8 }}><span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span><span style={{ fontSize: 12, color: C.textMuted, flex: 1, minWidth: 0 }}>{f.note || f.originType}</span><span style={{ fontSize: 12, fontWeight: 600, color: daysFromNow(f.date) < 0 ? C.red : C.blue }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
             }) : <div style={{ color: C.textFaint }}>모든 후속 조치 완료</div>}
           </div>
         </div>
@@ -1208,7 +1143,7 @@ function HandoverSub({ db, toast, getMember }: { db: VCDB; toast: (m: string) =>
         return (
           <Card key={m.id} style={{ breakInside: "avoid" }}>
             <div style={{ padding: mob ? 14 : 22 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{m.name} · {m.role} · {m.group} · 📱 {m.phone}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {m.role} · {m.group} · 📱 {m.phone}</div>
               {notes && <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 10 }}>📝 {notes}</div>}
               {memberPrayers.length > 0 && (
                 <div style={{ marginBottom: 10 }}>
@@ -1256,7 +1191,7 @@ function SettingsSub({ db, setDb, persist, toast }: { db: VCDB; setDb: React.Dis
   const resetAll = () => {
     if (typeof window !== "undefined" && !window.confirm("모든 데이터를 초기화하시겠습니까?")) return;
     localStorage.removeItem(VC_KEY);
-    setDb(buildSample());
+    setDb(buildEmpty());
     toast("초기화 완료");
   };
 
@@ -1531,7 +1466,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
 
       {/* Sidebar */}
       <aside style={{
-        width: mob ? 260 : (sideOpen ? 260 : 64), background: C.navy, color: "#fff",
+        width: mob ? 260 : (sideOpen ? 260 : 64), background: "#1a1f36", color: "#fff",
         display: "flex", flexDirection: "column",
         transition: mob ? "transform 0.3s ease" : "width 0.25s ease",
         overflow: "hidden", flexShrink: 0, zIndex: 100,

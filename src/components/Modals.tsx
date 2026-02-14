@@ -168,7 +168,7 @@ export function Modals({
   const [vContent, setVContent] = useState("");
 
   const [incDate, setIncDate] = useState("");
-  const [incType, setIncType] = useState("십일조");
+  const [incType, setIncType] = useState("tithe");
   const [incAmount, setIncAmount] = useState("");
   const [incDonor, setIncDonor] = useState("");
   const [incMethod, setIncMethod] = useState("현금");
@@ -293,14 +293,14 @@ export function Modals({
         : null;
       if (r) {
         setIncDate(r.date);
-        setIncType(r.type);
+        setIncType(CATS_INCOME.find((c) => c.id === r.type || c.name === r.type)?.id ?? "tithe");
         setIncAmount(String(r.amount));
         setIncDonor(r.donor || "");
         setIncMethod(r.method || "현금");
         setIncMemo(r.memo || "");
       } else {
         setIncDate(new Date().toISOString().split("T")[0]);
-        setIncType("십일조");
+        setIncType("tithe");
         setIncAmount("");
         setIncDonor("");
         setIncMethod("현금");
@@ -918,6 +918,9 @@ export function Modals({
                         fontSize: 22,
                         fontWeight: 700,
                         marginTop: 10,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
                     >
                       {m.name}
@@ -1523,8 +1526,8 @@ export function Modals({
                 onChange={(e) => setIncType(e.target.value)}
               >
                 {CATS_INCOME.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                  <option key={c.id} value={c.id}>
+                    {c.name}
                   </option>
                 ))}
               </select>

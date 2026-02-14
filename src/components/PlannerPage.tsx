@@ -51,59 +51,28 @@ function fmtDateFullKR(ds: string) {
 function fmtDateShortKR(ds: string) { const d = new Date(ds); const days = ["일","월","화","수","목","금","토"]; return `${d.getMonth()+1}/${d.getDate()} (${days[d.getDay()]})`; }
 function getDayName(d: Date) { return ["일","월","화","수","목","금","토"][d.getDay()]; }
 
-/* ---------- Default data ---------- */
-function makeDefault(): PDB {
+/** 초기화 후 또는 저장 데이터 없을 때 — 일정/설교/심방 등 비움 (더미 데이터 자동 생성 안 함) */
+function makeEmpty(): PDB {
   return {
-    settings: { name: "김전도", role: "전도사", church: "은혜교회", weekStart: 0 },
-    events: [
-      { id: 1, title: "주일예배", date: weekDateStr(0), time: "10:30", endTime: "12:00", category: "worship", note: "설교: 마태복음 5장", recur: "weekly" },
-      { id: 2, title: "새벽기도회", date: weekDateStr(1), time: "05:30", endTime: "06:30", category: "worship", note: "", recur: "weekly" },
-      { id: 3, title: "수요예배", date: weekDateStr(3), time: "19:30", endTime: "21:00", category: "worship", note: "", recur: "weekly" },
-      { id: 4, title: "금요기도회", date: weekDateStr(5), time: "20:00", endTime: "21:30", category: "worship", note: "", recur: "weekly" },
-      { id: 5, title: "이성도 심방", date: weekDateStr(2), time: "14:00", endTime: "15:00", category: "visit", note: "수술 후 회복 중", recur: "" },
-      { id: 6, title: "당회", date: weekDateStr(0), time: "13:00", endTime: "14:00", category: "meeting", note: "월간 재정 보고", recur: "" },
-      { id: 7, title: "주일학교 교사 모임", date: weekDateStr(6), time: "15:00", endTime: "16:30", category: "education", note: "다음 분기 커리큘럼 논의", recur: "" },
-      { id: 8, title: "설교 연구", date: weekDateStr(4), time: "09:00", endTime: "12:00", category: "sermon", note: "마태복음 6장 준비", recur: "" },
-      { id: 9, title: "새가족 상담", date: weekDateStr(1), time: "10:00", endTime: "11:00", category: "counsel", note: "박OO 가정 상담", recur: "" },
-      { id: 10, title: "개인 경건의 시간", date: weekDateStr(2), time: "06:00", endTime: "07:00", category: "personal", note: "", recur: "" },
-      { id: 11, title: "청년부 예배", date: weekDateStr(0), time: "14:00", endTime: "16:00", category: "event", note: "찬양 리드: 김OO", recur: "" },
-      { id: 12, title: "구역장 모임", date: weekDateStr(5), time: "10:00", endTime: "11:30", category: "meeting", note: "", recur: "" },
-    ],
-    sermons: [
-      { id: 1, title: "산상수훈의 복", date: weekDateStr(0), passage: "마태복음 5:1-12", keyMessage: "참된 복의 의미", illustration: "광야의 꽃 이야기", application: "일상에서 온유함 실천하기", status: "done", progress: 100 },
-      { id: 2, title: "빛과 소금", date: nextWeekDateStr(0), passage: "마태복음 5:13-16", keyMessage: "그리스도인의 사회적 역할", illustration: "", application: "이웃 섬기기 구체적 계획", status: "writing", progress: 50 },
-      { id: 3, title: "기도의 본", date: nextWeekDateStr(7), passage: "마태복음 6:5-15", keyMessage: "주기도문의 깊은 의미", illustration: "", application: "", status: "research", progress: 25 },
-      { id: 4, title: "보물을 하늘에", date: nextWeekDateStr(14), passage: "마태복음 6:19-24", keyMessage: "", illustration: "", application: "", status: "draft", progress: 10 },
-    ],
-    visits: [
-      { id: 1, name: "이성도", reason: "수술 후 회복 심방", date: weekDateStr(2), time: "14:00", address: "서울시 강남구 역삼동 123", phone: "010-1234-5678", status: "scheduled", note: "", prayerNote: "빠른 회복을 위한 기도" },
-      { id: 2, name: "박집사", reason: "새가족 정착 심방", date: weekDateStr(4), time: "11:00", address: "서울시 서초구 반포동 456", phone: "010-2345-6789", status: "scheduled", note: "", prayerNote: "가정에 평안이 넘치도록" },
-      { id: 3, name: "최권사", reason: "입원 위로 심방", date: prevWeekDateStr(3), time: "15:00", address: "서울대병원 7층", phone: "010-3456-7890", status: "completed", note: "많이 회복된 모습. 다음 주 퇴원 예정.", prayerNote: "치유의 은총" },
-      { id: 4, name: "김장로", reason: "월례 심방", date: prevWeekDateStr(5), time: "10:00", address: "서울시 송파구 잠실동", phone: "010-4567-8901", status: "completed", note: "선교헌금 증액 논의", prayerNote: "" },
-    ],
-    checklist: [
-      { id: 1, text: "주일 설교 최종 점검", group: "worship", priority: "high", done: false, dueDay: 6 },
-      { id: 2, text: "새벽기도 말씀 준비 (월~토)", group: "worship", priority: "high", done: false, dueDay: 0 },
-      { id: 3, text: "주보 내용 확인 및 전달", group: "admin", priority: "medium", done: true, dueDay: 4 },
-      { id: 4, text: "심방 대상자 확인 및 연락", group: "visit", priority: "high", done: false, dueDay: 1 },
-      { id: 5, text: "교사 모임 자료 준비", group: "education", priority: "medium", done: false, dueDay: 5 },
-      { id: 6, text: "구역장 모임 안건 정리", group: "admin", priority: "medium", done: false, dueDay: 4 },
-      { id: 7, text: "새가족 환영 연락", group: "visit", priority: "high", done: true, dueDay: 0 },
-      { id: 8, text: "청년부 예배 찬양 곡 선정", group: "worship", priority: "low", done: false, dueDay: 3 },
-      { id: 9, text: "다음 주 설교 본문 연구 시작", group: "sermon", priority: "medium", done: false, dueDay: 4 },
-      { id: 10, text: "기도제목 정리 및 중보기도", group: "personal", priority: "high", done: false, dueDay: 0 },
-    ],
-    counsels: [
-      { id: 1, name: "박OO", date: weekDateStr(1), type: "가정", summary: "부부 갈등 상담. 대화법 개선 권유. 2주 후 재상담 예정.", followUp: nextWeekDateStr(8) },
-      { id: 2, name: "김OO", date: prevWeekDateStr(2), type: "진로", summary: "대학 진학 고민. 기도와 함께 적성검사 권유.", followUp: "" },
-      { id: 3, name: "이OO", date: prevWeekDateStr(5), type: "신앙", summary: "신앙 회의 상담. 소그룹 참여 권유.", followUp: weekDateStr(5) },
-    ],
-    nextId: 20,
+    settings: { name: "", role: "", church: "", weekStart: 0 },
+    events: [],
+    sermons: [],
+    visits: [],
+    checklist: [],
+    counsels: [],
+    nextId: 1,
   };
 }
 
 const STORAGE_KEY = "planner_db";
-function loadPDB(): PDB { try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : makeDefault(); } catch { return makeDefault(); } }
+function loadPDB(): PDB {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    return s ? JSON.parse(s) : makeEmpty();
+  } catch {
+    return makeEmpty();
+  }
+}
 function savePDB(db: PDB) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch { /* */ } }
 
 /* ---------- Categories ---------- */
@@ -316,7 +285,7 @@ function DashSub({ db, toast, openEventModal, openSermonModal, openVisitModal, o
               return wv.length ? wv.map(v => (
                 <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer" }} onClick={() => openVisitModal(v.id)}>
                   <div style={{ width: mob ? 36 : 44, height: mob ? 36 : 44, borderRadius: "50%", background: C.blueBg, color: C.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 15 : 18, fontWeight: 700, flexShrink: 0 }}>{v.name[0]}</div>
-                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{v.name}</div><div style={{ fontSize: 12, color: C.textMuted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fmtDateKR(v.date)} {v.time} · {v.reason}</div></div>
+                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.name}</div><div style={{ fontSize: 12, color: C.textMuted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fmtDateKR(v.date)} {v.time} · {v.reason}</div></div>
                 </div>
               )) : <div style={{ textAlign: "center", color: C.textFaint, padding: 16 }}>이번 주 예정된 심방이 없습니다</div>;
             })()}
@@ -461,7 +430,7 @@ function VisitSub({ db, openVisitModal, mob }: { db: PDB; openVisitModal: (id?: 
                 <div key={v.id} onClick={() => openVisitModal(v.id)} style={{ display: "flex", alignItems: "center", gap: mob ? 10 : 14, padding: mob ? "12px 0" : "16px 0", borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer" }}>
                   <div style={{ width: mob ? 36 : 44, height: mob ? 36 : 44, borderRadius: "50%", background: bg, color: clr, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 15 : 18, fontWeight: 700, flexShrink: 0 }}>{v.name[0]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{v.name}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.name}</div>
                     <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mob ? fmtDateShortKR(v.date) : fmtDateFullKR(v.date)} {v.time} · {v.reason}</div>
                     {v.prayerNote && <div style={{ fontSize: 12, color: C.purple, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>🙏 {v.prayerNote}</div>}
                   </div>
@@ -573,7 +542,7 @@ function CounselSub({ db, openCounselModal, mob }: { db: PDB; openCounselModal: 
             <div key={c.id} onClick={() => openCounselModal(c.id)} style={{ display: "flex", alignItems: "center", gap: mob ? 10 : 14, padding: mob ? "12px 0" : "16px 0", borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer" }}>
               <div style={{ width: mob ? 36 : 44, height: mob ? 36 : 44, borderRadius: "50%", background: C.pinkBg, color: C.pink, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 15 : 18, fontWeight: 700, flexShrink: 0 }}>{c.name[0]}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{c.name}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
                 <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{mob ? fmtDateShortKR(c.date) : fmtDateFullKR(c.date)} · {c.type}</div>
                 <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.summary.length > (mob ? 30 : 50) ? c.summary.substring(0, mob ? 30 : 50) + "…" : c.summary}</div>
               </div>
@@ -717,7 +686,7 @@ const PAGE_META: Record<SubPage, [string, string]> = {
 
 export function PlannerPage() {
   const mob = useIsMobile();
-  const [db, setDb] = useState<PDB>(() => (typeof window !== "undefined" ? loadPDB() : makeDefault()));
+  const [db, setDb] = useState<PDB>(() => (typeof window !== "undefined" ? loadPDB() : makeEmpty()));
   const [activeSub, setActiveSub] = useState<SubPage>("dashboard");
   const [sideOpen, setSideOpen] = useState(false); // closed by default on mobile
   const [weekOffset, setWeekOffset] = useState(0);
@@ -845,7 +814,7 @@ export function PlannerPage() {
       {/* Sidebar */}
       <aside style={{
         width: mob ? 260 : (sideOpen ? 260 : 64),
-        background: C.navy, color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0,
+        background: "#1a1f36", color: "#fff", display: "flex", flexDirection: "column", flexShrink: 0,
         transition: mob ? "transform 0.3s ease" : "width 0.25s ease",
         overflow: "hidden", zIndex: 100,
         ...(mob ? { position: "fixed", top: 0, left: 0, bottom: 0, transform: sideOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
@@ -881,7 +850,7 @@ export function PlannerPage() {
       </aside>
 
       {/* Main */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+      <main style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
         <header style={{
           height: mob ? 52 : 64, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(20px)",
           borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center",
@@ -899,7 +868,7 @@ export function PlannerPage() {
             <Btn variant="primary" size="sm" onClick={() => setShowQuickAdd(true)}>＋{mob ? "" : " 빠른 등록"}</Btn>
           </div>
         </header>
-        <div style={{ flex: 1, overflowY: "auto", padding: mob ? "14px 12px" : "24px 28px" }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: mob ? "14px 12px" : "24px 28px" }}>
           {activeSub === "dashboard" && <DashSub mob={mob} db={db} toast={toast} openEventModal={openEventModal} openSermonModal={openSermonModal} openVisitModal={openVisitModal} openCheckModal={openCheckModal} toggleCheck={toggleCheck} setPage={handleNavClick} />}
           {activeSub === "weekly" && <WeeklySub mob={mob} db={db} weekOffset={weekOffset} setWeekOffset={setWeekOffset} openEventModal={openEventModal} />}
           {activeSub === "sermon" && <SermonSub mob={mob} db={db} openSermonModal={openSermonModal} />}

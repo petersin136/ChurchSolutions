@@ -141,13 +141,13 @@ type Tpl = (typeof TEMPLATES)[number];
 function defaultDB(): BulletinDB {
   return {
     settings: {
-      church: "은혜교회",
-      churchSub: "Eunhye Church",
-      pastor: "김은혜",
-      worshipTime: "오전 10:30",
-      address: "서울시 강남구 역삼동 123-45",
-      phone: "02-1234-5678",
-      account: "국민은행 000-000-00-000000 (은혜교회)",
+      church: "",
+      churchSub: "",
+      pastor: "",
+      worshipTime: "",
+      address: "",
+      phone: "",
+      account: "",
       deadline: "목요일",
     },
     current: {
@@ -187,12 +187,40 @@ function defaultDB(): BulletinDB {
   };
 }
 
+/** 초기화 후 또는 저장 없을 때 — 본문/내용 비움 */
+function defaultEmptyDB(): BulletinDB {
+  return {
+    settings: {
+      church: "",
+      churchSub: "",
+      pastor: "",
+      worshipTime: "",
+      address: "",
+      phone: "",
+      account: "",
+      deadline: "",
+    },
+    current: {
+      key: BULLETIN_KEY,
+      date: BULLETIN_DATE_STR,
+      template: "classic-navy",
+      pastor: { sermonTitle: "", sermonPassage: "", sermonTheme: "", column: "", pastorNotice: "", submitted: false, submittedAt: "" },
+      worship: { worshipOrder: "", praise: "", special: "", submitted: false, submittedAt: "" },
+      youth: { content: "", submitted: false, submittedAt: "" },
+      education: { content: "", submitted: false, submittedAt: "" },
+      mission: { content: "", submitted: false, submittedAt: "" },
+      general: { content: "", birthday: "", servants: "", offering: "", schedule: "", submitted: false, submittedAt: "" },
+    },
+    history: [],
+  };
+}
+
 const BULLETIN_STORAGE_KEY = "bulletin_db";
 function loadBulletin(): BulletinDB {
-  if (typeof window === "undefined") return defaultDB();
+  if (typeof window === "undefined") return defaultEmptyDB();
   const s = localStorage.getItem(BULLETIN_STORAGE_KEY);
-  const db = s ? JSON.parse(s) : defaultDB();
-  if (!db.current) db.current = defaultDB().current;
+  const db = s ? JSON.parse(s) : defaultEmptyDB();
+  if (!db.current) db.current = defaultEmptyDB().current;
   if (!Array.isArray(db.history)) db.history = [];
   return db;
 }
@@ -532,7 +560,7 @@ export function BulletinPage() {
 
       <aside style={{
         width: mob ? 260 : (sideOpen ? 260 : 64),
-        background: C.navy,
+        background: "#1a1f36",
         color: "#fff",
         display: "flex",
         flexDirection: "column",
@@ -555,8 +583,8 @@ export function BulletinPage() {
             const Icon = n.Icon;
             return (
               <button key={n.id} onClick={() => handleNav(n.id)} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500, fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
+                display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", transition: "all 0.2s",
               }}>
                 <Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} />{n.label}
               </button>

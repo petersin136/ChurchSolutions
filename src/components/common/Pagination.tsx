@@ -62,7 +62,20 @@ export function Pagination({
       <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
         총 {totalItems}건 중 {totalItems === 0 ? 0 : start}-{end} 표시
       </div>
-      <div style={{ display: "flex", justifyContent: "center", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 4,
+          flexWrap: "nowrap",
+          alignItems: "center",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          paddingBottom: 4,
+          marginLeft: -4,
+          marginRight: -4,
+        }}
+      >
         <button
           type="button"
           aria-label="이전 페이지"
@@ -70,6 +83,7 @@ export function Pagination({
           disabled={prevDisabled}
           style={{
             ...btnBase,
+            flexShrink: 0,
             ...(prevDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
           }}
         >
@@ -77,8 +91,8 @@ export function Pagination({
         </button>
         {showLeadingEllipsis && (
           <>
-            <button type="button" style={btnBase} onClick={() => handlePageChange(1)}>1</button>
-            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: 13 }}>…</span>
+            <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(1)}>1</button>
+            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: 13, flexShrink: 0 }}>…</span>
           </>
         )}
         {visiblePages.map((p) => (
@@ -88,6 +102,7 @@ export function Pagination({
             onClick={() => handlePageChange(p)}
             style={{
               ...btnBase,
+              flexShrink: 0,
               ...(p === safePage ? { background: "#3b82f6", color: "white", borderColor: "#3b82f6" } : {}),
             }}
           >
@@ -96,8 +111,8 @@ export function Pagination({
         ))}
         {showTrailingEllipsis && (
           <>
-            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: 13 }}>…</span>
-            <button type="button" style={btnBase} onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
+            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: 13, flexShrink: 0 }}>…</span>
+            <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
           </>
         )}
         <button
@@ -107,6 +122,7 @@ export function Pagination({
           disabled={nextDisabled}
           style={{
             ...btnBase,
+            flexShrink: 0,
             ...(nextDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
           }}
         >
