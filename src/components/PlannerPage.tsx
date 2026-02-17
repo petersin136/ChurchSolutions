@@ -98,10 +98,11 @@ const CHECK_GROUPS: Record<string, string> = { worship: "예배/설교", admin: 
 
 /* ---------- Colors ---------- */
 const C = {
-  bg: "#f9fafb", card: "#ffffff", navy: "#1a1f36", navyHover: "#2d3460",
+  bg: "#f9fafb", card: "#ffffff", navy: "#1a1f36", navyLight: "#252b48", navyHover: "#2d3460",
   text: "#1f2937", textMuted: "#6b7280", textFaint: "#9ca3af",
   border: "#e5e7eb", borderLight: "#f3f4f6",
   blue: "#3b82f6", blueBg: "#dbeafe", blueDark: "#1d4ed8",
+  accent: "#3b82f6", accentLight: "#dbeafe", accentBg: "#dbeafe",
   green: "#10b981", greenBg: "#d1fae5",
   red: "#ef4444", redBg: "#fee2e2",
   yellow: "#f59e0b", yellowBg: "#fef3c7",

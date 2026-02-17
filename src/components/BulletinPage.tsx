@@ -20,6 +20,7 @@ const C = {
   bg: "#f9fafb", card: "#fff", border: "#e5e7eb", borderLight: "#f3f4f6",
   text: "#1f2937", textMuted: "#6b7280", textFaint: "#9ca3af",
   blue: "#3b82f6", blueBg: "#dbeafe", blueDark: "#1d4ed8",
+  accent: "#3b82f6", accentLight: "#dbeafe", accentBg: "#dbeafe",
   purple: "#8b5cf6", purpleBg: "#ede9fe", green: "#10b981", greenBg: "#d1fae5",
   yellow: "#f59e0b", yellowBg: "#fef3c7", red: "#ef4444", redBg: "#fee2e2",
   orange: "#f97316", orangeBg: "#ffedd5", pink: "#ec4899", pinkBg: "#fce7f3",

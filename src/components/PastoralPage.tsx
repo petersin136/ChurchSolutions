@@ -47,7 +47,7 @@ const C = {
   bg: "#f8f7f4", card: "#ffffff", navy: "#1b2a4a", navyLight: "#2d4373",
   text: "#1b2a4a", textMuted: "#6b7b9e", textFaint: "#a0aec0",
   border: "#e8e6e1", borderLight: "#f0eeeb",
-  accent: "#4361ee", accentBg: "#eef0ff",
+  blue: "#4361ee", blueBg: "#eef0ff", accent: "#4361ee", accentLight: "#eef0ff", accentBg: "#eef0ff",
   success: "#06d6a0", successBg: "#e6faf3",
   danger: "#ef476f", dangerBg: "#fde8ed",
   warning: "#ffd166", warningBg: "#fff8e6",
