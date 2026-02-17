@@ -124,6 +124,40 @@ export interface ChecklistItem {
   done: boolean;
 }
 
+/** 기부금영수증 발급 이력 (주민등록번호 없음) */
+export interface DonationReceipt {
+  id: string;
+  church_id: string;
+  member_id: string | null;
+  member_name: string;
+  receipt_number: string;
+  tax_year: number;
+  issue_date: string;
+  total_amount: number;
+  donation_details: { category: string; amount: number }[];
+  church_name: string;
+  church_address: string | null;
+  church_tel: string | null;
+  church_representative: string | null;
+  status: "발급완료" | "취소";
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  created_at?: string;
+  created_by?: string | null;
+}
+
+/** 교회 직인/기부금영수증 설정 */
+export interface ChurchSettings {
+  id: string;
+  church_id: string;
+  seal_image_url: string | null;
+  representative_name: string | null;
+  church_registration_number: string | null;
+  church_address?: string | null;
+  church_tel?: string | null;
+  updated_at?: string;
+}
+
 export interface DB {
   settings: Settings;
   members: Member[];
