@@ -1962,7 +1962,7 @@ function ReceiptTab({ donors, offerings, settings }: { donors: Donor[]; offering
   const residentValid = selectedDonor && residentFirst.length === 6 && residentLast.length === 1 && /^\d+$/.test(residentFirst) && /^\d$/.test(residentLast);
   const batchResidentValid = useMemo(() => {
     if (batchSelected.size === 0) return false;
-    return [...batchSelected].every(id => {
+    return Array.from(batchSelected).every(id => {
       const r = batchResidentNumbers[id];
       return r && r.first.length === 6 && r.last.length === 1 && /^\d+$/.test(r.first) && /^\d$/.test(r.last);
     });
