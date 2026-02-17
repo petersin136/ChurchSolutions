@@ -191,6 +191,7 @@ const Icons = {
 const C = {
   bg: "#f8f7f4", card: "#ffffff", navy: "#1b2a4a", navyLight: "#2d4373",
   text: "#1b2a4a", textMuted: "#6b7b9e", border: "#e8e6e1", borderLight: "#f0eeeb",
+  blue: "#4361ee", blueBg: "#eef0ff",
   accent: "#4361ee", accentLight: "#eef0ff", success: "#06d6a0", successLight: "#e6faf3",
   danger: "#ef476f", dangerLight: "#fde8ed", warning: "#ffd166", warningLight: "#fff8e6",
   purple: "#7209b7", purpleLight: "#f3e8ff",
