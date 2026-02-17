@@ -1361,7 +1361,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
         </Card>
         <Card style={{ padding: 16 }}>
           <div style={{ fontSize: 24, marginBottom: 4 }}>📋</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: C.blue }}>{inProgressCount}명</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.accent }}>{inProgressCount}명</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>정착 진행중</div>
         </Card>
         <Card style={{ padding: 16 }}>
@@ -1380,8 +1380,8 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
           {(["all", "진행중", "수료", "중단", "no_mentor"] as const).map(f => (
             <button key={f} type="button" onClick={() => { setFilter(f); setCurrentPage(1); }} style={{
-              padding: "8px 14px", borderRadius: 20, border: `1px solid ${filter === f ? C.blue : C.border}`,
-              background: filter === f ? C.blueBg : "#fff", color: filter === f ? C.blue : C.text,
+              padding: "8px 14px", borderRadius: 20, border: `1px solid ${filter === f ? C.accent : C.border}`,
+              background: filter === f ? C.accentLight : "#fff", color: filter === f ? C.accent : C.text,
               fontSize: 13, fontWeight: 600, cursor: "pointer",
             }}>{f === "all" ? "전체" : f === "no_mentor" ? "섬김이 미배정" : f}</button>
           ))}
@@ -1531,7 +1531,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, toast, mob 
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
                   {week.checks.map((label, ci) => (
                     <label key={ci} style={{ display: "flex", alignItems: "center", gap: 8, cursor: completed ? "default" : "pointer", fontSize: 13 }}>
-                      <input type="checkbox" checked={completed ? true : weekChecks[wi][ci]} onChange={e => !completed && setWeekCheck(wi as 0 | 1 | 2 | 3, ci, e.target.checked)} style={{ width: 18, height: 18, accentColor: C.blue }} />
+                      <input type="checkbox" checked={completed ? true : weekChecks[wi][ci]} onChange={e => !completed && setWeekCheck(wi as 0 | 1 | 2 | 3, ci, e.target.checked)} style={{ width: 18, height: 18, accentColor: C.accent }} />
                       <span>□ {label}</span>
                     </label>
                   ))}
@@ -1562,7 +1562,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, toast, mob 
         <Modal open onClose={() => setShowMentorSelect(false)} title="섬김이 선택">
           <div style={{ maxHeight: 320, overflowY: "auto" }}>
             {mentorCandidates.length === 0 ? <div style={{ padding: 24, textAlign: "center", color: C.textMuted }}>장년부 집사/권사/장로가 없습니다</div> : mentorCandidates.map(m => (
-              <button key={m.id} type="button" onClick={() => { updateProgram({ mentor_id: m.id }); setShowMentorSelect(false); toast("섬김이 배정되었습니다"); }} style={{ display: "block", width: "100%", padding: "12px 16px", textAlign: "left", border: "none", borderBottom: `1px solid ${C.borderLight}`, background: program.mentor_id === m.id ? C.blueBg : "#fff", color: C.navy, fontSize: 14, cursor: "pointer", borderRadius: 0 }}>
+              <button key={m.id} type="button" onClick={() => { updateProgram({ mentor_id: m.id }); setShowMentorSelect(false); toast("섬김이 배정되었습니다"); }} style={{ display: "block", width: "100%", padding: "12px 16px", textAlign: "left", border: "none", borderBottom: `1px solid ${C.borderLight}`, background: program.mentor_id === m.id ? C.accentLight : "#fff", color: C.navy, fontSize: 14, cursor: "pointer", borderRadius: 0 }}>
                 {m.name} ({m.role || ""} {m.dept || ""})
               </button>
             ))}

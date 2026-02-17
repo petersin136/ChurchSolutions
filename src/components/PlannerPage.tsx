@@ -118,7 +118,7 @@ function Card({ children, style, onClick }: { children: ReactNode; style?: CSSPr
 function Btn({ children, onClick, variant = "primary", size = "md", style: s }: { children?: ReactNode; onClick?: (e?: React.MouseEvent) => void; variant?: string; size?: string; style?: CSSProperties }) {
   const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", transition: "all 0.15s", fontSize: size === "sm" ? 13 : 14, padding: size === "sm" ? "6px 14px" : "10px 20px", whiteSpace: "nowrap" };
   const v: Record<string, CSSProperties> = {
-    primary: { background: C.blue, color: "#fff" }, secondary: { background: C.borderLight, color: C.text, border: `1px solid ${C.border}` },
+    primary: { background: C.accent, color: "#fff" }, secondary: { background: C.borderLight, color: C.text, border: `1px solid ${C.border}` },
     ghost: { background: "transparent", color: C.textMuted }, danger: { background: C.red, color: "#fff" },
     navy: { background: C.navy, color: "#fff" },
   };
@@ -209,7 +209,7 @@ function DashSub({ db, toast, openEventModal, openSermonModal, openVisitModal, o
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: mob ? 16 : 24 }}>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fit, minmax(200px, 1fr))", gap: mob ? 10 : 16 }}>
-        <StatCard mob={mob} icon="📅" iconBg={C.blueBg} iconColor={C.blue} value={`${weekEvents.length}`} label="이번 주 일정" sub={`오늘 ${todayEvents.length}건`} subUp />
+        <StatCard mob={mob} icon="📅" iconBg={C.accentLight} iconColor={C.accent} value={`${weekEvents.length}`} label="이번 주 일정" sub={`오늘 ${todayEvents.length}건`} subUp />
         <StatCard mob={mob} icon="✅" iconBg={C.greenBg} iconColor={C.green} value={`${doneChecks}/${totalChecks}`} label="체크리스트" sub={`${totalChecks > 0 ? Math.round(doneChecks / totalChecks * 100) : 0}%`} subUp={doneChecks / totalChecks >= 0.5} />
         <StatCard mob={mob} icon="📖" iconBg={C.purpleBg} iconColor={C.purple} value={`${activeSermons}`} label="준비 중 설교" />
         <StatCard mob={mob} icon="🏠" iconBg={C.orangeBg} iconColor={C.orange} value={`${scheduledVisits}`} label="이번 주 심방" />
@@ -251,7 +251,7 @@ function DashSub({ db, toast, openEventModal, openSermonModal, openVisitModal, o
           <div style={{ padding: mob ? 14 : 22 }}>
             {db.checklist.slice(0, 5).map(item => (
               <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.bg}` }}>
-                <div onClick={() => toggleCheck(item.id)} style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${item.done ? C.blue : C.border}`, background: item.done ? C.blue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: item.done ? "#fff" : "transparent", flexShrink: 0 }}>{item.done ? "✓" : ""}</div>
+                <div onClick={() => toggleCheck(item.id)} style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${item.done ? C.accent : C.border}`, background: item.done ? C.accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: item.done ? "#fff" : "transparent", flexShrink: 0 }}>{item.done ? "✓" : ""}</div>
                 <span style={{ fontSize: 13, fontWeight: 500, textDecoration: item.done ? "line-through" : "none", color: item.done ? C.textFaint : C.text }}>{item.text}</span>
               </div>
             ))}
@@ -285,7 +285,7 @@ function DashSub({ db, toast, openEventModal, openSermonModal, openVisitModal, o
               const wv = db.visits.filter(v => v.status === "scheduled" && weekDates.includes(v.date));
               return wv.length ? wv.map(v => (
                 <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer" }} onClick={() => openVisitModal(v.id)}>
-                  <div style={{ width: mob ? 36 : 44, height: mob ? 36 : 44, borderRadius: "50%", background: C.blueBg, color: C.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 15 : 18, fontWeight: 700, flexShrink: 0 }}>{v.name[0]}</div>
+                  <div style={{ width: mob ? 36 : 44, height: mob ? 36 : 44, borderRadius: "50%", background: C.accentLight, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 15 : 18, fontWeight: 700, flexShrink: 0 }}>{v.name[0]}</div>
                   <div style={{ minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.name}</div><div style={{ fontSize: 12, color: C.textMuted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fmtDateKR(v.date)} {v.time} · {v.reason}</div></div>
                 </div>
               )) : <div style={{ textAlign: "center", color: C.textFaint, padding: 16 }}>이번 주 예정된 심방이 없습니다</div>;
@@ -323,11 +323,11 @@ function WeeklySub({ db, weekOffset, setWeekOffset, openEventModal, mob }: { db:
             const ds = fmtDate(d); const isT = ds === today;
             const dayEvts = db.events.filter(e => e.date === ds).sort((a, b) => a.time.localeCompare(b.time));
             return (
-              <Card key={ds} style={{ borderLeft: isT ? `3px solid ${C.blue}` : undefined }}>
+              <Card key={ds} style={{ borderLeft: isT ? `3px solid ${C.accent}` : undefined }}>
                 <div style={{ padding: "12px 14px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, textTransform: "uppercase" }}>{getDayName(d)}</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, ...(isT ? { background: C.blue, color: "#fff", width: 30, height: 30, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontSize: 14 } : {}) }}>{d.getDate()}</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, ...(isT ? { background: C.accent, color: "#fff", width: 30, height: 30, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontSize: 14 } : {}) }}>{d.getDate()}</div>
                   </div>
                   <button onClick={() => openEventModal(ds)} style={{ width: 28, height: 28, borderRadius: 8, border: `1px dashed ${C.border}`, background: "transparent", color: C.textFaint, fontSize: 16, cursor: "pointer" }}>+</button>
                 </div>
@@ -352,10 +352,10 @@ function WeeklySub({ db, weekOffset, setWeekOffset, openEventModal, mob }: { db:
             const ds = fmtDate(d); const isT = ds === today;
             const dayEvts = db.events.filter(e => e.date === ds).sort((a, b) => a.time.localeCompare(b.time));
             return (
-              <div key={ds} style={{ background: "#fff", borderRadius: 16, border: `${isT ? 2 : 1}px solid ${isT ? C.blue : C.border}`, minHeight: 360, overflow: "hidden" }}>
+              <div key={ds} style={{ background: "#fff", borderRadius: 16, border: `${isT ? 2 : 1}px solid ${isT ? C.accent : C.border}`, minHeight: 360, overflow: "hidden" }}>
                 <div style={{ padding: "14px 14px 10px", textAlign: "center", borderBottom: `1px solid ${C.borderLight}` }}>
                   <div style={{ fontSize: 11, textTransform: "uppercase", color: C.textMuted, fontWeight: 600, letterSpacing: 0.5 }}>{getDayName(d)}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 2, ...(isT ? { background: C.blue, color: "#fff", width: 36, height: 36, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1 } : {}) }}>{d.getDate()}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 2, ...(isT ? { background: C.accent, color: "#fff", width: 36, height: 36, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1 } : {}) }}>{d.getDate()}</div>
                 </div>
                 <div style={{ padding: 8 }}>
                   {dayEvts.map(ev => {
@@ -415,7 +415,7 @@ function VisitSub({ db, openVisitModal, mob }: { db: PDB; openVisitModal: (id?: 
   const [filter, setFilter] = useState("all");
   const tabs = [["all","전체"],["scheduled","예정"],["completed","완료"],["cancelled","취소"]];
   const list = filter === "all" ? db.visits : db.visits.filter(v => v.status === filter);
-  const stColors: Record<string, [string, string]> = { scheduled: [C.blue, C.blueBg], completed: [C.green, C.greenBg], cancelled: [C.red, C.redBg] };
+  const stColors: Record<string, [string, string]> = { scheduled: [C.accent, C.accentLight], completed: [C.green, C.greenBg], cancelled: [C.red, C.redBg] };
   const stLabels: Record<string, string> = { scheduled: "예정", completed: "완료", cancelled: "취소" };
   return (
     <div>
@@ -453,7 +453,7 @@ function ChecklistSub({ db, toggleCheck, openCheckModal, mob }: { db: PDB; toggl
   const grouped: Record<string, PCheck[]> = {};
   db.checklist.forEach(c => { if (!grouped[c.group]) grouped[c.group] = []; grouped[c.group].push(c); });
   const r = 35; const circ = 2 * Math.PI * r; const off = circ - (pct / 100) * circ;
-  const ringColor = pct >= 80 ? C.green : pct >= 50 ? C.blue : C.yellow;
+  const ringColor = pct >= 80 ? C.green : pct >= 50 ? C.accent : C.yellow;
   const priColors: Record<string, [string, string, string]> = { high: [C.red, C.redBg, "긴급"], medium: [C.yellow, C.yellowBg, "보통"], low: [C.green, C.greenBg, "낮음"] };
   return (
     <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: mob ? 12 : 20 }}>
@@ -492,7 +492,7 @@ function ChecklistSub({ db, toggleCheck, openCheckModal, mob }: { db: PDB; toggl
                 const [pc, pb, pl] = priColors[item.priority] || priColors.medium;
                 return (
                   <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.bg}` }}>
-                    <div onClick={() => toggleCheck(item.id)} style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${item.done ? C.blue : C.border}`, background: item.done ? C.blue : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: item.done ? "#fff" : "transparent", flexShrink: 0 }}>{item.done ? "✓" : ""}</div>
+                    <div onClick={() => toggleCheck(item.id)} style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${item.done ? C.accent : C.border}`, background: item.done ? C.accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: item.done ? "#fff" : "transparent", flexShrink: 0 }}>{item.done ? "✓" : ""}</div>
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 500, textDecoration: item.done ? "line-through" : "none", color: item.done ? C.textFaint : C.text }}>{item.text}</span>
                     <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10, background: pb, color: pc, flexShrink: 0 }}>{pl}</span>
                   </div>
@@ -547,7 +547,7 @@ function CounselSub({ db, openCounselModal, mob }: { db: PDB; openCounselModal: 
                 <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{mob ? fmtDateShortKR(c.date) : fmtDateFullKR(c.date)} · {c.type}</div>
                 <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.summary.length > (mob ? 30 : 50) ? c.summary.substring(0, mob ? 30 : 50) + "…" : c.summary}</div>
               </div>
-              {c.followUp && <Badge bg={C.blueBg} color={C.blue}>{mob ? fmtDateKR(c.followUp) : `재상담 ${fmtDateKR(c.followUp)}`}</Badge>}
+              {c.followUp && <Badge bg={C.accentLight} color={C.accent}>{mob ? fmtDateKR(c.followUp) : `재상담 ${fmtDateKR(c.followUp)}`}</Badge>}
             </div>
           ))
         }
@@ -606,7 +606,7 @@ function ReportSub({ db, toast, mob }: { db: PDB; toast: TFn; mob: boolean }) {
             <div key={cat} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600, width: mob ? 70 : 100, flexShrink: 0 }}>{cat}</span>
               <div style={{ flex: 1, height: 24, background: C.borderLight, borderRadius: 12, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${weekEvents.length > 0 ? (cnt / weekEvents.length) * 100 : 0}%`, background: C.blue, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8, fontSize: 11, color: "#fff", fontWeight: 700 }}>{cnt}건</div>
+                <div style={{ height: "100%", width: `${weekEvents.length > 0 ? (cnt / weekEvents.length) * 100 : 0}%`, background: C.accent, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 8, fontSize: 11, color: "#fff", fontWeight: 700 }}>{cnt}건</div>
               </div>
             </div>
           ))}
@@ -893,7 +893,7 @@ export function PlannerPage() {
           <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>카테고리</label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {Object.entries(CATS).map(([k, v]) => (
-              <div key={k} onClick={() => setFEvCat(k)} style={{ padding: mob ? "5px 10px" : "6px 14px", borderRadius: 20, fontSize: mob ? 11 : 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${fEvCat === k ? C.blue : C.border}`, background: fEvCat === k ? C.blue : C.bg, color: fEvCat === k ? "#fff" : C.text }}>{v.icon} {v.label}</div>
+              <div key={k} onClick={() => setFEvCat(k)} style={{ padding: mob ? "5px 10px" : "6px 14px", borderRadius: 20, fontSize: mob ? 11 : 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${fEvCat === k ? C.accent : C.border}`, background: fEvCat === k ? C.accent : C.bg, color: fEvCat === k ? "#fff" : C.text }}>{v.icon} {v.label}</div>
             ))}
           </div>
         </div>

@@ -237,7 +237,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style }: { c
   const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap" };
   const sizes: Record<string, CSSProperties> = { sm: { padding: "6px 12px", fontSize: 12 }, md: { padding: "8px 16px", fontSize: 13 } };
   const variants: Record<string, CSSProperties> = {
-    primary: { background: C.blue, color: "#fff" },
+    primary: { background: C.accent, color: "#fff" },
     secondary: { background: C.borderLight, color: C.text, border: `1px solid ${C.border}` },
     ghost: { background: "transparent", color: C.textMuted },
     danger: { background: C.red, color: "#fff" },
@@ -684,9 +684,9 @@ export function BulletinPage() {
                     <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                       {(["print", "online"] as OutputMode[]).map(m => (
                         <button key={m} onClick={() => { setOutputMode(m); if (m === "online") setPreviewView("all"); }} style={{
-                          flex: 1, padding: "10px 8px", border: `2px solid ${outputMode === m ? C.blue : C.border}`, borderRadius: 10,
-                          background: outputMode === m ? C.blueBg : C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
-                          color: outputMode === m ? C.blue : C.textMuted, textAlign: "center",
+                          flex: 1, padding: "10px 8px", border: `2px solid ${outputMode === m ? C.accent : C.border}`, borderRadius: 10,
+                          background: outputMode === m ? C.accentLight : C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+                          color: outputMode === m ? C.accent : C.textMuted, textAlign: "center",
                         }}>{m === "print" ? "🖨️ 인쇄용" : "📱 온라인/PDF"}</button>
                       ))}
                     </div>
@@ -694,9 +694,9 @@ export function BulletinPage() {
                       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                         {(["fold3", "fold2"] as PrintFormat[]).map(f => (
                           <button key={f} onClick={() => { setPrintFormat(f); setPreviewView("all"); }} style={{
-                            flex: 1, padding: "10px 8px", border: `2px solid ${printFormat === f ? C.blue : C.border}`, borderRadius: 10,
-                            background: printFormat === f ? C.blueBg : C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
-                            color: printFormat === f ? C.blue : C.textMuted, textAlign: "center",
+                            flex: 1, padding: "10px 8px", border: `2px solid ${printFormat === f ? C.accent : C.border}`, borderRadius: 10,
+                            background: printFormat === f ? C.accentLight : C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+                            color: printFormat === f ? C.accent : C.textMuted, textAlign: "center",
                           }}>{f === "fold3" ? "📄 3면 접지 (삼접지)" : "📄 2면 접지 (반접지)"}</button>
                         ))}
                       </div>
@@ -704,7 +704,7 @@ export function BulletinPage() {
                     <div style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, marginBottom: 8 }}>🎨 디자인</div>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       {TEMPLATES.map(t => (
-                        <div key={t.id} onClick={() => setCurrent(c => ({ ...c, template: t.id }))} style={{ width: mob ? 90 : 110, cursor: "pointer", borderRadius: 10, border: `2px solid ${db.current.template === t.id ? C.blue : C.border}`, overflow: "hidden", transition: "border .15s" }}>
+                        <div key={t.id} onClick={() => setCurrent(c => ({ ...c, template: t.id }))} style={{ width: mob ? 90 : 110, cursor: "pointer", borderRadius: 10, border: `2px solid ${db.current.template === t.id ? C.accent : C.border}`, overflow: "hidden", transition: "border .15s" }}>
                           <div style={{ height: 50, background: t.headerBg, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 9, fontWeight: 600, letterSpacing: 1 }}>&#10013; {t.name}</div>
                           <div style={{ padding: "5px 6px", textAlign: "center", fontSize: 9, color: C.textMuted, background: C.bg }}>{t.desc}</div>
                         </div>
@@ -759,7 +759,7 @@ export function BulletinPage() {
                   {(printFormat === "fold3" ? VIEW_FOLD3 : VIEW_FOLD2).map(v => (
                     <button key={v} onClick={() => setPreviewView(v)} style={{
                       padding: "5px 12px", fontSize: 11, fontWeight: 600, border: "none", borderRadius: 6,
-                      background: previewView === v ? C.blue : C.borderLight,
+                      background: previewView === v ? C.accent : C.borderLight,
                       color: previewView === v ? "#fff" : C.textMuted,
                       cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
                     }}>{VIEW_LABEL[v]}</button>

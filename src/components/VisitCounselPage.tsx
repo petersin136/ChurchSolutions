@@ -122,7 +122,7 @@ interface VCDB {
 const VISIT_TYPES: Record<VisitType, { label: string; icon: string; color: string; bg: string }> = {
   sick: { label: "병문안", icon: "🏥", color: C.red, bg: C.redBg },
   new_family: { label: "새가족", icon: "🌱", color: C.green, bg: C.greenBg },
-  regular: { label: "정기심방", icon: "📋", color: C.blue, bg: C.blueBg },
+  regular: { label: "정기심방", icon: "📋", color: C.accent, bg: C.accentLight },
   crisis: { label: "위기심방", icon: "🚨", color: C.orange, bg: C.orangeBg },
   celebration: { label: "경조사", icon: "🎉", color: C.purple, bg: C.purpleBg },
   routine: { label: "일반방문", icon: "🏠", color: C.textMuted, bg: C.borderLight },
@@ -141,7 +141,7 @@ const STATUS_LABELS: Record<VisitStatus, string> = {
   scheduled: "예정", completed: "완료", pending: "보류", cancelled: "취소",
 };
 const STATUS_COLORS: Record<VisitStatus, { color: string; bg: string }> = {
-  scheduled: { color: C.blue, bg: C.blueBg },
+  scheduled: { color: C.accent, bg: C.accentLight },
   completed: { color: C.green, bg: C.greenBg },
   pending: { color: C.yellow, bg: C.yellowBg },
   cancelled: { color: C.textMuted, bg: C.borderLight },
@@ -193,7 +193,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style, icon,
   const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 8, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap", opacity: disabled ? 0.6 : 1 };
   const sizes: Record<string, CSSProperties> = { sm: { padding: "6px 12px", fontSize: 12 }, md: { padding: "8px 16px", fontSize: 13 } };
   const variants: Record<string, CSSProperties> = {
-    primary: { background: C.blue, color: "#fff" },
+    primary: { background: C.accent, color: "#fff" },
     secondary: { background: C.borderLight, color: C.text, border: `1px solid ${C.border}` },
     ghost: { background: "transparent", color: C.textMuted },
     danger: { background: C.red, color: "#fff" },
@@ -249,7 +249,7 @@ function StatCard({ label, value, sub, icon, color, bg }: { label: string; value
 }
 
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return <span onClick={onClick} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? C.blue : C.border}`, background: active ? C.blue : C.bg, color: active ? "#fff" : C.text, transition: "all 0.2s" }}>{label}</span>;
+  return <span onClick={onClick} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? C.accent : C.border}`, background: active ? C.accent : C.bg, color: active ? "#fff" : C.text, transition: "all 0.2s" }}>{label}</span>;
 }
 
 /* ---------- Follow-up Helpers ---------- */
@@ -319,8 +319,8 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal }: { db: VCDB; g
             ) : urgentFU.map(f => {
               const m = getMember(f.memberId);
               const diff = daysFromNow(f.date);
-              const cls = diff < 0 ? C.red : diff === 0 ? C.yellow : C.blue;
-              const clsBg = diff < 0 ? C.redBg : diff === 0 ? C.yellowBg : C.blueBg;
+              const cls = diff < 0 ? C.red : diff === 0 ? C.yellow : C.accent;
+              const clsBg = diff < 0 ? C.redBg : diff === 0 ? C.yellowBg : C.accentLight;
               return (
                 <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, marginBottom: 8, border: `1px solid ${C.borderLight}`, borderLeft: `3px solid ${cls}`, background: clsBg }}>
                   <span style={{ fontSize: 20 }}>{f.kind === "visit" ? "🏠" : "💬"}</span>
@@ -565,7 +565,7 @@ function MainDBVisitList({
         key={v.id}
         style={{ display: "flex", alignItems: "flex-start", gap: mob ? 10 : 16, padding: "14px 0", borderBottom: `1px solid ${C.borderLight}` }}
       >
-        <div style={{ width: mob ? 40 : 48, height: mob ? 40 : 48, borderRadius: "50%", background: C.blueBg, color: C.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 14 : 18, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
+        <div style={{ width: mob ? 40 : 48, height: mob ? 40 : 48, borderRadius: "50%", background: C.accentLight, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 14 : 18, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0 }}>
             <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
@@ -601,7 +601,7 @@ function MainDBVisitList({
           ) : viewMode === "byGroup" ? (
             Object.entries(byGroup).sort(([a], [b]) => a.localeCompare(b)).map(([groupName, list]) => (
               <div key={groupName} style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.navy, marginBottom: 12, paddingBottom: 6, borderBottom: `2px solid ${C.blue}` }}>{groupName}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.navy, marginBottom: 12, paddingBottom: 6, borderBottom: `2px solid ${C.accent}` }}>{groupName}</div>
                 {list.map(v => renderRow(v))}
               </div>
             ))
@@ -692,7 +692,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                 </div>
                 <div style={{ flexShrink: 0, textAlign: "right" }}>
                   <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>{relDate(c.date)}</div>
-                  {c.followUpDate && !c.followUpDone && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: daysFromNow(c.followUpDate) < 0 ? C.redBg : C.blueBg, color: daysFromNow(c.followUpDate) < 0 ? C.red : C.blue, marginTop: 4, display: "inline-block" }}>재상담 {fmtShort(c.followUpDate)}</span>}
+                  {c.followUpDate && !c.followUpDone && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: daysFromNow(c.followUpDate) < 0 ? C.redBg : C.accentLight, color: daysFromNow(c.followUpDate) < 0 ? C.red : C.accent, marginTop: 4, display: "inline-block" }}>재상담 {fmtShort(c.followUpDate)}</span>}
                 </div>
               </div>
             );
@@ -748,8 +748,8 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
           ) : filtered.map(f => {
             const m = getMember(f.memberId);
             const diff = daysFromNow(f.date);
-            const borderColor = f.done ? C.border : diff < 0 ? C.red : diff === 0 ? C.yellow : C.blue;
-            const bgColor = f.done ? "transparent" : diff < 0 ? C.redBg : diff === 0 ? C.yellowBg : C.blueBg;
+            const borderColor = f.done ? C.border : diff < 0 ? C.red : diff === 0 ? C.yellow : C.accent;
+            const bgColor = f.done ? "transparent" : diff < 0 ? C.redBg : diff === 0 ? C.yellowBg : C.accentLight;
             return (
               <div key={f.refId + f.kind} onClick={() => f.kind === "visit" ? openVisitModal(f.refId) : openCounselModal(f.refId)} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, marginBottom: 8, border: `1px solid ${C.borderLight}`, borderLeft: `3px solid ${borderColor}`, background: bgColor, cursor: "pointer" }}>
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{f.kind === "visit" ? "🏠" : "💬"}</span>
@@ -759,7 +759,7 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
                   <div style={{ fontSize: 11, color: C.textFaint, marginTop: 2 }}>원래 기록: {fmtDate(f.originDate)}</div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: diff < 0 ? C.red : diff === 0 ? C.yellow : C.blue, textAlign: "right" }}>{fmtDate(f.date)}<br /><span style={{ fontSize: 11 }}>{relDate(f.date)}</span></div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: diff < 0 ? C.red : diff === 0 ? C.yellow : C.accent, textAlign: "right" }}>{fmtDate(f.date)}<br /><span style={{ fontSize: 11 }}>{relDate(f.date)}</span></div>
                   <Btn size="sm" variant={f.done ? "secondary" : "primary"} onClick={e => { e?.stopPropagation(); toggleFU(f.kind, f.refId); }}>{f.done ? "↩ 되돌리기" : "✓ 완료"}</Btn>
                 </div>
               </div>
@@ -886,7 +886,7 @@ function MembersSub({ db, openMemberDetail }: { db: VCDB; openMemberDetail: (id:
           <Card key={m.id} onClick={() => openMemberDetail(m.id)} style={{ cursor: "pointer" }}>
             <div style={{ padding: mob ? 14 : 22 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ width: mob ? 48 : 56, height: mob ? 48 : 56, borderRadius: "50%", background: C.blueBg, color: C.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 20 : 24, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
+                <div style={{ width: mob ? 48 : 56, height: mob ? 48 : 56, borderRadius: "50%", background: C.accentLight, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 20 : 24, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: mob ? 15 : 17, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} <span style={{ fontSize: 13, fontWeight: 400, color: C.textMuted }}>{m.role} · {m.group}</span></div>
                   <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>📱 {m.phone}{m.note ? ` · ${m.note}` : ""}</div>
@@ -1076,7 +1076,7 @@ function ReportSub({ db, toast }: { db: VCDB; toast: (m: string) => void }) {
           <div>
             {allFU.length ? allFU.map(f => {
               const m = getMember(f.memberId);
-              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: daysFromNow(f.date) < 0 ? C.redBg : C.bg, borderRadius: 8 }}><span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span><span style={{ fontSize: 12, color: C.textMuted, flex: 1, minWidth: 0 }}>{f.note || f.originType}</span><span style={{ fontSize: 12, fontWeight: 600, color: daysFromNow(f.date) < 0 ? C.red : C.blue }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
+              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: daysFromNow(f.date) < 0 ? C.redBg : C.bg, borderRadius: 8 }}><span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span><span style={{ fontSize: 12, color: C.textMuted, flex: 1, minWidth: 0 }}>{f.note || f.originType}</span><span style={{ fontSize: 12, fontWeight: 600, color: daysFromNow(f.date) < 0 ? C.red : C.accent }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
             }) : <div style={{ color: C.textFaint }}>모든 후속 조치 완료</div>}
           </div>
         </div>
@@ -1588,7 +1588,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         <FormField label="심방 유형">
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {Object.entries(VISIT_TYPES).map(([k, v]) => (
-              <span key={k} onClick={() => setVType(k as VisitType)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${vType === k ? C.blue : C.border}`, background: vType === k ? C.blue : C.bg, color: vType === k ? "#fff" : C.text, transition: "all 0.2s" }}>{v.icon} {v.label}</span>
+              <span key={k} onClick={() => setVType(k as VisitType)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${vType === k ? C.accent : C.border}`, background: vType === k ? C.accent : C.bg, color: vType === k ? "#fff" : C.text, transition: "all 0.2s" }}>{v.icon} {v.label}</span>
             ))}
           </div>
         </FormField>
@@ -1624,7 +1624,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         <FormField label="상담 유형">
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {Object.entries(COUNSEL_TYPES).map(([k, v]) => (
-              <span key={k} onClick={() => setCType(k as CounselType)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${cType === k ? C.blue : C.border}`, background: cType === k ? C.blue : C.bg, color: cType === k ? "#fff" : C.text, transition: "all 0.2s" }}>{v.icon} {v.label}</span>
+              <span key={k} onClick={() => setCType(k as CounselType)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${cType === k ? C.accent : C.border}`, background: cType === k ? C.accent : C.bg, color: cType === k ? "#fff" : C.text, transition: "all 0.2s" }}>{v.icon} {v.label}</span>
             ))}
           </div>
         </FormField>
@@ -1664,7 +1664,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           return (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 16, background: C.bg, borderRadius: 12, marginBottom: 16 }}>
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: C.blueBg, color: C.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, flexShrink: 0 }}>{detailMember.name[0]}</div>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: C.accentLight, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, flexShrink: 0 }}>{detailMember.name[0]}</div>
                 <div>
                   <div style={{ fontSize: 20, fontWeight: 700 }}>{detailMember.name}</div>
                   <div style={{ fontSize: 13, color: C.textMuted }}>{detailMember.role} · {detailMember.group} · 📱 {detailMember.phone}</div>
