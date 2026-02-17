@@ -191,7 +191,6 @@ const Icons = {
 const C = {
   bg: "#f8f7f4", card: "#ffffff", navy: "#1b2a4a", navyLight: "#2d4373",
   text: "#1b2a4a", textMuted: "#6b7b9e", border: "#e8e6e1", borderLight: "#f0eeeb",
-  blue: "#4361ee", blueBg: "#eef0ff",
   accent: "#4361ee", accentLight: "#eef0ff", success: "#06d6a0", successLight: "#e6faf3",
   danger: "#ef476f", dangerLight: "#fde8ed", warning: "#ffd166", warningLight: "#fff8e6",
   purple: "#7209b7", purpleLight: "#f3e8ff",
@@ -639,9 +638,9 @@ function OfferingTab({ offerings, setOfferings, donors, categories }: {
                   style={{
                     padding: "10px 18px",
                     borderRadius: 12,
-                    border: `2px solid ${form.method === m ? C.blue : C.border}`,
-                    background: form.method === m ? C.blueBg : "#fff",
-                    color: form.method === m ? C.blue : C.text,
+                    border: `2px solid ${form.method === m ? C.accent : C.border}`,
+                    background: form.method === m ? C.accentLight : "#fff",
+                    color: form.method === m ? C.accent : C.text,
                     fontSize: 14,
                     fontWeight: 600,
                     fontFamily: "inherit",
