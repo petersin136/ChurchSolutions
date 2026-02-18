@@ -17,16 +17,22 @@ import {
   Bar,
 } from "recharts";
 import type { DB } from "@/types/db";
-import type { Member } from "@/types/db";
+import { C, STAT_CARD_COLORS } from "@/styles/designTokens";
+import { Users, TrendingUp, CalendarCheck, DollarSign, MapPin, Heart } from "lucide-react";
 
-const NAVY = "#1e3a5f";
-const GOLD = "#d4a574";
-const CORAL = "#e74c3c";
-const GREEN = "#10B981";
-const PURPLE = "#8B5CF6";
-const SKY = "#3B82F6";
-const COLORS = [NAVY, GOLD, CORAL, GREEN, PURPLE, SKY, "#6b7280", "#a78bfa"];
+const COLORS = [C.navy, C.accent, C.danger, C.success, C.purple, C.teal, C.textMuted, "#a78bfa"];
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
+
+function StatCard({ label, value, sub, color = C.accent }: { label: string; value: string; sub?: string; color?: string }) {
+  return (
+    <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "20px 24px", position: "relative", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <div style={{ position: "absolute", top: -10, right: -10, width: 60, height: 60, borderRadius: "50%", background: `${color}15` }} />
+      <div style={{ fontSize: 13, color: C.textMuted, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 700, color: C.navy, letterSpacing: "-0.5px" }}>{value}</div>
+      {sub != null && sub !== "" && <div style={{ fontSize: 12, color: C.textMuted }}>{sub}</div>}
+    </div>
+  );
+}
 
 function getAgeGroup(birth: string | undefined): string {
   if (!birth || !/^\d{4}/.test(birth)) return "미입력";
@@ -103,8 +109,8 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
 
     const total = members.length;
     const genderPie = [
-      { name: "남", value: male, color: SKY },
-      { name: "여", value: female, color: CORAL },
+      { name: "남", value: male, color: C.teal },
+      { name: "여", value: female, color: C.danger },
     ].filter((d) => d.value > 0);
     const ageData = Object.entries(byAge)
       .map(([name, value]) => ({ name, value }))
@@ -245,9 +251,9 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
     const success = thisYearPrograms.filter((p) => p.status === "수료").length;
     const exit = thisYearPrograms.filter((p) => p.status === "중단").length;
     const pieData = [
-      { name: "정착 성공", value: success, fill: GREEN },
-      { name: "이탈", value: exit, fill: CORAL },
-      { name: "진행중", value: total - success - exit, fill: SKY },
+      { name: "정착 성공", value: success, fill: C.success },
+      { name: "이탈", value: exit, fill: C.danger },
+      { name: "진행중", value: total - success - exit, fill: C.accent },
     ].filter((d) => d.value > 0);
     return { count: total, completionRate, pieData };
   }, [newFamilyPrograms, yearStr]);
@@ -255,14 +261,14 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
   const EmptyMsg = () => <p className="text-sm text-gray-500 py-4 text-center">데이터가 없습니다.</p>;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">연도</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: C.textMuted }}>연도</span>
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
+            style={{ borderRadius: 10, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14, background: C.card }}
           >
             {[currentYear, currentYear - 1, currentYear - 2].map((y) => (
               <option key={y} value={y}>{y}년</option>
@@ -272,25 +278,19 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </div>
 
       {/* A5-1 교인 통계 */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-[#1e3a5f] mb-4">교인 통계</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="p-4 rounded-lg bg-gray-50">
-            <p className="text-xs text-gray-500">전체 등록 교인</p>
-            <p className="text-2xl font-bold text-[#1e3a5f]">{fmt(memberStats.total)}명</p>
-          </div>
-          <div className="p-4 rounded-lg bg-gray-50">
-            <p className="text-xs text-gray-500">올해 신규 등록</p>
-            <p className="text-2xl font-bold text-[#1e3a5f]">{fmt(memberStats.newThisYear)}명</p>
-          </div>
-          <div className="p-4 rounded-lg bg-gray-50">
-            <p className="text-xs text-gray-500">올해 이적/제적</p>
-            <p className="text-2xl font-bold text-[#1e3a5f]">{fmt(memberStats.leftThisYear)}명</p>
-          </div>
-          <div className="p-4 rounded-lg bg-gray-50 flex items-center gap-2">
-            <div className="flex-1">
-              <p className="text-xs text-gray-500">남녀 비율</p>
-              <p className="text-sm font-medium">{memberStats.male} : {memberStats.female}</p>
+      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
+          <Users size={20} style={{ color: C.accent }} />
+          교인 통계
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
+          <StatCard label="전체 등록 교인" value={`${fmt(memberStats.total)}명`} sub={`${year}년 기준`} color={STAT_CARD_COLORS.accent} />
+          <StatCard label="올해 신규 등록" value={`${fmt(memberStats.newThisYear)}명`} sub={`${year}년`} color={STAT_CARD_COLORS.success} />
+          <StatCard label="올해 이적/제적" value={`${fmt(memberStats.leftThisYear)}명`} sub={`${year}년`} color={STAT_CARD_COLORS.danger} />
+          <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "20px 24px", position: "relative", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, color: C.textMuted, fontWeight: 500 }}>남녀 비율</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: C.navy }}>{memberStats.male} : {memberStats.female}</div>
             </div>
             {memberStats.genderPie.length > 0 && (
               <ResponsiveContainer width={60} height={60}>
@@ -328,7 +328,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Bar dataKey="value" name="인원" fill={NAVY} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="value" name="인원" fill={C.navy} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -356,7 +356,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                 <XAxis type="number" tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={48} />
                 <Tooltip />
-                <Bar dataKey="인원" fill={NAVY} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="인원" fill={C.navy} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -370,7 +370,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="신규" stroke={NAVY} strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="신규" stroke={C.navy} strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -378,8 +378,11 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </section>
 
       {/* A5-2 출결 */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-[#1e3a5f] mb-4">출결 통계</h2>
+      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
+          <CalendarCheck size={20} style={{ color: C.success }} />
+          출결 통계
+        </h2>
         {attendanceStats.monthlyRate.some((d) => d.출석률 > 0) ? (
           <>
             <h3 className="text-sm font-semibold mb-2">월별 평균 출석률</h3>
@@ -389,7 +392,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v: number | undefined) => [(v ?? 0) + "%", "출석률"]} />
-                <Line type="monotone" dataKey="출석률" stroke={GREEN} strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="출석률" stroke={C.success} strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
             {attendanceStats.deptData.length > 0 && (
@@ -401,7 +404,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                     <Tooltip formatter={(v: number | undefined) => [(v ?? 0) + "%", "출석률"]} />
-                    <Bar dataKey="출석률" fill={NAVY} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="출석률" fill={C.navy} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -411,8 +414,11 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </section>
 
       {/* A5-3 재정 */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-[#1e3a5f] mb-4">재정 통계</h2>
+      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
+          <DollarSign size={20} style={{ color: C.teal }} />
+          재정 통계
+        </h2>
         {financeStats.trendData.length > 0 || financeStats.incTable.length > 0 ? (
           <>
             {financeStats.trendData.some((d) => d.수입 > 0 || d.지출 > 0) && (
@@ -425,8 +431,8 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => fmt(Number(v))} />
                     <Tooltip formatter={(v: number | undefined) => [fmt(v ?? 0) + "원", ""]} />
                     <Legend />
-                    <Line type="monotone" dataKey="수입" stroke={NAVY} strokeWidth={2} dot={{ r: 3 }} />
-                    <Line type="monotone" dataKey="지출" stroke={CORAL} strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="수입" stroke={C.navy} strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="지출" stroke={C.danger} strokeWidth={2} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </>
@@ -435,10 +441,10 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
               <div className="mt-6 overflow-x-auto">
                 <h3 className="text-sm font-semibold mb-2">수입 항목별 연간 합계</h3>
                 <table className="w-full text-sm">
-                  <thead><tr className="border-b"><th className="text-left py-2">항목</th><th className="text-right py-2">금액</th></tr></thead>
+                  <thead><tr style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}><th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>항목</th><th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 13, color: C.navy }}>금액</th></tr></thead>
                   <tbody>
                     {financeStats.incTable.map((r) => (
-                      <tr key={r.항목} className="border-b border-gray-100"><td className="py-2">{r.항목}</td><td className="text-right py-2">{fmt(r.금액)}원</td></tr>
+                      <tr key={r.항목} style={{ borderBottom: `1px solid ${C.borderLight}` }}><td style={{ padding: "10px 12px" }}>{r.항목}</td><td style={{ padding: "10px 12px", textAlign: "right" }}>{fmt(r.금액)}원</td></tr>
                     ))}
                   </tbody>
                 </table>
@@ -448,10 +454,10 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
               <div className="mt-4 overflow-x-auto">
                 <h3 className="text-sm font-semibold mb-2">지출 항목별 연간 합계</h3>
                 <table className="w-full text-sm">
-                  <thead><tr className="border-b"><th className="text-left py-2">항목</th><th className="text-right py-2">금액</th></tr></thead>
+                  <thead><tr style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}><th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>항목</th><th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 13, color: C.navy }}>금액</th></tr></thead>
                   <tbody>
                     {financeStats.expTable.map((r) => (
-                      <tr key={r.항목} className="border-b border-gray-100"><td className="py-2">{r.항목}</td><td className="text-right py-2">{fmt(r.금액)}원</td></tr>
+                      <tr key={r.항목} style={{ borderBottom: `1px solid ${C.borderLight}` }}><td style={{ padding: "10px 12px" }}>{r.항목}</td><td style={{ padding: "10px 12px", textAlign: "right" }}>{fmt(r.금액)}원</td></tr>
                     ))}
                   </tbody>
                 </table>
@@ -462,8 +468,11 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </section>
 
       {/* A5-4 심방 */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-[#1e3a5f] mb-4">심방 통계</h2>
+      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
+          <MapPin size={20} style={{ color: C.purple }} />
+          심방 통계
+        </h2>
         {visitStats.visitTrend.length > 0 ? (
           <>
             <h3 className="text-sm font-semibold mb-2">월별 심방 건수</h3>
@@ -473,17 +482,17 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="심방" stroke={PURPLE} strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="심방" stroke={C.purple} strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
             {visitStats.pastorTable.length > 0 && (
               <div className="mt-4 overflow-x-auto">
                 <h3 className="text-sm font-semibold mb-2">유형별 심방 현황</h3>
                 <table className="w-full text-sm">
-                  <thead><tr className="border-b"><th className="text-left py-2">유형</th><th className="text-right py-2">건수</th></tr></thead>
+                  <thead><tr style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}><th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>유형</th><th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, fontSize: 13, color: C.navy }}>건수</th></tr></thead>
                   <tbody>
                     {visitStats.pastorTable.map((r) => (
-                      <tr key={r.교역자} className="border-b border-gray-100"><td className="py-2">{r.교역자}</td><td className="text-right py-2">{fmt(r.건수)}</td></tr>
+                      <tr key={r.교역자} style={{ borderBottom: `1px solid ${C.borderLight}` }}><td style={{ padding: "10px 12px" }}>{r.교역자}</td><td style={{ padding: "10px 12px", textAlign: "right" }}>{fmt(r.건수)}</td></tr>
                     ))}
                   </tbody>
                 </table>
@@ -494,17 +503,14 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </section>
 
       {/* A5-5 새가족 */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-[#1e3a5f] mb-4">새가족 현황</h2>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="p-4 rounded-lg bg-gray-50">
-            <p className="text-xs text-gray-500">올해 새가족 등록</p>
-            <p className="text-2xl font-bold text-[#1e3a5f]">{fmt(newFamilyStats.count)}명</p>
-          </div>
-          <div className="p-4 rounded-lg bg-gray-50">
-            <p className="text-xs text-gray-500">4주 정착 완료율</p>
-            <p className="text-2xl font-bold text-[#1e3a5f]">{newFamilyStats.completionRate}%</p>
-          </div>
+      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
+          <Heart size={20} style={{ color: C.danger }} />
+          새가족 현황
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 20 }}>
+          <StatCard label="올해 새가족 등록" value={`${fmt(newFamilyStats.count)}명`} sub={`${year}년`} color={STAT_CARD_COLORS.accent} />
+          <StatCard label="4주 정착 완료율" value={`${newFamilyStats.completionRate}%`} sub="수료 기준" color={STAT_CARD_COLORS.success} />
         </div>
         {newFamilyStats.pieData.length > 0 ? (
           <ResponsiveContainer width="100%" height={180}>

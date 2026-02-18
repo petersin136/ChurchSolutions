@@ -21,8 +21,9 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
       setLoading(false);
       return;
     }
-    supabase.from("school_departments").select("*").eq("is_active", true).order("sort_order").then(({ data }) => {
-      setDepartments((data as SchoolDepartment[]) ?? []);
+    supabase.from("school_departments").select("*").order("sort_order").then(({ data }) => {
+      const list = (data as SchoolDepartment[]) ?? [];
+      setDepartments(list.filter((d) => d.is_active !== false));
       setLoading(false);
     });
   }, []);

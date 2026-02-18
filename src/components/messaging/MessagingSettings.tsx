@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { C } from "@/styles/designTokens";
 
 export interface MessagingSettingsProps {
   representativePhone: string;
@@ -27,39 +28,39 @@ export function MessagingSettings({
   };
 
   return (
-    <div className="max-w-lg space-y-4 bg-white rounded-xl border border-gray-100 p-6">
-      <h3 className="text-lg font-semibold text-[#1e3a5f]">문자 설정</h3>
+    <div style={{ width: "100%", background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", gap: 20 }}>
+      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.navy }}>문자 설정</h3>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">교회 대표번호</label>
+        <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 6 }}>교회 대표번호</label>
         <input
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="010-0000-0000"
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+          style={{ width: "100%", borderRadius: 10, border: `1px solid ${C.border}`, padding: "10px 12px", fontSize: 14 }}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">서명 (메시지 끝에 붙일 문구)</label>
+        <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 6 }}>서명 (메시지 끝에 붙일 문구)</label>
         <input
           type="text"
           value={sig}
           onChange={(e) => setSig(e.target.value)}
           placeholder="○○교회 드림"
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+          style={{ width: "100%", borderRadius: 10, border: `1px solid ${C.border}`, padding: "10px 12px", fontSize: 14 }}
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">SMS 단가 표시 (참고용)</label>
+        <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 6 }}>SMS 단가 표시 (참고용)</label>
         <input
           type="text"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           placeholder="예: 12원/건"
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+          style={{ width: "100%", borderRadius: 10, border: `1px solid ${C.border}`, padding: "10px 12px", fontSize: 14 }}
         />
       </div>
-      <button type="button" onClick={handleSave} className="px-4 py-2 rounded-xl bg-[#1e3a5f] text-white text-sm font-semibold">
+      <button type="button" onClick={handleSave} style={{ padding: "10px 16px", borderRadius: 12, background: C.navy, color: "white", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", alignSelf: "flex-start" }}>
         저장
       </button>
     </div>

@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-
-const INDIGO = "#4F46E5";
+import { C } from "@/styles/designTokens";
 
 export interface DepartmentManagementProps {
   db: DB;
@@ -23,7 +22,10 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
 
   const load = async () => {
     if (!supabase) return;
-    const { data: depts } = await supabase.from("school_departments").select("*").order("sort_order");
+    const { data: depts, error: deptsError } = await supabase.from("school_departments").select("*").order("sort_order");
+    console.log("=== DEPARTMENT MANAGEMENT school_departments ===");
+    console.log("data:", depts);
+    console.log("error:", deptsError);
     setDepartments((depts as SchoolDepartment[]) ?? []);
     const { data: cls } = await supabase.from("school_classes").select("*").order("sort_order");
     setClasses((cls as SchoolClass[]) ?? []);
@@ -60,27 +62,27 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold" style={{ color: INDIGO }}>부서 목록</h3>
+        <h3 className="text-lg font-semibold" style={{ color: C.navy }}>부서 목록</h3>
         <button
           type="button"
           onClick={() => setAddDeptOpen(true)}
           className="px-4 py-2 rounded-xl text-white text-sm font-semibold"
-          style={{ background: INDIGO }}
+          style={{ background: C.navy }}
         >
           + 부서 추가
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
+        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="text-left py-3 px-4 font-semibold">이름</th>
-                <th className="text-left py-3 px-4 font-semibold">연령대</th>
-                <th className="text-left py-3 px-4 font-semibold">담당</th>
-                <th className="text-left py-3 px-4 font-semibold">교사/학생</th>
-                <th className="text-left py-3 px-4 font-semibold">예배</th>
+              <tr style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>이름</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>연령대</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>담당</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>교사/학생</th>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>예배</th>
               </tr>
             </thead>
             <tbody>
@@ -88,7 +90,9 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
                 <tr
                   key={d.id}
                   onClick={() => setSelectedDeptId(d.id)}
-                  className={`border-b cursor-pointer ${selectedDeptId === d.id ? "bg-indigo-50" : "hover:bg-gray-50"}`}
+                  style={{ borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer", background: selectedDeptId === d.id ? C.accentBg : "transparent", transition: "background 0.1s" }}
+                  onMouseEnter={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = C.bg; }}
+                  onMouseLeave={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = "transparent"; }}
                 >
                   <td className="py-3 px-4 font-medium">{d.name}</td>
                   <td className="py-3 px-4">{d.age_range ?? "-"}</td>
@@ -101,10 +105,10 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
           </table>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
           {selectedDept ? (
             <>
-              <h4 className="font-semibold mb-3" style={{ color: INDIGO }}>{selectedDept.name} — 반 목록</h4>
+              <h4 className="font-semibold mb-3" style={{ color: C.navy }}>{selectedDept.name} — 반 목록</h4>
               {deptClasses.length === 0 ? (
                 <p className="text-gray-500 text-sm">등록된 반이 없습니다.</p>
               ) : (
@@ -144,7 +148,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
             />
             <div className="flex gap-2">
               <button type="button" onClick={() => setAddDeptOpen(false)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-              <button type="button" onClick={handleAddDepartment} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: INDIGO }}>추가</button>
+              <button type="button" onClick={handleAddDepartment} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: C.navy }}>추가</button>
             </div>
           </div>
         </div>

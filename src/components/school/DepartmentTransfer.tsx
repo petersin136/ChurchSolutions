@@ -25,11 +25,12 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
   const load = async () => {
     if (!supabase) return;
     const [depts, enrolls, hist] = await Promise.all([
-      supabase.from("school_departments").select("*").eq("is_active", true).order("sort_order"),
+      supabase.from("school_departments").select("*").order("sort_order"),
       supabase.from("school_enrollments").select("*").eq("is_active", true),
       supabase.from("school_transfer_history").select("*").order("created_at", { ascending: false }).limit(50),
     ]);
-    setDepartments((depts.data as SchoolDepartment[]) ?? []);
+    const deptList = (depts.data as SchoolDepartment[]) ?? [];
+    setDepartments(deptList.filter((d) => d.is_active !== false));
     setEnrollments((enrolls.data as SchoolEnrollment[]) ?? []);
     setHistory((hist.data as SchoolTransferHistory[]) ?? []);
   };

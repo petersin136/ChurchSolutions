@@ -9,17 +9,34 @@ import { SchoolAttendanceCheck } from "./SchoolAttendanceCheck";
 import { SchoolAttendanceStats } from "./SchoolAttendanceStats";
 import { DepartmentTransfer } from "./DepartmentTransfer";
 import { SchoolReport } from "./SchoolReport";
+import { LayoutDashboard, Building2, Users, CalendarCheck, BarChart3, ArrowRightLeft, FileText } from "lucide-react";
+import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 
-const SCHOOL_INDIGO = "#4F46E5";
+type SchoolSubTab = "dashboard" | "departments" | "students" | "attendance" | "attendanceStats" | "transfer" | "report";
 
-const SUB_TABS: { id: string; label: string }[] = [
-  { id: "dashboard", label: "대시보드" },
-  { id: "departments", label: "부서 관리" },
-  { id: "students", label: "학생 관리" },
-  { id: "attendance", label: "출석 체크" },
-  { id: "attendanceStats", label: "출석 통계" },
-  { id: "transfer", label: "부서 이동" },
-  { id: "report", label: "보고서" },
+const PAGE_INFO: Record<SchoolSubTab, { title: string; desc: string }> = {
+  dashboard: { title: "대시보드", desc: "교회학교 현황을 한눈에 확인하세요" },
+  departments: { title: "부서 관리", desc: "부서와 반을 관리합니다" },
+  students: { title: "학생 관리", desc: "학생 등록과 정보를 관리합니다" },
+  attendance: { title: "출석 체크", desc: "출석을 체크합니다" },
+  attendanceStats: { title: "출석 통계", desc: "출석 통계를 확인합니다" },
+  transfer: { title: "부서 이동", desc: "학생 부서 이동을 처리합니다" },
+  report: { title: "보고서", desc: "교회학교 보고서를 작성합니다" },
+};
+
+const NAV_SECTIONS = [
+  {
+    sectionLabel: "교회학교",
+    items: [
+      { id: "dashboard" as const, label: "대시보드", Icon: LayoutDashboard },
+      { id: "departments" as const, label: "부서 관리", Icon: Building2 },
+      { id: "students" as const, label: "학생 관리", Icon: Users },
+      { id: "attendance" as const, label: "출석 체크", Icon: CalendarCheck },
+      { id: "attendanceStats" as const, label: "출석 통계", Icon: BarChart3 },
+      { id: "transfer" as const, label: "부서 이동", Icon: ArrowRightLeft },
+      { id: "report" as const, label: "보고서", Icon: FileText },
+    ],
+  },
 ];
 
 export interface SchoolPageProps {
@@ -28,35 +45,28 @@ export interface SchoolPageProps {
 }
 
 export function SchoolPage({ db, toast }: SchoolPageProps) {
-  const [subTab, setSubTab] = useState("dashboard");
+  const [subTab, setSubTab] = useState<SchoolSubTab>("dashboard");
+  const info = PAGE_INFO[subTab];
 
   return (
-    <div className="min-h-full flex flex-col" style={{ background: "#f8f7f4" }}>
-      <div className="flex border-b border-gray-200 bg-white px-2 overflow-x-auto shrink-0">
-        {SUB_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setSubTab(tab.id)}
-            className="px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors"
-            style={{
-              borderBottomColor: subTab === tab.id ? SCHOOL_INDIGO : "transparent",
-              color: subTab === tab.id ? SCHOOL_INDIGO : "#6b7280",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex-1 overflow-auto p-4">
-        {subTab === "dashboard" && <SchoolDashboard db={db} toast={toast} />}
-        {subTab === "departments" && <DepartmentManagement db={db} toast={toast} />}
-        {subTab === "students" && <StudentManagement db={db} toast={toast} />}
-        {subTab === "attendance" && <SchoolAttendanceCheck db={db} toast={toast} />}
-        {subTab === "attendanceStats" && <SchoolAttendanceStats db={db} toast={toast} />}
-        {subTab === "transfer" && <DepartmentTransfer db={db} toast={toast} />}
-        {subTab === "report" && <SchoolReport db={db} toast={toast} />}
-      </div>
-    </div>
+    <UnifiedPageLayout
+      pageTitle="교회학교"
+      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      navSections={NAV_SECTIONS}
+      activeId={subTab}
+      onNav={(id) => setSubTab(id as SchoolSubTab)}
+      versionText="교회학교 v1.0"
+      headerTitle={info.title}
+      headerDesc={info.desc}
+      SidebarIcon={LayoutDashboard}
+    >
+      {subTab === "dashboard" && <SchoolDashboard db={db} toast={toast} />}
+      {subTab === "departments" && <DepartmentManagement db={db} toast={toast} />}
+      {subTab === "students" && <StudentManagement db={db} toast={toast} />}
+      {subTab === "attendance" && <SchoolAttendanceCheck db={db} toast={toast} />}
+      {subTab === "attendanceStats" && <SchoolAttendanceStats db={db} toast={toast} />}
+      {subTab === "transfer" && <DepartmentTransfer db={db} toast={toast} />}
+      {subTab === "report" && <SchoolReport db={db} toast={toast} />}
+    </UnifiedPageLayout>
   );
 }

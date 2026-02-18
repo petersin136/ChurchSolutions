@@ -6,13 +6,29 @@ import { SendMessage, type MessageLog } from "./SendMessage";
 import { MessageHistory } from "./MessageHistory";
 import { FrequentGroups, type FrequentGroup } from "./FrequentGroups";
 import { MessagingSettings } from "./MessagingSettings";
+import { MessageSquare, History, Users, Settings } from "lucide-react";
+import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 
-const SUB_TABS = [
-  { id: "send", label: "문자 발송" },
-  { id: "history", label: "발송 내역" },
-  { id: "frequent", label: "자주 보내는 명단" },
-  { id: "settings", label: "설정" },
-] as const;
+type MessagingSubTab = "send" | "history" | "frequent" | "settings";
+
+const PAGE_INFO: Record<MessagingSubTab, { title: string; desc: string }> = {
+  send: { title: "문자 발송", desc: "수신자를 선택하고 메시지를 발송합니다" },
+  history: { title: "발송 내역", desc: "발송한 문자 내역을 확인합니다" },
+  frequent: { title: "자주 보내는 명단", desc: "자주 사용하는 수신자 명단을 관리합니다" },
+  settings: { title: "설정", desc: "문자 발송 설정을 관리합니다" },
+};
+
+const NAV_SECTIONS = [
+  {
+    sectionLabel: "문자",
+    items: [
+      { id: "send" as const, label: "문자 발송", Icon: MessageSquare },
+      { id: "history" as const, label: "발송 내역", Icon: History },
+      { id: "frequent" as const, label: "자주 보내는 명단", Icon: Users },
+      { id: "settings" as const, label: "설정", Icon: Settings },
+    ],
+  },
+];
 
 export interface MessagingPageProps {
   db: DB;
@@ -20,7 +36,7 @@ export interface MessagingPageProps {
 }
 
 export function MessagingPage({ db, toast }: MessagingPageProps) {
-  const [subTab, setSubTab] = useState<(typeof SUB_TABS)[number]["id"]>("send");
+  const [subTab, setSubTab] = useState<MessagingSubTab>("send");
   const [messageLogs, setMessageLogs] = useState<MessageLog[]>([]);
   const [frequentGroups, setFrequentGroups] = useState<FrequentGroup[]>([]);
   const [repPhone, setRepPhone] = useState("");
@@ -48,42 +64,36 @@ export function MessagingPage({ db, toast }: MessagingPageProps) {
     setSmsPriceDisplay(data.smsPriceDisplay);
   }, []);
 
+  const info = PAGE_INFO[subTab];
+
   return (
-    <div className="h-full flex flex-col bg-gray-50/50">
-      <div className="flex border-b border-gray-200 bg-white px-2 overflow-x-auto">
-        {SUB_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setSubTab(tab.id)}
-            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-              subTab === tab.id
-                ? "border-[#1e3a5f] text-[#1e3a5f]"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex-1 overflow-auto p-4">
-        {subTab === "send" && (
-          <SendMessage members={db.members ?? []} onSend={handleSend} />
-        )}
-        {subTab === "history" && <MessageHistory logs={messageLogs} />}
-        {subTab === "frequent" && (
-          <FrequentGroups groups={frequentGroups} onSave={handleSaveGroups} />
-        )}
-        {subTab === "settings" && (
-          <MessagingSettings
-            representativePhone={repPhone}
-            signature={signature}
-            smsPriceDisplay={smsPriceDisplay}
-            onSave={handleSaveSettings}
-            toast={toast}
-          />
-        )}
-      </div>
-    </div>
+    <UnifiedPageLayout
+      pageTitle="문자"
+      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      navSections={NAV_SECTIONS}
+      activeId={subTab}
+      onNav={(id) => setSubTab(id as MessagingSubTab)}
+      versionText="문자 v1.0"
+      headerTitle={info.title}
+      headerDesc={info.desc}
+      SidebarIcon={MessageSquare}
+    >
+      {subTab === "send" && (
+        <SendMessage members={db.members ?? []} onSend={handleSend} />
+      )}
+      {subTab === "history" && <MessageHistory logs={messageLogs} />}
+      {subTab === "frequent" && (
+        <FrequentGroups groups={frequentGroups} onSave={handleSaveGroups} />
+      )}
+      {subTab === "settings" && (
+        <MessagingSettings
+          representativePhone={repPhone}
+          signature={signature}
+          smsPriceDisplay={smsPriceDisplay}
+          onSave={handleSaveSettings}
+          toast={toast}
+        />
+      )}
+    </UnifiedPageLayout>
   );
 }

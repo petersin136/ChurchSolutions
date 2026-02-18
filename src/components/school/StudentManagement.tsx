@@ -22,11 +22,15 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
   const load = async () => {
     if (!supabase) return;
     const [depts, cls, enrolls] = await Promise.all([
-      supabase.from("school_departments").select("*").eq("is_active", true).order("sort_order"),
-      supabase.from("school_classes").select("*").eq("is_active", true).order("sort_order"),
+      supabase.from("school_departments").select("*").order("sort_order"),
+      supabase.from("school_classes").select("*").order("sort_order"),
       supabase.from("school_enrollments").select("*").eq("is_active", true),
     ]);
-    setDepartments((depts.data as SchoolDepartment[]) ?? []);
+    console.log("=== STUDENT MANAGEMENT school_departments ===");
+    console.log("data:", depts.data);
+    console.log("error:", depts.error);
+    const deptList = (depts.data as SchoolDepartment[]) ?? [];
+    setDepartments(deptList.filter((d) => d.is_active !== false));
     setClasses((cls.data as SchoolClass[]) ?? []);
     setEnrollments((enrolls.data as SchoolEnrollment[]) ?? []);
   };

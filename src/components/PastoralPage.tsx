@@ -6,6 +6,7 @@ import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum } from "@/lib/store";
 import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Sliders } from "lucide-react";
+import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
@@ -2029,10 +2030,7 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const mob = useIsMobile();
   const [activeSub, setActiveSub] = useState<SubPage>("dashboard");
-  const [sideOpen, setSideOpen] = useState(false);
   const [currentWeek, setCurrentWeek] = useState(getWeekNum);
-
-  useEffect(() => { if (!mob) setSideOpen(true); else setSideOpen(false); }, [mob]);
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: string }[]>([]);
 
   // Modals
@@ -2229,62 +2227,32 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     else if (activeSub === "notes") openNoteModal();
   };
 
-  const handleNav = (id: SubPage) => { setActiveSub(id); if (mob) setSideOpen(false); };
+  const handleNav = (id: SubPage) => { setActiveSub(id); };
 
   const info = PAGE_INFO[activeSub];
   const detailMember = detailId ? db.members.find(x => x.id === detailId) : null;
 
+  const navSections = [{ sectionLabel: "목양", items: NAV_ITEMS.map((n) => ({ id: n.id, label: n.label, Icon: n.Icon })) }];
+
   return (
-    <div style={{ fontFamily: "'Inter','Noto Sans KR',-apple-system,sans-serif", background: C.bg, display: "flex", color: C.text, minHeight: "calc(100vh - 56px)", overflow: "hidden", position: "relative" }}>
-      {/* Mobile overlay */}
-      {mob && sideOpen && <div onClick={() => setSideOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 99 }} />}
-
-      {/* Sidebar */}
-      <aside style={{
-        width: mob ? 240 : (sideOpen ? 240 : 64), background: "#1a1f36", color: "#fff",
-        display: "flex", flexDirection: "column",
-        transition: mob ? "transform 0.3s ease" : "width 0.25s ease",
-        overflow: "hidden", flexShrink: 0, zIndex: 100,
-        ...(mob ? { position: "fixed", top: 0, left: 0, bottom: 0, transform: sideOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
-      }}>
-        <div style={{ padding: "20px 16px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.08)", cursor: mob ? "default" : "pointer", color: "rgba(255,255,255,0.9)" }} onClick={() => !mob && setSideOpen(!sideOpen)}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Church size={20} strokeWidth={1.5} /></div>
-          <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}><div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(db.settings.churchName || "").trim() || "교회"}</div><div style={{ fontSize: 11, opacity: 0.6, whiteSpace: "nowrap" }}>목양</div></div>
-        </div>
-        <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
-          {NAV_ITEMS.map(n => {
-            const isActive = activeSub === n.id;
-            const Icon = n.Icon;
-            return (
-              <button key={n.id} onClick={() => handleNav(n.id)} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
-                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s",
-                textAlign: "left", whiteSpace: "nowrap",
-              }}><Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span></button>
-            );
-          })}
-        </nav>
-        <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, opacity: 0.4 }}>v1.0 MVP · 2025</div>
-      </aside>
-
-      {/* Main */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-        <header style={{ height: mob ? 52 : 70, padding: mob ? "0 12px" : "0 24px", background: C.card, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            {mob && <button onClick={() => setSideOpen(true)} style={{ width: 36, height: 36, border: "none", background: C.bg, borderRadius: 8, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>☰</button>}
-            <div style={{ minWidth: 0 }}>
-              <h2 style={{ margin: 0, fontSize: mob ? 16 : 20, fontWeight: 700, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.title}</h2>
-              {!mob && <p style={{ margin: "2px 0 0", fontSize: 12, color: C.textMuted }}>{info.desc}</p>}
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-            {!mob && <SBadge variant="success">● 정상 운영중</SBadge>}
-            {info.addLabel && <Btn size="sm" onClick={topAdd}>{mob ? "+" : info.addLabel}</Btn>}
-          </div>
-        </header>
-        <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 24 }}>
+    <>
+    <UnifiedPageLayout
+      pageTitle={((db.settings.churchName || "").trim() || "목양")}
+      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      navSections={navSections}
+      activeId={activeSub}
+      onNav={(id) => handleNav(id as SubPage)}
+      versionText="목양 v1.0"
+      headerTitle={info.title}
+      headerDesc={info.desc}
+      headerActions={
+        <>
+          {!mob && <SBadge variant="success">● 정상 운영중</SBadge>}
+          {info.addLabel && <Btn size="sm" onClick={topAdd}>{mob ? "+" : info.addLabel}</Btn>}
+        </>
+      }
+      SidebarIcon={Church}
+    >
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} />}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} detailId={detailId} />}
           {activeSub === "attendance" && (
@@ -2379,8 +2347,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
           {activeSub === "reports" && <ReportsSub db={db} currentWeek={currentWeek} toast={toast} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} />}
-        </div>
-      </main>
+    </UnifiedPageLayout>
 
       {/* ===== MODALS ===== */}
 
@@ -2570,6 +2537,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           </div>
         ))}
       </div>
-    </div>
+    </>
   );
 }

@@ -4,17 +4,17 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { C, STAT_CARD_COLORS } from "@/styles/designTokens";
 
-const INDIGO = "#4F46E5";
-const DEPT_COLORS: Record<string, string> = {
-  영아부: "#FEE2E2",
-  유치부: "#FEF3C7",
-  유초등부: "#D1FAE5",
-  초등부: "#D1FAE5",
-  중등부: "#DBEAFE",
-  고등부: "#E0E7FF",
-  대학부: "#EDE9FE",
-  청년부: "#EDE9FE",
+const DEPT_BAR_COLORS: Record<string, string> = {
+  영아부: "#ef476f",
+  유치부: "#ffd166",
+  유초등부: "#06d6a0",
+  초등부: "#06d6a0",
+  중등부: "#118ab2",
+  고등부: "#4361ee",
+  대학부: "#7209b7",
+  청년부: "#7209b7",
 };
 
 export interface SchoolDashboardProps {
@@ -37,12 +37,20 @@ export function SchoolDashboard({ db, toast }: SchoolDashboardProps) {
     }
     (async () => {
       try {
-        const { data: depts } = await supabase
+        const { data, error } = await supabase
           .from("school_departments")
           .select("*")
-          .eq("is_active", true)
           .order("sort_order");
-        setDepartments((depts as SchoolDepartment[]) ?? []);
+        console.log("=== SCHOOL DEPARTMENTS DEBUG ===");
+        console.log("data:", data);
+        console.log("error:", error);
+        if (error) {
+          console.error("school_departments fetch error:", error.message, error.details);
+          toast(`부서 로드 실패: ${error.message}`, "err");
+        }
+        const list = (data as SchoolDepartment[]) ?? [];
+        const activeList = list.filter((d) => d.is_active !== false);
+        setDepartments(activeList);
 
         const { count: studentCount } = await supabase
           .from("school_enrollments")
@@ -85,50 +93,62 @@ export function SchoolDashboard({ db, toast }: SchoolDashboardProps) {
     })();
   }, [toast]);
 
+  function StatCard({ label, value, sub, color = C.accent }: { label: string; value: string; sub?: string; color?: string }) {
+  return (
+    <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "20px 24px", position: "relative", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <div style={{ position: "absolute", top: -10, right: -10, width: 60, height: 60, borderRadius: "50%", background: `${color}15` }} />
+      <div style={{ fontSize: 13, color: C.textMuted, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 700, color: C.navy, letterSpacing: "-0.5px" }}>{value}</div>
+      {sub != null && sub !== "" && <div style={{ fontSize: 12, color: C.textMuted }}>{sub}</div>}
+    </div>
+  );
+}
+
   if (loading) {
     return <div className="p-6 text-gray-500">로딩 중...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-          <div className="text-sm text-gray-500">전체 등록 학생</div>
-          <div className="text-2xl font-bold" style={{ color: INDIGO }}>{totalStudents}명</div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-          <div className="text-sm text-gray-500">전체 교사</div>
-          <div className="text-2xl font-bold" style={{ color: INDIGO }}>{totalTeachers}명</div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-          <div className="text-sm text-gray-500">이번 주 평균 출석률</div>
-          <div className="text-2xl font-bold" style={{ color: INDIGO }}>{weekRate != null ? `${weekRate}%` : "-"}</div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-          <div className="text-sm text-gray-500">이번 달 신규 등록</div>
-          <div className="text-2xl font-bold" style={{ color: INDIGO }}>{newThisMonth}명</div>
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <StatCard label="전체 등록 학생" value={`${totalStudents}명`} sub="교회학교 등록" color={STAT_CARD_COLORS.accent} />
+        <StatCard label="전체 교사" value={`${totalTeachers}명`} sub="교사·부교사·부장·총무" color={STAT_CARD_COLORS.teal} />
+        <StatCard label="이번 주 출석률" value={weekRate != null ? `${weekRate}%` : "-"} sub="금주 출석 기준" color={STAT_CARD_COLORS.success} />
+        <StatCard label="이번 달 신규 등록" value={`${newThisMonth}명`} sub="신규 등록 학생" color={STAT_CARD_COLORS.purple} />
       </div>
 
-      <h3 className="text-lg font-semibold" style={{ color: INDIGO }}>부서별 현황</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {departments.length === 0 ? (
-          <div className="col-span-full bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-500">
-            부서가 없습니다. Supabase에 school_departments 시드 데이터를 넣어주세요.
-          </div>
-        ) : (
-          departments.map((d) => (
-            <div
-              key={d.id}
-              className="rounded-xl border border-gray-100 p-4 shadow-sm cursor-pointer transition hover:shadow-md"
-              style={{ background: DEPT_COLORS[d.name] ?? "#f3f4f6" }}
-            >
-              <div className="font-semibold text-gray-800">{d.name}</div>
-              <div className="text-sm text-gray-600 mt-1">교사 {d.teacher_count} · 학생 {d.student_count}</div>
-              <div className="text-xs text-gray-500 mt-1">이번 주 출석률 —</div>
+      <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 0, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
+          <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.navy }}>부서별 현황</h4>
+        </div>
+        <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+          {departments.length === 0 ? (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", color: C.textMuted, padding: 32 }}>
+              부서가 없습니다. Supabase SQL Editor에서 church_school_rls_anon_read.sql을 실행했는지 확인하세요.
             </div>
-          ))
-        )}
+          ) : (
+            departments.map((d) => (
+              <div
+                key={d.id}
+                style={{
+                  background: C.card,
+                  borderRadius: 12,
+                  border: `1px solid ${C.border}`,
+                  borderLeft: `4px solid ${DEPT_BAR_COLORS[d.name] ?? C.accent}`,
+                  padding: 16,
+                  cursor: "pointer",
+                  transition: "box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.06)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+              >
+                <div style={{ fontSize: 15, fontWeight: 600, color: C.navy }}>{d.name}</div>
+                <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>교사 {d.teacher_count} · 학생 {d.student_count}</div>
+                <div style={{ fontSize: 12, color: C.textFaint, marginTop: 2 }}>이번 주 출석률 —</div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

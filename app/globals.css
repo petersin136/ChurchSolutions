@@ -89,7 +89,7 @@
     -webkit-tap-highlight-color: transparent;
     transition: color 0.15s;
   }
-  .tab-item.active { color: #3b82f6; font-weight: 600; }
+  .tab-item.active { color: #1b2a4a; font-weight: 600; }
   .tab-item .tab-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
   .tab-item .tab-label { line-height: 1; }
   .page { display: none; max-width: 960px; margin: 0 auto; padding: 16px; }
@@ -99,6 +99,10 @@
   #page-planner.page { max-width: 100%; padding: 0; margin: 0; }
   #page-visit.page { max-width: 100%; padding: 0; margin: 0; }
   #page-bulletin.page { max-width: 100%; padding: 0; margin: 0; }
+  #page-statistics.page { max-width: 100%; padding: 0; margin: 0; }
+  #page-messaging.page { max-width: 100%; padding: 0; margin: 0; }
+  #page-school.page { max-width: 100%; padding: 0; margin: 0; }
+  #page-settings.page { max-width: 100%; padding: 0; margin: 0; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     font-family: var(--font); font-size: 13px; font-weight: 600; line-height: 1;
@@ -120,6 +124,14 @@
   .card {
     background: var(--surface); border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card); overflow: hidden; margin-bottom: 16px;
+  }
+  /* 목양 탭과 통일된 카드 스타일 (PastoralPage 기준) */
+  .card-unified {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid #e8e6e1;
+    padding: 24px;
   }
   .card-header {
     display: flex; align-items: center; justify-content: space-between;

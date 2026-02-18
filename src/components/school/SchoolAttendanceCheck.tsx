@@ -28,10 +28,12 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
 
   const loadDeptsAndClasses = async () => {
     if (!supabase) return;
-    const { data: depts } = await supabase.from("school_departments").select("*").eq("is_active", true).order("sort_order");
-    setDepartments((depts as SchoolDepartment[]) ?? []);
-    const { data: cls } = await supabase.from("school_classes").select("*").eq("is_active", true).order("sort_order");
-    setClasses((cls as SchoolClass[]) ?? []);
+    const { data: depts } = await supabase.from("school_departments").select("*").order("sort_order");
+    const list = (depts as SchoolDepartment[]) ?? [];
+    setDepartments(list.filter((d) => d.is_active !== false));
+    const { data: cls } = await supabase.from("school_classes").select("*").order("sort_order");
+    const clsList = (cls as SchoolClass[]) ?? [];
+    setClasses(clsList.filter((c) => c.is_active !== false));
   };
 
   const loadEnrollments = async () => {

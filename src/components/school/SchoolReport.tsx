@@ -27,10 +27,11 @@ export function SchoolReport({ db, toast }: SchoolReportProps) {
       return;
     }
     Promise.all([
-      supabase.from("school_departments").select("*").eq("is_active", true).order("sort_order"),
-      supabase.from("school_classes").select("*").eq("is_active", true).order("sort_order"),
+      supabase.from("school_departments").select("*").order("sort_order"),
+      supabase.from("school_classes").select("*").order("sort_order"),
     ]).then(([d, c]) => {
-      setDepartments((d.data as SchoolDepartment[]) ?? []);
+      const deptList = (d.data as SchoolDepartment[]) ?? [];
+      setDepartments(deptList.filter((x) => x.is_active !== false));
       setClasses((c.data as SchoolClass[]) ?? []);
       setLoading(false);
     });

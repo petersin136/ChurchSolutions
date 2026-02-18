@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { C } from "@/styles/designTokens";
 
 export interface FrequentGroup {
   id: string;
@@ -45,39 +46,41 @@ export function FrequentGroups({ groups, onSave }: FrequentGroupsProps) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="text"
-          value={addName}
-          onChange={(e) => setAddName(e.target.value)}
-          placeholder="명단 이름"
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm w-48"
-        />
-        <button type="button" onClick={handleAdd} className="px-4 py-2 rounded-xl bg-[#1e3a5f] text-white text-sm font-semibold">
-          + 추가
-        </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <input
+            type="text"
+            value={addName}
+            onChange={(e) => setAddName(e.target.value)}
+            placeholder="명단 이름"
+            style={{ borderRadius: 10, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14, width: 192 }}
+          />
+          <button type="button" onClick={handleAdd} style={{ padding: "8px 16px", borderRadius: 12, background: C.navy, color: "white", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }}>
+            + 추가
+          </button>
+        </div>
       </div>
-      <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-100">
+      <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         {groups.length === 0 ? (
-          <p className="py-8 text-center text-gray-500 text-sm">자주 보내는 명단이 없습니다. 위에서 추가하세요.</p>
+          <p style={{ padding: 32, textAlign: "center", color: C.textMuted, fontSize: 14 }}>자주 보내는 명단이 없습니다. 위에서 추가하세요.</p>
         ) : (
           groups.map((g) => (
-            <div key={g.id} className="flex items-center justify-between px-4 py-3">
+            <div key={g.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${C.borderLight}` }}>
               {editingId === g.id ? (
                 <>
                   <input
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="rounded-lg border border-gray-200 px-2 py-1 text-sm flex-1 max-w-xs"
+                    style={{ borderRadius: 8, border: `1px solid ${C.border}`, padding: "6px 10px", fontSize: 14, flex: 1, maxWidth: 240 }}
                   />
-                  <button type="button" onClick={saveEdit} className="ml-2 px-3 py-1 rounded-lg bg-[#1e3a5f] text-white text-sm">저장</button>
-                  <button type="button" onClick={() => { setEditingId(null); setEditName(""); }} className="ml-1 px-3 py-1 rounded-lg border border-gray-200 text-sm">취소</button>
+                  <button type="button" onClick={saveEdit} style={{ marginLeft: 8, padding: "6px 12px", borderRadius: 8, background: C.navy, color: "white", fontSize: 14, border: "none", cursor: "pointer" }}>저장</button>
+                  <button type="button" onClick={() => { setEditingId(null); setEditName(""); }} style={{ marginLeft: 4, padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, background: C.card, cursor: "pointer" }}>취소</button>
                 </>
               ) : (
                 <>
-                  <span className="font-medium text-[#1e3a5f]">{g.name}</span>
+                  <span style={{ fontWeight: 600, color: C.navy }}>{g.name}</span>
                   <span className="text-xs text-gray-500">{g.member_ids?.length ?? 0}명</span>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => startEdit(g)} className="px-2 py-1 rounded border border-gray-200 text-xs">수정</button>

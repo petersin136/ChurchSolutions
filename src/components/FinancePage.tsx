@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef, type CSSProperties, 
 import * as XLSX from "xlsx";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 import { LayoutDashboard, Wallet, Users, Receipt, FileText, PieChart, Download, FileSignature, Church, Settings } from "lucide-react";
+import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { SealSettingsSection } from "@/components/finance/SealSettingsSection";
 import { FinanceDashboard } from "@/components/finance/FinanceDashboard";
 import { CashJournal } from "@/components/finance/CashJournal";
@@ -2968,7 +2969,6 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
   const [localDonors, setLocalDonors] = useState<Donor[]>([]);
   const [localOfferings, setLocalOfferings] = useState<Offering[]>([]);
   const [localExpenses, setLocalExpenses] = useState<Expense[]>([]);
-  const [sideOpen, setSideOpen] = useState(false);
 
   const useDb = Boolean(db && setDb);
   const offerings = useMemo(() =>
@@ -3016,8 +3016,6 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     }
   }, [db, setDb]);
 
-  useEffect(() => { if (!mob) setSideOpen(true); else setSideOpen(false); }, [mob]);
-
   const [budgetByYear, setBudgetByYear] = useState<BudgetByYear>({});
 
   const tabs: { id: string; label: string; Icon: React.ComponentType<any> }[] = [
@@ -3038,7 +3036,7 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     { id: "receipt", label: "기부금 영수증", Icon: FileSignature },
   ];
 
-  const handleNav = (id: string) => { setActiveTab(id); if (mob) setSideOpen(false); };
+  const handleNav = (id: string) => { setActiveTab(id); };
 
   useEffect(() => {
     if (typeof window !== "undefined" && VALID_FINANCE_TABS.has(activeTab)) {
@@ -3046,85 +3044,22 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     }
   }, [activeTab]);
 
+  const navSections = [{ sectionLabel: "재정", items: tabs.map((t) => ({ id: t.id, label: t.label, Icon: t.Icon })) }];
+  const activeLabel = tabs.find(t => t.id === activeTab)?.label ?? "대시보드";
+
   return (
-    <div style={{
-      fontFamily: "'Pretendard', 'Noto Sans KR', -apple-system, sans-serif",
-      background: C.bg, display: "flex", color: C.text,
-      minHeight: "calc(100vh - 56px)", overflow: "hidden", position: "relative",
-    }}>
-      {/* Mobile overlay */}
-      {mob && sideOpen && <div onClick={() => setSideOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 99 }} />}
-
-      {/* 사이드바 */}
-      <aside style={{
-        width: mob ? 240 : (sideOpen ? 240 : 64), background: "#1a1f36", color: "#fff",
-        display: "flex", flexDirection: "column",
-        transition: mob ? "transform 0.3s ease" : "width 0.25s ease",
-        overflow: "hidden", flexShrink: 0, zIndex: 100,
-        ...(mob ? { position: "fixed", top: 0, left: 0, bottom: 0, transform: sideOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
-      }}>
-        <div style={{
-          padding: "20px 16px",
-          display: "flex", alignItems: "center", gap: 12,
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-          cursor: mob ? "default" : "pointer",
-        }} onClick={() => !mob && setSideOpen(!sideOpen)}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)",
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "rgba(255,255,255,0.9)",
-          }}><Church size={20} strokeWidth={1.5} /></div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14, whiteSpace: "nowrap" }}>교회 재정관리</div>
-            <div style={{ fontSize: 11, opacity: 0.6, whiteSpace: "nowrap" }}>Church Finance</div>
-          </div>
-        </div>
-        <nav style={{ flex: 1, padding: "12px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
-          {tabs.map(tab => {
-            const isActive = activeTab === tab.id;
-            const Icon = tab.Icon;
-            return (
-              <button key={tab.id} onClick={() => handleNav(tab.id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "10px 12px",
-                  borderRadius: 8, border: "none",
-                  background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                  color: isActive ? "#fff" : "rgba(255,255,255,0.5)",
-                  fontWeight: isActive ? 600 : 500,
-                  fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-                  transition: "all 0.2s", textAlign: "left",
-                  whiteSpace: "nowrap",
-                }}>
-                <Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-        <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, opacity: 0.4 }}>
-          v1.0 MVP · 2025
-        </div>
-      </aside>
-
-      {/* 메인 콘텐츠 */}
-      <main style={{ flex: 1, overflow: "auto", minWidth: 0 }}>
-        <header style={{
-          padding: mob ? "10px 12px" : "16px 24px", background: C.card,
-          borderBottom: `1px solid ${C.border}`,
-          display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            {mob && <button onClick={() => setSideOpen(true)} style={{ width: 36, height: 36, border: "none", background: C.bg, borderRadius: 8, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>☰</button>}
-            <div style={{ minWidth: 0 }}>
-              <h2 style={{ margin: 0, fontSize: mob ? 16 : 20, fontWeight: 700, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {tabs.find(t => t.id === activeTab)?.label}
-              </h2>
-              {!mob && <p style={{ margin: "2px 0 0", fontSize: 12, color: C.textMuted }}>2025년 교회 재정 관리 시스템</p>}
-            </div>
-          </div>
-          {!mob && <Badge color={C.success} bg={C.successLight}>● 정상 운영중</Badge>}
-        </header>
-        <div style={{ padding: mob ? 12 : 24 }}>
+    <UnifiedPageLayout
+      pageTitle="재정"
+      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      navSections={navSections}
+      activeId={activeTab}
+      onNav={handleNav}
+      versionText="재정 v1.0"
+      headerTitle={activeLabel}
+      headerDesc="교회 재정 관리 시스템"
+      headerActions={!mob ? <Badge color={C.success} bg={C.successLight}>● 정상 운영중</Badge> : undefined}
+      SidebarIcon={Church}
+    >
           {activeTab === "dashboard" && (
             <FinanceDashboard
               offerings={offerings}
@@ -3151,8 +3086,6 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
           {activeTab === "budget" && <BudgetTab departments={DEFAULT_DEPARTMENTS} expenses={expenses} />}
           {activeTab === "export" && <ExportTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} donors={donors} />}
           {activeTab === "receipt" && <ReceiptTab donors={donors} offerings={offerings} settings={settings} toast={toast} />}
-        </div>
-      </main>
-    </div>
+    </UnifiedPageLayout>
   );
 }

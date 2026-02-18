@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown } from "lucide-react";
+import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 
 function useIsMobile(bp = 768) {
@@ -415,7 +416,6 @@ export function BulletinPage() {
   const [activeSub, setActiveSub] = useState<SubPage>("dash");
   const [currentPageHistory, setCurrentPageHistory] = useState(1);
   const listRefHistory = useRef<HTMLDivElement>(null);
-  const [sideOpen, setSideOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const dashPreviewRef = useRef<HTMLDivElement>(null);
   const [previewView, setPreviewView] = useState<BulletinView>("all");
@@ -425,11 +425,6 @@ export function BulletinPage() {
   const zoomIn = () => setPreviewScale(s => Math.min(s + 0.1, 1.5));
   const zoomOut = () => setPreviewScale(s => Math.max(s - 0.1, 0.25));
   const zoomReset = () => setPreviewScale(mob ? 0.45 : 0.75);
-
-  useEffect(() => {
-    if (!mob) setSideOpen(true);
-    else setSideOpen(false);
-  }, [mob]);
 
   useEffect(() => {
     saveBulletin(db);
@@ -445,7 +440,6 @@ export function BulletinPage() {
   const handleNav = (id: SubPage) => {
     setActiveSub(id);
     if (id === "history") setCurrentPageHistory(1);
-    if (mob) setSideOpen(false);
   };
 
   const scrollToSection = (sec: string) => {
@@ -555,74 +549,29 @@ export function BulletinPage() {
   const submittedCount = secEntries.filter(([k]) => db.current[k]?.submitted).length;
   const info = PAGE_INFO[activeSub];
 
+  const navSections = [{ sectionLabel: "주보", items: NAV_ITEMS.map((n) => ({ id: n.id, label: n.label, Icon: n.Icon })) }];
+
   return (
-    <div style={{ fontFamily: "'Inter','Noto Sans KR',-apple-system,sans-serif", background: C.bg, display: "flex", color: C.text, minHeight: "calc(100vh - 56px)", overflow: "hidden", position: "relative" }}>
-      {mob && sideOpen && <div onClick={() => setSideOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 99 }} />}
-
-      <aside style={{
-        width: mob ? 260 : (sideOpen ? 260 : 64),
-        background: "#1a1f36",
-        color: "#fff",
-        display: "flex",
-        flexDirection: "column",
-        transition: mob ? "transform 0.3s ease" : "width 0.25s ease",
-        overflow: "hidden",
-        flexShrink: 0,
-        zIndex: 100,
-        ...(mob ? { position: "fixed", top: 0, left: 0, bottom: 0, transform: sideOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
-      }}>
-        <div style={{ padding: "22px 18px", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.9)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}><Newspaper size={20} strokeWidth={1.5} /></div>
-            <div><div style={{ fontWeight: 700, fontSize: 17 }}>주보 시스템</div><div style={{ fontSize: 11, opacity: 0.5 }}>교회 주보 자동 생성</div></div>
-          </div>
-        </div>
-        <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "14px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>주보 관리</div>
-          {NAV_ITEMS.map(n => {
-            const isActive = activeSub === n.id;
-            const Icon = n.Icon;
-            return (
-              <button key={n.id} onClick={() => handleNav(n.id)} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", transition: "all 0.2s",
-              }}>
-                <Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} />{n.label}
-              </button>
-            );
-          })}
-          <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "14px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>역할별</div>
-          {secEntries.map(([k, v]) => (
-            <button key={k} onClick={() => scrollToSection(k)} style={{
-              display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent",
-              color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
-            }}>
-              <span style={{ width: 20, textAlign: "center", fontSize: 14 }}>{v.icon}</span>{v.name}
-              <span style={{ marginLeft: "auto", fontSize: 10, padding: "1px 6px", borderRadius: 10, background: db.current[k]?.submitted ? C.green : C.red, color: "#fff" }}>{db.current[k]?.submitted ? "✓" : "✗"}</span>
-            </button>
-          ))}
-          <div style={{ fontSize: 10, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "14px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>출력</div>
-          <button onClick={printBulletin} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}><Printer size={20} strokeWidth={1.5} style={{ flexShrink: 0 }} />인쇄</button>
-          <button onClick={downloadPDF} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent", color: "rgba(255,255,255,0.5)", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}><FileDown size={20} strokeWidth={1.5} style={{ flexShrink: 0 }} />PDF 저장</button>
-        </nav>
-        <div style={{ padding: "14px 18px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>주보 자동 생성 v1.0</div>
-      </aside>
-
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-        <header style={{ height: mob ? 52 : 64, padding: mob ? "0 12px" : "0 24px", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            {mob && <button onClick={() => setSideOpen(true)} style={{ width: 36, height: 36, border: "none", background: C.bg, borderRadius: 8, fontSize: 18, cursor: "pointer" }}>☰</button>}
-            <div><div style={{ fontSize: mob ? 16 : 18, fontWeight: 700 }}>{info.title}</div><div style={{ fontSize: 12, color: C.textMuted }}>{info.desc}</div></div>
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Btn variant="secondary" size="sm" onClick={() => { const html = buildPreviewHTML(db, outputMode, printFormat); if (previewRef.current) previewRef.current.innerHTML = html; if (dashPreviewRef.current) dashPreviewRef.current.innerHTML = html; }}>👁 미리보기</Btn>
-            <Btn variant="accent" size="sm" onClick={downloadPDF}>📄 PDF</Btn>
-            <Btn variant="primary" size="sm" onClick={printBulletin}>🖨 인쇄</Btn>
-            {activeSub !== "edit" && <Btn variant="primary" size="sm" onClick={() => handleNav("edit")}>✏️ 편집</Btn>}
-            {activeSub === "edit" && <Btn size="sm" style={{ background: C.green, color: "#fff" }} onClick={saveToHistory}>💾 저장</Btn>}
-          </div>
-        </header>
-
+    <UnifiedPageLayout
+      pageTitle="주보"
+      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      navSections={navSections}
+      activeId={activeSub}
+      onNav={(id) => handleNav(id as SubPage)}
+      versionText="주보 v1.0"
+      headerTitle={info.title}
+      headerDesc={info.desc}
+      headerActions={
+        <>
+          <Btn variant="secondary" size="sm" onClick={() => { const html = buildPreviewHTML(db, outputMode, printFormat); if (previewRef.current) previewRef.current.innerHTML = html; if (dashPreviewRef.current) dashPreviewRef.current.innerHTML = html; }}>👁 미리보기</Btn>
+          <Btn variant="accent" size="sm" onClick={downloadPDF}>📄 PDF</Btn>
+          <Btn variant="primary" size="sm" onClick={printBulletin}>🖨 인쇄</Btn>
+          {activeSub !== "edit" && <Btn variant="primary" size="sm" onClick={() => handleNav("edit")}>✏️ 편집</Btn>}
+          {activeSub === "edit" && <Btn size="sm" style={{ background: C.green, color: "#fff" }} onClick={saveToHistory}>💾 저장</Btn>}
+        </>
+      }
+      SidebarIcon={Newspaper}
+    >
         <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 20 }} className="bulletin-page-content">
           {activeSub === "dash" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -830,7 +779,6 @@ export function BulletinPage() {
             </div>
           )}
         </div>
-      </main>
 
       <div style={{ position: "fixed", top: mob ? 8 : 20, right: mob ? 8 : 20, left: mob ? 8 : "auto", zIndex: 2000, display: "flex", flexDirection: "column", gap: 8 }}>
         {toasts.map(t => <div key={t.id} style={{ background: C.green, color: "#fff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}>✓ {t.msg}</div>)}
@@ -975,6 +923,6 @@ export function BulletinPage() {
           [data-bview] .bp, [data-bview] .bp-spread, [data-bview] .tp, [data-bview] .bp-tri-face { display:flex !important; }
         }
       `}</style>
-    </div>
+    </UnifiedPageLayout>
   );
 }

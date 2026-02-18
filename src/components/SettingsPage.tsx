@@ -15,6 +15,8 @@ import {
   AuditLogViewer,
 } from "@/components/settings";
 import { SealSettingsSection } from "@/components/finance/SealSettingsSection";
+import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
+import { Settings, Building2, Shield, Users, FileEdit, Tag, History, FileSignature } from "lucide-react";
 
 type SettingsSubTab = "basic" | "organization" | "roles" | "users" | "customFields" | "customLabels" | "audit" | "receipt";
 
@@ -26,16 +28,27 @@ interface SettingsPageProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-const SETTINGS_TABS: { id: SettingsSubTab; label: string }[] = [
-  { id: "basic", label: "기본 설정" },
-  { id: "organization", label: "조직 관리" },
-  { id: "roles", label: "역할/권한" },
-  { id: "users", label: "사용자 관리" },
-  { id: "customFields", label: "커스텀 필드" },
-  { id: "customLabels", label: "명칭 설정" },
-  { id: "audit", label: "작업 이력" },
-  { id: "receipt", label: "기부금 영수증" },
+const SETTINGS_TABS: { id: SettingsSubTab; label: string; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }> }[] = [
+  { id: "basic", label: "기본 설정", Icon: Settings },
+  { id: "organization", label: "조직 관리", Icon: Building2 },
+  { id: "roles", label: "역할/권한", Icon: Shield },
+  { id: "users", label: "사용자 관리", Icon: Users },
+  { id: "customFields", label: "커스텀 필드", Icon: FileEdit },
+  { id: "customLabels", label: "명칭 설정", Icon: Tag },
+  { id: "audit", label: "작업 이력", Icon: History },
+  { id: "receipt", label: "기부금 영수증", Icon: FileSignature },
 ];
+
+const SETTINGS_PAGE_INFO: Record<SettingsSubTab, { title: string; desc: string }> = {
+  basic: { title: "기본 설정", desc: "교회 정보 및 데이터 관리" },
+  organization: { title: "조직 관리", desc: "조직과 구성원을 관리합니다" },
+  roles: { title: "역할/권한", desc: "역할과 권한을 설정합니다" },
+  users: { title: "사용자 관리", desc: "사용자와 역할을 연결합니다" },
+  customFields: { title: "커스텀 필드", desc: "성도 필드를 추가합니다" },
+  customLabels: { title: "명칭 설정", desc: "화면 표시 명칭을 설정합니다" },
+  audit: { title: "작업 이력", desc: "시스템 작업 이력을 확인합니다" },
+  receipt: { title: "기부금 영수증", desc: "영수증 인장 및 설정" },
+};
 
 export function SettingsPage({
   db,
@@ -254,51 +267,21 @@ export function SettingsPage({
     }
   }
 
-  return (
-    <>
-      <h3
-        style={{
-          fontSize: 20,
-          fontWeight: 700,
-          marginBottom: 12,
-        }}
-      >
-        ⚙️ 설정
-      </h3>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          marginBottom: 20,
-          paddingBottom: 12,
-          borderBottom: "1px solid var(--border, #e5e7eb)",
-        }}
-      >
-        {SETTINGS_TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setSettingsSubTab(id)}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: 600,
-              border: "none",
-              cursor: "pointer",
-              background: settingsSubTab === id ? "#1e3a5f" : "transparent",
-              color: settingsSubTab === id ? "#fff" : "var(--text, #374151)",
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderColor: settingsSubTab === id ? "#1e3a5f" : "var(--border, #e5e7eb)",
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+  const navSections = [{ sectionLabel: "설정", items: SETTINGS_TABS.map((t) => ({ id: t.id, label: t.label, Icon: t.Icon })) }];
+  const info = SETTINGS_PAGE_INFO[settingsSubTab];
 
+  return (
+    <UnifiedPageLayout
+      pageTitle="설정"
+      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      navSections={navSections}
+      activeId={settingsSubTab}
+      onNav={(id) => setSettingsSubTab(id as SettingsSubTab)}
+      versionText="설정 v1.0"
+      headerTitle={info.title}
+      headerDesc={info.desc}
+      SidebarIcon={Settings}
+    >
       {settingsSubTab === "organization" && (
         <OrganizationManagement
           organizations={organizations}
@@ -568,6 +551,6 @@ export function SettingsPage({
       </div>
       </>
       )}
-    </>
+    </UnifiedPageLayout>
   );
 }
