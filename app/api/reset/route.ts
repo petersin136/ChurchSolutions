@@ -18,7 +18,7 @@ export async function POST(request: Request) {
         { table: "visits", column: "id", value: MATCH_ALL_ID },
         { table: "income", column: "id", value: MATCH_ALL_ID },
         { table: "expense", column: "id", value: MATCH_ALL_ID },
-        { table: "budget", column: "year", value: -1 },
+        { table: "budget", column: "fiscal_year", value: "__none__" },
         { table: "checklist", column: "week_key", value: "__none__" },
         { table: "plans", column: "id", value: MATCH_ALL_ID },
         { table: "sermons", column: "id", value: MATCH_ALL_ID },
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       if (e1) return NextResponse.json({ ok: false, message: `income: ${e1.message}` }, { status: 500 });
       const { error: e2 } = await sb.from("expense").delete().neq("id", MATCH_ALL_ID);
       if (e2) return NextResponse.json({ ok: false, message: `expense: ${e2.message}` }, { status: 500 });
-      const { error: e3 } = await sb.from("budget").delete().gte("year", 0);
+      const { error: e3 } = await sb.from("budget").delete().neq("fiscal_year", "__none__");
       if (e3) return NextResponse.json({ ok: false, message: `budget: ${e3.message}` }, { status: 500 });
       return NextResponse.json({ ok: true, scope: "finance" });
     }

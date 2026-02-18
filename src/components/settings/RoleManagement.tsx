@@ -121,7 +121,7 @@ export function RoleManagement({ roles, onSaveRole, onAddRole }: RoleManagementP
                           {key !== "reports" && (
                             <input
                               type="checkbox"
-                              checked={!!p.write}
+                              checked={!!(p as { write?: boolean } | undefined)?.write}
                               onChange={(e) =>
                                 setForm((prev) =>
                                   prev
@@ -143,7 +143,7 @@ export function RoleManagement({ roles, onSaveRole, onAddRole }: RoleManagementP
                           {["members", "finance", "attendance"].includes(key) && (
                             <input
                               type="checkbox"
-                              checked={!!p.delete}
+                              checked={!!(p as { delete?: boolean } | undefined)?.delete}
                               onChange={(e) =>
                                 setForm((prev) =>
                                   prev

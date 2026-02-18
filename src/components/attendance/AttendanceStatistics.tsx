@@ -268,7 +268,7 @@ export function AttendanceStatistics({
               <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number) => [`${v}%`, "출석률"]} />
+              <Tooltip formatter={(v: number | undefined) => [`${v ?? 0}%`, "출석률"]} />
               <Bar dataKey="rate" name="출석률" fill="#1e3a5f" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

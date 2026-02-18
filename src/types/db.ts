@@ -387,6 +387,79 @@ export interface CustomLabel {
   category?: string;
 }
 
+/** 교회학교 부서 */
+export interface SchoolDepartment {
+  id: string;
+  church_id?: string;
+  name: string;
+  age_range?: string;
+  description?: string;
+  leader_id?: string;
+  leader_name?: string;
+  teacher_count: number;
+  student_count: number;
+  meeting_time?: string;
+  meeting_location?: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** 교회학교 반(Class) */
+export interface SchoolClass {
+  id: string;
+  department_id: string;
+  name: string;
+  teacher_id?: string;
+  teacher_name?: string;
+  assistant_teacher_id?: string;
+  assistant_teacher_name?: string;
+  max_students: number;
+  current_students: number;
+  sort_order: number;
+  is_active: boolean;
+  created_at?: string;
+}
+
+/** 교회학교 등록(학생/교사 배정) */
+export interface SchoolEnrollment {
+  id: string;
+  member_id: string;
+  department_id: string;
+  class_id?: string;
+  role: "학생" | "교사" | "부교사" | "부장" | "총무";
+  enrolled_date?: string;
+  left_date?: string;
+  is_active: boolean;
+}
+
+/** 교회학교 출결 */
+export interface SchoolAttendance {
+  id: string;
+  department_id: string;
+  class_id?: string;
+  member_id: string;
+  date: string;
+  status: "출석" | "결석" | "병결" | "기타";
+  note?: string;
+  checked_by?: string;
+  created_at?: string;
+}
+
+/** 교회학교 부서 이동 이력 */
+export interface SchoolTransferHistory {
+  id: string;
+  member_id: string;
+  from_department_id?: string;
+  from_department_name?: string;
+  to_department_id?: string;
+  to_department_name?: string;
+  transfer_date: string;
+  reason?: string;
+  created_at?: string;
+}
+
 export interface DB {
   settings: Settings;
   members: Member[];

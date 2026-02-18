@@ -176,7 +176,7 @@ export function FinanceDashboard({
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
-                <Tooltip formatter={(v: number) => [`₩${fmt(v)}`, ""]} labelFormatter={(l) => l} />
+                <Tooltip formatter={(v: number | undefined) => [`₩${fmt(v ?? 0)}`, ""]} labelFormatter={(l) => l} />
                 <Legend />
                 <Line type="monotone" dataKey="수입" stroke={NAVY} strokeWidth={2} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="지출" stroke={CORAL} strokeWidth={2} dot={{ r: 3 }} />
@@ -203,7 +203,7 @@ export function FinanceDashboard({
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => [`₩${fmt(v)}`, ""]} />
+                  <Tooltip formatter={(v: number | undefined) => [`₩${fmt(v ?? 0)}`, ""]} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -233,7 +233,7 @@ export function FinanceDashboard({
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => [`₩${fmt(v)}`, ""]} />
+                  <Tooltip formatter={(v: number | undefined) => [`₩${fmt(v ?? 0)}`, ""]} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -249,7 +249,7 @@ export function FinanceDashboard({
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
-                <Tooltip formatter={(v: number) => [`₩${fmt(v)}`, ""]} />
+                <Tooltip formatter={(v: number | undefined) => [`₩${fmt(v ?? 0)}`, ""]} />
                 <Legend />
                 <Bar dataKey="수입" fill={NAVY} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="지출" fill={CORAL} radius={[4, 4, 0, 0]} />

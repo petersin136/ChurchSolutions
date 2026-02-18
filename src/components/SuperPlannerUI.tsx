@@ -10,7 +10,10 @@ import { BulletinPage } from "./BulletinPage";
 import { SettingsPage } from "./SettingsPage";
 import { Toast } from "./Toast";
 import { Modals } from "./Modals";
-import { Users, CalendarCheck, Wallet, Heart, FileText, Settings } from "lucide-react";
+import { Users, CalendarCheck, Wallet, Heart, FileText, Settings, BarChart3, MessageSquare, GraduationCap } from "lucide-react";
+import { StatisticsReportsPage } from "./StatisticsReportsPage";
+import { MessagingPage } from "./messaging/MessagingPage";
+import { SchoolPage } from "./school/SchoolPage";
 
 const PAGE_LABELS: Record<PageId, string> = {
   pastoral: "목양노트",
@@ -18,6 +21,9 @@ const PAGE_LABELS: Record<PageId, string> = {
   finance: "재정관리",
   visit: "심방/상담",
   bulletin: "주보",
+  statistics: "통계·보고",
+  messaging: "문자",
+  school: "교회학교",
   settings: "설정",
 };
 
@@ -76,7 +82,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
 
   return (
     <div className="superplanner-root">
-      {currentPage !== "finance" && currentPage !== "pastoral" && currentPage !== "planner" && currentPage !== "visit" && currentPage !== "bulletin" && (
+      {currentPage !== "finance" && currentPage !== "pastoral" && currentPage !== "planner" && currentPage !== "visit" && currentPage !== "bulletin" && currentPage !== "statistics" && currentPage !== "messaging" && currentPage !== "school" && (
         <header className="app-header">
           <h1>
             ⛪ 슈퍼플래너{" "}
@@ -136,6 +142,24 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
           <BulletinPage />
         </div>
         <div
+          className={`page ${currentPage === "statistics" ? "active" : ""}`}
+          id="page-statistics"
+        >
+          <StatisticsReportsPage db={db} toast={toast} />
+        </div>
+        <div
+          className={`page ${currentPage === "messaging" ? "active" : ""}`}
+          id="page-messaging"
+        >
+          <MessagingPage db={db} toast={toast} />
+        </div>
+        <div
+          className={`page ${currentPage === "school" ? "active" : ""}`}
+          id="page-school"
+        >
+          <SchoolPage db={db} toast={toast} />
+        </div>
+        <div
           className={`page ${currentPage === "settings" ? "active" : ""}`}
           id="page-settings"
         >
@@ -144,7 +168,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
       </main>
 
       <nav className="tab-bar">
-        {(["pastoral", "planner", "finance", "visit", "bulletin", "settings"] as const).map(
+        {(["pastoral", "planner", "finance", "visit", "bulletin", "statistics", "messaging", "school", "settings"] as const).map(
           (page) => {
             const isActive = currentPage === page;
             const iconColor = isActive ? "#3b82f6" : "#9ca3af";
@@ -163,6 +187,9 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
                   {page === "finance" && <Wallet {...iconProps} />}
                   {page === "visit" && <Heart {...iconProps} />}
                   {page === "bulletin" && <FileText {...iconProps} />}
+                  {page === "statistics" && <BarChart3 {...iconProps} />}
+                  {page === "messaging" && <MessageSquare {...iconProps} />}
+                  {page === "school" && <GraduationCap {...iconProps} />}
                   {page === "settings" && <Settings {...iconProps} />}
                 </span>
                 <span className="tab-label">
@@ -176,7 +203,13 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
                           ? "심방"
                           : page === "bulletin"
                             ? "주보"
-                            : "설정"}
+                            : page === "statistics"
+                              ? "통계"
+                              : page === "messaging"
+                                ? "문자"
+                                : page === "school"
+                                  ? "교회학교"
+                                  : "설정"}
                 </span>
               </button>
             );

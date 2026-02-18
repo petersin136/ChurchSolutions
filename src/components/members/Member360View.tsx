@@ -244,7 +244,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
                   <LineChart data={monthlyGiving}>
                     <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
-                    <Tooltip formatter={(v: number) => [`${Number(v).toLocaleString()}원`, "금액"]} />
+                    <Tooltip formatter={(v: number | undefined) => [`${Number(v ?? 0).toLocaleString()}원`, "금액"]} />
                     <Line type="monotone" dataKey="amount" stroke="#d4a574" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -257,7 +257,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
                     <Pie data={categoryGiving} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={(e) => e.name}>
                       {categoryGiving.map((_, i) => <Cell key={i} fill={["#1e3a5f", "#d4a574", "#6B7280", "#10B981", "#F59E0B"][i % 5]} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => [`${Number(v).toLocaleString()}원`, ""]} />
+                    <Tooltip formatter={(v: number | undefined) => [`${Number(v ?? 0).toLocaleString()}원`, ""]} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

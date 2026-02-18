@@ -6,9 +6,9 @@ import { DEFAULT_DB, CATS_INCOME, CATS_EXPENSE } from "@/types/db";
 import { loadDB, loadDBFromSupabase, saveDBToSupabase, getWeekNum, getThisMonth } from "@/lib/store";
 import { SuperPlannerUI } from "./SuperPlannerUI";
 
-export type PageId = "pastoral" | "planner" | "finance" | "visit" | "bulletin" | "settings";
+export type PageId = "pastoral" | "planner" | "finance" | "visit" | "bulletin" | "statistics" | "messaging" | "school" | "settings";
 
-const PAGE_IDS: PageId[] = ["pastoral", "planner", "finance", "visit", "bulletin", "settings"];
+const PAGE_IDS: PageId[] = ["pastoral", "planner", "finance", "visit", "bulletin", "statistics", "messaging", "school", "settings"];
 const STORAGE_KEY_PAGE = "superplanner_page";
 
 export interface ToastItem {

@@ -80,8 +80,8 @@ export async function loadDBFromSupabase(): Promise<DB> {
   (budgetRes.data ?? []).forEach((r: Record<string, unknown>) => {
     if (r.fiscal_year != null && r.category_type != null && r.category != null) {
       db.budget[`${r.category_type}:${r.category}`] = Number(r.annual_total) ?? 0;
-    } else {
-      db.budget[r.category as string] = Number(r.amount) ?? 0;
+    } else if (r.category != null) {
+      db.budget[r.category as string] = Number(r.annual_total ?? r.amount) ?? 0;
     }
   });
 
@@ -526,11 +526,20 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
     }
   }
 
-  for (const [category, amount] of Object.entries(db.budget)) {
-    await supabase.from("budget").upsert(
-      { category, amount, year },
-      { onConflict: "category,year" }
-    );
+  const fiscalYear = String(year);
+  await supabase.from("budget").delete().eq("fiscal_year", fiscalYear);
+  for (const [key, amount] of Object.entries(db.budget)) {
+    const numAmount = Number(amount) ?? 0;
+    const parts = key.includes(":") ? key.split(":") : [null, key];
+    const category_type = parts[0] === "수입" || parts[0] === "지출" ? parts[0] : "지출";
+    const category = parts[1] ?? key;
+    await supabase.from("budget").insert({
+      fiscal_year: fiscalYear,
+      category_type,
+      category,
+      annual_total: numAmount,
+      monthly_amounts: { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0, "11": 0, "12": 0 },
+    });
   }
 
   for (const [weekKey, items] of Object.entries(db.checklist)) {

@@ -182,7 +182,7 @@ export function BudgetVsActual({
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                 <XAxis type="number" tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
                 <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number) => [`₩${fmt(v)}`, ""]} />
+                <Tooltip formatter={(v: number | undefined) => [`₩${fmt(v ?? 0)}`, ""]} />
                 <Legend />
                 <Bar dataKey="예산" fill="#e5e7eb" radius={[0, 4, 4, 0]} />
                 <Bar dataKey="실적" fill={NAVY} radius={[0, 4, 4, 0]} />
