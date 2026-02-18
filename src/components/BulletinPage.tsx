@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
-import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown } from "lucide-react";
+import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown, type LucideIcon } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 
@@ -403,11 +403,11 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
   settings: { title: "설정", desc: "교회 기본 정보" },
 };
 
-const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
-  { id: "dash", Icon: LayoutDashboard as React.ComponentType<any>, label: "대시보드" },
-  { id: "edit", Icon: Pencil as React.ComponentType<any>, label: "주보 편집" },
-  { id: "history", Icon: FolderOpen as React.ComponentType<any>, label: "지난 주보" },
-  { id: "settings", Icon: Settings as React.ComponentType<any>, label: "설정" },
+const NAV_ITEMS: { id: SubPage; Icon: LucideIcon; label: string }[] = [
+  { id: "dash", Icon: LayoutDashboard, label: "대시보드" },
+  { id: "edit", Icon: Pencil, label: "주보 편집" },
+  { id: "history", Icon: FolderOpen, label: "지난 주보" },
+  { id: "settings", Icon: Settings, label: "설정" },
 ];
 
 export function BulletinPage() {
