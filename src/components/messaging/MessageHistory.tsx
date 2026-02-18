@@ -27,19 +27,26 @@ export function MessageHistory({ logs = [], toast }: MessageHistoryProps) {
     const end = `${endDate}T23:59:59`;
     let q = supabase.from("message_logs").select("id, recipient_ids, recipient_names, content, message_type, sent_at, status").gte("sent_at", start).lte("sent_at", end).order("sent_at", { ascending: false });
     if (statusFilter) q = q.eq("status", statusFilter);
-    q.then(({ data, error }) => {
-      if (error && toast) toast("발송 내역 로드 실패: " + error.message, "err");
-      const rows = (data ?? []).map((r: Record<string, unknown>) => ({
-        id: String(r.id),
-        recipient_ids: Array.isArray(r.recipient_ids) ? r.recipient_ids as string[] : [],
-        recipient_names: String(r.recipient_names ?? ""),
-        content: String(r.content ?? ""),
-        message_type: (r.message_type as "SMS" | "LMS") || "SMS",
-        sent_at: r.sent_at ? new Date(String(r.sent_at)).toISOString() : "",
-        status: (r.status as MessageLog["status"]) || "저장됨",
-      }));
-      setDbLogs(rows);
-    }).finally(() => setLoading(false));
+    (async () => {
+      try {
+        const { data, error } = await q;
+        if (error && toast) toast("발송 내역 로드 실패: " + error.message, "err");
+        const rows = (data ?? []).map((r: Record<string, unknown>) => ({
+          id: String(r.id),
+          recipient_ids: Array.isArray(r.recipient_ids) ? r.recipient_ids as string[] : [],
+          recipient_names: String(r.recipient_names ?? ""),
+          content: String(r.content ?? ""),
+          message_type: (r.message_type as "SMS" | "LMS") || "SMS",
+          sent_at: r.sent_at ? new Date(String(r.sent_at)).toISOString() : "",
+          status: (r.status as MessageLog["status"]) || "저장됨",
+        }));
+        setDbLogs(rows);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [startDate, endDate, statusFilter, toast]);
 
   const list = dbLogs.length > 0 ? dbLogs : logs;
