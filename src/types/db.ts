@@ -27,16 +27,59 @@ export interface Member {
   prayer?: string;
   memo?: string;
   group?: string;
+  mokjang?: string;
   photo?: string;
+  created_at?: string;
+  updated_at?: string;
+  /** @deprecated use created_at — 하위호환 */
   createdAt?: string;
-  /** 새가족: 방문경로 (지인소개/전도/인터넷검색/자진방문/기타) */
-  visitPath?: string;
-  /** 새가족: 소개자 member id (방문경로가 지인소개일 때) */
-  referrerId?: string;
-  /** 새가족: 직업 */
-  job?: string;
-  /** 새가족: 첫 방문일 YYYY-MM-DD */
+
+  // 새가족 관련
+  is_new_family?: boolean;
+  first_visit_date?: string;
+  visit_path?: "지인소개" | "전도" | "자진방문" | "이전교회" | "기타";
+  referrer_id?: string;
+  referrer_name?: string;
+  /** @deprecated use first_visit_date */
   firstVisitDate?: string;
+  /** @deprecated use visit_path */
+  visitPath?: string;
+
+  // 가족 관계
+  family_id?: string;
+  family_relation?: "본인" | "배우자" | "자녀" | "부모" | "형제" | "기타";
+
+  // 상태 관리
+  member_status?: "활동" | "휴적" | "은퇴" | "별세" | "이적" | "제적" | "미등록";
+  status_changed_at?: string;
+  status_reason?: string;
+
+  // 추가 인적사항
+  email?: string;
+  job?: string;
+  baptism_date?: string;
+  baptism_type?: "유아세례" | "세례" | "입교" | "미세례";
+  wedding_anniversary?: string;
+  registered_date?: string;
+  small_group?: string;
+  talent?: string;
+  is_prospect?: boolean;
+}
+
+export interface MemberStatusHistory {
+  id: string;
+  member_id: string;
+  previous_status?: string;
+  new_status: string;
+  changed_at: string;
+  reason?: string;
+  changed_by?: string;
+}
+
+export interface Family {
+  id: string;
+  family_name: string;
+  created_at: string;
 }
 
 /** 정착 프로그램 4주 과정 (new_family_program) */

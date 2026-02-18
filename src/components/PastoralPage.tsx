@@ -8,6 +8,7 @@ import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church } from "lucide-react";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
+import { Member360View } from "@/components/members/Member360View";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -39,6 +40,9 @@ const STATUS_BADGE: Record<string, string> = {
   "새가족": "accent", "정착중": "teal", "정착": "success",
   "간헐": "warning", "위험": "danger", "휴면": "gray", "졸업/전출": "gray",
 };
+const MEMBER_STATUS_LIST: (string | null)[] = ["활동", "휴적", "은퇴", "별세", "이적", "제적", "미등록"];
+const ROLES_LIST = ["담임목사", "부목사", "전도사", "장로", "안수집사", "권사", "집사", "성도", "청년", "학생"];
+const BAPTISM_LIST = ["유아세례", "세례", "입교", "미세례"];
 const NOTE_ICONS: Record<string, string> = { memo: "📝", prayer: "🙏", visit: "🏠", event: "🎉" };
 const NOTE_LABELS: Record<string, string> = { memo: "메모", prayer: "기도제목", visit: "심방", event: "경조사" };
 
@@ -633,21 +637,35 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const listRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [deptF, setDeptF] = useState("all");
-  const [statusF, setStatusF] = useState("all");
-  const [viewMode, setViewMode] = useState<"list" | "group">("list");
+  const [roleF, setRoleF] = useState("all");
+  const [mokjangF, setMokjangF] = useState("all");
+  const [statusF, setStatusF] = useState("활동");
+  const [newFamilyOnly, setNewFamilyOnly] = useState(false);
+  const [prospectOnly, setProspectOnly] = useState(false);
+  const [baptismF, setBaptismF] = useState("all");
+  const [viewMode, setViewMode] = useState<"list" | "group" | "card">("list");
   const [selectedMokjang, setSelectedMokjang] = useState<string | null>(null);
   const [pageGroup, setPageGroup] = useState(1);
   const [pageList, setPageList] = useState(1);
   const PAGE_SIZE_MEM = 10;
   const depts = getDepts(db);
+  const mokjangList = getMokjangList(db);
 
   const filtered = useMemo(() => {
-    let r = db.members.filter(m => m.status !== "졸업/전출");
-    if (search) { const q = search.toLowerCase(); r = r.filter(m => (m.name || "").toLowerCase().includes(q) || (m.phone || "").includes(q) || (m.memo || "").toLowerCase().includes(q) || (m.prayer || "").toLowerCase().includes(q)); }
+    let r = db.members.filter(m => (m.member_status ?? m.status) !== "졸업/전출");
+    if (search) {
+      const q = search.toLowerCase();
+      r = r.filter(m => (m.name || "").toLowerCase().includes(q) || (m.phone || "").replace(/\D/g, "").includes(q.replace(/\D/g, "")) || (m.address || "").toLowerCase().includes(q) || (m.memo || "").toLowerCase().includes(q) || (m.prayer || "").toLowerCase().includes(q));
+    }
     if (deptF !== "all") r = r.filter(m => m.dept === deptF);
-    if (statusF !== "all") r = r.filter(m => m.status === statusF);
+    if (roleF !== "all") r = r.filter(m => m.role === roleF);
+    if (mokjangF !== "all") r = r.filter(m => (m.group || "") === mokjangF);
+    if (statusF !== "all") r = r.filter(m => (m.member_status ?? m.status) === statusF);
+    if (newFamilyOnly) r = r.filter(m => m.is_new_family === true);
+    if (prospectOnly) r = r.filter(m => m.is_prospect === true);
+    if (baptismF !== "all") r = r.filter(m => m.baptism_type === baptismF);
     return r;
-  }, [db.members, search, deptF, statusF]);
+  }, [db.members, search, deptF, roleF, mokjangF, statusF, newFamilyOnly, prospectOnly, baptismF]);
 
   /* 목장별 그룹핑 (목자=직분 높은 순 정렬) */
   const grouped = useMemo(() => {
@@ -696,37 +714,56 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
           <input value={search} onChange={e => { setSearch(e.target.value); setPageList(1); setPageGroup(1); }} placeholder="이름, 연락처 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none" }} />
         </div>
         {mob ? (
-          <div style={{ display: "flex", gap: 6, width: "100%" }}>
-            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ flex: 1, height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
-              <option value="all">전체 부서</option>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, width: "100%" }}>
+            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ flex: "1 1 80px", height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
+              <option value="all">부서</option>
               {depts.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ flex: 1, height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ flex: "1 1 80px", height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
               <option value="all">전체 상태</option>
-              {["새가족","정착중","정착","간헐","위험","휴면"].map(s => <option key={s} value={s}>{s}</option>)}
+              {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
             </select>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer" }}><input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} /> 새가족</label>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer" }}><input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} /> 관심성도</label>
             <SBadge variant="accent">{filtered.length}명</SBadge>
+            <Btn onClick={() => openMemberModal()} icon={<Icons.Plus />}>등록</Btn>
           </div>
         ) : (
           <>
             <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
-              <option value="all">전체 부서</option>
+              <option value="all">부서</option>
               {depts.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <select value={roleF} onChange={e => { setRoleF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+              <option value="all">직분</option>
+              {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <select value={mokjangF} onChange={e => { setMokjangF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+              <option value="all">목장</option>
+              {mokjangList.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
             <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
               <option value="all">전체 상태</option>
-              {["새가족","정착중","정착","간헐","위험","휴면"].map(s => <option key={s} value={s}>{s}</option>)}
+              {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
+            </select>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} /> 새가족</label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} /> 관심성도</label>
+            <select value={baptismF} onChange={e => { setBaptismF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+              <option value="all">세례</option>
+              {BAPTISM_LIST.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
             <SBadge variant="accent">{filtered.length}명</SBadge>
-            <Btn onClick={() => openMemberModal()} icon={<Icons.Plus />}>성도 등록</Btn>
+            <Btn onClick={() => openMemberModal()} icon={<Icons.Plus />}>새 교인 등록</Btn>
           </>
         )}
       </div>
 
-      {/* ─── 뷰 토글 (전체 목록 / 목장별 — 출석부와 동일 스타일) ─── */}
-      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-        <button type="button" onClick={() => { setViewMode("list"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "list" ? C.navy : C.bg, color: viewMode === "list" ? "#fff" : C.text, cursor: "pointer" }}>📋 전체 목록</button>
+      {/* ─── 뷰 토글 ─── */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+        <button type="button" onClick={() => { setViewMode("list"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "list" ? C.navy : C.bg, color: viewMode === "list" ? "#fff" : C.text, cursor: "pointer" }}>📋 테이블</button>
+        <button type="button" onClick={() => { setViewMode("card"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "card" ? C.navy : C.bg, color: viewMode === "card" ? "#fff" : C.text, cursor: "pointer" }}>🃏 카드</button>
         <button type="button" onClick={() => { setViewMode("group"); setSelectedMokjang(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "group" ? C.navy : C.bg, color: viewMode === "group" ? "#fff" : C.text, cursor: "pointer" }}>🏠 목장별</button>
+        <button type="button" onClick={() => { const csv = ["이름,부서,직분,목장,연락처,상태"].concat(filtered.slice(0, 2000).map(m => `"${(m.name||"").replace(/"/g,'""')}","${(m.dept||"").replace(/"/g,'""')}","${(m.role||"").replace(/"/g,'""')}","${(m.group||"").replace(/"/g,'""')}","${(m.phone||"").replace(/"/g,'""')}","${(m.member_status||m.status||"").replace(/"/g,'""')}"`)).join("\n"); const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `교인목록_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("엑셀(CSV) 내보내기 완료", "ok"); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>📥 Excel 내보내기</button>
       </div>
 
       {/* ─── 목장별 뷰: 목장 이름만 진열 → 클릭 시 목장원 표시 (10명 단위 페이지) ─── */}
@@ -798,7 +835,37 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         </>
       )}
 
-      {/* ─── 기존 목록 뷰 ─── */}
+      {/* ─── 카드 뷰 ─── */}
+      {viewMode === "card" && (
+        <>
+          <div ref={listRef} style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+            {filtered.length === 0 ? (
+              <Card><div style={{ textAlign: "center", color: C.textMuted, padding: 24 }}>검색 결과가 없습니다</div></Card>
+            ) : pageListMembers.map(m => {
+              const st = m.member_status ?? m.status;
+              const badgeColor = st === "활동" ? "#10B981" : st === "휴적" ? "#F59E0B" : st === "이적" || st === "제적" ? "#EF4444" : "#6B7280";
+              return (
+                <button key={m.id} type="button" onClick={() => openDetail(m.id)} style={{ textAlign: "left", padding: 16, background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, cursor: "pointer", fontFamily: "inherit", transition: "transform 0.15s, box-shadow 0.2s" }} onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; }} onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: C.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: C.accent }}>
+                      {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name}</div>
+                      <div style={{ fontSize: 12, color: C.textMuted }}>{m.role || "-"} · {m.dept || "-"}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>목장 {m.group || "-"}</div>
+                  <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color: "#fff", background: badgeColor }}>{st || "활동"}</span>
+                </button>
+              );
+            })}
+          </div>
+          {viewMode === "card" && <Pagination totalItems={filtered.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageList} onPageChange={(p) => { setPageList(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />}
+        </>
+      )}
+
+      {/* ─── 테이블 목록 뷰 ─── */}
       {viewMode === "list" && (
         <>
           <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
@@ -2271,53 +2338,24 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       {/* New Family Program Detail Modal */}
       {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} toast={toast} mob={mob} />}
 
-      {/* Detail Modal */}
-      <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} title="상세 정보" width={500}>
-        {detailMember && (() => {
-          const m = detailMember;
-          const att = db.attendance[m.id] || {};
-          const weeks = Object.keys(att).length;
-          const pres = Object.values(att).filter(v => v === "p").length;
-          const rate = weeks > 0 ? Math.round(pres / weeks * 100) : 0;
-          const memberNotes = (db.notes[m.id] || []).slice(-5).reverse();
-          return (
-            <>
-              <div style={{ textAlign: "center", paddingBottom: 20, borderBottom: `1px solid ${C.border}`, marginBottom: 20 }}>
-                <div style={{ width: 80, height: 80, borderRadius: 20, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", boxShadow: "0 4px 12px rgba(27,42,74,0.08)" }}>
-                  {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
-                </div>
-                <h2 style={{ fontSize: 22, fontWeight: 700, margin: "12px 0 4px", color: C.navy }}>{m.name}</h2>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <SBadge variant={STATUS_BADGE[m.status || ""] || "gray"}>{m.status}</SBadge>
-                  <span style={{ fontSize: 13, color: C.textMuted }}>{m.dept} {m.role || ""}</span>
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 700, color: C.accent }}>{rate}%</div><div style={{ fontSize: 12, color: C.textMuted }}>출석률</div></div>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 700, color: C.success }}>{pres}</div><div style={{ fontSize: 12, color: C.textMuted }}>출석</div></div>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 24, fontWeight: 700 }}>{weeks}</div><div style={{ fontSize: 12, color: C.textMuted }}>기록</div></div>
-              </div>
-              <DetailRow icon="📞" label="연락처" value={m.phone || "-"} />
-              <DetailRow icon="📍" label="주소" value={m.address || "-"} />
-              <DetailRow icon="👨‍👩‍👧‍👦" label="가족" value={m.family || "-"} />
-              <DetailRow icon="🎂" label="생년월일" value={m.birth || "-"} />
-              <DetailRow icon="📮" label="등록경로" value={m.source || "-"} />
-              {m.prayer && <DetailRow icon="🙏" label="기도제목" value={m.prayer} />}
-              {m.memo && <DetailRow icon="📝" label="특이사항" value={m.memo} />}
-              {memberNotes.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: C.navy, display: "block", marginBottom: 8 }}>최근 기록</label>
-                  {memberNotes.map((n, i) => <NoteCard key={i} n={n} />)}
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 }}>
-                <Btn variant="danger" size="sm" onClick={() => deleteMember(m.id)}>삭제</Btn>
-                <Btn variant="ghost" size="sm" onClick={() => { setShowDetailModal(false); openMemberModal(m.id); }}>수정</Btn>
-                <Btn variant="accent" size="sm" onClick={() => { setShowDetailModal(false); openNoteModal(m.id); }}>기록 추가</Btn>
-              </div>
-            </>
-          );
-        })()}
+      {/* Detail Modal — Member 360° 뷰 */}
+      <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} title="" width={mob ? "100%" : 720}>
+        {detailMember && (
+          <div style={{ maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <Member360View
+              member={detailMember}
+              db={db}
+              statusHistory={[]}
+              newFamilyProgram={(db.newFamilyPrograms || []).find(p => p.member_id === detailMember.id) ?? null}
+              onEdit={() => { setShowDetailModal(false); openMemberModal(detailMember.id); }}
+              onClose={() => setShowDetailModal(false)}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+              <Btn variant="danger" size="sm" onClick={() => detailMember && deleteMember(detailMember.id)}>삭제</Btn>
+              <Btn variant="accent" size="sm" onClick={() => { detailMember && openNoteModal(detailMember.id); setShowDetailModal(false); }}>기록 추가</Btn>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Note Modal */}
