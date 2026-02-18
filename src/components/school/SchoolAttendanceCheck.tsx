@@ -28,10 +28,18 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
 
   const loadDeptsAndClasses = async () => {
     if (!supabase) return;
-    const { data: depts } = await supabase.from("school_departments").select("*").order("sort_order");
+    const { data: depts, error: deptsErr } = await supabase.from("school_departments").select("*").order("sort_order");
+    if (deptsErr) {
+      toast("부서/반 로드 실패: " + deptsErr.message, "err");
+      return;
+    }
     const list = (depts as SchoolDepartment[]) ?? [];
     setDepartments(list.filter((d) => d.is_active !== false));
-    const { data: cls } = await supabase.from("school_classes").select("*").order("sort_order");
+    const { data: cls, error: clsErr } = await supabase.from("school_classes").select("*").order("sort_order");
+    if (clsErr) {
+      toast("반 목록 로드 실패: " + clsErr.message, "err");
+      return;
+    }
     const clsList = (cls as SchoolClass[]) ?? [];
     setClasses(clsList.filter((c) => c.is_active !== false));
   };
@@ -41,13 +49,21 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
     let q = supabase.from("school_enrollments").select("*").eq("is_active", true).in("role", ["학생", "교사", "부교사"]);
     if (selectedDeptId) q = q.eq("department_id", selectedDeptId);
     if (selectedClassId) q = q.eq("class_id", selectedClassId);
-    const { data } = await q;
+    const { data, error } = await q;
+    if (error) {
+      toast("등록 목록 로드 실패: " + error.message, "err");
+      return;
+    }
     setEnrollments((data as SchoolEnrollment[]) ?? []);
   };
 
   const loadAttendance = async () => {
     if (!supabase || !selectedDeptId) return;
-    const { data } = await supabase.from("school_attendance").select("member_id, status").eq("department_id", selectedDeptId).eq("date", date);
+    const { data, error } = await supabase.from("school_attendance").select("member_id, status").eq("department_id", selectedDeptId).eq("date", date);
+    if (error) {
+      toast("출석 로드 실패: " + error.message, "err");
+      return;
+    }
     const map: Record<string, AttStatus> = {};
     (data ?? []).forEach((r: { member_id: string; status: AttStatus }) => { map[r.member_id] = r.status; });
     setStatusMap(map);
@@ -78,15 +94,22 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
     }
     setSaving(true);
     try {
-      for (const e of enrollments) {
-        const status = statusMap[e.member_id] ?? "출석";
-        await supabase.from("school_attendance").upsert(
-          { department_id: selectedDeptId, class_id: e.class_id ?? null, member_id: e.member_id, date, status },
-          { onConflict: "member_id,department_id,date" }
-        );
+      const rows = enrollments.map((e) => ({
+        department_id: selectedDeptId,
+        class_id: e.class_id ?? null,
+        member_id: e.member_id,
+        date,
+        status: statusMap[e.member_id] ?? "출석",
+      }));
+      const { error } = await supabase.from("school_attendance").upsert(rows, {
+        onConflict: "member_id,department_id,date",
+      });
+      if (error) {
+        toast("저장 실패: " + error.message, "err");
+        return;
       }
       toast("출석이 저장되었습니다", "ok");
-      loadAttendance();
+      await loadAttendance();
     } catch (err) {
       console.error(err);
       toast("저장 실패", "err");

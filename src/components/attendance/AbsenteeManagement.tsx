@@ -1,14 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
 
 export interface AbsenteeManagementProps {
-  members: Member[];
-  attendanceList: Attendance[];
+  /** Supabase 미사용 시 사용할 성도 목록 */
+  members?: Member[];
+  /** Supabase 미사용 시 사용할 출석 목록 */
+  attendanceList?: Attendance[];
   consecutiveWeeks?: number;
   onAddVisit?: (memberId: string) => void;
+  toast?: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
 function getActiveMembers(members: Member[]) {
@@ -29,12 +33,54 @@ function getRecentSundays(count: number): string[] {
 }
 
 export function AbsenteeManagement({
-  members,
-  attendanceList,
+  members: membersProp,
+  attendanceList: attendanceListProp,
   consecutiveWeeks = 3,
   onAddVisit,
+  toast,
 }: AbsenteeManagementProps) {
   const [nWeeks, setNWeeks] = useState(consecutiveWeeks);
+  const [membersFetched, setMembersFetched] = useState<Member[]>([]);
+  const [attendanceFetched, setAttendanceFetched] = useState<Attendance[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const useSupabase = !!supabase;
+  const members = useSupabase ? membersFetched : (membersProp ?? []);
+  const attendanceList = useSupabase ? attendanceFetched : (attendanceListProp ?? []);
+
+  const loadFromSupabase = useCallback(async () => {
+    if (!supabase) return;
+    setLoading(true);
+    const nWeeksAgo = new Date();
+    nWeeksAgo.setDate(nWeeksAgo.getDate() - 7 * Math.max(nWeeks, 1));
+    const fromDate = nWeeksAgo.toISOString().split("T")[0];
+
+    const [memRes, attRes] = await Promise.all([
+      supabase.from("members").select("id, name, dept, mokjang, group, phone, member_status, status").order("name"),
+      supabase
+        .from("attendance")
+        .select("member_id, date, status")
+        .gte("date", fromDate)
+        .eq("service_type", "주일예배"),
+    ]);
+    if (memRes.error) {
+      console.error(memRes.error);
+      toast?.("데이터 로드 실패: " + memRes.error.message, "err");
+    } else setMembersFetched((memRes.data ?? []) as Member[]);
+    if (attRes.error) {
+      const fallback = await supabase.from("attendance").select("member_id, date, status").gte("date", fromDate);
+      if (fallback.error) {
+        console.error(fallback.error);
+        toast?.("출석 데이터 로드 실패: " + fallback.error.message, "err");
+        setAttendanceFetched([]);
+      } else setAttendanceFetched((fallback.data ?? []) as Attendance[]);
+    } else setAttendanceFetched((attRes.data ?? []) as Attendance[]);
+    setLoading(false);
+  }, [nWeeks, toast]);
+
+  useEffect(() => {
+    if (useSupabase) loadFromSupabase();
+  }, [useSupabase, loadFromSupabase]);
 
   const activeMembers = useMemo(() => getActiveMembers(members), [members]);
   const recentSundays = useMemo(() => getRecentSundays(nWeeks), [nWeeks]);
@@ -73,6 +119,15 @@ export function AbsenteeManagement({
     });
     return result.sort((a, b) => b.consecutiveWeeks - a.consecutiveWeeks);
   }, [activeMembers, byDateService, recentSundays, nWeeks]);
+
+  if (useSupabase && loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
+        <span className="ml-3 text-gray-600">결석자 데이터 로딩 중...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

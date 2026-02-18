@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB } from "@/types/db";
+import { supabase } from "@/lib/supabase";
 import { LayoutDashboard, Home, MessageCircle, Bell, Heart, User, ScrollText, TrendingUp, ClipboardList, Settings } from "lucide-react";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -168,6 +169,42 @@ function buildEmpty(): VCDB {
   };
 }
 
+/** Supabase visits 행 → Visit (camelCase) */
+function mapVisitRow(row: Record<string, unknown>): Visit {
+  return {
+    id: String(row.id ?? ""),
+    memberId: String(row.member_id ?? row.memberId ?? ""),
+    type: (row.type as VisitType) ?? "routine",
+    date: String(row.date ?? ""),
+    time: String(row.time ?? ""),
+    location: String(row.location ?? ""),
+    summary: String(row.summary ?? ""),
+    prayerNote: String(row.prayer_note ?? row.prayerNote ?? ""),
+    status: (row.status as VisitStatus) ?? "scheduled",
+    followUpDate: String(row.follow_up_date ?? row.followUpDate ?? ""),
+    followUpNote: String(row.follow_up_note ?? row.followUpNote ?? ""),
+    followUpDone: Boolean(row.follow_up_done ?? row.followUpDone),
+  };
+}
+
+/** Visit → Supabase payload (snake_case) */
+function visitToPayload(v: Visit): Record<string, unknown> {
+  return {
+    id: v.id,
+    member_id: v.memberId,
+    type: v.type,
+    date: v.date,
+    time: v.time,
+    location: v.location,
+    summary: v.summary,
+    prayer_note: v.prayerNote,
+    status: v.status,
+    follow_up_date: v.followUpDate || null,
+    follow_up_note: v.followUpNote || null,
+    follow_up_done: v.followUpDone,
+  };
+}
+
 /* ---------- DB Load / Save ---------- */
 const VC_KEY = "visit_counsel_db";
 function loadVC(): VCDB {
@@ -271,7 +308,7 @@ function getAllFollowups(db: VCDB): FollowUp[] {
    ============================================================ */
 
 /* ----- Dashboard ----- */
-function DashSub({ db, goPage, openVisitModal, openCounselModal }: { db: VCDB; goPage: (p: SubPage) => void; openVisitModal: (id?: string) => void; openCounselModal: (id?: string) => void }) {
+function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db: VCDB; goPage: (p: SubPage) => void; openVisitModal: (id?: string) => void; openCounselModal: (id?: string) => void; loading?: boolean }) {
   const mob = useIsMobile();
   const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
@@ -296,6 +333,15 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal }: { db: VCDB; g
   const recentV = [...db.visits].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
   const recentC = [...db.counsels].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
   const activePrayers = (db.prayers || []).filter(p => p.status === "active");
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 48 }}>
+        <span style={{ display: "inline-block", width: 28, height: 28, borderRadius: "50%", border: "2px solid #1a1f36", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+        <span style={{ marginLeft: 12, fontSize: 14, color: C.textMuted }}>대시보드 로딩 중…</span>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -429,7 +475,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal }: { db: VCDB; g
 }
 
 /* ----- Visit List ----- */
-function VisitListSub({ db, openVisitModal }: { db: VCDB; openVisitModal: (id?: string) => void }) {
+function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModal: (id?: string) => void; loading?: boolean }) {
   const mob = useIsMobile();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
@@ -441,6 +487,15 @@ function VisitListSub({ db, openVisitModal }: { db: VCDB; openVisitModal: (id?: 
     if (search) { const q = search.toLowerCase(); r = r.filter(v => { const m = getMember(v.memberId); return m.name.toLowerCase().includes(q) || (v.summary || "").toLowerCase().includes(q) || (v.location || "").toLowerCase().includes(q); }); }
     return r.sort((a, b) => b.date.localeCompare(a.date));
   }, [db.visits, search, filter]);
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 48 }}>
+        <span style={{ display: "inline-block", width: 28, height: 28, borderRadius: "50%", border: "2px solid #1a1f36", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+        <span style={{ marginLeft: 12, fontSize: 14, color: C.textMuted }}>심방 목록 로딩 중…</span>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -982,7 +1037,7 @@ function TimelineSub({ db, openVisitModal, openCounselModal }: { db: VCDB; openV
 }
 
 /* ----- Report ----- */
-function ReportSub({ db, toast }: { db: VCDB; toast: (m: string) => void }) {
+function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => void; loading?: boolean }) {
   const mob = useIsMobile();
   const mv = db.visits.filter(v => thisMonth(v.date));
   const mc = db.counsels.filter(c => thisMonth(c.date));
@@ -990,6 +1045,15 @@ function ReportSub({ db, toast }: { db: VCDB; toast: (m: string) => void }) {
   const allFU = getAllFollowups(db).filter(f => !f.done);
   const now = new Date();
   const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 48 }}>
+        <span style={{ display: "inline-block", width: 28, height: 28, borderRadius: "50%", border: "2px solid #1a1f36", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+        <span style={{ marginLeft: 12, fontSize: 14, color: C.textMuted }}>보고서 로딩 중…</span>
+      </div>
+    );
+  }
 
   const vTypes: Record<string, number> = {};
   mv.forEach(v => { const l = VISIT_TYPES[v.type]?.label || v.type; vTypes[l] = (vTypes[l] || 0) + 1; });
@@ -1269,9 +1333,30 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   const [db, setDb] = useState<VCDB>(() => loadVC());
   const [activeSub, setActiveSub] = useState<SubPage>("dash");
   const [sideOpen, setSideOpen] = useState(false);
+  const [visitsLoading, setVisitsLoading] = useState(false);
+  const [visitSaving, setVisitSaving] = useState(false);
 
   useEffect(() => { if (!mob) setSideOpen(true); else setSideOpen(false); }, [mob]);
   const [toasts, setToasts] = useState<{ id: number; msg: string }[]>([]);
+
+  /* Supabase: visits 목록 로드 */
+  const loadVisits = useCallback(async () => {
+    if (!supabase) return;
+    setVisitsLoading(true);
+    const { data, error } = await supabase.from("visits").select("*").order("date", { ascending: false });
+    if (error) {
+      console.error(error);
+      setToasts(prev => [...prev.slice(-2), { id: Date.now(), msg: "데이터 로드 실패: " + error.message }]);
+      setTimeout(() => setToasts(t => t.slice(0, -1)), 2500);
+    } else {
+      setDb(prev => ({ ...prev, visits: (data ?? []).map(mapVisitRow) }));
+    }
+    setVisitsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (supabase) loadVisits();
+  }, [loadVisits]);
 
   /* Modals */
   const [showVisitModal, setShowVisitModal] = useState(false);
@@ -1304,6 +1389,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   const [vFUDate, setVFUDate] = useState("");
   const [vFUNote, setVFUNote] = useState("");
   const [vFUDone, setVFUDone] = useState(false);
+  const [vPhotoFile, setVPhotoFile] = useState<File | null>(null);
 
   /* Counsel form */
   const [cMember, setCMember] = useState("");
@@ -1334,14 +1420,42 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
       const v = db.visits.find(x => x.id === id);
       if (v) { setEditVisitId(id); setVMember(v.memberId); setVType(v.type); setVDate(v.date); setVTime(v.time); setVLoc(v.location); setVStatus(v.status); setVSummary(v.summary); setVPrayer(v.prayerNote); setVFUDate(v.followUpDate); setVFUNote(v.followUpNote); setVFUDone(v.followUpDone); }
     } else {
-      setEditVisitId(null); setVMember(""); setVType("routine"); setVDate(todayStr()); setVTime("14:00"); setVLoc(""); setVStatus("scheduled"); setVSummary(""); setVPrayer(""); setVFUDate(""); setVFUNote(""); setVFUDone(false);
+      setEditVisitId(null); setVMember(""); setVType("routine"); setVDate(todayStr()); setVTime("14:00"); setVLoc(""); setVStatus("scheduled"); setVSummary(""); setVPrayer(""); setVFUDate(""); setVFUNote(""); setVFUDone(false); setVPhotoFile(null);
     }
     setShowVisitModal(true);
   }, [db.visits]);
 
-  const saveVisit = () => {
+  const saveVisit = async () => {
     if (!vMember) { toast("성도를 선택하세요"); return; }
-    const data: Visit = { id: editVisitId || uid(), memberId: vMember, type: vType, date: vDate, time: vTime, location: vLoc, status: vStatus, summary: vSummary, prayerNote: vPrayer, followUpDate: vFUDate, followUpNote: vFUNote, followUpDone: vFUDone };
+    const visitId = editVisitId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `v-${Date.now()}`);
+    const data: Visit = { id: visitId, memberId: vMember, type: vType, date: vDate, time: vTime, location: vLoc, status: vStatus, summary: vSummary, prayerNote: vPrayer, followUpDate: vFUDate, followUpNote: vFUNote, followUpDone: vFUDone };
+
+    if (supabase) {
+      setVisitSaving(true);
+      const payload = visitToPayload(data);
+      const { error } = editVisitId
+        ? await supabase.from("visits").upsert(payload, { onConflict: "id" })
+        : await supabase.from("visits").insert(payload);
+      if (error) {
+        console.error(error);
+        toast("저장 실패: " + error.message);
+        setVisitSaving(false);
+        return;
+      }
+      if (vPhotoFile) {
+        try {
+          const path = `${visitId}/${vPhotoFile.name}`;
+          await supabase.storage.from("visit-photos").upload(path, vPhotoFile, { upsert: true });
+        } catch (e) {
+          console.error(e);
+          toast("사진 업로드 실패");
+        }
+        setVPhotoFile(null);
+      }
+      await loadVisits();
+      setVisitSaving(false);
+    }
+
     setDb(prev => {
       let next = { ...prev };
       if (editVisitId) next = { ...next, visits: next.visits.map(v => v.id === editVisitId ? data : v) };
@@ -1354,13 +1468,26 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
       }
       return next;
     });
-    persist(); setShowVisitModal(false); toast(editVisitId ? "심방이 수정되었습니다" : "심방이 등록되었습니다");
+    persist();
+    setShowVisitModal(false);
+    toast(editVisitId ? "심방이 수정되었습니다" : "심방이 등록되었습니다");
   };
 
-  const delVisit = (id: string) => {
+  const delVisit = async (id: string) => {
     if (typeof window !== "undefined" && !window.confirm("삭제하시겠습니까?")) return;
+    if (supabase) {
+      const { error } = await supabase.from("visits").delete().eq("id", id);
+      if (error) {
+        console.error(error);
+        toast("삭제 실패: " + error.message);
+        return;
+      }
+      await loadVisits();
+    }
     setDb(prev => ({ ...prev, visits: prev.visits.filter(v => v.id !== id) }));
-    persist(); setShowVisitModal(false); toast("삭제되었습니다");
+    persist();
+    setShowVisitModal(false);
+    toast("삭제되었습니다");
   };
 
   /* Open counsel modal */
@@ -1464,6 +1591,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
 
   return (
     <div style={{ fontFamily: "'Inter','Noto Sans KR',-apple-system,sans-serif", background: C.bg, display: "flex", color: C.text, minHeight: "calc(100vh - 56px)", overflow: "hidden", position: "relative" }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       {mob && sideOpen && <div onClick={() => setSideOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 99 }} />}
 
       {/* Sidebar */}
@@ -1561,16 +1689,16 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         </header>
 
         <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 24 }}>
-          {activeSub === "dash" && <DashSub db={db} goPage={handleNav} openVisitModal={openVisitModal} openCounselModal={openCounselModal} />}
+          {activeSub === "dash" && <DashSub db={db} goPage={handleNav} openVisitModal={openVisitModal} openCounselModal={openCounselModal} loading={visitsLoading} />}
           {activeSub === "visits" && mainDb != null && setMainDb && saveMain
             ? <MainDBVisitList mainDb={mainDb} setMainDb={setMainDb} saveMain={saveMain} toast={toast} />
-            : activeSub === "visits" && <VisitListSub db={db} openVisitModal={openVisitModal} />}
+            : activeSub === "visits" && <VisitListSub db={db} openVisitModal={openVisitModal} loading={visitsLoading} />}
           {activeSub === "counsels" && <CounselListSub db={db} openCounselModal={openCounselModal} />}
           {activeSub === "followup" && <FollowUpSub db={db} setDb={setDb} persist={persist} toast={toast} openVisitModal={openVisitModal} openCounselModal={openCounselModal} />}
           {activeSub === "prayers" && <PrayersSub db={db} setDb={setDb} persist={persist} toast={toast} openMemberDetail={openMemberDetail} openPrayerModal={() => { setShowPrayerModal(true); setEditPrayerId(null); setPMember(""); setPText(""); setPDate(todayStr()); setPCategory("other"); }} />}
           {activeSub === "members" && <MembersSub db={db} openMemberDetail={openMemberDetail} />}
           {activeSub === "timeline" && <TimelineSub db={db} openVisitModal={openVisitModal} openCounselModal={openCounselModal} />}
-          {activeSub === "report" && <ReportSub db={db} toast={toast} />}
+          {activeSub === "report" && <ReportSub db={db} toast={toast} loading={visitsLoading} />}
           {activeSub === "handover" && <HandoverSub db={db} toast={toast} getMember={getMember} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={setDb} persist={persist} toast={toast} />}
         </div>
@@ -1579,10 +1707,10 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
       {/* Visit Modal */}
       <Modal open={showVisitModal} onClose={() => setShowVisitModal(false)} title={editVisitId ? "심방 수정" : "심방 등록"} footer={
         <div style={{ display: "flex", gap: 10, width: "100%", justifyContent: "flex-end" }}>
-          {editVisitId && <Btn variant="danger" size="sm" onClick={() => delVisit(editVisitId)}>삭제</Btn>}
+          {editVisitId && <Btn variant="danger" size="sm" onClick={() => delVisit(editVisitId)} disabled={visitSaving}>삭제</Btn>}
           <div style={{ flex: 1 }} />
-          <Btn variant="secondary" onClick={() => setShowVisitModal(false)}>취소</Btn>
-          <Btn onClick={saveVisit}>저장</Btn>
+          <Btn variant="secondary" onClick={() => setShowVisitModal(false)} disabled={visitSaving}>취소</Btn>
+          <Btn onClick={() => saveVisit()} disabled={visitSaving}>{visitSaving ? "저장 중…" : "저장"}</Btn>
         </div>
       }>
         <FormField label="성도 선택"><FSelect value={vMember} onChange={setVMember}><option value="">-- 선택 --</option>{db.members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect></FormField>
@@ -1603,6 +1731,10 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         </div>
         <FormField label="심방 내용"><FTextarea value={vSummary} onChange={setVSummary} placeholder="심방 내용을 상세히 기록하세요" /></FormField>
         <FormField label="🙏 기도 제목"><FTextarea value={vPrayer} onChange={setVPrayer} placeholder="기도 제목을 기록하세요" style={{ minHeight: 60 }} /></FormField>
+        <FormField label="사진 (선택)">
+          <input type="file" accept="image/*" onChange={e => setVPhotoFile(e.target.files?.[0] ?? null)} style={{ fontSize: 13 }} />
+          {vPhotoFile && <span style={{ fontSize: 12, color: C.textMuted, marginTop: 4, display: "block" }}>{vPhotoFile.name}</span>}
+        </FormField>
         <hr style={{ margin: "12px 0", border: "none", borderTop: `1px solid ${C.borderLight}` }} />
         <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12 }}>🔔 후속 조치</div>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>

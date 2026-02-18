@@ -2297,18 +2297,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                 <AttendanceCheck
                   members={db.members}
                   serviceTypes={serviceTypes}
-                  attendanceList={dateBasedAttendance}
-                  onSave={async (records) => {
-                    const key = (r: Partial<Attendance>) => `${r.member_id}-${r.date}-${r.service_type}`;
-                    setDateBasedAttendance(prev => {
-                      const next = prev.filter(r => !records.some(rec => key(rec) === `${r.member_id}-${r.date}-${r.service_type}`));
-                      records.forEach(r => {
-                        next.push({ id: (r as Attendance).id || `att-${key(r)}`, member_id: r.member_id!, date: r.date!, status: r.status!, service_type: r.service_type, check_in_method: "수동", checked_by: r.checked_by } as Attendance);
-                      });
-                      return next;
-                    });
-                    toast("출석이 저장되었습니다", "ok");
-                  }}
+                  toast={toast}
                 />
               )}
               {attendanceSubTab === "absentee" && (
@@ -2316,6 +2305,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                   members={db.members}
                   attendanceList={dateBasedAttendance}
                   consecutiveWeeks={3}
+                  toast={toast}
                   onAddVisit={(memberId) => { setNoteTargetId(memberId); setShowNoteModal(true); toast("심방 등록은 기도/메모에서 기록해 주세요", "ok"); }}
                 />
               )}
@@ -2323,6 +2313,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                 <AttendanceStatistics
                   members={db.members}
                   attendanceList={dateBasedAttendance}
+                  toast={toast}
                   onExportExcel={(csv, filename) => {
                     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
                     const a = document.createElement("a");

@@ -1,58 +1,87 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import type { Budget } from "@/types/db";
+import type { Income } from "@/types/db";
+import type { Expense } from "@/types/db";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 const NAVY = "#1e3a5f";
 const CORAL = "#e74c3c";
 
-interface OfferingLike { date: string; amount: number; categoryId?: string; type?: string; }
-interface ExpenseLike { date: string; amount: number; categoryId?: string; category?: string; }
-interface BudgetLike { category_type: string; category: string; monthly_amounts: Record<string, number>; annual_total: number; }
-interface CategoryLike { id: string; name: string; }
-
 export interface BudgetVsActualProps {
   year: string;
-  month: number | null;
-  offerings: OfferingLike[];
-  expenses: ExpenseLike[];
-  budgets: BudgetLike[];
-  incomeCategories: CategoryLike[];
-  expenseCategories: CategoryLike[];
+  month?: number | null;
+  toast: (msg: string, type?: "ok" | "err" | "warn") => void;
   viewMode?: "monthly" | "annual";
 }
 
 export function BudgetVsActual({
   year,
   month,
-  offerings,
-  expenses,
-  budgets,
-  incomeCategories,
-  expenseCategories,
+  toast,
   viewMode: viewModeProp = "monthly",
 }: BudgetVsActualProps) {
   const [viewMode, setViewMode] = useState<"monthly" | "annual">(viewModeProp);
   const [selectedMonth, setSelectedMonth] = useState(month ?? new Date().getMonth() + 1);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const [budgetRes, incomeRes, expenseRes] = await Promise.all([
+      supabase.from("budget").select("*").eq("fiscal_year", year),
+      supabase.from("income").select("*").eq("fiscal_year", year),
+      supabase.from("expense").select("*").eq("fiscal_year", year),
+    ]);
+    if (budgetRes.error) {
+      console.error(budgetRes.error);
+      toast("예산 로드 실패: " + budgetRes.error.message, "err");
+    } else setBudgets((budgetRes.data ?? []) as Budget[]);
+    if (incomeRes.error) {
+      console.error(incomeRes.error);
+      toast("수입 실적 로드 실패: " + incomeRes.error.message, "err");
+    } else setIncomes((incomeRes.data ?? []) as Income[]);
+    if (expenseRes.error) {
+      console.error(expenseRes.error);
+      toast("지출 실적 로드 실패: " + expenseRes.error.message, "err");
+    } else setExpenses((expenseRes.data ?? []) as Expense[]);
+    setLoading(false);
+  }, [year, toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const mStr = String(selectedMonth).padStart(2, "0");
   const incomeActual = useMemo(() => {
     const map: Record<string, number> = {};
-    offerings.filter((o) => o.date?.startsWith(`${year}-${mStr}`)).forEach((o) => {
-      const id = o.categoryId || o.type || "other";
-      map[id] = (map[id] || 0) + o.amount;
-    });
+    incomes
+      .filter((o) => o.date?.startsWith(`${year}-${mStr}`) || o.month === selectedMonth)
+      .forEach((o) => {
+        const cat = o.type || "기타수입";
+        map[cat] = (map[cat] || 0) + (o.amount ?? 0);
+      });
     return map;
-  }, [offerings, year, mStr]);
+  }, [incomes, year, mStr, selectedMonth]);
   const expenseActual = useMemo(() => {
     const map: Record<string, number> = {};
-    expenses.filter((e) => e.date?.startsWith(`${year}-${mStr}`)).forEach((e) => {
-      const id = e.categoryId || e.category || "other";
-      map[id] = (map[id] || 0) + e.amount;
-    });
+    expenses
+      .filter((e) => e.date?.startsWith(`${year}-${mStr}`) || e.month === selectedMonth)
+      .forEach((e) => {
+        const cat = e.category || "기타지출";
+        map[cat] = (map[cat] || 0) + (e.amount ?? 0);
+      });
     return map;
-  }, [expenses, year, mStr]);
+  }, [expenses, year, mStr, selectedMonth]);
 
   const incomeBudget = useMemo(() => {
     const map: Record<string, number> = {};
@@ -69,29 +98,34 @@ export function BudgetVsActual({
     return map;
   }, [budgets, selectedMonth]);
 
+  const incomeCats = useMemo(
+    () => Array.from(new Set([...Object.keys(incomeBudget), ...Object.keys(incomeActual)])).filter(Boolean),
+    [incomeBudget, incomeActual]
+  );
+  const expenseCats = useMemo(
+    () => Array.from(new Set([...Object.keys(expenseBudget), ...Object.keys(expenseActual)])).filter(Boolean),
+    [expenseBudget, expenseActual]
+  );
+
   const incomeRows = useMemo(() => {
-    const cats = incomeCategories.length ? incomeCategories : Array.from(new Set([...Object.keys(incomeBudget), ...Object.keys(incomeActual)])).map((c) => ({ id: c, name: c }));
-    return cats.map((c) => {
-      const name = c.name || c.id;
-      const bud = incomeBudget[name] ?? incomeBudget[c.id] ?? 0;
-      const act = incomeActual[name] ?? incomeActual[c.id] ?? 0;
+    return incomeCats.map((name) => {
+      const bud = incomeBudget[name] ?? 0;
+      const act = incomeActual[name] ?? 0;
       const diff = act - bud;
       const pct = bud > 0 ? Math.round((act / bud) * 100) : 0;
       return { name, 예산: bud, 실적: act, 차이: diff, 달성률: pct };
     }).filter((r) => r.예산 > 0 || r.실적 > 0);
-  }, [incomeCategories, incomeBudget, incomeActual]);
+  }, [incomeCats, incomeBudget, incomeActual]);
 
   const expenseRows = useMemo(() => {
-    const cats = expenseCategories.length ? expenseCategories : Array.from(new Set([...Object.keys(expenseBudget), ...Object.keys(expenseActual)])).map((c) => ({ id: c, name: c }));
-    return cats.map((c) => {
-      const name = c.name || c.id;
-      const bud = expenseBudget[name] ?? expenseBudget[c.id] ?? 0;
-      const act = expenseActual[name] ?? expenseActual[c.id] ?? 0;
+    return expenseCats.map((name) => {
+      const bud = expenseBudget[name] ?? 0;
+      const act = expenseActual[name] ?? 0;
       const diff = bud - act;
       const pct = bud > 0 ? Math.round((act / bud) * 100) : 0;
       return { name, 예산: bud, 실적: act, 차이: diff, 달성률: pct };
     }).filter((r) => r.예산 > 0 || r.실적 > 0);
-  }, [expenseCategories, expenseBudget, expenseActual]);
+  }, [expenseCats, expenseBudget, expenseActual]);
 
   const chartData = useMemo(() => [
     ...incomeRows.map((r) => ({ name: r.name, 예산: r.예산, 실적: r.실적, type: "수입" })),
@@ -110,6 +144,15 @@ export function BudgetVsActual({
     }
     return "";
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
+        <span className="ml-3 text-gray-600">예산/실적 로딩 중...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -139,15 +182,19 @@ export function BudgetVsActual({
             <table className="w-full text-sm">
               <thead><tr className="bg-gray-50 border-b"><th className="text-left py-2 px-3">항목</th><th className="text-right py-2 px-3">예산</th><th className="text-right py-2 px-3">실적</th><th className="text-right py-2 px-3">차이</th><th className="text-right py-2 px-3">달성률</th></tr></thead>
               <tbody>
-                {incomeRows.map((r) => (
-                  <tr key={r.name} className={`border-b ${pctBg(r.달성률, false)}`}>
-                    <td className="py-2 px-3">{r.name}</td>
-                    <td className="py-2 px-3 text-right">{fmt(r.예산)}</td>
-                    <td className="py-2 px-3 text-right">{fmt(r.실적)}</td>
-                    <td className="py-2 px-3 text-right">{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
-                    <td className="py-2 px-3 text-right font-medium">{r.달성률}%</td>
-                  </tr>
-                ))}
+                {incomeRows.length === 0 ? (
+                  <tr><td colSpan={5} className="py-8 text-center text-gray-500">수입 예산/실적 데이터가 없습니다.</td></tr>
+                ) : (
+                  incomeRows.map((r) => (
+                    <tr key={r.name} className={`border-b ${pctBg(r.달성률, false)}`}>
+                      <td className="py-2 px-3">{r.name}</td>
+                      <td className="py-2 px-3 text-right">{fmt(r.예산)}</td>
+                      <td className="py-2 px-3 text-right">{fmt(r.실적)}</td>
+                      <td className="py-2 px-3 text-right">{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
+                      <td className="py-2 px-3 text-right font-medium">{r.달성률}%</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -158,15 +205,19 @@ export function BudgetVsActual({
             <table className="w-full text-sm">
               <thead><tr className="bg-gray-50 border-b"><th className="text-left py-2 px-3">항목</th><th className="text-right py-2 px-3">예산</th><th className="text-right py-2 px-3">실적</th><th className="text-right py-2 px-3">차이</th><th className="text-right py-2 px-3">달성률</th></tr></thead>
               <tbody>
-                {expenseRows.map((r) => (
-                  <tr key={r.name} className={`border-b ${pctBg(r.달성률, true)}`}>
-                    <td className="py-2 px-3">{r.name}</td>
-                    <td className="py-2 px-3 text-right">{fmt(r.예산)}</td>
-                    <td className="py-2 px-3 text-right">{fmt(r.실적)}</td>
-                    <td className="py-2 px-3 text-right">{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
-                    <td className="py-2 px-3 text-right font-medium">{r.달성률}%</td>
-                  </tr>
-                ))}
+                {expenseRows.length === 0 ? (
+                  <tr><td colSpan={5} className="py-8 text-center text-gray-500">지출 예산/실적 데이터가 없습니다.</td></tr>
+                ) : (
+                  expenseRows.map((r) => (
+                    <tr key={r.name} className={`border-b ${pctBg(r.달성률, true)}`}>
+                      <td className="py-2 px-3">{r.name}</td>
+                      <td className="py-2 px-3 text-right">{fmt(r.예산)}</td>
+                      <td className="py-2 px-3 text-right">{fmt(r.실적)}</td>
+                      <td className="py-2 px-3 text-right">{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
+                      <td className="py-2 px-3 text-right font-medium">{r.달성률}%</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

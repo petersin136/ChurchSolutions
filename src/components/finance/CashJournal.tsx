@@ -1,24 +1,49 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import type { CashJournalEntry } from "@/types/db";
+import type { Income } from "@/types/db";
+import type { Expense } from "@/types/db";
 
 const NAVY = "#1e3a5f";
 const CORAL = "#e74c3c";
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
-interface IncomeLike { id: string; date: string; amount: number; type?: string; donor?: string; method?: string; memo?: string; payment_method?: string; }
-interface ExpenseLike { id: string; date: string; amount: number; category?: string; item?: string; memo?: string; payment_method?: string; }
-
 export interface CashJournalProps {
-  income: IncomeLike[];
-  expense: ExpenseLike[];
+  toast: (msg: string, type?: "ok" | "err" | "warn") => void;
   typeFilter?: "all" | "수입" | "지출";
   onExportExcel?: (entries: CashJournalEntry[]) => void;
   onExportPdf?: (entries: CashJournalEntry[]) => void;
 }
 
-export function CashJournal({ income, expense, typeFilter: typeFilterProp, onExportExcel, onExportPdf }: CashJournalProps) {
+function toEntryFromIncome(i: Income): CashJournalEntry {
+  return {
+    id: i.id,
+    date: i.date,
+    type: "수입",
+    category: i.type ?? "",
+    description: i.donor ?? "",
+    amount: i.amount,
+    payment_method: i.payment_method ?? i.method ?? "현금",
+    memo: i.memo,
+  };
+}
+
+function toEntryFromExpense(e: Expense): CashJournalEntry {
+  return {
+    id: e.id,
+    date: e.date,
+    type: "지출",
+    category: e.category ?? "",
+    description: e.item ?? "",
+    amount: e.amount,
+    payment_method: e.payment_method ?? "현금",
+    memo: e.memo,
+  };
+}
+
+export function CashJournal({ toast, typeFilter: typeFilterProp, onExportExcel, onExportPdf }: CashJournalProps) {
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(1);
@@ -28,43 +53,72 @@ export function CashJournal({ income, expense, typeFilter: typeFilterProp, onExp
   const [typeFilter, setTypeFilter] = useState<"all" | "수입" | "지출">(typeFilterProp ?? "all");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
+  const [entries, setEntries] = useState<CashJournalEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const entries = useMemo(() => {
-    const list: CashJournalEntry[] = [];
-    income.forEach((i) => {
-      if (i.date >= startDate && i.date <= endDate) {
-        list.push({
-          id: i.id,
-          date: i.date,
-          type: "수입",
-          category: i.type ?? "",
-          description: i.donor ?? "",
-          amount: i.amount,
-          payment_method: i.payment_method ?? i.method ?? "현금",
-          memo: i.memo,
-        });
-      }
-    });
-    expense.forEach((e) => {
-      if (e.date >= startDate && e.date <= endDate) {
-        list.push({
-          id: e.id,
-          date: e.date,
-          type: "지출",
-          category: e.category ?? "",
-          description: e.item ?? "",
-          amount: e.amount,
-          payment_method: e.payment_method ?? "현금",
-          memo: e.memo,
-        });
-      }
-    });
+  const loadData = useCallback(async () => {
+    if (!supabase) {
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const { data: viewData, error: viewError } = await supabase
+      .from("cash_journal")
+      .select("*")
+      .gte("date", startDate)
+      .lte("date", endDate)
+      .order("date", { ascending: true });
+
+    if (!viewError && viewData && viewData.length >= 0) {
+      setEntries((viewData as CashJournalEntry[]).map((e) => ({
+        id: e.id,
+        date: e.date,
+        type: e.type,
+        category: e.category ?? "",
+        description: e.description ?? "",
+        amount: e.amount,
+        payment_method: e.payment_method,
+        memo: e.memo,
+      })));
+      setLoading(false);
+      return;
+    }
+
+    const { data: incomes, error: incErr } = await supabase
+      .from("income")
+      .select("*")
+      .gte("date", startDate)
+      .lte("date", endDate);
+    const { data: expenses, error: expErr } = await supabase
+      .from("expense")
+      .select("*")
+      .gte("date", startDate)
+      .lte("date", endDate);
+
+    if (incErr || expErr) {
+      console.error(incErr || expErr);
+      toast("데이터 로드 실패: " + (incErr?.message || expErr?.message), "err");
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
+
+    const list: CashJournalEntry[] = [
+      ...(incomes ?? []).map((i) => toEntryFromIncome(i as Income)),
+      ...(expenses ?? []).map((e) => toEntryFromExpense(e as Expense)),
+    ];
     list.sort((a, b) => {
       const d = a.date.localeCompare(b.date);
       return d !== 0 ? d : (a.type === "수입" ? -1 : 1);
     });
-    return list;
-  }, [income, expense, startDate, endDate]);
+    setEntries(list);
+    setLoading(false);
+  }, [startDate, endDate, toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const filtered = useMemo(() => {
     let r = entries;
@@ -115,6 +169,15 @@ export function CashJournal({ income, expense, typeFilter: typeFilterProp, onExp
       URL.revokeObjectURL(a.href);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
+        <span className="ml-3 text-gray-600">현금출납장 로딩 중...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -175,7 +238,7 @@ export function CashJournal({ income, expense, typeFilter: typeFilterProp, onExp
             </thead>
             <tbody>
               {withBalance.length === 0 ? (
-                <tr><td colSpan={8} className="py-12 text-center text-gray-500">데이터가 없습니다.</td></tr>
+                <tr><td colSpan={8} className="py-12 text-center text-gray-500">해당 기간 데이터가 없습니다.</td></tr>
               ) : (
                 withBalance.map((e) => (
                   <tr key={e.id} className="border-b border-gray-100 hover:bg-gray-50/50">

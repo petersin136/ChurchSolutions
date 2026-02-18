@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import type { Budget } from "@/types/db";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -10,68 +11,82 @@ const DEFAULT_INCOME_CATEGORIES = ["십일조", "감사헌금", "주일헌금", 
 const DEFAULT_EXPENSE_CATEGORIES = ["인건비", "사역비", "관리비", "선교비", "교육비", "행사비", "기타지출"];
 
 export interface BudgetManagementProps {
-  fiscalYear: string;
-  budgets: Budget[];
-  onSave: (rows: { category_type: "수입" | "지출"; category: string; monthly_amounts: Record<string, number>; annual_total: number }[]) => void;
-  onLoadLastYear?: (year: string) => Budget[];
+  /** 초기 회계연도 (기본: 현재 연도) */
+  fiscalYear?: string;
+  /** 토스트 메시지 */
+  toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function BudgetManagement({
-  fiscalYear,
-  budgets,
-  onSave,
-  onLoadLastYear,
-}: BudgetManagementProps) {
+function toAmounts(monthly_amounts: Record<string, number> | null | undefined): Record<number, number> {
+  return MONTHS.reduce((acc, m) => {
+    acc[m] = Number((monthly_amounts || {})[String(m)]) || 0;
+    return acc;
+  }, {} as Record<number, number>);
+}
+
+export function BudgetManagement({ fiscalYear = String(new Date().getFullYear()), toast }: BudgetManagementProps) {
   const [year, setYear] = useState(fiscalYear);
-  const [incomeRows, setIncomeRows] = useState<{ category: string; amounts: Record<number, number> }[]>(() => {
-    const existing = budgets.filter((b) => b.category_type === "수입");
-    if (existing.length) {
-      return existing.map((b) => ({
-        category: b.category,
-        amounts: MONTHS.reduce((acc, m) => {
-          acc[m] = Number((b.monthly_amounts || {})[String(m)]) || 0;
-          return acc;
-        }, {} as Record<number, number>),
-      }));
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [incomeRows, setIncomeRows] = useState<{ category: string; amounts: Record<number, number> }[]>([]);
+  const [expenseRows, setExpenseRows] = useState<{ category: string; amounts: Record<number, number> }[]>([]);
+
+  const loadBudget = async (selectedYear: string) => {
+    if (!supabase) {
+      setLoading(false);
+      setIncomeRows(DEFAULT_INCOME_CATEGORIES.map((cat) => ({ category: cat, amounts: MONTHS.reduce((acc, m) => ({ ...acc, [m]: 0 }), {} as Record<number, number>) })));
+      setExpenseRows(DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: MONTHS.reduce((acc, m) => ({ ...acc, [m]: 0 }), {} as Record<number, number>) })));
+      return;
     }
-    return DEFAULT_INCOME_CATEGORIES.map((cat) => ({
-      category: cat,
-      amounts: MONTHS.reduce((acc, m) => {
-        acc[m] = 0;
-        return acc;
-      }, {} as Record<number, number>),
-    }));
-  });
-  const [expenseRows, setExpenseRows] = useState<{ category: string; amounts: Record<number, number> }[]>(() => {
-    const existing = budgets.filter((b) => b.category_type === "지출");
-    if (existing.length) {
-      return existing.map((b) => ({
-        category: b.category,
-        amounts: MONTHS.reduce((acc, m) => {
-          acc[m] = Number((b.monthly_amounts || {})[String(m)]) || 0;
-          return acc;
-        }, {} as Record<number, number>),
-      }));
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("budget")
+      .select("*")
+      .eq("fiscal_year", selectedYear)
+      .order("category_type", { ascending: true })
+      .order("category", { ascending: true });
+    if (error) {
+      console.error(error);
+      toast("데이터 로드 실패: " + error.message, "err");
+      setIncomeRows(DEFAULT_INCOME_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) })));
+      setExpenseRows(DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) })));
+      setLoading(false);
+      return;
     }
-    return DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({
-      category: cat,
-      amounts: MONTHS.reduce((acc, m) => {
-        acc[m] = 0;
-        return acc;
-      }, {} as Record<number, number>),
-    }));
-  });
+    const budgets = (data ?? []) as Budget[];
+    const inc = budgets.filter((b) => b.category_type === "수입");
+    const exp = budgets.filter((b) => b.category_type === "지출");
+    setIncomeRows(
+      inc.length > 0
+        ? inc.map((b) => ({ category: b.category, amounts: toAmounts(b.monthly_amounts) }))
+        : DEFAULT_INCOME_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) }))
+    );
+    setExpenseRows(
+      exp.length > 0
+        ? exp.map((b) => ({ category: b.category, amounts: toAmounts(b.monthly_amounts) }))
+        : DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) }))
+    );
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadBudget(year);
+  }, [year]);
 
   const incomeTotals = useMemo(() => {
     const byMonth: Record<number, number> = {};
-    MONTHS.forEach((m) => { byMonth[m] = incomeRows.reduce((s, r) => s + (r.amounts[m] || 0), 0); });
+    MONTHS.forEach((m) => {
+      byMonth[m] = incomeRows.reduce((s, r) => s + (r.amounts[m] || 0), 0);
+    });
     const annual = Object.values(byMonth).reduce((s, v) => s + v, 0);
     return { byMonth, annual };
   }, [incomeRows]);
 
   const expenseTotals = useMemo(() => {
     const byMonth: Record<number, number> = {};
-    MONTHS.forEach((m) => { byMonth[m] = expenseRows.reduce((s, r) => s + (r.amounts[m] || 0), 0); });
+    MONTHS.forEach((m) => {
+      byMonth[m] = expenseRows.reduce((s, r) => s + (r.amounts[m] || 0), 0);
+    });
     const annual = Object.values(byMonth).reduce((s, v) => s + v, 0);
     return { byMonth, annual };
   }, [expenseRows]);
@@ -85,50 +100,84 @@ export function BudgetManagement({
     setExpenseRows((prev) => prev.map((r, i) => (i === rowIndex ? { ...r, amounts: { ...r.amounts, [month]: value } } : r)));
   };
 
-  const copyFromLastYear = () => {
+  const copyFromLastYear = async () => {
     const lastYear = String(Number(year) - 1);
-    const loaded = onLoadLastYear?.(lastYear) ?? [];
-    if (loaded.length === 0) return;
-    const inc = loaded.filter((b) => b.category_type === "수입").map((b) => ({
-      category: b.category,
-      amounts: MONTHS.reduce((acc, m) => {
-        acc[m] = Number((b.monthly_amounts || {})[String(m)]) || 0;
-        return acc;
-      }, {} as Record<number, number>),
-    }));
-    const exp = loaded.filter((b) => b.category_type === "지출").map((b) => ({
-      category: b.category,
-      amounts: MONTHS.reduce((acc, m) => {
-        acc[m] = Number((b.monthly_amounts || {})[String(m)]) || 0;
-        return acc;
-      }, {} as Record<number, number>),
-    }));
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("budget")
+      .select("*")
+      .eq("fiscal_year", lastYear)
+      .order("category_type", { ascending: true })
+      .order("category", { ascending: true });
+    if (error || !data?.length) {
+      toast("전년도 데이터가 없습니다.", "warn");
+      return;
+    }
+    const budgets = data as Budget[];
+    const inc = budgets.filter((b) => b.category_type === "수입").map((b) => ({ category: b.category, amounts: toAmounts(b.monthly_amounts) }));
+    const exp = budgets.filter((b) => b.category_type === "지출").map((b) => ({ category: b.category, amounts: toAmounts(b.monthly_amounts) }));
     if (inc.length) setIncomeRows(inc);
     if (exp.length) setExpenseRows(exp);
+    toast("전년도 예산을 불러왔습니다.", "ok");
   };
 
-  const handleSave = () => {
-    const rows = [
+  const handleSave = async () => {
+    if (!supabase) return;
+    setSaving(true);
+    const budgetRows = [
       ...incomeRows.map((r) => ({
+        fiscal_year: year,
         category_type: "수입" as const,
         category: r.category,
+        sub_category: null as string | null,
         monthly_amounts: MONTHS.reduce((acc, m) => {
           acc[String(m)] = r.amounts[m] || 0;
           return acc;
         }, {} as Record<string, number>),
         annual_total: Object.values(r.amounts).reduce((s, v) => s + v, 0),
+        notes: null as string | null,
       })),
       ...expenseRows.map((r) => ({
+        fiscal_year: year,
         category_type: "지출" as const,
         category: r.category,
+        sub_category: null as string | null,
         monthly_amounts: MONTHS.reduce((acc, m) => {
           acc[String(m)] = r.amounts[m] || 0;
           return acc;
         }, {} as Record<string, number>),
         annual_total: Object.values(r.amounts).reduce((s, v) => s + v, 0),
+        notes: null as string | null,
       })),
     ];
-    onSave(rows);
+    try {
+      const { error: delErr } = await supabase.from("budget").delete().eq("fiscal_year", year);
+      if (delErr) {
+        toast("저장 실패: " + delErr.message, "err");
+        setSaving(false);
+        return;
+      }
+      const { error: insErr } = await supabase.from("budget").insert(
+        budgetRows.map((row) => ({
+          fiscal_year: row.fiscal_year,
+          category_type: row.category_type,
+          category: row.category,
+          sub_category: row.sub_category,
+          monthly_amounts: row.monthly_amounts,
+          annual_total: row.annual_total,
+          notes: row.notes,
+        }))
+      );
+      if (insErr) {
+        toast("저장 실패: " + insErr.message, "err");
+        setSaving(false);
+        return;
+      }
+      toast("예산이 저장되었습니다");
+    } catch (e) {
+      toast("저장 실패: " + (e instanceof Error ? e.message : String(e)), "err");
+    }
+    setSaving(false);
   };
 
   const renderCell = (
@@ -155,6 +204,15 @@ export function BudgetManagement({
     </td>
   );
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
+        <span className="ml-3 text-gray-600">예산 데이터 로딩 중...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-4">
@@ -172,8 +230,8 @@ export function BudgetManagement({
         <button type="button" onClick={copyFromLastYear} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50">
           전년도 복사
         </button>
-        <button type="button" onClick={handleSave} className="px-4 py-2 rounded-lg bg-[#1e3a5f] text-white text-sm font-semibold hover:opacity-90">
-          저장
+        <button type="button" onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg bg-[#1e3a5f] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-60">
+          {saving ? "저장 중..." : "저장"}
         </button>
       </div>
 

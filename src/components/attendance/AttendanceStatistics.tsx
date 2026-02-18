@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
@@ -8,10 +9,11 @@ import type { Attendance } from "@/types/db";
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 export interface AttendanceStatisticsProps {
-  members: Member[];
-  attendanceList: Attendance[];
+  members?: Member[];
+  attendanceList?: Attendance[];
   startDate?: string;
   endDate?: string;
+  toast?: (msg: string, type?: "ok" | "err" | "warn") => void;
   onExportExcel?: (csv: string, filename: string) => void;
 }
 
@@ -34,10 +36,11 @@ function getSundaysBetween(start: string, end: string): string[] {
 }
 
 export function AttendanceStatistics({
-  members,
-  attendanceList,
+  members: membersProp,
+  attendanceList: attendanceListProp,
   startDate: startProp,
   endDate: endProp,
+  toast,
   onExportExcel,
 }: AttendanceStatisticsProps) {
   const thisYear = new Date().getFullYear();
@@ -47,6 +50,36 @@ export function AttendanceStatistics({
   const [endDate, setEndDate] = useState(endProp ?? defaultEnd);
   const [deptFilter, setDeptFilter] = useState("");
   const [sortBy, setSortBy] = useState<"rate" | "name">("rate");
+  const [membersFetched, setMembersFetched] = useState<Member[]>([]);
+  const [attendanceFetched, setAttendanceFetched] = useState<Attendance[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const useSupabase = !!supabase;
+  const members = useSupabase ? membersFetched : (membersProp ?? []);
+  const attendanceList = useSupabase ? attendanceFetched : (attendanceListProp ?? []);
+
+  const loadFromSupabase = useCallback(async () => {
+    if (!supabase) return;
+    setLoading(true);
+    const [memRes, attRes] = await Promise.all([
+      supabase.from("members").select("id, name, dept, mokjang, member_status, status").order("name"),
+      supabase.from("attendance").select("*").gte("date", startDate).lte("date", endDate),
+    ]);
+    if (memRes.error) {
+      console.error(memRes.error);
+      toast?.("데이터 로드 실패: " + memRes.error.message, "err");
+    } else setMembersFetched((memRes.data ?? []) as Member[]);
+    if (attRes.error) {
+      console.error(attRes.error);
+      toast?.("출석 데이터 로드 실패: " + attRes.error.message, "err");
+      setAttendanceFetched([]);
+    } else setAttendanceFetched((attRes.data ?? []) as Attendance[]);
+    setLoading(false);
+  }, [startDate, endDate, toast]);
+
+  useEffect(() => {
+    if (useSupabase) loadFromSupabase();
+  }, [useSupabase, loadFromSupabase]);
 
   const activeMembers = useMemo(() => getActiveMembers(members), [members]);
   const sundays = useMemo(() => getSundaysBetween(startDate, endDate), [startDate, endDate]);
@@ -148,6 +181,15 @@ export function AttendanceStatistics({
     onExportExcel?.(csv, `출석통계_${startDate}_${endDate}.csv`);
   };
 
+  if (useSupabase && loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
+        <span className="ml-3 text-gray-600">출석 데이터 로딩 중...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
@@ -222,7 +264,14 @@ export function AttendanceStatistics({
             </tr>
           </thead>
           <tbody>
-            {tableRows.map((r) => (
+            {tableRows.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="py-12 text-center text-gray-500">
+                  {useSupabase ? "기간 내 성도·출석 데이터가 없습니다. 성도 관리와 출석 체크에서 데이터를 등록해 주세요." : "표시할 데이터가 없습니다."}
+                </td>
+              </tr>
+            ) : (
+            tableRows.map((r) => (
               <tr key={r.member.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                 <td className="py-3 px-4 font-medium">{r.member.name}</td>
                 <td className="py-3 px-4 text-gray-600">{r.member.dept || "-"}</td>
@@ -234,7 +283,8 @@ export function AttendanceStatistics({
                 <td className="py-3 px-4 text-right text-gray-400">{fmt(r.기타)}</td>
                 <td className="py-3 px-4 text-right font-medium">{r.출석률}%</td>
               </tr>
-            ))}
+            ))
+            )}
           </tbody>
         </table>
       </div>

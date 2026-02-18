@@ -24,20 +24,36 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
 
   const load = async () => {
     if (!supabase) return;
-    const [depts, enrolls, hist] = await Promise.all([
-      supabase.from("school_departments").select("*").order("sort_order"),
-      supabase.from("school_enrollments").select("*").eq("is_active", true),
-      supabase.from("school_transfer_history").select("*").order("created_at", { ascending: false }).limit(50),
-    ]);
-    const deptList = (depts.data as SchoolDepartment[]) ?? [];
-    setDepartments(deptList.filter((d) => d.is_active !== false));
-    setEnrollments((enrolls.data as SchoolEnrollment[]) ?? []);
-    setHistory((hist.data as SchoolTransferHistory[]) ?? []);
+    setLoading(true);
+    try {
+      const [depts, enrolls, hist] = await Promise.all([
+        supabase.from("school_departments").select("*").order("sort_order"),
+        supabase.from("school_enrollments").select("*").eq("is_active", true),
+        supabase.from("school_transfer_history").select("*").order("created_at", { ascending: false }).limit(50),
+      ]);
+      if (depts.error) {
+        toast("부서 로드 실패: " + depts.error.message, "err");
+        return;
+      }
+      if (enrolls.error) {
+        toast("등록 목록 로드 실패: " + enrolls.error.message, "err");
+        return;
+      }
+      if (hist.error) {
+        toast("이력 로드 실패: " + hist.error.message, "err");
+        return;
+      }
+      const deptList = (depts.data as SchoolDepartment[]) ?? [];
+      setDepartments(deptList.filter((d) => d.is_active !== false));
+      setEnrollments((enrolls.data as SchoolEnrollment[]) ?? []);
+      setHistory((hist.data as SchoolTransferHistory[]) ?? []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    setLoading(true);
-    load().finally(() => setLoading(false));
+    load();
   }, []);
 
   const filtered = fromDeptId ? enrollments.filter((e) => e.department_id === fromDeptId) : [];
@@ -58,24 +74,34 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
     }
     const toDept = departments.find((d) => d.id === toDeptId);
     const fromDept = fromDeptId ? departments.find((d) => d.id === fromDeptId) : null;
+    const transferDate = new Date().toISOString().slice(0, 10);
     try {
       for (const enrollId of selectedIds) {
         const en = enrollments.find((e) => e.id === enrollId);
         if (!en) continue;
-        await supabase.from("school_enrollments").update({ department_id: toDeptId, class_id: null }).eq("id", enrollId);
-        await supabase.from("school_transfer_history").insert({
+        const { error: updErr } = await supabase.from("school_enrollments").update({ department_id: toDeptId, class_id: null }).eq("id", enrollId);
+        if (updErr) {
+          toast("이동 실패: " + updErr.message, "err");
+          return;
+        }
+        const { error: insErr } = await supabase.from("school_transfer_history").insert({
           member_id: en.member_id,
-          from_department_id: fromDeptId,
-          from_department_name: fromDept?.name,
+          from_department_id: fromDeptId ?? null,
+          from_department_name: fromDept?.name ?? null,
           to_department_id: toDeptId,
-          to_department_name: toDept?.name,
+          to_department_name: toDept?.name ?? null,
+          transfer_date: transferDate,
           reason: reason.trim() || null,
         });
+        if (insErr) {
+          toast("이력 저장 실패: " + insErr.message, "err");
+          return;
+        }
       }
       toast("부서 이동이 완료되었습니다", "ok");
       setSelectedIds(new Set());
       setReason("");
-      load();
+      await load();
     } catch (err) {
       console.error(err);
       toast("이동 처리 실패", "err");

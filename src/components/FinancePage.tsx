@@ -3076,11 +3076,11 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
           {activeTab === "givingStatus" && <GivingStatusTab donors={donors} offerings={offerings} categories={DEFAULT_CATEGORIES} />}
           {activeTab === "donor" && <DonorTab donors={donors} setDonors={setDonors} offerings={offerings} />}
           {activeTab === "expense" && <ExpenseTab expenses={expenses} setExpenses={setExpenses} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} />}
-          {activeTab === "cashJournal" && <CashJournal income={offerings.map(o => ({ id: o.id, date: o.date, amount: o.amount, type: DEFAULT_CATEGORIES.find(c => c.id === o.categoryId)?.name, donor: o.donorName, method: o.method, memo: o.note }))} expense={expenses.map(e => ({ id: e.id, date: e.date, amount: e.amount, category: EXPENSE_CATEGORIES.find(c => c.id === e.categoryId)?.name, item: e.description, memo: e.note }))} />}
-          {activeTab === "budgetManagement" && <BudgetManagement fiscalYear={String(new Date().getFullYear())} budgets={[]} onSave={() => {}} />}
-          {activeTab === "budgetVsActual" && <BudgetVsActual year={String(new Date().getFullYear())} month={new Date().getMonth() + 1} offerings={offerings} expenses={expenses} budgets={[]} incomeCategories={DEFAULT_CATEGORIES} expenseCategories={EXPENSE_CATEGORIES} />}
+          {activeTab === "cashJournal" && <CashJournal toast={toast ?? (() => {})} />}
+          {activeTab === "budgetManagement" && <BudgetManagement fiscalYear={String(new Date().getFullYear())} toast={toast ?? (() => {})} />}
+          {activeTab === "budgetVsActual" && <BudgetVsActual year={String(new Date().getFullYear())} month={new Date().getMonth() + 1} toast={toast ?? (() => {})} />}
           {activeTab === "donorStatistics" && <DonorStatistics year={String(new Date().getFullYear())} offerings={offerings} donors={donors} categories={DEFAULT_CATEGORIES} />}
-          {activeTab === "specialAccounts" && <SpecialAccounts accounts={[]} transactions={{}} />}
+          {activeTab === "specialAccounts" && <SpecialAccounts toast={toast ?? (() => {})} />}
           {activeTab === "report" && <ReportTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} />}
           {activeTab === "budgetActual" && <BudgetActualTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} expenseCategories={EXPENSE_CATEGORIES} budgetByYear={budgetByYear} setBudgetByYear={setBudgetByYear} />}
           {activeTab === "budget" && <BudgetTab departments={DEFAULT_DEPARTMENTS} expenses={expenses} />}
