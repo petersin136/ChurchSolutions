@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
-import type { DB, Member, Note, AttStatus, NewFamilyProgram } from "@/types/db";
+import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance, ServiceType } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum } from "@/lib/store";
 import { compressImage } from "@/utils/imageCompressor";
-import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Sliders } from "lucide-react";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
+import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics, ServiceTypeSettings } from "@/components/attendance";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -2029,6 +2030,19 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [noteFilterBy, setNoteFilterBy] = useState<"all" | "group" | "dept">("all");
   const [noteFilterValue, setNoteFilterValue] = useState("");
 
+  // 출결 Phase 3: 예배별 출결
+  type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "serviceType" | "weekly";
+  const DEFAULT_SERVICE_TYPES: ServiceType[] = [
+    { id: "st-1", name: "주일1부예배", day_of_week: 0, default_time: "09:00", is_active: true, sort_order: 0 },
+    { id: "st-2", name: "주일2부예배", day_of_week: 0, default_time: "11:00", is_active: true, sort_order: 1 },
+    { id: "st-3", name: "수요예배", day_of_week: 3, default_time: "19:30", is_active: true, sort_order: 2 },
+    { id: "st-4", name: "금요기도회", day_of_week: 5, default_time: "21:00", is_active: true, sort_order: 3 },
+    { id: "st-5", name: "새벽기도", day_of_week: undefined, default_time: "05:30", is_active: true, sort_order: 4 },
+  ];
+  const [attendanceSubTab, setAttendanceSubTab] = useState<AttendanceSubTab>("dashboard");
+  const [dateBasedAttendance, setDateBasedAttendance] = useState<Attendance[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(DEFAULT_SERVICE_TYPES);
+
   const persist = useCallback(() => { /* 부모에서 db 변경 시 자동 저장 */ }, []);
 
   const toastIdRef = useRef(0);
@@ -2238,7 +2252,94 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 24 }}>
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} />}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} />}
-          {activeSub === "attendance" && <AttendanceSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} setCurrentWeek={setCurrentWeek} />}
+          {activeSub === "attendance" && (
+            <>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
+                {[
+                  { id: "dashboard" as const, label: "대시보드", Icon: LayoutDashboard },
+                  { id: "check" as const, label: "출석 체크", Icon: CalendarCheck },
+                  { id: "absentee" as const, label: "결석자 관리", Icon: UserX },
+                  { id: "statistics" as const, label: "출석 통계", Icon: BarChart3 },
+                  { id: "serviceType" as const, label: "예배 설정", Icon: Sliders },
+                  { id: "weekly" as const, label: "52주 출석", Icon: ListOrdered },
+                ].map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setAttendanceSubTab(id)}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10,
+                      fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer",
+                      background: attendanceSubTab === id ? C.navy : "transparent",
+                      color: attendanceSubTab === id ? "#fff" : C.text,
+                      borderWidth: 1, borderStyle: "solid", borderColor: attendanceSubTab === id ? C.navy : C.border,
+                    }}
+                  >
+                    <Icon style={{ width: 18, height: 18 }} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {attendanceSubTab === "dashboard" && (
+                <AttendanceDashboard
+                  members={db.members}
+                  attendanceList={dateBasedAttendance}
+                  serviceTypes={serviceTypes}
+                  onOpenCheck={() => setAttendanceSubTab("check")}
+                  onOpenAbsentee={() => setAttendanceSubTab("absentee")}
+                  onOpenAbsenteeList={() => setAttendanceSubTab("absentee")}
+                />
+              )}
+              {attendanceSubTab === "check" && (
+                <AttendanceCheck
+                  members={db.members}
+                  serviceTypes={serviceTypes}
+                  attendanceList={dateBasedAttendance}
+                  onSave={async (records) => {
+                    const key = (r: Partial<Attendance>) => `${r.member_id}-${r.date}-${r.service_type}`;
+                    setDateBasedAttendance(prev => {
+                      const next = prev.filter(r => !records.some(rec => key(rec) === `${r.member_id}-${r.date}-${r.service_type}`));
+                      records.forEach(r => {
+                        next.push({ id: (r as Attendance).id || `att-${key(r)}`, member_id: r.member_id!, date: r.date!, status: r.status!, service_type: r.service_type, check_in_method: "수동", checked_by: r.checked_by } as Attendance);
+                      });
+                      return next;
+                    });
+                    toast("출석이 저장되었습니다", "ok");
+                  }}
+                />
+              )}
+              {attendanceSubTab === "absentee" && (
+                <AbsenteeManagement
+                  members={db.members}
+                  attendanceList={dateBasedAttendance}
+                  consecutiveWeeks={3}
+                  onAddVisit={(memberId) => { setNoteTargetId(memberId); setShowNoteModal(true); toast("심방 등록은 기도/메모에서 기록해 주세요", "ok"); }}
+                />
+              )}
+              {attendanceSubTab === "statistics" && (
+                <AttendanceStatistics
+                  members={db.members}
+                  attendanceList={dateBasedAttendance}
+                  onExportExcel={(csv, filename) => {
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = filename;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    toast("다운로드되었습니다", "ok");
+                  }}
+                />
+              )}
+              {attendanceSubTab === "serviceType" && (
+                <ServiceTypeSettings
+                  serviceTypes={serviceTypes}
+                  onSave={async (list) => { setServiceTypes(list); toast("예배 유형이 저장되었습니다", "ok"); }}
+                />
+              )}
+              {attendanceSubTab === "weekly" && <AttendanceSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} setCurrentWeek={setCurrentWeek} />}
+            </>
+          )}
           {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openDetail={openDetail} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
           {activeSub === "reports" && <ReportsSub db={db} currentWeek={currentWeek} toast={toast} />}

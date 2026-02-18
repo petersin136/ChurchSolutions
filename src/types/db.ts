@@ -107,6 +107,31 @@ export interface NewFamilyProgram {
 
 export type AttStatus = "p" | "a" | "n";
 
+/** 날짜+예배별 출결 (Phase 3) */
+export interface Attendance {
+  id: string;
+  member_id: string;
+  date: string;
+  status: "출석" | "온라인" | "결석" | "병결" | "기타";
+  service_type?: string;
+  check_in_time?: string;
+  check_in_method?: "수동" | "QR" | "앱";
+  note?: string;
+  checked_by?: string;
+  created_at?: string;
+}
+
+export interface ServiceType {
+  id: string;
+  church_id?: string;
+  name: string;
+  day_of_week?: number;
+  default_time?: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+}
+
 export interface Note {
   date: string;
   type: "memo" | "prayer" | "visit" | "event";
