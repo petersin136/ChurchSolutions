@@ -54,10 +54,17 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
     if (search.trim()) q = q.ilike("name", `%${search.trim()}%`);
     if (deptFilter) q = q.eq("dept", deptFilter);
     if (groupFilter) q = q.or(`mokjang.eq.${groupFilter},group.eq.${groupFilter}`);
-    q.then(({ data, error }) => {
-      if (error && toast) toast("수신자 검색 실패: " + error.message, "err");
-      setSearchMembers((data as Member[]) ?? []);
-    }).finally(() => setLoading(false));
+    (async () => {
+      try {
+        const { data, error } = await q;
+        if (error && toast) toast("수신자 검색 실패: " + error.message, "err");
+        setSearchMembers((data as Member[]) ?? []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [search, deptFilter, groupFilter, toast]);
 
   const sourceList = useMemo(() => {
