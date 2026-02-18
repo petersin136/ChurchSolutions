@@ -28,7 +28,7 @@ interface SettingsPageProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-const SETTINGS_TABS: { id: SettingsSubTab; label: string; Icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }> }[] = [
+const SETTINGS_TABS: { id: SettingsSubTab; label: string; Icon: React.ComponentType<any> }[] = [
   { id: "basic", label: "기본 설정", Icon: Settings },
   { id: "organization", label: "조직 관리", Icon: Building2 },
   { id: "roles", label: "역할/권한", Icon: Shield },

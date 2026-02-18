@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode, type ComponentType } from "react";
 import { Home, type LucideIcon } from "lucide-react";
+
+/** 사이드바 메뉴 아이콘 (LucideIcon, ComponentType<any> 등 모두 허용) */
+export type NavItemIcon = ComponentType<any>;
 
 /* ---------- Visit 탭과 동일한 픽셀/색상 (VisitCounselPage.tsx 수정 금지) ---------- */
 const LAYOUT = {
@@ -50,7 +53,7 @@ function useIsMobile(bp = 768) {
 
 export interface NavSection {
   sectionLabel: string;
-  items: { id: string; Icon: LucideIcon; label: string; badge?: number }[];
+  items: { id: string; Icon: NavItemIcon; label: string; badge?: number }[];
 }
 
 export interface UnifiedPageLayoutProps {
