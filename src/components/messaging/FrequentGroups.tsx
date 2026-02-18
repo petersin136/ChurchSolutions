@@ -33,16 +33,23 @@ export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
       return;
     }
     setLoading(true);
-    supabase.from("frequent_groups").select("id, name, member_ids").order("name").then(({ data, error }) => {
-      if (error && toast) toast("명단 로드 실패: " + error.message, "err");
-      const rows = (data ?? []).map((r: Record<string, unknown>) => ({
-        id: String(r.id),
-        name: String(r.name ?? ""),
-        member_ids: Array.isArray(r.member_ids) ? (r.member_ids as string[]) : [],
-      }));
-      setList(rows);
-      onSave(rows);
-    }).finally(() => setLoading(false));
+    (async () => {
+      try {
+        const { data, error } = await supabase.from("frequent_groups").select("id, name, member_ids").order("name");
+        if (error && toast) toast("명단 로드 실패: " + error.message, "err");
+        const rows = (data ?? []).map((r: Record<string, unknown>) => ({
+          id: String(r.id),
+          name: String(r.name ?? ""),
+          member_ids: Array.isArray(r.member_ids) ? (r.member_ids as string[]) : [],
+        }));
+        setList(rows);
+        onSave(rows);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const handleAdd = async () => {
