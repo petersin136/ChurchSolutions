@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { DB, Member, Note, Visit, Income, MemberStatusHistory, NewFamilyProgram } from "@/types/db";
+import { supabase } from "@/lib/supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 
 const STATUS_BADGE_COLOR: Record<string, string> = {
@@ -25,6 +26,20 @@ export interface Member360ViewProps {
 
 export function Member360View({ member, db, statusHistory = [], newFamilyProgram, onEdit, onClose }: Member360ViewProps) {
   const [activeTab, setActiveTab] = useState<"info" | "attendance" | "giving" | "visits" | "newfamily" | "history">("info");
+  const [dbStatusHistory, setDbStatusHistory] = useState<MemberStatusHistory[]>([]);
+
+  useEffect(() => {
+    if (!supabase || !member.id) {
+      setDbStatusHistory([]);
+      return;
+    }
+    supabase.from("member_status_history").select("id, member_id, previous_status, new_status, changed_at, reason, changed_by").eq("member_id", member.id).order("changed_at", { ascending: false }).then(({ data, error }) => {
+      if (error) return;
+      setDbStatusHistory((data ?? []) as MemberStatusHistory[]);
+    });
+  }, [member.id]);
+
+  const displayStatusHistory = dbStatusHistory.length > 0 ? dbStatusHistory : statusHistory;
 
   const initials = useMemo(() => {
     const n = member.name?.trim() || "";
@@ -312,7 +327,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
 
         {activeTab === "history" && (
           <div className="space-y-3">
-            {statusHistory.length === 0 ? <p className="text-sm text-gray-500">상태 변경 이력이 없습니다.</p> : statusHistory.map((h) => (
+            {displayStatusHistory.length === 0 ? <p className="text-sm text-gray-500">상태 변경 이력이 없습니다.</p> : displayStatusHistory.map((h) => (
               <div key={h.id} className="border border-gray-100 rounded-lg p-3 text-sm">
                 <div className="text-gray-500">{h.changed_at?.slice(0, 10)}</div>
                 <div className="font-medium text-gray-800">{h.previous_status || "-"} → {h.new_status}</div>

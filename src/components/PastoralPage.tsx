@@ -4,6 +4,8 @@ import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSPrope
 import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance, ServiceType } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
+import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Sliders } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
@@ -642,7 +644,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const [deptF, setDeptF] = useState("all");
   const [roleF, setRoleF] = useState("all");
   const [mokjangF, setMokjangF] = useState("all");
-  const [statusF, setStatusF] = useState("활동");
+  const [statusF, setStatusF] = useState("all");
   const [newFamilyOnly, setNewFamilyOnly] = useState(false);
   const [prospectOnly, setProspectOnly] = useState(false);
   const [baptismF, setBaptismF] = useState("all");
@@ -655,6 +657,21 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const printDropdownRef = useRef<HTMLDivElement>(null);
   const PAGE_SIZE_MEM = 10;
   const depts = getDepts(db);
+
+  /* 성도 목록: 대시보드와 동일하게 Supabase에서 직접 로드 */
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.from("members").select("*").order("created_at", { ascending: true }).then(({ data, error }) => {
+      console.log("[MembersSub] members load:", { count: data?.length ?? 0, data: data ?? null, error: error ?? null });
+      if (error) {
+        console.error("[MembersSub] members load error:", error.message, error.details);
+        return;
+      }
+      const members = (data ?? []).map((r: Record<string, unknown>) => toMember(r));
+      setDb(prev => ({ ...prev, members }));
+    });
+  }, [setDb]);
+
   useEffect(() => {
     if (!printOpen) return;
     const close = (e: MouseEvent) => { if (printDropdownRef.current && !printDropdownRef.current.contains(e.target as Node)) setPrintOpen(false); };
@@ -665,6 +682,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const clearSelection = () => setSelectedMemberIds(new Set());
   const mokjangList = getMokjangList(db);
 
+  /* 대시보드와 동일 조건: status !== "졸업/전출" (DashboardSub는 x.status만 사용) */
   const filtered = useMemo(() => {
     let r = db.members.filter(m => (m.member_status ?? m.status) !== "졸업/전출");
     if (search) {
@@ -2027,9 +2045,19 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   settings: { title: "설정", desc: "교회 정보 및 데이터 관리" },
 };
 
+const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "reports", "settings"];
+
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const mob = useIsMobile();
-  const [activeSub, setActiveSub] = useState<SubPage>("dashboard");
+  const [activeSub, setActiveSubState] = useState<SubPage>(() => {
+    if (typeof window === "undefined") return "dashboard";
+    const v = localStorage.getItem("pastoral_active_sub");
+    return (SUB_PAGE_IDS.includes(v as SubPage) ? v : "dashboard") as SubPage;
+  });
+  const setActiveSub = useCallback((id: SubPage) => setActiveSubState(id), []);
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("pastoral_active_sub", activeSub);
+  }, [activeSub]);
   const [currentWeek, setCurrentWeek] = useState(getWeekNum);
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: string }[]>([]);
 
@@ -2065,6 +2093,16 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
   // 출결 Phase 3: 예배별 출결
   type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "serviceType" | "weekly";
+  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "check", "absentee", "statistics", "serviceType", "weekly"];
+  const [attendanceSubTab, setAttendanceSubTabState] = useState<AttendanceSubTab>(() => {
+    if (typeof window === "undefined") return "dashboard";
+    const v = localStorage.getItem("pastoral_attendance_sub_tab");
+    return (ATTENDANCE_SUB_IDS.includes(v as AttendanceSubTab) ? v : "dashboard") as AttendanceSubTab;
+  });
+  const setAttendanceSubTab = useCallback((id: AttendanceSubTab) => setAttendanceSubTabState(id), []);
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("pastoral_attendance_sub_tab", attendanceSubTab);
+  }, [attendanceSubTab]);
   const DEFAULT_SERVICE_TYPES: ServiceType[] = [
     { id: "st-1", name: "주일1부예배", day_of_week: 0, default_time: "09:00", is_active: true, sort_order: 0 },
     { id: "st-2", name: "주일2부예배", day_of_week: 0, default_time: "11:00", is_active: true, sort_order: 1 },
@@ -2072,7 +2110,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     { id: "st-4", name: "금요기도회", day_of_week: 5, default_time: "21:00", is_active: true, sort_order: 3 },
     { id: "st-5", name: "새벽기도", day_of_week: undefined, default_time: "05:30", is_active: true, sort_order: 4 },
   ];
-  const [attendanceSubTab, setAttendanceSubTab] = useState<AttendanceSubTab>("dashboard");
   const [dateBasedAttendance, setDateBasedAttendance] = useState<Attendance[]>([]);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(DEFAULT_SERVICE_TYPES);
 

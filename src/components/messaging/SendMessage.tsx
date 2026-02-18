@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import type { DB } from "@/types/db";
+import { useState, useMemo, useEffect } from "react";
 import type { Member } from "@/types/db";
+import { supabase } from "@/lib/supabase";
 import { C } from "@/styles/designTokens";
 
 const SMS_MAX = 90;
@@ -21,14 +21,18 @@ export interface MessageLog {
 export interface SendMessageProps {
   members: Member[];
   onSend: (log: Omit<MessageLog, "id" | "sent_at" | "status">) => void;
+  toast?: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function SendMessage({ members, onSend }: SendMessageProps) {
+export function SendMessage({ members, onSend, toast }: SendMessageProps) {
   const [content, setContent] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("");
+  const [searchMembers, setSearchMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const byteLength = useMemo(() => {
     const enc = new TextEncoder();
@@ -38,19 +42,31 @@ export function SendMessage({ members, onSend }: SendMessageProps) {
   const maxByte = messageType === "SMS" ? SMS_MAX : LMS_MAX;
   const isOver = byteLength > maxByte;
 
-  const filteredMembers = useMemo(() => {
-    let list = members.filter((m) => m.phone && (m.member_status ?? m.status) !== "졸업/전출");
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter((m) => (m.name ?? "").toLowerCase().includes(q));
+  useEffect(() => {
+    if (!supabase) return;
+    const hasFilter = search.trim() || deptFilter || groupFilter;
+    if (!hasFilter) {
+      setSearchMembers([]);
+      return;
     }
-    if (deptFilter) list = list.filter((m) => m.dept === deptFilter);
-    if (groupFilter) list = list.filter((m) => (m.mokjang ?? m.group) === groupFilter);
-    return list;
-  }, [members, search, deptFilter, groupFilter]);
+    setLoading(true);
+    let q = supabase.from("members").select("id, name, phone, dept, mokjang, group, member_status, status").not("phone", "is", null);
+    if (search.trim()) q = q.ilike("name", `%${search.trim()}%`);
+    if (deptFilter) q = q.eq("dept", deptFilter);
+    if (groupFilter) q = q.or(`mokjang.eq.${groupFilter},group.eq.${groupFilter}`);
+    q.then(({ data, error }) => {
+      if (error && toast) toast("수신자 검색 실패: " + error.message, "err");
+      setSearchMembers((data as Member[]) ?? []);
+    }).finally(() => setLoading(false));
+  }, [search, deptFilter, groupFilter, toast]);
 
-  const depts = useMemo(() => Array.from(new Set(members.map((m) => m.dept).filter(Boolean))) as string[], [members]);
-  const groups = useMemo(() => Array.from(new Set(members.map((m) => m.mokjang ?? m.group).filter(Boolean))) as string[], [members]);
+  const sourceList = useMemo(() => {
+    const fromSearch = search.trim() || deptFilter || groupFilter ? searchMembers : members;
+    return fromSearch.filter((m) => m.phone && (m.member_status ?? m.status) !== "졸업/전출");
+  }, [members, search, deptFilter, groupFilter, searchMembers]);
+
+  const depts = useMemo(() => Array.from(new Set([...members, ...searchMembers].map((m) => m.dept).filter(Boolean))) as string[], [members, searchMembers]);
+  const groups = useMemo(() => Array.from(new Set([...members, ...searchMembers].map((m) => m.mokjang ?? m.group).filter(Boolean))) as string[], [members, searchMembers]);
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -60,22 +76,40 @@ export function SendMessage({ members, onSend }: SendMessageProps) {
       return next;
     });
   };
-  const selectAll = () => setSelectedIds(new Set(filteredMembers.map((m) => m.id)));
+  const selectAll = () => setSelectedIds(new Set(sourceList.map((m) => m.id)));
   const clearAll = () => setSelectedIds(new Set());
 
   const preview = content.replace(/\{이름\}/g, "홍길동");
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (selectedIds.size === 0 || isOver) return;
-    const names = members.filter((m) => selectedIds.has(m.id)).map((m) => m.name).join(", ");
-    onSend({
+    const names = sourceList.filter((m) => selectedIds.has(m.id)).map((m) => m.name).join(", ");
+    const payload = {
       recipient_ids: Array.from(selectedIds),
       recipient_names: names,
       content,
       message_type: messageType,
-    });
+    };
+    if (supabase) {
+      setSending(true);
+      const { error } = await supabase.from("message_logs").insert({
+        recipient_ids: payload.recipient_ids,
+        recipient_names: payload.recipient_names,
+        content: payload.content,
+        message_type: payload.message_type,
+        status: "저장됨",
+      });
+      if (error) {
+        if (toast) toast("저장 실패: " + error.message, "err");
+        setSending(false);
+        return;
+      }
+      if (toast) toast("발송 내역에 저장되었습니다.", "ok");
+    }
+    onSend(payload);
     setContent("");
     setSelectedIds(new Set());
+    setSending(false);
   };
 
   return (
@@ -107,7 +141,7 @@ export function SendMessage({ members, onSend }: SendMessageProps) {
             <button type="button" onClick={clearAll} className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm">해제</button>
           </div>
           <div style={{ maxHeight: 256, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 12 }}>
-            {filteredMembers.map((m) => (
+            {loading ? <p style={{ padding: 12, color: C.textMuted, fontSize: 13 }}>검색 중...</p> : sourceList.map((m) => (
               <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", cursor: "pointer", borderBottom: `1px solid ${C.borderLight}` }} className="hover:bg-opacity-80" onMouseEnter={(e) => { e.currentTarget.style.background = C.bg; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                 <input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => toggle(m.id)} className="rounded" />
                 <span className="text-sm">{m.name}</span>
@@ -138,10 +172,10 @@ export function SendMessage({ members, onSend }: SendMessageProps) {
           <button
             type="button"
             onClick={handleSend}
-            disabled={selectedIds.size === 0 || isOver}
-            style={{ marginTop: 16, padding: "10px 16px", borderRadius: 12, background: C.navy, color: "white", fontSize: 14, fontWeight: 600, opacity: selectedIds.size === 0 || isOver ? 0.5 : 1, cursor: selectedIds.size === 0 || isOver ? "not-allowed" : "pointer", border: "none" }}
+            disabled={selectedIds.size === 0 || isOver || sending}
+            style={{ marginTop: 16, padding: "10px 16px", borderRadius: 12, background: C.navy, color: "white", fontSize: 14, fontWeight: 600, opacity: selectedIds.size === 0 || isOver || sending ? 0.5 : 1, cursor: selectedIds.size === 0 || isOver || sending ? "not-allowed" : "pointer", border: "none" }}
           >
-            발송 (저장)
+            {sending ? "저장 중…" : "발송 (저장)"}
           </button>
         </div>
       </div>

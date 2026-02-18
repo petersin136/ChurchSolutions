@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Member } from "@/types/db";
-import type { Attendance } from "@/types/db";
 import type { ServiceType } from "@/types/db";
 
 const STATUSES = ["출석", "온라인", "결석", "병결", "기타"] as const;
@@ -14,6 +13,23 @@ const STATUS_COLORS: Record<string, string> = {
   병결: "#F59E0B",
   기타: "#9CA3AF",
 };
+
+/** DB: p=출석, o=온라인, a=결석, l=병결, n=기타 (CHECK에 'o','l' 포함하려면 attendance_enhancement.sql의 제약 확장 실행) */
+const UI_TO_DB_STATUS: Record<(typeof STATUSES)[number], "p" | "o" | "a" | "l" | "n"> = {
+  출석: "p",
+  온라인: "o",
+  결석: "a",
+  병결: "l",
+  기타: "n",
+};
+const DB_TO_UI_STATUS: Record<string, (typeof STATUSES)[number]> = {
+  p: "출석",
+  a: "결석",
+  n: "기타",
+  l: "병결",
+  o: "온라인",
+};
+if (typeof window !== "undefined") console.log("[DB_TO_UI_STATUS]", DB_TO_UI_STATUS);
 
 export interface AttendanceCheckProps {
   members: Member[];
@@ -41,7 +57,11 @@ export function AttendanceCheck({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [attendanceRecords, setAttendanceRecords] = useState<Attendance[]>([]);
+  const [statusMap, setStatusMap] = useState<Record<string, (typeof STATUSES)[number]>>({});
+  const requestIdRef = useRef(0);
+  const loadingRef = useRef(false);
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
 
   const activeMembers = useMemo(() => getActiveMembers(members), [members]);
   const depts = useMemo(() => Array.from(new Set(activeMembers.map((m) => m.dept).filter(Boolean))) as string[], [activeMembers]);
@@ -58,58 +78,58 @@ export function AttendanceCheck({
 
   const loadAttendance = useCallback(async (date: string, serviceType: string) => {
     if (!supabase) {
-      setAttendanceRecords([]);
+      setStatusMap({});
       setLoading(false);
       return;
     }
+    if (loadingRef.current) {
+      console.log("[loadAttendance 호출]", Date.now(), "스킵(이미 로딩 중)");
+      return;
+    }
+    loadingRef.current = true;
+    const myId = ++requestIdRef.current;
+    console.log("[loadAttendance 호출]", Date.now(), "requestId:", myId);
     setLoading(true);
     const { data, error } = await supabase
       .from("attendance")
       .select("*")
       .eq("date", date)
-      .eq("service_type", serviceType);
+      .eq("service_type", serviceType)
+      .order("member_id", { ascending: true });
+    loadingRef.current = false;
+    if (myId !== requestIdRef.current) return;
     if (error) {
-      console.error(error);
-      toast("데이터 로드 실패: " + error.message, "err");
-      setAttendanceRecords([]);
+      console.error("[출석 로드 실패]", error);
+      toastRef.current("데이터 로드 실패: " + error.message, "err");
+      setStatusMap({});
     } else {
-      setAttendanceRecords((data ?? []) as Attendance[]);
+      const newMap: Record<string, (typeof STATUSES)[number]> = {};
+      (data ?? []).forEach((row: { member_id?: string; status?: string }) => {
+        const uiStatus = (DB_TO_UI_STATUS[row.status ?? ""] ?? "결석") as (typeof STATUSES)[number];
+        if (row.member_id) newMap[row.member_id] = uiStatus;
+      });
+      console.log("[출석 로드]", { date, serviceType, count: (data ?? []).length, statusMap: newMap });
+      setStatusMap(newMap);
     }
     setLoading(false);
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     loadAttendance(selectedDate, selectedServiceType);
   }, [selectedDate, selectedServiceType, loadAttendance]);
 
-  const existingByMember = useMemo(() => {
-    const map: Record<string, Attendance> = {};
-    attendanceRecords.forEach((a) => {
-      map[a.member_id] = a;
-    });
-    return map;
-  }, [attendanceRecords]);
-
-  const [localStatus, setLocalStatus] = useState<Record<string, (typeof STATUSES)[number]>>({});
-
-  const getStatus = useCallback(
-    (memberId: string): (typeof STATUSES)[number] => {
-      if (localStatus[memberId]) return localStatus[memberId];
-      const existing = existingByMember[memberId];
-      if (existing && (STATUSES as readonly string[]).includes(existing.status)) return existing.status as (typeof STATUSES)[number];
-      return "결석";
-    },
-    [localStatus, existingByMember]
-  );
+  const getStatus = useCallback((memberId: string): (typeof STATUSES)[number] => {
+    return statusMap[memberId] ?? "결석";
+  }, [statusMap]);
 
   const setStatus = useCallback((memberId: string, status: (typeof STATUSES)[number]) => {
-    setLocalStatus((prev) => ({ ...prev, [memberId]: status }));
+    setStatusMap((prev) => ({ ...prev, [memberId]: status }));
   }, []);
 
   const counts = useMemo(() => {
     let 출석 = 0, 온라인 = 0, 결석 = 0, 병결 = 0, 기타 = 0;
     filteredMembers.forEach((m) => {
-      const s = getStatus(m.id);
+      const s = statusMap[m.id] ?? "결석";
       if (s === "출석") 출석++;
       else if (s === "온라인") 온라인++;
       else if (s === "결석") 결석++;
@@ -117,44 +137,51 @@ export function AttendanceCheck({
       else 기타++;
     });
     return { 출석, 온라인, 결석, 병결, 기타 };
-  }, [filteredMembers, getStatus]);
+  }, [filteredMembers, statusMap]);
+
+  const getWeekNumForDate = (dateStr: string) => {
+    const d = new Date(dateStr + "T12:00:00");
+    const s = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil(((d.getTime() - s.getTime()) / 864e5 + s.getDay() + 1) / 7);
+  };
 
   const handleSave = async () => {
     if (!supabase) return;
     setSaving(true);
     setSaved(false);
-    const records = filteredMembers.map((m) => ({
-      member_id: m.id,
-      date: selectedDate,
-      service_type: selectedServiceType,
-      status: getStatus(m.id),
-      check_in_time: new Date().toISOString(),
-      check_in_method: "수동" as const,
-      note: null as string | null,
-      checked_by: getCurrentUserId?.() ?? null,
-    }));
-    const { error } = await supabase.from("attendance").upsert(records, {
+    const year = new Date(selectedDate + "T12:00:00").getFullYear();
+    const week_num = getWeekNumForDate(selectedDate);
+    const records = filteredMembers.map((m) => {
+      const uiStatus = statusMap[m.id] ?? "결석";
+      return {
+        member_id: m.id,
+        week_num: Number(week_num),
+        year: Number(year),
+        date: selectedDate,
+        service_type: selectedServiceType,
+        status: UI_TO_DB_STATUS[uiStatus as (typeof STATUSES)[number]] ?? "n",
+        check_in_time: new Date().toISOString(),
+        check_in_method: "수동" as const,
+        note: null as string | null,
+        checked_by: getCurrentUserId?.() ?? null,
+      };
+    });
+    console.log("[출석 저장 요청]", { count: records.length, sample: records[0], year, week_num });
+    const { data, error } = await supabase.from("attendance").upsert(records, {
       onConflict: "member_id,date,service_type",
     });
+    console.log("[출석 저장 응답]", { data, error: error?.message ?? null });
     if (error) {
       console.error(error);
       toast("저장 실패: " + error.message, "err");
       setSaving(false);
       return;
     }
-    const attended = records.filter((r) => r.status === "출석" || r.status === "온라인").length;
     toast(`${records.length}명 출석 저장 완료`);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-    setAttendanceRecords((prev) => {
-      const byKey: Record<string, Attendance> = {};
-      prev.forEach((a) => { byKey[`${a.member_id}-${a.date}-${a.service_type}`] = a; });
-      records.forEach((r) => {
-        byKey[`${r.member_id}-${r.date}-${r.service_type}`] = { ...r, id: (existingByMember[r.member_id]?.id) ?? "" } as Attendance;
-      });
-      return Object.values(byKey);
-    });
     setSaving(false);
+    loadAttendance(selectedDate, selectedServiceType);
   };
 
   return (

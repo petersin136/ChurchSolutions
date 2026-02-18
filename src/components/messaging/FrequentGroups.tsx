@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { C } from "@/styles/designTokens";
 
 export interface FrequentGroup {
@@ -12,24 +13,70 @@ export interface FrequentGroup {
 export interface FrequentGroupsProps {
   groups: FrequentGroup[];
   onSave: (groups: FrequentGroup[]) => void;
+  toast?: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function FrequentGroups({ groups, onSave }: FrequentGroupsProps) {
+export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
+  const [list, setList] = useState<FrequentGroup[]>(groups);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [addName, setAddName] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const handleAdd = () => {
+  useEffect(() => {
+    setList(groups);
+  }, [groups]);
+
+  useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    supabase.from("frequent_groups").select("id, name, member_ids").order("name").then(({ data, error }) => {
+      if (error && toast) toast("명단 로드 실패: " + error.message, "err");
+      const rows = (data ?? []).map((r: Record<string, unknown>) => ({
+        id: String(r.id),
+        name: String(r.name ?? ""),
+        member_ids: Array.isArray(r.member_ids) ? (r.member_ids as string[]) : [],
+      }));
+      setList(rows);
+      onSave(rows);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const handleAdd = async () => {
     if (!addName.trim()) return;
-    onSave([
-      ...groups,
-      { id: `fg-${Date.now()}`, name: addName.trim(), member_ids: [] },
-    ]);
+    if (supabase) {
+      const { data, error } = await supabase.from("frequent_groups").insert({ name: addName.trim(), member_ids: [] }).select("id, name, member_ids").single();
+      if (error) {
+        if (toast) toast("추가 실패: " + error.message, "err");
+        return;
+      }
+      const newOne: FrequentGroup = { id: String(data.id), name: (data as { name: string }).name, member_ids: (data as { member_ids: string[] }).member_ids ?? [] };
+      setList((prev) => [...prev, newOne]);
+      onSave([...list, newOne]);
+      if (toast) toast("명단이 추가되었습니다.", "ok");
+    } else {
+      const newOne: FrequentGroup = { id: `fg-${Date.now()}`, name: addName.trim(), member_ids: [] };
+      setList((prev) => [...prev, newOne]);
+      onSave([...list, newOne]);
+    }
     setAddName("");
   };
 
-  const handleDelete = (id: string) => {
-    onSave(groups.filter((g) => g.id !== id));
+  const handleDelete = async (id: string) => {
+    if (supabase) {
+      const { error } = await supabase.from("frequent_groups").delete().eq("id", id);
+      if (error) {
+        if (toast) toast("삭제 실패: " + error.message, "err");
+        return;
+      }
+      if (toast) toast("삭제되었습니다.", "ok");
+    }
+    const next = list.filter((g) => g.id !== id);
+    setList(next);
+    onSave(next);
     if (editingId === id) setEditingId(null);
   };
 
@@ -37,12 +84,22 @@ export function FrequentGroups({ groups, onSave }: FrequentGroupsProps) {
     setEditingId(g.id);
     setEditName(g.name);
   };
-  const saveEdit = () => {
-    if (editingId && editName.trim()) {
-      onSave(groups.map((g) => (g.id === editingId ? { ...g, name: editName.trim() } : g)));
-      setEditingId(null);
-      setEditName("");
+
+  const saveEdit = async () => {
+    if (!editingId || !editName.trim()) return;
+    const next = list.map((g) => (g.id === editingId ? { ...g, name: editName.trim() } : g));
+    if (supabase) {
+      const { error } = await supabase.from("frequent_groups").update({ name: editName.trim() }).eq("id", editingId);
+      if (error) {
+        if (toast) toast("수정 실패: " + error.message, "err");
+        return;
+      }
+      if (toast) toast("수정되었습니다.", "ok");
     }
+    setList(next);
+    onSave(next);
+    setEditingId(null);
+    setEditName("");
   };
 
   return (
@@ -62,10 +119,12 @@ export function FrequentGroups({ groups, onSave }: FrequentGroupsProps) {
         </div>
       </div>
       <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-        {groups.length === 0 ? (
+        {loading ? (
+          <p style={{ padding: 32, textAlign: "center", color: C.textMuted, fontSize: 14 }}>로딩 중...</p>
+        ) : list.length === 0 ? (
           <p style={{ padding: 32, textAlign: "center", color: C.textMuted, fontSize: 14 }}>자주 보내는 명단이 없습니다. 위에서 추가하세요.</p>
         ) : (
-          groups.map((g) => (
+          list.map((g) => (
             <div key={g.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${C.borderLight}` }}>
               {editingId === g.id ? (
                 <>

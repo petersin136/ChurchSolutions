@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { supabase } from "@/lib/supabase";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
@@ -9,39 +10,74 @@ interface OfferingLike { donorId?: string; donorName?: string; amount: number; d
 interface DonorLike { id: string; name: string; group?: string; }
 interface CategoryLike { id: string; name: string; }
 
+type IncomeRow = { id: string; date: string; amount: number; donor?: string; member_id?: string; type?: string; };
+
 /** TODO: 헌금자 순위는 민감 정보. 추후 역할 기반(재정 담당자/목사) 접근 제한 추가 */
 export interface DonorStatisticsProps {
   year: string;
   offerings: OfferingLike[];
   donors: DonorLike[];
   categories: CategoryLike[];
+  toast?: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function DonorStatistics({ year, offerings, donors, categories }: DonorStatisticsProps) {
+export function DonorStatistics({ year, offerings, donors, categories, toast }: DonorStatisticsProps) {
   const [search, setSearch] = useState("");
+  const [incomeRows, setIncomeRows] = useState<IncomeRow[]>([]);
+  const [prevYearKeys, setPrevYearKeys] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const start = `${year}-01-01`;
+    const end = `${year}-12-31`;
+    const prevStart = `${Number(year) - 1}-01-01`;
+    const prevEnd = `${Number(year) - 1}-12-31`;
+    Promise.all([
+      supabase.from("income").select("id, date, amount, donor, member_id, type").gte("date", start).lte("date", end),
+      supabase.from("income").select("donor, member_id").gte("date", prevStart).lte("date", prevEnd),
+    ]).then(([curr, prev]) => {
+      if (curr.error && toast) toast("헌금 데이터 로드 실패: " + curr.error.message, "err");
+      setIncomeRows((curr.data ?? []) as IncomeRow[]);
+      const keys = new Set<string>();
+      (prev.data ?? []).forEach((r: { donor?: string; member_id?: string }) => {
+        const k = r.member_id || r.donor || "";
+        if (k) keys.add(k);
+      });
+      setPrevYearKeys(keys);
+    }).finally(() => setLoading(false));
+  }, [year, toast]);
 
   const byDonor = useMemo(() => {
     const map: Record<string, { total: number; byCat: Record<string, number>; count: number }> = {};
-    offerings.filter((o) => o.date?.startsWith(year)).forEach((o) => {
-      const id = o.donorId || o.donorName || "anonymous";
+    const source = incomeRows.length > 0 ? incomeRows.map((i) => ({ donorId: i.member_id, donorName: i.donor, amount: Number(i.amount), date: i.date, categoryId: i.type })) : offerings.filter((o) => o.date?.startsWith(year));
+    source.forEach((o) => {
+      const id = (o as { donorId?: string; donorName?: string }).donorId || (o as { donorName?: string }).donorName || "anonymous";
       if (!map[id]) map[id] = { total: 0, byCat: {}, count: 0 };
       map[id].total += o.amount;
       map[id].count += 1;
-      const cat = o.categoryId || "other";
+      const cat = (o as { categoryId?: string }).categoryId || "other";
       map[id].byCat[cat] = (map[id].byCat[cat] || 0) + o.amount;
     });
     return map;
-  }, [offerings, year]);
+  }, [incomeRows, offerings, year]);
 
   const donorList = useMemo(() => {
-    const list = donors.map((d) => ({
-      id: d.id,
-      name: d.name,
-      group: d.group ?? "",
-      ...byDonor[d.id],
-      total: byDonor[d.id]?.total ?? 0,
-      byCat: byDonor[d.id]?.byCat ?? {},
-    })).filter((d) => d.total > 0);
+    const keys = Object.keys(byDonor).filter((k) => k !== "anonymous" && byDonor[k].total > 0);
+    const list = keys.map((key) => {
+      const d = donors.find((x) => x.id === key);
+      return {
+        id: key,
+        name: d?.name ?? (byDonor[key] ? String(key) : key),
+        group: d?.group ?? "",
+        total: byDonor[key].total,
+        byCat: byDonor[key].byCat,
+      };
+    });
     list.sort((a, b) => b.total - a.total);
     return list;
   }, [donors, byDonor]);
@@ -54,15 +90,23 @@ export function DonorStatistics({ year, offerings, donors, categories }: DonorSt
 
   const totalAmount = useMemo(() => donorList.reduce((s, d) => s + d.total, 0), [donorList]);
   const avgPerDonor = donorList.length > 0 ? Math.round(totalAmount / donorList.length) : 0;
-  const newDonorsThisYear = 0; // placeholder: 올해 처음 헌금한 사람 수
+  const newDonorsThisYear = useMemo(() => {
+    return donorList.filter((d) => d.id && !prevYearKeys.has(d.id)).length;
+  }, [donorList, prevYearKeys]);
 
   const monthlyDonorCount = useMemo(() => {
+    const source = incomeRows.length > 0 ? incomeRows : offerings.filter((o) => o.date?.startsWith(year)).map((o) => ({ date: o.date, donorId: (o as OfferingLike).donorId, donorName: (o as OfferingLike).donorName }));
     return Array.from({ length: 12 }, (_, i) => {
       const mStr = String(i + 1).padStart(2, "0");
-      const set = new Set(offerings.filter((o) => o.date?.startsWith(`${year}-${mStr}`)).map((o) => o.donorId || o.donorName));
+      const set = new Set(
+        source.map((o: { date: string; donorId?: string; donorName?: string; member_id?: string }) => {
+          if (o.date?.startsWith(`${year}-${mStr}`)) return (o as { member_id?: string }).member_id || (o as { donorId?: string }).donorId || (o as { donorName?: string }).donorName;
+          return null;
+        }).filter(Boolean)
+      );
       return { month: `${i + 1}월`, 인원: set.size };
     });
-  }, [offerings, year]);
+  }, [incomeRows, offerings, year]);
 
   const bracketLabels = ["10만 이하", "10-30만", "30-50만", "50-100만", "100만 이상"];
   const bracketRanges = [0, 100000, 300000, 500000, 1000000, Infinity];
@@ -79,6 +123,8 @@ export function DonorStatistics({ year, offerings, donors, categories }: DonorSt
     });
     return bracketLabels.map((label, i) => ({ name: label, 인원: counts[i] }));
   }, [donorList]);
+
+  if (loading) return <div className="p-6 text-gray-500">로딩 중...</div>;
 
   return (
     <div className="space-y-6">

@@ -98,7 +98,7 @@ export async function loadDBFromSupabase(): Promise<DB> {
   return db;
 }
 
-function toMember(r: Record<string, unknown>): Member {
+export function toMember(r: Record<string, unknown>): Member {
   const created = r.created_at as string | undefined;
   return {
     id: String(r.id ?? ""),
@@ -222,8 +222,15 @@ export async function clearAllInSupabase(): Promise<void> {
   }
 }
 
-/** 목양(교인·출석·노트)만 초기화: attendance → notes → members (권장: /api/reset?scope=pastoral) */
-export async function clearPastoralInSupabase(): Promise<void> {
+/**
+ * 목양(교인·출석·노트)만 초기화: attendance → notes → members.
+ * 반드시 "초기화" 버튼 등 사용자 동작으로만 호출해야 하며, 페이지 로드/useEffect에서 호출 금지.
+ * 권장: 클라이언트에서는 POST /api/reset { scope: "pastoral" } 사용.
+ */
+export async function clearPastoralInSupabase(confirmExplicitReset?: { onlyFromResetButton: true }): Promise<void> {
+  if (confirmExplicitReset?.onlyFromResetButton !== true) {
+    throw new Error("clearPastoralInSupabase는 초기화 버튼 등 명시적 호출에서만 사용해야 하며, 페이지 로드 시 호출하면 안 됩니다.");
+  }
   if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local을 확인하세요.");
   const { error: e1 } = await supabase.from("attendance").delete().gte("week_num", 0);
   if (e1) throw new Error(`attendance 초기화 실패: ${e1.message}`);

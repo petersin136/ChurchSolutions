@@ -47,13 +47,8 @@ export default function SuperPlanner() {
     window.localStorage.setItem(STORAGE_KEY_PAGE, currentPage);
   }, [currentPage]);
 
-  useEffect(() => {
-    if (!dbLoaded) return;
-    const t = setTimeout(() => {
-      saveDBToSupabase(db).catch(() => {});
-    }, 800);
-    return () => clearTimeout(t);
-  }, [db, dbLoaded]);
+  /* 페이지 로드 시 자동 save 제거: saveDBToSupabase가 attendance를 member+year 기준 delete 후 week_num만 insert해
+     date/service_type 기반 출석 데이터가 삭제되는 문제 방지. 저장은 사용자가 저장 버튼으로만 수행. */
 
   const save = useCallback(() => {
     saveDBToSupabase(db).catch(() => {});

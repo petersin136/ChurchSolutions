@@ -60,3 +60,10 @@ INSERT INTO service_types (name, day_of_week, default_time, sort_order) VALUES
   ('금요기도회', 5, '21:00', 4),
   ('새벽기도', NULL, '05:30', 5)
 ON CONFLICT (name) DO NOTHING;
+
+-- ============================================
+-- 3) status에 온라인(o), 병결(l) 추가 (기본은 p,a,n만 허용)
+-- Supabase 대시보드에서 제약 이름이 다르면 오류 시 해당 테이블 Constraints에서 이름 확인 후 DROP
+-- ============================================
+ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_status_check;
+ALTER TABLE attendance ADD CONSTRAINT attendance_status_check CHECK (status IN ('p', 'a', 'n', 'o', 'l'));
