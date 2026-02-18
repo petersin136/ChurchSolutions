@@ -150,6 +150,12 @@ export interface Income {
   donor?: string;
   method?: string;
   memo?: string;
+  member_id?: string;
+  sub_category?: string;
+  payment_method?: "현금" | "계좌이체" | "카드" | "온라인" | "기타";
+  receipt_issued?: boolean;
+  fiscal_year?: string;
+  month?: number;
 }
 
 export interface Expense {
@@ -160,6 +166,66 @@ export interface Expense {
   amount: number;
   resolution?: string;
   memo?: string;
+  sub_category?: string;
+  payment_method?: "현금" | "계좌이체" | "카드" | "기타";
+  approved_by?: string;
+  receipt_attachment?: string;
+  fiscal_year?: string;
+  month?: number;
+}
+
+export interface Budget {
+  id: string;
+  church_id?: string;
+  fiscal_year: string;
+  category_type: "수입" | "지출";
+  category: string;
+  sub_category?: string;
+  monthly_amounts: { [month: string]: number };
+  annual_total: number;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SpecialAccount {
+  id: string;
+  church_id?: string;
+  account_name: string;
+  description?: string;
+  target_amount: number;
+  current_amount: number;
+  start_date?: string;
+  end_date?: string;
+  status: "진행중" | "달성" | "종료" | "보류";
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SpecialAccountTransaction {
+  id: string;
+  account_id: string;
+  date: string;
+  type: "수입" | "지출";
+  amount: number;
+  description?: string;
+  member_name?: string;
+  created_at?: string;
+}
+
+export interface CashJournalEntry {
+  id: string;
+  date: string;
+  type: "수입" | "지출";
+  category: string;
+  sub_category?: string;
+  description: string;
+  amount: number;
+  payment_method?: string;
+  memo?: string;
+  fiscal_year?: string;
+  month?: number;
+  created_at?: string;
 }
 
 export interface ChecklistItem {

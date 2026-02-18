@@ -5,6 +5,12 @@ import * as XLSX from "xlsx";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 import { LayoutDashboard, Wallet, Users, Receipt, FileText, PieChart, Download, FileSignature, Church, Settings } from "lucide-react";
 import { SealSettingsSection } from "@/components/finance/SealSettingsSection";
+import { FinanceDashboard } from "@/components/finance/FinanceDashboard";
+import { CashJournal } from "@/components/finance/CashJournal";
+import { BudgetManagement } from "@/components/finance/BudgetManagement";
+import { BudgetVsActual } from "@/components/finance/BudgetVsActual";
+import { DonorStatistics } from "@/components/finance/DonorStatistics";
+import { SpecialAccounts } from "@/components/finance/SpecialAccounts";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import type { DB, Member, Income as DBIncome, Expense as DBExpense } from "@/types/db";
@@ -2949,7 +2955,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
 /* 메인 재정관리 컴포넌트                                         */
 /* ============================================================ */
 const FINANCE_ACTIVE_TAB_KEY = "finance_active_tab";
-const VALID_FINANCE_TABS = new Set(["dashboard", "offering", "givingStatus", "donor", "expense", "report", "budgetActual", "budget", "export", "receipt"]);
+const VALID_FINANCE_TABS = new Set(["dashboard", "offering", "givingStatus", "donor", "expense", "report", "budgetActual", "budget", "export", "receipt", "cashJournal", "budgetManagement", "budgetVsActual", "donorStatistics", "specialAccounts"]);
 
 /** 설정(교회이름, 소재지, 담임목사, 사업자등록번호)은 재정 영수증에 사용. db.members와 연동해 목양 교인 = 헌금자로 통일 */
 export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (fn: (prev: DB) => DB) => void; settings?: { churchName?: string; address?: string; pastor?: string; businessNumber?: string }; toast?: (msg: string, type?: "ok" | "err" | "warn") => void }) {
@@ -3016,15 +3022,20 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
 
   const tabs: { id: string; label: string; Icon: React.ComponentType<any> }[] = [
     { id: "dashboard", label: "대시보드", Icon: LayoutDashboard },
-    { id: "offering", label: "헌금 관리", Icon: Wallet },
+    { id: "offering", label: "수입 관리", Icon: Wallet },
+    { id: "expense", label: "지출 관리", Icon: Receipt },
+    { id: "cashJournal", label: "현금출납장", Icon: FileText },
+    { id: "budgetManagement", label: "예산 관리", Icon: PieChart },
+    { id: "budgetVsActual", label: "예산 대비 실적", Icon: PieChart },
+    { id: "donorStatistics", label: "헌금자 통계", Icon: Users },
+    { id: "specialAccounts", label: "특별회계", Icon: Church },
     { id: "givingStatus", label: "헌금 현황", Icon: Users },
     { id: "donor", label: "헌금자 관리", Icon: Users },
-    { id: "expense", label: "지출 관리", Icon: Receipt },
     { id: "report", label: "보고서", Icon: FileText },
     { id: "budgetActual", label: "예결산", Icon: PieChart },
     { id: "budget", label: "예산 계획", Icon: PieChart },
     { id: "export", label: "엑셀 내보내기", Icon: Download },
-    { id: "receipt", label: "영수증", Icon: FileSignature },
+    { id: "receipt", label: "기부금 영수증", Icon: FileSignature },
   ];
 
   const handleNav = (id: string) => { setActiveTab(id); if (mob) setSideOpen(false); };
@@ -3114,11 +3125,27 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
           {!mob && <Badge color={C.success} bg={C.successLight}>● 정상 운영중</Badge>}
         </header>
         <div style={{ padding: mob ? 12 : 24 }}>
-          {activeTab === "dashboard" && <DashboardTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} departments={DEFAULT_DEPARTMENTS} />}
+          {activeTab === "dashboard" && (
+            <FinanceDashboard
+              offerings={offerings}
+              expenses={expenses}
+              incomeCategories={DEFAULT_CATEGORIES}
+              expenseCategories={EXPENSE_CATEGORIES}
+              onAddIncome={() => setActiveTab("offering")}
+              onAddExpense={() => setActiveTab("expense")}
+              onOpenCashJournal={() => setActiveTab("cashJournal")}
+              onOpenBudget={() => setActiveTab("budgetManagement")}
+            />
+          )}
           {activeTab === "offering" && <OfferingTab offerings={offerings} setOfferings={setOfferings} donors={donors} categories={DEFAULT_CATEGORIES} />}
           {activeTab === "givingStatus" && <GivingStatusTab donors={donors} offerings={offerings} categories={DEFAULT_CATEGORIES} />}
           {activeTab === "donor" && <DonorTab donors={donors} setDonors={setDonors} offerings={offerings} />}
           {activeTab === "expense" && <ExpenseTab expenses={expenses} setExpenses={setExpenses} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} />}
+          {activeTab === "cashJournal" && <CashJournal income={offerings.map(o => ({ id: o.id, date: o.date, amount: o.amount, type: DEFAULT_CATEGORIES.find(c => c.id === o.categoryId)?.name, donor: o.donorName, method: o.method, memo: o.note }))} expense={expenses.map(e => ({ id: e.id, date: e.date, amount: e.amount, category: EXPENSE_CATEGORIES.find(c => c.id === e.categoryId)?.name, item: e.description, memo: e.note }))} />}
+          {activeTab === "budgetManagement" && <BudgetManagement fiscalYear={String(new Date().getFullYear())} budgets={[]} onSave={() => {}} />}
+          {activeTab === "budgetVsActual" && <BudgetVsActual year={String(new Date().getFullYear())} month={new Date().getMonth() + 1} offerings={offerings} expenses={expenses} budgets={[]} incomeCategories={DEFAULT_CATEGORIES} expenseCategories={EXPENSE_CATEGORIES} />}
+          {activeTab === "donorStatistics" && <DonorStatistics year={String(new Date().getFullYear())} offerings={offerings} donors={donors} categories={DEFAULT_CATEGORIES} />}
+          {activeTab === "specialAccounts" && <SpecialAccounts accounts={[]} transactions={{}} />}
           {activeTab === "report" && <ReportTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} />}
           {activeTab === "budgetActual" && <BudgetActualTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} expenseCategories={EXPENSE_CATEGORIES} budgetByYear={budgetByYear} setBudgetByYear={setBudgetByYear} />}
           {activeTab === "budget" && <BudgetTab departments={DEFAULT_DEPARTMENTS} expenses={expenses} />}
