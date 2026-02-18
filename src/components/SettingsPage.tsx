@@ -1,8 +1,22 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { DB } from "@/types/db";
+import { supabase } from "@/lib/supabase";
+import { logAction } from "@/utils/auditLog";
+import type { Organization, OrganizationMember, Role, UserRole, CustomField, CustomLabel, AuditLog } from "@/types/db";
 import { DEFAULT_SETTINGS } from "@/types/db";
+import {
+  OrganizationManagement,
+  RoleManagement,
+  UserManagement,
+  CustomFieldSettings,
+  CustomLabelSettings,
+  AuditLogViewer,
+} from "@/components/settings";
+import { SealSettingsSection } from "@/components/finance/SealSettingsSection";
+
+type SettingsSubTab = "basic" | "organization" | "roles" | "users" | "customFields" | "customLabels" | "audit" | "receipt";
 
 interface SettingsPageProps {
   db: DB;
@@ -11,6 +25,17 @@ interface SettingsPageProps {
   saveDb?: (d: DB) => Promise<void>;
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
+
+const SETTINGS_TABS: { id: SettingsSubTab; label: string }[] = [
+  { id: "basic", label: "기본 설정" },
+  { id: "organization", label: "조직 관리" },
+  { id: "roles", label: "역할/권한" },
+  { id: "users", label: "사용자 관리" },
+  { id: "customFields", label: "커스텀 필드" },
+  { id: "customLabels", label: "명칭 설정" },
+  { id: "audit", label: "작업 이력" },
+  { id: "receipt", label: "기부금 영수증" },
+];
 
 export function SettingsPage({
   db,
@@ -21,6 +46,36 @@ export function SettingsPage({
 }: SettingsPageProps) {
   const importRef = useRef<HTMLInputElement>(null);
   const [resetLoading, setResetLoading] = useState(false);
+  const [settingsSubTab, setSettingsSubTab] = useState<SettingsSubTab>("basic");
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [userRoles, setUserRoles] = useState<(UserRole & { role?: Role; member?: import("@/types/db").Member })[]>([]);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [customLabels, setCustomLabels] = useState<CustomLabel[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    (async () => {
+      const [orgRes, omRes, rolesRes, urRes, cfRes, clRes, auditRes] = await Promise.all([
+        supabase.from("organizations").select("*").order("sort_order"),
+        supabase.from("organization_members").select("*"),
+        supabase.from("roles").select("*").order("sort_order"),
+        supabase.from("user_roles").select("*, role:roles(*), member:members(*)"),
+        supabase.from("custom_fields").select("*").order("sort_order"),
+        supabase.from("custom_labels").select("*"),
+        supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(500),
+      ]);
+      if (orgRes.data) setOrganizations((orgRes.data as Organization[]));
+      if (omRes.data) setOrganizationMembers((omRes.data as OrganizationMember[]));
+      if (rolesRes.data) setRoles((rolesRes.data as Role[]));
+      if (urRes.data) setUserRoles((urRes.data as (UserRole & { role?: Role; member?: import("@/types/db").Member })[]));
+      if (cfRes.data) setCustomFields((cfRes.data as CustomField[]));
+      if (clRes.data) setCustomLabels((clRes.data as CustomLabel[]));
+      if (auditRes.data) setAuditLogs((auditRes.data as AuditLog[]));
+    })();
+  }, []);
 
   function saveSettings(
     churchName: string,
@@ -118,14 +173,17 @@ export function SettingsPage({
           body: JSON.stringify(db.settings),
         });
         const data = await res.json().catch(() => ({}));
-        if (res.ok && data?.ok) toast("저장되었습니다", "ok");
-        else throw new Error(data?.message || "저장 실패");
+        if (res.ok && data?.ok) {
+          toast("저장되었습니다", "ok");
+          await logAction({ action: "UPDATE", targetTable: "settings", targetName: "기본설정" });
+        } else throw new Error(data?.message || "저장 실패");
       } catch (e) {
         console.warn("설정 저장 실패:", e);
         toast("저장 실패", "err");
       }
     } else {
       toast("저장되었습니다", "ok");
+      logAction({ action: "UPDATE", targetTable: "settings", targetName: "기본설정" });
     }
   }
 
@@ -202,12 +260,120 @@ export function SettingsPage({
         style={{
           fontSize: 20,
           fontWeight: 700,
-          marginBottom: 20,
+          marginBottom: 12,
         }}
       >
         ⚙️ 설정
       </h3>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 20,
+          paddingBottom: 12,
+          borderBottom: "1px solid var(--border, #e5e7eb)",
+        }}
+      >
+        {SETTINGS_TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setSettingsSubTab(id)}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 600,
+              border: "none",
+              cursor: "pointer",
+              background: settingsSubTab === id ? "#1e3a5f" : "transparent",
+              color: settingsSubTab === id ? "#fff" : "var(--text, #374151)",
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: settingsSubTab === id ? "#1e3a5f" : "var(--border, #e5e7eb)",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
+      {settingsSubTab === "organization" && (
+        <OrganizationManagement
+          organizations={organizations}
+          organizationMembers={organizationMembers}
+          members={db.members}
+          onSaveOrganization={async (org) => {
+            setOrganizations((prev) => (org.id ? prev.map((o) => (o.id === org.id ? { ...o, ...org } : o)) : [...prev, { ...org, id: `org-${Date.now()}`, name: org.name!, type: org.type!, sort_order: 0, is_active: true } as Organization]));
+            toast("저장되었습니다", "ok");
+          }}
+          onDeleteOrganization={async (id) => {
+            setOrganizations((prev) => prev.filter((o) => o.id !== id));
+            setOrganizationMembers((prev) => prev.filter((om) => om.organization_id !== id));
+            toast("삭제되었습니다", "ok");
+          }}
+          onAddMemberToOrg={async (organizationId, memberId, roleInOrg) => {
+            setOrganizationMembers((prev) => [...prev, { id: `om-${Date.now()}`, organization_id: organizationId, member_id: memberId, role_in_org: roleInOrg, is_active: true } as OrganizationMember]);
+            toast("추가되었습니다", "ok");
+          }}
+          onRemoveMemberFromOrg={async (organizationId, memberId) => {
+            setOrganizationMembers((prev) => prev.filter((om) => !(om.organization_id === organizationId && om.member_id === memberId)));
+            toast("제거되었습니다", "ok");
+          }}
+        />
+      )}
+      {settingsSubTab === "roles" && (
+        <RoleManagement
+          roles={roles.length > 0 ? roles : [
+            { id: "r1", name: "담임목사", description: "모든 권한", permissions: { members: { read: true, write: true, delete: true }, finance: { read: true, write: true, delete: true }, attendance: { read: true, write: true, delete: true }, reports: { read: true }, settings: { read: true, write: true }, donation_receipt: { read: true, write: true } }, is_system: true, sort_order: 1 },
+            { id: "r2", name: "일반성도", description: "읽기만", permissions: {}, is_system: true, sort_order: 2 },
+          ]}
+          onSaveRole={async (role) => {
+            if (role.id) setRoles((prev) => prev.map((r) => (r.id === role.id ? { ...r, ...role } : r)));
+            else setRoles((prev) => [...prev, { ...role, id: `r-${Date.now()}`, name: role.name!, permissions: role.permissions ?? {}, is_system: false, sort_order: prev.length } as Role]);
+            toast("저장되었습니다", "ok");
+          }}
+        />
+      )}
+      {settingsSubTab === "users" && (
+        <UserManagement
+          userRoles={userRoles}
+          roles={roles.length > 0 ? roles : [{ id: "r1", name: "담임목사", permissions: {}, is_system: true, sort_order: 1 }]}
+          members={db.members}
+          onSaveUserRole={async (ur) => {
+            if (ur.id) setUserRoles((prev) => prev.map((x) => (x.id === ur.id ? { ...x, ...ur } : x)));
+            toast("저장되었습니다", "ok");
+          }}
+        />
+      )}
+      {settingsSubTab === "customFields" && (
+        <CustomFieldSettings
+          customFields={customFields}
+          onSave={async (f) => {
+            setCustomFields((prev) => (f.id ? prev.map((x) => (x.id === f.id ? { ...x, ...f } : x)) : [...prev, { ...f, id: `cf-${Date.now()}`, target_table: f.target_table!, field_name: f.field_name!, field_label: f.field_label!, field_type: f.field_type!, is_required: f.is_required ?? false, sort_order: prev.length, is_active: true } as CustomField]));
+            toast("저장되었습니다", "ok");
+          }}
+        />
+      )}
+      {settingsSubTab === "customLabels" && (
+        <CustomLabelSettings
+          customLabels={customLabels}
+          onSave={async (labels) => {
+            setCustomLabels(labels.map((l, i) => ({ ...l, id: (customLabels[i]?.id) ?? `cl-${Date.now()}-${i}` })));
+            toast("저장되었습니다", "ok");
+          }}
+        />
+      )}
+      {settingsSubTab === "audit" && (
+        <AuditLogViewer logs={auditLogs} />
+      )}
+      {settingsSubTab === "receipt" && (
+        <SealSettingsSection churchId={null} toast={toast} />
+      )}
+
+      {settingsSubTab === "basic" && (
+      <>
       <div className="card card-body-padded">
         <div className="fg">
           <label className="fl">교회 이름</label>
@@ -400,6 +566,8 @@ export function SettingsPage({
           ))}
         </ul>
       </div>
+      </>
+      )}
     </>
   );
 }

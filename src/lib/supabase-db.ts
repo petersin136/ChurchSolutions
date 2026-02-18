@@ -22,7 +22,7 @@ export async function loadDBFromSupabase(): Promise<DB> {
     supabase.from("visits").select("*").order("date", { ascending: false }),
     supabase.from("income").select("*").order("date", { ascending: false }),
     supabase.from("expense").select("*").order("date", { ascending: false }),
-    supabase.from("budget").select("*").eq("year", CURRENT_YEAR),
+    supabase.from("budget").select("*").eq("fiscal_year", String(CURRENT_YEAR)),
     supabase.from("checklist").select("*").order("sort_order", { ascending: true }),
   ]);
 
@@ -78,7 +78,11 @@ export async function loadDBFromSupabase(): Promise<DB> {
   });
 
   (budgetRes.data ?? []).forEach((r: Record<string, unknown>) => {
-    db.budget[r.category as string] = Number(r.amount) || 0;
+    if (r.fiscal_year != null && r.category_type != null && r.category != null) {
+      db.budget[`${r.category_type}:${r.category}`] = Number(r.annual_total) ?? 0;
+    } else {
+      db.budget[r.category as string] = Number(r.amount) ?? 0;
+    }
   });
 
   (checklistRes.data ?? []).forEach((r: Record<string, unknown>) => {
@@ -206,7 +210,7 @@ export async function clearAllInSupabase(): Promise<void> {
     { table: "visits", column: "id", value: MATCH_ALL_ID },
     { table: "income", column: "id", value: MATCH_ALL_ID },
     { table: "expense", column: "id", value: MATCH_ALL_ID },
-    { table: "budget", column: "year", value: -1 },
+    { table: "budget", column: "fiscal_year", value: "__none__" },
     { table: "checklist", column: "week_key", value: "__none__" },
     { table: "plans", column: "id", value: MATCH_ALL_ID },
     { table: "sermons", column: "id", value: MATCH_ALL_ID },
@@ -236,7 +240,7 @@ export async function clearFinanceInSupabase(): Promise<void> {
   if (e1) throw new Error(`income 초기화 실패: ${e1.message}`);
   const { error: e2 } = await supabase.from("expense").delete().neq("id", MATCH_ALL_ID);
   if (e2) throw new Error(`expense 초기화 실패: ${e2.message}`);
-  const { error: e3 } = await supabase.from("budget").delete().gte("year", 0);
+  const { error: e3 } = await supabase.from("budget").delete().neq("fiscal_year", "__none__");
   if (e3) throw new Error(`budget 초기화 실패: ${e3.message}`);
 }
 

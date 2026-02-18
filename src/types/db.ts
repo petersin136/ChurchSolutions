@@ -292,6 +292,101 @@ export interface ChurchSettings {
   updated_at?: string;
 }
 
+/** 조직 (교구/구역/목장 등) */
+export interface Organization {
+  id: string;
+  church_id?: string;
+  name: string;
+  type: "교구" | "구역" | "목장" | "속" | "전도회" | "선교회" | "부서" | "기타";
+  parent_id?: string;
+  leader_id?: string;
+  leader_name?: string;
+  description?: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** 조직-교인 매핑 */
+export interface OrganizationMember {
+  id: string;
+  organization_id: string;
+  member_id: string;
+  role_in_org?: string;
+  joined_at?: string;
+  left_at?: string;
+  is_active: boolean;
+}
+
+/** 역할/권한 */
+export interface Role {
+  id: string;
+  church_id?: string;
+  name: string;
+  description?: string;
+  permissions: {
+    members?: { read?: boolean; write?: boolean; delete?: boolean };
+    finance?: { read?: boolean; write?: boolean; delete?: boolean };
+    attendance?: { read?: boolean; write?: boolean; delete?: boolean };
+    reports?: { read?: boolean };
+    settings?: { read?: boolean; write?: boolean };
+    donation_receipt?: { read?: boolean; write?: boolean };
+  };
+  is_system: boolean;
+  sort_order: number;
+  created_at?: string;
+}
+
+/** 사용자-역할 매핑 */
+export interface UserRole {
+  id: string;
+  user_id: string;
+  role_id: string;
+  member_id?: string;
+  assigned_organizations?: string[];
+  assigned_at?: string;
+  assigned_by?: string;
+}
+
+/** 작업 이력 (감사 로그) */
+export interface AuditLog {
+  id: string;
+  user_id?: string;
+  user_name?: string;
+  action: "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | "EXPORT" | "PRINT";
+  target_table?: string;
+  target_id?: string;
+  target_name?: string;
+  details?: Record<string, unknown>;
+  ip_address?: string;
+  created_at: string;
+}
+
+/** 커스텀 필드 정의 */
+export interface CustomField {
+  id: string;
+  church_id?: string;
+  target_table: string;
+  field_name: string;
+  field_label: string;
+  field_type: "text" | "number" | "date" | "select" | "checkbox" | "textarea";
+  options?: string[];
+  is_required: boolean;
+  sort_order: number;
+  is_active: boolean;
+  created_at?: string;
+}
+
+/** 명칭 커스터마이징 */
+export interface CustomLabel {
+  id: string;
+  church_id?: string;
+  default_label: string;
+  custom_label: string;
+  category?: string;
+}
+
 export interface DB {
   settings: Settings;
   members: Member[];
