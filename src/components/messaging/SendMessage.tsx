@@ -91,11 +91,11 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
   const handleSend = async () => {
     if (selectedIds.size === 0 || isOver) return;
     const names = sourceList.filter((m) => selectedIds.has(m.id)).map((m) => m.name).join(", ");
-    const payload = {
+    const payload: Omit<MessageLog, "id" | "sent_at" | "status"> = {
       recipient_ids: Array.from(selectedIds),
       recipient_names: names,
       content,
-      message_type: messageType,
+      message_type: messageType as "SMS" | "LMS",
     };
     if (supabase) {
       setSending(true);

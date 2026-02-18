@@ -22,14 +22,15 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
   const [period, setPeriod] = useState<"week" | "month">("month");
 
   useEffect(() => {
-    if (!supabase) {
+    const client = supabase;
+    if (!client) {
       setLoading(false);
       return;
     }
     const load = async () => {
       setLoading(true);
       try {
-        const { data: depts, error: deptsErr } = await supabase.from("school_departments").select("*").order("sort_order");
+        const { data: depts, error: deptsErr } = await client.from("school_departments").select("*").order("sort_order");
         if (deptsErr) {
           toast("부서 로드 실패: " + deptsErr.message, "err");
           setLoading(false);
@@ -49,7 +50,7 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
         const startStr = start.toISOString().slice(0, 10);
         const endStr = end.toISOString().slice(0, 10);
 
-        const { data: att, error: attErr } = await supabase
+        const { data: att, error: attErr } = await client
           .from("school_attendance")
           .select("department_id, status")
           .gte("date", startStr)
