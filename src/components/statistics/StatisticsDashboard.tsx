@@ -59,7 +59,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
   const [year, setYear] = useState(currentYear);
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([]);
 
-  const members = db.members;
+  const members = db.members ?? [];
   const income = db.income ?? [];
   const expense = db.expense ?? [];
   const visits = db.visits ?? [];

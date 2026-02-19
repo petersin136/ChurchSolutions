@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import type { DB, Member, Family } from "@/types/db";
 import { getDepts } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
+import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 const ROLES = ["담임목사", "부목사", "전도사", "장로", "안수집사", "권사", "집사", "성도", "청년", "학생"];
 const VISIT_PATHS: Member["visit_path"][] = ["지인소개", "전도", "자진방문", "이전교회", "기타"];
@@ -250,11 +251,23 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
       if (member?.id) {
         memberId = member.id;
         const { id: _, ...updatePayload } = payload;
-        const { error } = await supabase.from("members").update(updatePayload).eq("id", member.id);
-        if (error) throw error;
+        console.log("=== DB UPDATE 시도 ===", updatePayload);
+        const { data, error } = await supabase.from("members").update(updatePayload).eq("id", member.id).select();
+        console.log("=== DB UPDATE 결과 ===", { data, error });
+        if (error) {
+          console.error("=== DB ERROR ===", error.message, error.details, error.hint);
+          alert("저장 실패: " + error.message);
+          throw error;
+        }
       } else {
+        console.log("=== DB INSERT 시도 ===", payload);
         const { data: inserted, error } = await supabase.from("members").insert(payload).select("id").single();
-        if (error) throw error;
+        console.log("=== DB INSERT 결과 ===", { data: inserted, error });
+        if (error) {
+          console.error("=== DB ERROR ===", error.message, error.details, error.hint);
+          alert("저장 실패: " + error.message);
+          throw error;
+        }
         memberId = (inserted as { id: string }).id;
       }
       if (photoFile && memberId) {
@@ -347,8 +360,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
             </select>
           </div>
           <div>
-            <label className={labelClass}>생년월일</label>
-            <input type="date" value={birth} onChange={(e) => setBirth(e.target.value)} className={inputClass} />
+            <CalendarDropdown label="생년월일" value={birth} onChange={setBirth} showClearButton />
           </div>
           <div>
             <label className={labelClass}>연락처</label>
@@ -422,8 +434,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
             <input type="text" value={talent} onChange={(e) => setTalent(e.target.value)} className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>등록일</label>
-            <input type="date" value={registeredDate} onChange={(e) => setRegisteredDate(e.target.value)} className={inputClass} />
+            <CalendarDropdown label="등록일" value={registeredDate} onChange={setRegisteredDate} showClearButton />
           </div>
         </div>
       </section>
@@ -442,12 +453,10 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
             </select>
           </div>
           <div>
-            <label className={labelClass}>세례일</label>
-            <input type="date" value={baptismDate} onChange={(e) => setBaptismDate(e.target.value)} disabled={baptismType === "미세례" || !baptismType} className={inputClass} />
+            <CalendarDropdown label="세례일" value={baptismDate} onChange={setBaptismDate} showClearButton disabled={baptismType === "미세례" || !baptismType} />
           </div>
           <div>
-            <label className={labelClass}>결혼기념일</label>
-            <input type="date" value={weddingAnniversary} onChange={(e) => setWeddingAnniversary(e.target.value)} className={inputClass} />
+            <CalendarDropdown label="결혼기념일" value={weddingAnniversary} onChange={setWeddingAnniversary} showClearButton />
           </div>
           <div>
             <label className={labelClass}>가족</label>
@@ -492,8 +501,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         {isNewFamily && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>첫 방문일</label>
-              <input type="date" value={firstVisitDate} onChange={(e) => setFirstVisitDate(e.target.value)} className={inputClass} />
+              <CalendarDropdown label="첫 방문일" value={firstVisitDate} onChange={setFirstVisitDate} showClearButton />
             </div>
             <div>
               <label className={labelClass}>방문 경로</label>

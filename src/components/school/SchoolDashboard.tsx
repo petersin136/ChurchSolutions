@@ -49,19 +49,15 @@ export function SchoolDashboard({ db, toast }: SchoolDashboardProps) {
         const activeList = list.filter((d) => d.is_active !== false);
         setDepartments(activeList);
 
+        const totalTeachersFromDepts = activeList.reduce((sum, d) => sum + (d.teacher_count ?? 0), 0);
+        setTotalTeachers(totalTeachersFromDepts);
+
         const { count: studentCount } = await supabase
           .from("school_enrollments")
           .select("*", { count: "exact", head: true })
           .eq("is_active", true)
           .eq("role", "학생");
         setTotalStudents(studentCount ?? 0);
-
-        const { count: teacherCount } = await supabase
-          .from("school_enrollments")
-          .select("*", { count: "exact", head: true })
-          .eq("is_active", true)
-          .in("role", ["교사", "부교사", "부장", "총무"]);
-        setTotalTeachers(teacherCount ?? 0);
 
         const thisMonth = new Date().toISOString().slice(0, 7);
         const { data: enrolls } = await supabase

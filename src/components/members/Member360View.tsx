@@ -22,9 +22,10 @@ export interface Member360ViewProps {
   newFamilyProgram?: NewFamilyProgram | null;
   onEdit?: () => void;
   onClose?: () => void;
+  toast?: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function Member360View({ member, db, statusHistory = [], newFamilyProgram, onEdit, onClose }: Member360ViewProps) {
+export function Member360View({ member, db, statusHistory = [], newFamilyProgram, onEdit, onClose, toast }: Member360ViewProps) {
   const [activeTab, setActiveTab] = useState<"info" | "attendance" | "giving" | "visits" | "newfamily" | "history">("info");
   const [dbStatusHistory, setDbStatusHistory] = useState<MemberStatusHistory[]>([]);
   const [attendanceHistory, setAttendanceHistory] = useState<{ date: string; service_type: string; status: string }[]>([]);
@@ -72,7 +73,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
   }, [member.name]);
 
   const attendanceByWeek = useMemo(() => {
-    const att = db.attendance[member.id] || {};
+    const att = (db.attendance && db.attendance[member.id]) ? db.attendance[member.id] : {};
     const currentYear = new Date().getFullYear();
     const weeks = 12;
     return Array.from({ length: weeks }, (_, i) => {
@@ -83,13 +84,13 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
   }, [db.attendance, member.id]);
 
   const threeWeeksAbsent = useMemo(() => {
-    const att = db.attendance[member.id] || {};
+    const att = (db.attendance && db.attendance[member.id]) ? db.attendance[member.id] : {};
     const recent = attendanceByWeek.slice(-3);
     return recent.length === 3 && recent.every((r) => att[r.weekNum] === "a");
   }, [db.attendance, member.id, attendanceByWeek]);
 
   const attendanceRate = useMemo(() => {
-    const att = db.attendance[member.id] || {};
+    const att = (db.attendance && db.attendance[member.id]) ? db.attendance[member.id] : {};
     const weeks = Object.keys(att).map(Number).filter((w) => w >= 41 && w <= 52);
     if (weeks.length === 0) return 0;
     const present = weeks.filter((w) => att[w] === "p").length;
@@ -98,14 +99,14 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
 
   const givingTotal = useMemo(() => {
     const thisYear = new Date().getFullYear().toString();
-    return db.income
+    return (db.income ?? [])
       .filter((i) => (i.donor === member.name || i.donor === member.name?.trim()) && i.date?.startsWith(thisYear))
-      .reduce((s, i) => s + i.amount, 0);
+      .reduce((s, i) => s + (i.amount ?? 0), 0);
   }, [db.income, member.name]);
 
   const visitCount = useMemo(() => {
     const thisYear = new Date().getFullYear().toString();
-    return db.visits.filter((v) => v.memberId === member.id && v.date?.startsWith(thisYear)).length;
+    return (db.visits ?? []).filter((v) => v.memberId === member.id && v.date?.startsWith(thisYear)).length;
   }, [db.visits, member.id]);
 
   const newFamilyProgress = useMemo(() => {
@@ -119,14 +120,14 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
     return Math.round((w / 4) * 100);
   }, [newFamilyProgram]);
 
-  const notes = useMemo(() => db.notes[member.id] || [], [db.notes, member.id]);
+  const notes = useMemo(() => (db.notes && db.notes[member.id]) ? db.notes[member.id] : [], [db.notes, member.id]);
   const visits = useMemo(
-    () => db.visits.filter((v) => v.memberId === member.id).sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 20),
+    () => (db.visits ?? []).filter((v) => v.memberId === member.id).sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 20),
     [db.visits, member.id]
   );
   const incomeList = useMemo(() => {
     const thisYear = new Date().getFullYear().toString();
-    return db.income
+    return (db.income ?? [])
       .filter((i) => i.donor === member.name && i.date?.startsWith(thisYear))
       .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
       .slice(0, 30);
@@ -153,7 +154,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
   }, [incomeList]);
 
   const familyMembers = useMemo(
-    () => (member.family_id ? db.members.filter((m) => m.family_id === member.family_id && m.id !== member.id) : []),
+    () => (member.family_id ? (db.members ?? []).filter((m) => m.family_id === member.family_id && m.id !== member.id) : []),
     [db.members, member.family_id, member.id]
   );
 
@@ -179,8 +180,10 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
             {member.is_prospect && <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-amber-500/80">관심 성도</span>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {onEdit && <button type="button" onClick={onEdit} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">편집</button>}
+          <button type="button" onClick={async () => { try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(member, db.settings?.churchName ?? "", null); toast?.("세례증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">세례증명서 인쇄</button>
+          <button type="button" onClick={async () => { try { const { generateMemberCertificatePdf } = await import("@/components/print/MemberCertificate"); await generateMemberCertificatePdf(member, db.settings?.churchName ?? "", null); toast?.("교인증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">교인증명서 인쇄</button>
           {member.phone && <a href={`tel:${member.phone}`} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">전화</a>}
           {member.phone && <a href={`sms:${member.phone}`} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">문자</a>}
           {onClose && <button type="button" onClick={onClose} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">닫기</button>}

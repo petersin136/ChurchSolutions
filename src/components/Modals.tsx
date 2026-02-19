@@ -5,6 +5,7 @@ import type { DB, Member, Note } from "@/types/db";
 import { getDepts } from "@/lib/store";
 import { CATS_INCOME, CATS_EXPENSE } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
+import { supabase } from "@/lib/supabase";
 
 const STATUS_MAP: Record<string, string> = {
   새가족: "badge-blue",
@@ -535,7 +536,7 @@ export function Modals({
     toast("심방 기록 저장", "ok");
   }
 
-  function saveIncome() {
+  async function saveIncome() {
     const amount = Number(incAmount);
     if (!amount) {
       toast("금액을 입력하세요", "err");
@@ -545,30 +546,57 @@ export function Modals({
       date: incDate,
       type: incType,
       amount,
-      donor: incDonor.trim(),
+      donor: incDonor.trim() || null,
       method: incMethod,
-      memo: incMemo.trim(),
+      memo: incMemo.trim() || null,
     };
-    if (editIncId) {
-      setDb((prev) => ({
-        ...prev,
-        income: prev.income.map((r) =>
-          r.id === editIncId ? { ...r, ...data } : r
-        ),
-      }));
-    } else {
-      setDb((prev) => ({
-        ...prev,
-        income: [...prev.income, { ...data, id: "in_" + Date.now() }],
-      }));
+    if (!supabase) {
+      toast("Supabase 연결을 확인하세요.", "err");
+      return;
     }
-    save();
-    setOpenIncomeModal(false);
-    setEditIncId(null);
-    toast("수입 등록 완료", "ok");
+    try {
+      if (editIncId) {
+        console.log("=== INCOME UPDATE 시도 ===", { id: editIncId, ...data });
+        const { data: res, error } = await supabase.from("income").update(data).eq("id", editIncId).select();
+        console.log("=== INCOME UPDATE 결과 ===", { data: res, error });
+        if (error) {
+          console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
+          alert("저장 실패: " + error.message);
+          return;
+        }
+        setDb((prev) => ({
+          ...prev,
+          income: prev.income.map((r) =>
+            r.id === editIncId ? { ...r, ...data, donor: data.donor ?? undefined, memo: data.memo ?? undefined } : r
+          ),
+        }));
+        toast("수정 완료", "ok");
+      } else {
+        console.log("=== INCOME INSERT 시도 ===", data);
+        const { data: inserted, error } = await supabase.from("income").insert(data).select();
+        console.log("=== INCOME INSERT 결과 ===", { data: inserted, error });
+        if (error) {
+          console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
+          alert("저장 실패: " + error.message);
+          return;
+        }
+        const row = Array.isArray(inserted) ? inserted[0] : inserted;
+        const newId = (row as { id: string } | undefined)?.id ?? "in_" + Date.now();
+        setDb((prev) => ({
+          ...prev,
+          income: [...prev.income, { ...data, id: newId, donor: data.donor ?? undefined, memo: data.memo ?? undefined }],
+        }));
+        toast("수입 등록 완료", "ok");
+      }
+      setOpenIncomeModal(false);
+      setEditIncId(null);
+    } catch (e) {
+      console.error("saveIncome 예외", e);
+      alert("저장 중 오류가 발생했습니다.");
+    }
   }
 
-  function saveExpense() {
+  async function saveExpense() {
     const amount = Number(expAmount);
     if (!amount) {
       toast("금액을 입력하세요", "err");
@@ -577,28 +605,55 @@ export function Modals({
     const data = {
       date: expDate,
       category: expCat,
-      item: expItem.trim(),
+      item: expItem.trim() || null,
       amount,
-      resolution: expResol.trim(),
-      memo: expMemo.trim(),
+      resolution: expResol.trim() || null,
+      memo: expMemo.trim() || null,
     };
-    if (editExpId) {
-      setDb((prev) => ({
-        ...prev,
-        expense: prev.expense.map((r) =>
-          r.id === editExpId ? { ...r, ...data } : r
-        ),
-      }));
-    } else {
-      setDb((prev) => ({
-        ...prev,
-        expense: [...prev.expense, { ...data, id: "ex_" + Date.now() }],
-      }));
+    if (!supabase) {
+      toast("Supabase 연결을 확인하세요.", "err");
+      return;
     }
-    save();
-    setOpenExpenseModal(false);
-    setEditExpId(null);
-    toast("지출 등록 완료", "ok");
+    try {
+      if (editExpId) {
+        console.log("=== EXPENSE UPDATE 시도 ===", { id: editExpId, ...data });
+        const { data: res, error } = await supabase.from("expense").update(data).eq("id", editExpId).select();
+        console.log("=== EXPENSE UPDATE 결과 ===", { data: res, error });
+        if (error) {
+          console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);
+          alert("저장 실패: " + error.message);
+          return;
+        }
+        setDb((prev) => ({
+          ...prev,
+          expense: prev.expense.map((r) =>
+            r.id === editExpId ? { ...r, ...data, item: data.item ?? undefined, resolution: data.resolution ?? undefined, memo: data.memo ?? undefined } : r
+          ),
+        }));
+        toast("수정 완료", "ok");
+      } else {
+        console.log("=== EXPENSE INSERT 시도 ===", data);
+        const { data: inserted, error } = await supabase.from("expense").insert(data).select();
+        console.log("=== EXPENSE INSERT 결과 ===", { data: inserted, error });
+        if (error) {
+          console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);
+          alert("저장 실패: " + error.message);
+          return;
+        }
+        const row = Array.isArray(inserted) ? inserted[0] : inserted;
+        const newId = (row as { id: string } | undefined)?.id ?? "ex_" + Date.now();
+        setDb((prev) => ({
+          ...prev,
+          expense: [...prev.expense, { ...data, id: newId, item: data.item ?? undefined, resolution: data.resolution ?? undefined, memo: data.memo ?? undefined }],
+        }));
+        toast("지출 등록 완료", "ok");
+      }
+      setOpenExpenseModal(false);
+      setEditExpId(null);
+    } catch (e) {
+      console.error("saveExpense 예외", e);
+      alert("저장 중 오류가 발생했습니다.");
+    }
   }
 
   function saveBudget() {

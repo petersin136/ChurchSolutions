@@ -298,8 +298,8 @@ interface FollowUp {
 
 function getAllFollowups(db: VCDB): FollowUp[] {
   const fus: FollowUp[] = [];
-  db.visits.forEach(v => { if (v.followUpDate) fus.push({ kind: "visit", refId: v.id, memberId: v.memberId, date: v.followUpDate, note: v.followUpNote, done: v.followUpDone, originDate: v.date, originType: VISIT_TYPES[v.type]?.label || v.type }); });
-  db.counsels.forEach(c => { if (c.followUpDate) fus.push({ kind: "counsel", refId: c.id, memberId: c.memberId, date: c.followUpDate, note: c.followUpNote, done: c.followUpDone, originDate: c.date, originType: COUNSEL_TYPES[c.type]?.label || c.type }); });
+  (db.visits ?? []).forEach(v => { if (v.followUpDate) fus.push({ kind: "visit", refId: v.id, memberId: v.memberId, date: v.followUpDate, note: v.followUpNote, done: v.followUpDone, originDate: v.date, originType: VISIT_TYPES[v.type]?.label || v.type }); });
+  (db.counsels ?? []).forEach(c => { if (c.followUpDate) fus.push({ kind: "counsel", refId: c.id, memberId: c.memberId, date: c.followUpDate, note: c.followUpNote, done: c.followUpDone, originDate: c.date, originType: COUNSEL_TYPES[c.type]?.label || c.type }); });
   return fus.sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -310,12 +310,12 @@ function getAllFollowups(db: VCDB): FollowUp[] {
 /* ----- Dashboard ----- */
 function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db: VCDB; goPage: (p: SubPage) => void; openVisitModal: (id?: string) => void; openCounselModal: (id?: string) => void; loading?: boolean }) {
   const mob = useIsMobile();
-  const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
+  const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
-  const mv = db.visits.filter(v => thisMonth(v.date));
-  const mc = db.counsels.filter(c => thisMonth(c.date));
-  const pv = db.visits.filter(v => prevMonth(v.date));
-  const pc = db.counsels.filter(c => prevMonth(c.date));
+  const mv = (db.visits ?? []).filter(v => thisMonth(v.date));
+  const mc = (db.counsels ?? []).filter(c => thisMonth(c.date));
+  const pv = (db.visits ?? []).filter(v => prevMonth(v.date));
+  const pc = (db.counsels ?? []).filter(c => prevMonth(c.date));
   const completed = mv.filter(v => v.status === "completed").length;
   const scheduled = mv.filter(v => v.status === "scheduled").length;
   const allFU = getAllFollowups(db).filter(f => !f.done);
@@ -330,8 +330,8 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
   const maxCnt = Math.max(...Object.values(typeCounts).map(v => v.count), 1);
 
   const urgentFU = allFU.filter(f => daysFromNow(f.date) <= 3).slice(0, 5);
-  const recentV = [...db.visits].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
-  const recentC = [...db.counsels].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+  const recentV = [...(db.visits ?? [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+  const recentC = [...(db.counsels ?? [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
   const activePrayers = (db.prayers || []).filter(p => p.status === "active");
 
   if (loading) {
@@ -479,10 +479,10 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
   const mob = useIsMobile();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
-  const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
+  const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
   const list = useMemo(() => {
-    let r = [...db.visits];
+    let r = [...(db.visits ?? [])];
     if (filter !== "all") r = r.filter(v => v.type === filter);
     if (search) { const q = search.toLowerCase(); r = r.filter(v => { const m = getMember(v.memberId); return m.name.toLowerCase().includes(q) || (v.summary || "").toLowerCase().includes(q) || (v.location || "").toLowerCase().includes(q); }); }
     return r.sort((a, b) => b.date.localeCompare(a.date));
@@ -683,7 +683,7 @@ function MainDBVisitList({
           <FormField label="성도">
             <FSelect value={addMemberId} onChange={setAddMemberId} style={{ maxHeight: 200 }}>
               <option value="">선택</option>
-              {mainDb.members.map(m => (
+              {(mainDb.members ?? []).map(m => (
                 <option key={m.id} value={m.id}>{m.group ? `[${m.group}] ` : ""}{m.name} {m.role ? `(${m.role})` : ""}</option>
               ))}
             </FSelect>
@@ -705,10 +705,10 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
   const mob = useIsMobile();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
-  const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
+  const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
   const list = useMemo(() => {
-    let r = [...db.counsels];
+    let r = [...(db.counsels ?? [])];
     if (filter !== "all") r = r.filter(c => c.type === filter);
     if (search) { const q = search.toLowerCase(); r = r.filter(c => { const m = getMember(c.memberId); return m.name.toLowerCase().includes(q) || (c.summary || "").toLowerCase().includes(q); }); }
     return r.sort((a, b) => b.date.localeCompare(a.date));
@@ -763,7 +763,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
 function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselModal }: { db: VCDB; setDb: React.Dispatch<React.SetStateAction<VCDB>>; persist: () => void; toast: (m: string) => void; openVisitModal: (id?: string) => void; openCounselModal: (id?: string) => void }) {
   const mob = useIsMobile();
   const [tab, setTab] = useState("all");
-  const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
+  const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
   const allFU = getAllFollowups(db);
   const filtered = useMemo(() => {
@@ -846,7 +846,7 @@ function PrayersSub({
   const mob = useIsMobile();
   const [filter, setFilter] = useState<"all" | "active" | "answered">("all");
   const [search, setSearch] = useState("");
-  const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
+  const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
   const list = useMemo(() => {
     let r = [...(db.prayers || [])];
@@ -922,7 +922,7 @@ function MembersSub({ db, openMemberDetail }: { db: VCDB; openMemberDetail: (id:
   const [search, setSearch] = useState("");
   const members = useMemo(() => {
     const q = search.toLowerCase();
-    return q ? db.members.filter(m => m.name.toLowerCase().includes(q) || m.group.toLowerCase().includes(q)) : db.members;
+    return q ? (db.members ?? []).filter(m => (m.name || "").toLowerCase().includes(q) || (m.group || "").toLowerCase().includes(q)) : (db.members ?? []);
   }, [db.members, search]);
 
   return (
@@ -934,10 +934,10 @@ function MembersSub({ db, openMemberDetail }: { db: VCDB; openMemberDetail: (id:
       {members.length === 0 ? (
         <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>👤</div><div style={{ fontSize: 14 }}>검색 결과가 없습니다</div></div>
       ) : members.map(m => {
-        const vc = db.visits.filter(v => v.memberId === m.id).length;
-        const cc = db.counsels.filter(c => c.memberId === m.id).length;
-        const lastV = [...db.visits].filter(v => v.memberId === m.id).sort((a, b) => b.date.localeCompare(a.date))[0];
-        const lastC = [...db.counsels].filter(c => c.memberId === m.id).sort((a, b) => b.date.localeCompare(a.date))[0];
+        const vc = (db.visits ?? []).filter(v => v.memberId === m.id).length;
+        const cc = (db.counsels ?? []).filter(c => c.memberId === m.id).length;
+        const lastV = [...(db.visits ?? [])].filter(v => v.memberId === m.id).sort((a, b) => b.date.localeCompare(a.date))[0];
+        const lastC = [...(db.counsels ?? [])].filter(c => c.memberId === m.id).sort((a, b) => b.date.localeCompare(a.date))[0];
         return (
           <Card key={m.id} onClick={() => openMemberDetail(m.id)} style={{ cursor: "pointer" }}>
             <div style={{ padding: mob ? 14 : 22 }}>
@@ -969,13 +969,13 @@ function TimelineSub({ db, openVisitModal, openCounselModal }: { db: VCDB; openV
   const mob = useIsMobile();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
+  const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
   const all = useMemo(() => {
     type TLItem = (Visit | Counsel) & { _kind: "visit" | "counsel"; _date: string };
     let items: TLItem[] = [
-      ...db.visits.map(v => ({ ...v, _kind: "visit" as const, _date: v.date })),
-      ...db.counsels.map(c => ({ ...c, _kind: "counsel" as const, _date: c.date })),
+      ...(db.visits ?? []).map(v => ({ ...v, _kind: "visit" as const, _date: v.date })),
+      ...(db.counsels ?? []).map(c => ({ ...c, _kind: "counsel" as const, _date: c.date })),
     ];
     if (filter !== "all") items = items.filter(x => x._kind === filter);
     if (search) {
@@ -1039,12 +1039,12 @@ function TimelineSub({ db, openVisitModal, openCounselModal }: { db: VCDB; openV
 /* ----- Report ----- */
 function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => void; loading?: boolean }) {
   const mob = useIsMobile();
-  const mv = db.visits.filter(v => thisMonth(v.date));
-  const mc = db.counsels.filter(c => thisMonth(c.date));
+  const mv = (db.visits ?? []).filter(v => thisMonth(v.date));
+  const mc = (db.counsels ?? []).filter(c => thisMonth(c.date));
   const completed = mv.filter(v => v.status === "completed");
   const allFU = getAllFollowups(db).filter(f => !f.done);
   const now = new Date();
-  const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
+  const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
   if (loading) {
     return (
@@ -1064,12 +1064,12 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
     let csv = "\uFEFF심방/상담 기록 보고서\n";
     csv += `교회,${db.settings.church}\n교역자,${db.settings.name} ${db.settings.role}\n출력일,${todayStr()}\n\n`;
     csv += "=== 심방 기록 ===\n이름,구역,직분,유형,날짜,시간,장소,상태,내용,기도제목\n";
-    db.visits.sort((a, b) => b.date.localeCompare(a.date)).forEach(v => {
+    [...(db.visits ?? [])].sort((a, b) => b.date.localeCompare(a.date)).forEach(v => {
       const m = getMember(v.memberId);
       csv += `${m.name},${m.group},${m.role},${VISIT_TYPES[v.type]?.label || v.type},${v.date},${v.time || ""},${v.location || ""},${STATUS_LABELS[v.status]},"${(v.summary || "").replace(/"/g, '""')}","${(v.prayerNote || "").replace(/"/g, '""')}"\n`;
     });
     csv += "\n=== 상담 기록 ===\n이름,구역,직분,유형,날짜,비공개,내용\n";
-    db.counsels.sort((a, b) => b.date.localeCompare(a.date)).forEach(c => {
+    [...(db.counsels ?? [])].sort((a, b) => b.date.localeCompare(a.date)).forEach(c => {
       const m = getMember(c.memberId);
       csv += `${m.name},${m.group},${m.role},${COUNSEL_TYPES[c.type]?.label || c.type},${c.date},${c.confidential ? "비공개" : "공개"},"${(c.summary || "").replace(/"/g, '""')}"\n`;
     });
@@ -1159,9 +1159,9 @@ function HandoverSub({ db, toast, getMember }: { db: VCDB; toast: (m: string) =>
 
   const exportHandoverCSV = () => {
     let csv = "\uFEFF성도,직분,구역,연락처,심방횟수,상담횟수,활성기도제목수,특이사항\n";
-    db.members.forEach(m => {
-      const vc = db.visits.filter(v => v.memberId === m.id).length;
-      const cc = db.counsels.filter(c => c.memberId === m.id).length;
+    (db.members ?? []).forEach(m => {
+      const vc = (db.visits ?? []).filter(v => v.memberId === m.id).length;
+      const cc = (db.counsels ?? []).filter(c => c.memberId === m.id).length;
       const pc = prayers.filter(p => p.memberId === m.id && p.status === "active").length;
       const memberMemos = memos.filter(me => me.memberId === m.id).map(me => me.text).join("; ");
       const notes = [m.note, memberMemos].filter(Boolean).join(" / ");
@@ -1189,18 +1189,18 @@ function HandoverSub({ db, toast, getMember }: { db: VCDB; toast: (m: string) =>
         <div style={{ padding: mob ? 14 : 22 }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📊 전체 현황 요약</div>
           <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(4, 1fr)", gap: 16 }}>
-            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{db.members.length}</div><div style={{ fontSize: 12, color: C.textMuted }}>전체 성도</div></div>
-            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{db.visits.length}</div><div style={{ fontSize: 12, color: C.textMuted }}>총 심방</div></div>
-            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{db.counsels.length}</div><div style={{ fontSize: 12, color: C.textMuted }}>총 상담</div></div>
+            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{(db.members ?? []).length}</div><div style={{ fontSize: 12, color: C.textMuted }}>전체 성도</div></div>
+            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{(db.visits ?? []).length}</div><div style={{ fontSize: 12, color: C.textMuted }}>총 심방</div></div>
+            <div><div style={{ fontSize: 24, fontWeight: 800 }}>{(db.counsels ?? []).length}</div><div style={{ fontSize: 12, color: C.textMuted }}>총 상담</div></div>
             <div><div style={{ fontSize: 24, fontWeight: 800 }}>{activePrayerCount}</div><div style={{ fontSize: 12, color: C.textMuted }}>활성 기도제목</div></div>
           </div>
         </div>
       </Card>
 
       <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>성도별 상세</div>
-      {db.members.map(m => {
-        const visits = db.visits.filter(v => v.memberId === m.id).sort((a, b) => b.date.localeCompare(a.date));
-        const counsels = db.counsels.filter(c => c.memberId === m.id).sort((a, b) => b.date.localeCompare(a.date));
+      {(db.members ?? []).map(m => {
+        const visits = (db.visits ?? []).filter(v => v.memberId === m.id).sort((a, b) => b.date.localeCompare(a.date));
+        const counsels = (db.counsels ?? []).filter(c => c.memberId === m.id).sort((a, b) => b.date.localeCompare(a.date));
         const memberPrayers = prayers.filter(p => p.memberId === m.id && p.status === "active");
         const memberMemos = memos.filter(me => me.memberId === m.id);
         const lastV = visits[0];
@@ -1412,12 +1412,12 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
 
   const handleNav = (id: SubPage) => { setActiveSub(id); if (mob) setSideOpen(false); };
 
-  const getMember = (id: string) => db.members.find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
+  const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
   /* Open visit modal */
   const openVisitModal = useCallback((id?: string) => {
     if (id) {
-      const v = db.visits.find(x => x.id === id);
+      const v = (db.visits ?? []).find(x => x.id === id);
       if (v) { setEditVisitId(id); setVMember(v.memberId); setVType(v.type); setVDate(v.date); setVTime(v.time); setVLoc(v.location); setVStatus(v.status); setVSummary(v.summary); setVPrayer(v.prayerNote); setVFUDate(v.followUpDate); setVFUNote(v.followUpNote); setVFUDone(v.followUpDone); }
     } else {
       setEditVisitId(null); setVMember(""); setVType("routine"); setVDate(todayStr()); setVTime("14:00"); setVLoc(""); setVStatus("scheduled"); setVSummary(""); setVPrayer(""); setVFUDate(""); setVFUNote(""); setVFUDone(false); setVPhotoFile(null);
@@ -1493,7 +1493,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   /* Open counsel modal */
   const openCounselModal = useCallback((id?: string) => {
     if (id) {
-      const c = db.counsels.find(x => x.id === id);
+      const c = (db.counsels ?? []).find(x => x.id === id);
       if (c) { setEditCounselId(id); setCMember(c.memberId); setCType(c.type); setCDate(c.date); setCSummary(c.summary); setCConf(c.confidential); setCFUDate(c.followUpDate); setCFUNote(c.followUpNote); setCFUDone(c.followUpDone); }
     } else {
       setEditCounselId(null); setCMember(""); setCType("other"); setCDate(todayStr()); setCSummary(""); setCConf(false); setCFUDate(""); setCFUNote(""); setCFUDone(false);
@@ -1549,8 +1549,8 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
     const m = getMember(memberId);
     let csv = "\uFEFF성도 이력 내보내기\n";
     csv += `이름,${m.name}\n직분,${m.role}\n구역,${m.group}\n연락처,${m.phone}\n특이사항,${(m.note || "").replace(/"/g, '""')}\n\n`;
-    const visits = db.visits.filter(v => v.memberId === memberId).sort((a, b) => b.date.localeCompare(a.date));
-    const counsels = db.counsels.filter(c => c.memberId === memberId).sort((a, b) => b.date.localeCompare(a.date));
+    const visits = (db.visits ?? []).filter(v => v.memberId === memberId).sort((a, b) => b.date.localeCompare(a.date));
+    const counsels = (db.counsels ?? []).filter(c => c.memberId === memberId).sort((a, b) => b.date.localeCompare(a.date));
     const memberPrayers = (db.prayers || []).filter(p => p.memberId === memberId);
     const memberMemos = (db.memos || []).filter(me => me.memberId === memberId);
     csv += "=== 심방 ===\n날짜,유형,장소,상태,내용,기도제목\n";
@@ -1570,12 +1570,12 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
     let csv = "\uFEFF심방/상담 기록 보고서\n";
     csv += `교회,${db.settings.church}\n교역자,${db.settings.name} ${db.settings.role}\n출력일,${todayStr()}\n\n`;
     csv += "=== 심방 기록 ===\n이름,구역,직분,유형,날짜,시간,장소,상태,내용,기도제목\n";
-    db.visits.sort((a, b) => b.date.localeCompare(a.date)).forEach(v => {
+    [...(db.visits ?? [])].sort((a, b) => b.date.localeCompare(a.date)).forEach(v => {
       const m = getMember(v.memberId);
       csv += `${m.name},${m.group},${m.role},${VISIT_TYPES[v.type]?.label},${v.date},${v.time},${v.location},${STATUS_LABELS[v.status]},"${(v.summary || "").replace(/"/g, '""')}","${(v.prayerNote || "").replace(/"/g, '""')}"\n`;
     });
     csv += "\n=== 상담 기록 ===\n이름,구역,직분,유형,날짜,비공개,내용\n";
-    db.counsels.sort((a, b) => b.date.localeCompare(a.date)).forEach(c => {
+    [...(db.counsels ?? [])].sort((a, b) => b.date.localeCompare(a.date)).forEach(c => {
       const m = getMember(c.memberId);
       csv += `${m.name},${m.group},${m.role},${COUNSEL_TYPES[c.type]?.label},${c.date},${c.confidential ? "비공개" : "공개"},"${(c.summary || "").replace(/"/g, '""')}"\n`;
     });
@@ -1713,7 +1713,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           <Btn onClick={() => saveVisit()} disabled={visitSaving}>{visitSaving ? "저장 중…" : "저장"}</Btn>
         </div>
       }>
-        <FormField label="성도 선택"><FSelect value={vMember} onChange={setVMember}><option value="">-- 선택 --</option>{db.members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect></FormField>
+        <FormField label="성도 선택"><FSelect value={vMember} onChange={setVMember}><option value="">-- 선택 --</option>{(db.members ?? []).map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect></FormField>
         <FormField label="심방 유형">
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {Object.entries(VISIT_TYPES).map(([k, v]) => (
@@ -1753,7 +1753,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           <Btn onClick={saveCounsel}>저장</Btn>
         </div>
       }>
-        <FormField label="성도 선택"><FSelect value={cMember} onChange={setCMember}><option value="">-- 선택 --</option>{db.members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect></FormField>
+        <FormField label="성도 선택"><FSelect value={cMember} onChange={setCMember}><option value="">-- 선택 --</option>{(db.members ?? []).map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect></FormField>
         <FormField label="상담 유형">
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {Object.entries(COUNSEL_TYPES).map(([k, v]) => (
@@ -1786,8 +1786,8 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         </div>
       }>
         {detailMember && detailMemberId && (() => {
-          const visits = db.visits.filter(v => v.memberId === detailMemberId).sort((a, b) => b.date.localeCompare(a.date));
-          const counsels = db.counsels.filter(c => c.memberId === detailMemberId).sort((a, b) => b.date.localeCompare(a.date));
+          const visits = (db.visits ?? []).filter(v => v.memberId === detailMemberId).sort((a, b) => b.date.localeCompare(a.date));
+          const counsels = (db.counsels ?? []).filter(c => c.memberId === detailMemberId).sort((a, b) => b.date.localeCompare(a.date));
           const memberMemos = (db.memos || []).filter(me => me.memberId === detailMemberId);
           const allItems: { id: string; _kind: "visit" | "counsel" | "memo"; _date: string; summary?: string }[] = [
             ...visits.map(v => ({ ...v, _kind: "visit" as const, _date: v.date })),
@@ -1845,7 +1845,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           <Btn onClick={savePrayer}>저장</Btn>
         </div>
       }>
-        <FormField label="성도 선택"><FSelect value={pMember} onChange={setPMember}><option value="">-- 선택 --</option>{db.members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect></FormField>
+        <FormField label="성도 선택"><FSelect value={pMember} onChange={setPMember}><option value="">-- 선택 --</option>{(db.members ?? []).map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect></FormField>
         <FormField label="기도제목"><FTextarea value={pText} onChange={setPText} placeholder="기도제목을 입력하세요" style={{ minHeight: 80 }} /></FormField>
         <FormField label="분류"><FSelect value={pCategory} onChange={v => setPCategory(v as PrayerCategory)}>{Object.entries(PRAYER_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FSelect></FormField>
         <FormField label="날짜"><CalendarDropdown value={pDate} onChange={setPDate} /></FormField>
@@ -1858,7 +1858,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           <Btn onClick={saveMemo}>저장</Btn>
         </div>
       }>
-        <FormField label="성도">{detailMemberId ? <div style={{ padding: "10px 14px", background: C.bg, borderRadius: 8, fontSize: 14 }}>{getMember(detailMemberId).name}</div> : <FSelect value={mMemberId} onChange={setMMemberId}><option value="">-- 선택 --</option>{db.members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect>}</FormField>
+        <FormField label="성도">{detailMemberId ? <div style={{ padding: "10px 14px", background: C.bg, borderRadius: 8, fontSize: 14 }}>{getMember(detailMemberId).name}</div> : <FSelect value={mMemberId} onChange={setMMemberId}><option value="">-- 선택 --</option>{(db.members ?? []).map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect>}</FormField>
         <FormField label="메모 내용"><FTextarea value={mText} onChange={setMText} placeholder="행정 메모, 구역 배정, 멘토 연결 등" style={{ minHeight: 100 }} /></FormField>
         <FormField label="분류"><FSelect value={mCategory} onChange={v => setMCategory(v as MemoCategory)}>{Object.entries(MEMO_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FSelect></FormField>
         <FormField label="날짜"><CalendarDropdown value={mDate} onChange={setMDate} /></FormField>

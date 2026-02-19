@@ -542,9 +542,11 @@ function DashboardTab({ offerings, expenses, categories, departments }: {
 }
 
 /* ====== 헌금 관리 (거래입력) ====== */
-function OfferingTab({ offerings, setOfferings, donors, categories }: {
+function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome, onDeleteIncome }: {
   offerings: Offering[]; setOfferings: React.Dispatch<React.SetStateAction<Offering[]>>;
   donors: Donor[]; categories: Category[];
+  onAddIncome?: (o: Omit<Offering, "id">) => Promise<string | null>;
+  onDeleteIncome?: (id: string) => Promise<void>;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -562,12 +564,11 @@ function OfferingTab({ offerings, setOfferings, donors, categories }: {
     return result.sort((a, b) => b.date.localeCompare(a.date));
   }, [offerings, search, filterCat, filterMonth]);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const name = form.donorName.trim() || "익명";
     if (!form.amount) return;
     const donor = donors.find(d => d.name === name);
-    setOfferings(prev => [...prev, {
-      id: uid(),
+    const newOffering: Omit<Offering, "id"> = {
       donorId: donor?.id || "",
       donorName: name,
       categoryId: form.categoryId,
@@ -575,12 +576,27 @@ function OfferingTab({ offerings, setOfferings, donors, categories }: {
       date: form.date,
       method: form.method,
       note: form.note,
-    }]);
-    setForm({ donorName: "", categoryId: "tithe", amount: "", date: todayStr(), method: "현금", note: "" });
-    setShowAdd(false);
+    };
+    if (onAddIncome) {
+      const id = await onAddIncome(newOffering);
+      if (id) {
+        setForm({ donorName: "", categoryId: "tithe", amount: "", date: todayStr(), method: "현금", note: "" });
+        setShowAdd(false);
+      }
+    } else {
+      setOfferings(prev => [...prev, { id: uid(), ...newOffering }]);
+      setForm({ donorName: "", categoryId: "tithe", amount: "", date: todayStr(), method: "현금", note: "" });
+      setShowAdd(false);
+    }
   };
 
-  const handleDelete = (id: string) => setOfferings(prev => prev.filter(o => o.id !== id));
+  const handleDelete = async (id: string) => {
+    if (onDeleteIncome) {
+      await onDeleteIncome(id);
+    } else {
+      setOfferings(prev => prev.filter(o => o.id !== id));
+    }
+  };
   const filteredTotal = filtered.reduce((s, o) => s + o.amount, 0);
 
   return (
@@ -943,9 +959,10 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
 }
 
 /* ====== 지출 관리 ====== */
-function ExpenseTab({ expenses, setExpenses, departments, expenseCategories }: {
+function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onAddExpense }: {
   expenses: Expense[]; setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   departments: Department[]; expenseCategories: ExpCategory[];
+  onAddExpense?: (e: Omit<Expense, "id">) => Promise<string | null>;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -963,11 +980,28 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories }: {
 
   const filteredTotal = filtered.reduce((s, e) => s + e.amount, 0);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.amount) return;
-    setExpenses(prev => [...prev, { id: uid(), ...form, amount: parseInt(form.amount) }]);
-    setForm({ categoryId: "salary", departmentId: "admin", amount: "", date: todayStr(), description: "", receipt: true, note: "" });
-    setShowAdd(false);
+    const newExpense: Omit<Expense, "id"> = {
+      categoryId: form.categoryId,
+      departmentId: form.departmentId,
+      amount: parseInt(form.amount),
+      date: form.date,
+      description: form.description,
+      receipt: form.receipt,
+      note: form.note,
+    };
+    if (onAddExpense) {
+      const id = await onAddExpense(newExpense);
+      if (id) {
+        setForm({ categoryId: "salary", departmentId: "admin", amount: "", date: todayStr(), description: "", receipt: true, note: "" });
+        setShowAdd(false);
+      }
+    } else {
+      setExpenses(prev => [...prev, { id: uid(), ...newExpense }]);
+      setForm({ categoryId: "salary", departmentId: "admin", amount: "", date: todayStr(), description: "", receipt: true, note: "" });
+      setShowAdd(false);
+    }
   };
 
   return (
@@ -2996,6 +3030,61 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     }
   }, [db, setDb, expenses]);
 
+  const onAddIncome = useCallback(async (o: Omit<Offering, "id">) => {
+    if (!supabase || !setDb || !db) return null;
+    const row = { date: o.date, type: o.categoryId, amount: o.amount, donor: o.donorName || null, method: o.method || null, memo: o.note || null };
+    console.log("=== INCOME INSERT 시도 ===", row);
+    const { data, error } = await supabase.from("income").insert(row).select("id").single();
+    console.log("=== INCOME INSERT 결과 ===", { data, error });
+    if (error) {
+      console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
+      alert("저장 실패: " + error.message);
+      return null;
+    }
+    const id = (data as { id: string }).id;
+    setOfferings(prev => [...prev, { ...o, id }]);
+    return id;
+  }, [setOfferings]);
+  const onDeleteIncome = useCallback(async (id: string) => {
+    if (!supabase || !setDb) return;
+    console.log("=== INCOME DELETE 시도 ===", id);
+    const { error } = await supabase.from("income").delete().eq("id", id);
+    console.log("=== INCOME DELETE 결과 ===", { error });
+    if (error) {
+      console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
+      alert("삭제 실패: " + error.message);
+      return;
+    }
+    setOfferings(prev => prev.filter(o => o.id !== id));
+  }, [setOfferings]);
+  const onAddExpense = useCallback(async (e: Omit<Expense, "id">) => {
+    if (!supabase || !setDb || !db) return null;
+    const row = { date: e.date, category: e.categoryId, item: e.description || null, amount: e.amount, resolution: e.departmentId || null, memo: e.note || null };
+    console.log("=== EXPENSE INSERT 시도 ===", row);
+    const { data, error } = await supabase.from("expense").insert(row).select("id").single();
+    console.log("=== EXPENSE INSERT 결과 ===", { data, error });
+    if (error) {
+      console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);
+      alert("저장 실패: " + error.message);
+      return null;
+    }
+    const id = (data as { id: string }).id;
+    setExpenses(prev => [...prev, { ...e, id }]);
+    return id;
+  }, [setExpenses]);
+  const onDeleteExpense = useCallback(async (id: string) => {
+    if (!supabase || !setDb) return;
+    console.log("=== EXPENSE DELETE 시도 ===", id);
+    const { error } = await supabase.from("expense").delete().eq("id", id);
+    console.log("=== EXPENSE DELETE 결과 ===", { error });
+    if (error) {
+      console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);
+      alert("삭제 실패: " + error.message);
+      return;
+    }
+    setExpenses(prev => prev.filter(x => x.id !== id));
+  }, [setExpenses]);
+
   const donors = useMemo(() => {
     if (db?.members != null) {
       return membersToDonors(db.members);
@@ -3072,10 +3161,10 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
               onOpenBudget={() => setActiveTab("budgetManagement")}
             />
           )}
-          {activeTab === "offering" && <OfferingTab offerings={offerings} setOfferings={setOfferings} donors={donors} categories={DEFAULT_CATEGORIES} />}
+          {activeTab === "offering" && <OfferingTab offerings={offerings} setOfferings={setOfferings} donors={donors} categories={DEFAULT_CATEGORIES} onAddIncome={onAddIncome} onDeleteIncome={onDeleteIncome} />}
           {activeTab === "givingStatus" && <GivingStatusTab donors={donors} offerings={offerings} categories={DEFAULT_CATEGORIES} />}
           {activeTab === "donor" && <DonorTab donors={donors} setDonors={setDonors} offerings={offerings} />}
-          {activeTab === "expense" && <ExpenseTab expenses={expenses} setExpenses={setExpenses} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} />}
+          {activeTab === "expense" && <ExpenseTab expenses={expenses} setExpenses={setExpenses} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} onAddExpense={onAddExpense} />}
           {activeTab === "cashJournal" && <CashJournal toast={toast ?? (() => {})} />}
           {activeTab === "budgetManagement" && <BudgetManagement fiscalYear={String(new Date().getFullYear())} toast={toast ?? (() => {})} />}
           {activeTab === "budgetVsActual" && <BudgetVsActual year={String(new Date().getFullYear())} month={new Date().getMonth() + 1} toast={toast ?? (() => {})} />}

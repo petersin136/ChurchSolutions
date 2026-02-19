@@ -1,8 +1,11 @@
 {
-  "name": "교역자 슈퍼플래너",
-  "short_name": "슈퍼플래너",
-  "start_url": ".",
+  "name": "교회 솔루션",
+  "short_name": "교회솔루션",
+  "start_url": "/",
   "display": "standalone",
+  "theme_color": "#1a1f36",
   "background_color": "#F2F2F7",
-  "theme_color": "#007AFF"
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
 }

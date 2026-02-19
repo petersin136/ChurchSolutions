@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
 const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const YEAR_MIN = 1920;
+const YEAR_MAX = 2030;
 
 function toYMD(d: Date) {
   const y = d.getFullYear();
@@ -28,6 +30,7 @@ interface CalendarDropdownProps {
   label?: string;
   onClear?: () => void;
   showClearButton?: boolean;
+  disabled?: boolean;
   id?: string;
   className?: string;
   style?: React.CSSProperties;
@@ -39,12 +42,14 @@ export function CalendarDropdown({
   label,
   onClear,
   showClearButton = false,
+  disabled = false,
   id,
   className,
   style,
 }: CalendarDropdownProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => (value ? parseYMD(value) : new Date()));
+  const [viewMode, setViewMode] = useState<"calendar" | "year">("calendar");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const today = toYMD(new Date());
@@ -52,6 +57,10 @@ export function CalendarDropdown({
   useEffect(() => {
     if (value) setView(parseYMD(value));
   }, [value]);
+
+  useEffect(() => {
+    if (!open) setViewMode("calendar");
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -80,6 +89,8 @@ export function CalendarDropdown({
     });
   }
 
+  const years = Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MIN + i);
+
   const prevMonth = useCallback(() => {
     setView((v) => {
       const n = new Date(v);
@@ -103,6 +114,15 @@ export function CalendarDropdown({
     [onChange]
   );
 
+  const selectYear = useCallback((y: number) => {
+    setView((v) => {
+      const n = new Date(v);
+      n.setFullYear(y);
+      return n;
+    });
+    setViewMode("calendar");
+  }, []);
+
   const setToday = useCallback(() => {
     const t = today;
     onChange(t);
@@ -120,7 +140,8 @@ export function CalendarDropdown({
       <button
         type="button"
         id={id}
-        onClick={() => setOpen((o) => !o)}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((o) => !o)}
         style={{
           width: "100%",
           display: "flex",
@@ -129,13 +150,14 @@ export function CalendarDropdown({
           padding: "12px 14px",
           borderRadius: 12,
           border: "1px solid #e5e7eb",
-          background: "#fff",
+          background: disabled ? "#f9fafb" : "#fff",
           fontSize: 15,
           color: value ? "#1a1f36" : "#9ca3af",
           fontFamily: "inherit",
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
           outline: "none",
           textAlign: "left",
+          opacity: disabled ? 0.7 : 1,
         }}
       >
         <span style={{ flex: 1 }}>{value ? displayValue(value) : "날짜 선택"}</span>
@@ -163,65 +185,103 @@ export function CalendarDropdown({
             overflow: "hidden",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #f3f4f6" }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: "#1a1f36" }}>
-              {year}년 {month + 1}월
-            </span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button type="button" onClick={prevMonth} style={{ width: 32, height: 32, border: "none", background: "#f3f4f6", borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>◀</button>
-              <button type="button" onClick={nextMonth} style={{ width: 32, height: 32, border: "none", background: "#f3f4f6", borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>▶</button>
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "10px 12px", gap: 2 }}>
-            {DAYS.map((d) => (
-              <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "#6b7280", padding: "6px 0" }}>
-                {d}
+          {viewMode === "year" ? (
+            <>
+              <div style={{ padding: "14px 16px", borderBottom: "1px solid #f3f4f6", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
+                연도 선택
               </div>
-            ))}
-            {grid.map(({ date, ymd, isCurrent, isToday }) => {
-              const selected = value === ymd;
-              return (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", padding: "12px", gap: 6, maxHeight: 280, overflowY: "auto" }}>
+                {years.map((y) => (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => selectYear(y)}
+                    style={{
+                      padding: "10px",
+                      border: "none",
+                      borderRadius: 8,
+                      background: year === y ? "#3b82f6" : "#f3f4f6",
+                      color: year === y ? "#fff" : "#1a1f36",
+                      fontSize: 14,
+                      fontWeight: year === y ? 700 : 500,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {y}년
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #f3f4f6" }}>
                 <button
-                  key={ymd}
                   type="button"
-                  onClick={() => selectDate(ymd)}
-                  style={{
-                    width: "100%",
-                    aspectRatio: "1",
-                    maxWidth: 40,
-                    margin: "0 auto",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "none",
-                    borderRadius: "50%",
-                    background: selected ? "#3b82f6" : "transparent",
-                    color: selected ? "#fff" : isCurrent ? "#1a1f36" : "#d1d5db",
-                    fontSize: 14,
-                    fontWeight: selected ? 700 : 500,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    boxSizing: "border-box",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    borderColor: isToday && !selected ? "#9ca3af" : "transparent",
-                  }}
+                  onClick={() => setViewMode("year")}
+                  style={{ fontSize: 16, fontWeight: 700, color: "#1a1f36", background: "none", border: "none", cursor: "pointer", padding: "4px 8px", borderRadius: 8 }}
+                  title="연도 선택"
                 >
-                  {date.getDate()}
+                  {year}년
                 </button>
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid #f3f4f6", gap: 8 }}>
-            {(showClearButton || onClear) ? (
-              <button type="button" onClick={() => { if (onClear) onClear(); else onChange(""); setOpen(false); }} style={{ padding: "8px 14px", fontSize: 14, fontWeight: 600, color: "#6b7280", background: "none", border: "none", cursor: "pointer" }}>
-                삭제
-              </button>
-            ) : <span />}
-            <button type="button" onClick={setToday} style={{ padding: "8px 14px", fontSize: 14, fontWeight: 600, color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}>
-              오늘
-            </button>
-          </div>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "#1a1f36" }}>{month + 1}월</span>
+                <div style={{ display: "flex", gap: 4 }}>
+                  <button type="button" onClick={prevMonth} style={{ width: 32, height: 32, border: "none", background: "#f3f4f6", borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>◀</button>
+                  <button type="button" onClick={nextMonth} style={{ width: 32, height: 32, border: "none", background: "#f3f4f6", borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>▶</button>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "10px 12px", gap: 2 }}>
+                {DAYS.map((d) => (
+                  <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "#6b7280", padding: "6px 0" }}>
+                    {d}
+                  </div>
+                ))}
+                {grid.map(({ date, ymd, isCurrent, isToday }) => {
+                  const selected = value === ymd;
+                  return (
+                    <button
+                      key={ymd}
+                      type="button"
+                      onClick={() => selectDate(ymd)}
+                      style={{
+                        width: "100%",
+                        aspectRatio: "1",
+                        maxWidth: 40,
+                        margin: "0 auto",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "none",
+                        borderRadius: "50%",
+                        background: selected ? "#3b82f6" : "transparent",
+                        color: selected ? "#fff" : isCurrent ? "#1a1f36" : "#d1d5db",
+                        fontSize: 14,
+                        fontWeight: selected ? 700 : 500,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        boxSizing: "border-box",
+                        borderWidth: 1,
+                        borderStyle: "solid",
+                        borderColor: isToday && !selected ? "#9ca3af" : "transparent",
+                      }}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid #f3f4f6", gap: 8 }}>
+                {(showClearButton || onClear) ? (
+                  <button type="button" onClick={() => { if (onClear) onClear(); else onChange(""); setOpen(false); }} style={{ padding: "8px 14px", fontSize: 14, fontWeight: 600, color: "#6b7280", background: "none", border: "none", cursor: "pointer" }}>
+                    삭제
+                  </button>
+                ) : <span />}
+                <button type="button" onClick={setToday} style={{ padding: "8px 14px", fontSize: 14, fontWeight: 600, color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}>
+                  오늘
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

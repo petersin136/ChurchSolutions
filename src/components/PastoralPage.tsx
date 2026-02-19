@@ -2077,14 +2077,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [fSource, setFSource] = useState(""); const [fPrayer, setFPrayer] = useState(""); const [fMemo, setFMemo] = useState("");
   const [fGroup, setFGroup] = useState(""); const [fPhoto, setFPhoto] = useState("");
   const [fVisitPath, setFVisitPath] = useState(""); const [fReferrerId, setFReferrerId] = useState(""); const [fJob, setFJob] = useState(""); const [fFirstVisitDate, setFFirstVisitDate] = useState(todayStr());
-  const [showBirthPicker, setShowBirthPicker] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
-
-  const formatBirthDisplay = (birth: string) => {
-    if (!birth || !/^\d{4}-\d{2}-\d{2}$/.test(birth)) return "생년월일 선택";
-    const [y, m, d] = birth.split("-");
-    return `${y}년 ${parseInt(m, 10)}월 ${parseInt(d, 10)}일`;
-  };
 
   // Note form
   const [nDate, setNDate] = useState(todayStr()); const [nType, setNType] = useState<Note["type"]>("memo"); const [nContent, setNContent] = useState(""); const [nMbrSelect, setNMbrSelect] = useState("");
@@ -2151,48 +2144,119 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     setShowMemberModal(true);
   }, [db.members, db.settings.mokjangList, depts]);
 
-  const saveMember = () => {
+  const saveMember = async () => {
     if (!fName.trim()) { toast("이름을 입력하세요", "err"); return; }
-    const data: Partial<Member> = {
-      name: fName.trim(), dept: fDept, role: fRole.trim(), birth: fBirth, gender: fGender, phone: fPhone.trim(),
-      address: fAddr.trim(), family: fFamily.trim(), status: fStatus, source: fSource, prayer: fPrayer.trim(), memo: fMemo.trim(), photo: fPhoto, group: fGroup || undefined,
-      visit_path: (fVisitPath || undefined) as Member["visit_path"], referrer_id: fReferrerId || undefined, job: fJob.trim() || undefined, first_visit_date: fFirstVisitDate || undefined,
-    };
-    if (editMbrId) {
-      setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === editMbrId ? { ...m, ...data } : m) }));
-      toast("수정 완료", "ok");
-    } else {
-      const newId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "mb_" + uid();
-      const startDate = fFirstVisitDate || todayStr();
-      setDb(prev => {
-        const next = { ...prev, members: [...prev.members, { ...data, id: newId, createdAt: todayStr() } as Member] };
-        if (fStatus === "새가족" || fStatus === "정착중") {
-          const program: NewFamilyProgram = {
-            id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "nfp_" + uid(),
-            member_id: newId,
-            mentor_id: null,
-            program_start_date: startDate,
-            week1_completed: false, week1_date: null, week1_note: null,
-            week2_completed: false, week2_date: null, week2_note: null,
-            week3_completed: false, week3_date: null, week3_note: null,
-            week4_completed: false, week4_date: null, week4_note: null,
-            status: "진행중",
-            cell_group_assigned: null,
-          };
-          next.newFamilyPrograms = [...(prev.newFamilyPrograms || []), program];
-        }
-        return next;
-      });
-      toast("등록 완료", "ok");
+    if (!supabase) {
+      console.error("=== DB 저장 불가: Supabase 클라이언트 없음 ===");
+      toast("저장할 수 없습니다. Supabase 연결을 확인하세요.", "err");
+      return;
     }
-    setShowBirthPicker(false);
-    setShowMemberModal(false);
+    const insertData = {
+      name: fName.trim(),
+      dept: fDept || null,
+      role: fRole.trim() || null,
+      birth: fBirth || null,
+      gender: fGender || null,
+      phone: fPhone.trim() || null,
+      address: fAddr.trim() || null,
+      family: fFamily.trim() || null,
+      status: fStatus,
+      source: fSource || null,
+      prayer: fPrayer.trim() || null,
+      memo: fMemo.trim() || null,
+      mokjang: fGroup || null,
+      photo: fPhoto || null,
+      visit_path: fVisitPath || null,
+      referrer_id: fReferrerId || null,
+      job: fJob.trim() || null,
+      first_visit_date: fFirstVisitDate || null,
+      member_status: "활동",
+    };
+    try {
+      if (editMbrId) {
+        console.log("=== DB UPDATE 시도 ===", { id: editMbrId, ...insertData });
+        const { data, error } = await supabase.from("members").update(insertData).eq("id", editMbrId).select();
+        console.log("=== DB UPDATE 결과 ===", { data, error });
+        if (error) {
+          console.error("=== DB ERROR ===", error.message, error.details, error.hint);
+          alert("저장 실패: " + error.message);
+          return;
+        }
+        const dataMerged: Partial<Member> = {
+          name: insertData.name, dept: insertData.dept ?? undefined, role: insertData.role ?? undefined, birth: insertData.birth ?? undefined,
+          gender: insertData.gender ?? undefined, phone: insertData.phone ?? undefined, address: insertData.address ?? undefined, family: insertData.family ?? undefined,
+          status: insertData.status, source: insertData.source ?? undefined, prayer: insertData.prayer ?? undefined, memo: insertData.memo ?? undefined,
+          photo: insertData.photo ?? undefined, group: insertData.mokjang ?? undefined, visit_path: insertData.visit_path as Member["visit_path"], referrer_id: insertData.referrer_id ?? undefined,
+          job: insertData.job ?? undefined, first_visit_date: insertData.first_visit_date ?? undefined,
+        };
+        setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === editMbrId ? { ...m, ...dataMerged } : m) }));
+        toast("수정 완료", "ok");
+      } else {
+        console.log("=== DB INSERT 시도 ===", insertData);
+        const { data, error } = await supabase.from("members").insert(insertData).select();
+        console.log("=== DB INSERT 결과 ===", { data, error });
+        if (error) {
+          console.error("=== DB ERROR ===", error.message, error.details, error.hint);
+          alert("저장 실패: " + error.message);
+          return;
+        }
+        const row = Array.isArray(data) ? data[0] : data;
+        const newId = (row as { id: string } | undefined)?.id ?? (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "mb_" + uid());
+        const newMember: Member = {
+          id: newId,
+          name: insertData.name,
+          dept: insertData.dept ?? undefined,
+          role: insertData.role ?? undefined,
+          birth: insertData.birth ?? undefined,
+          gender: insertData.gender ?? undefined,
+          phone: insertData.phone ?? undefined,
+          address: insertData.address ?? undefined,
+          family: insertData.family ?? undefined,
+          status: insertData.status,
+          source: insertData.source ?? undefined,
+          prayer: insertData.prayer ?? undefined,
+          memo: insertData.memo ?? undefined,
+          photo: insertData.photo ?? undefined,
+          group: insertData.mokjang ?? undefined,
+          mokjang: insertData.mokjang ?? undefined,
+          visit_path: insertData.visit_path as Member["visit_path"],
+          referrer_id: insertData.referrer_id ?? undefined,
+          job: insertData.job ?? undefined,
+          first_visit_date: insertData.first_visit_date ?? undefined,
+          createdAt: todayStr(),
+        };
+        const startDate = fFirstVisitDate || todayStr();
+        setDb(prev => {
+          const next = { ...prev, members: [...prev.members, newMember] };
+          if (fStatus === "새가족" || fStatus === "정착중") {
+            const program: NewFamilyProgram = {
+              id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "nfp_" + uid(),
+              member_id: newId,
+              mentor_id: null,
+              program_start_date: startDate,
+              week1_completed: false, week1_date: null, week1_note: null,
+              week2_completed: false, week2_date: null, week2_note: null,
+              week3_completed: false, week3_date: null, week3_note: null,
+              week4_completed: false, week4_date: null, week4_note: null,
+              status: "진행중",
+              cell_group_assigned: null,
+            };
+            next.newFamilyPrograms = [...(prev.newFamilyPrograms || []), program];
+          }
+          return next;
+        });
+        toast("등록 완료", "ok");
+      }
+      setShowMemberModal(false);
+    } catch (e) {
+      console.error("=== saveMember 예외 ===", e);
+      alert("저장 중 오류가 발생했습니다.");
+    }
   };
 
   const closeMemberModal = () => {
     const hasInput = fName.trim() || fRole.trim() || fBirth || fPhone.trim() || fAddr.trim() || fFamily.trim() || fPrayer.trim() || fMemo.trim() || fPhoto;
     if (hasInput && typeof window !== "undefined" && !window.confirm("작성 중인 내용이 있습니다. 닫으시겠습니까?")) return;
-    setShowBirthPicker(false);
     setShowMemberModal(false);
   };
 
@@ -2408,22 +2472,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         </div>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>생년월일</label>
-            <div
-              onClick={() => setShowBirthPicker((v) => !v)}
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: "#fff", color: fBirth ? C.text : C.textMuted, cursor: "pointer" }}
-            >
-              {formatBirthDisplay(fBirth)}
-            </div>
-            {showBirthPicker && (
-              <div style={{ marginTop: 12 }}>
-                <DateWheelPicker
-                  value={fBirth || "2000-01-01"}
-                  onChange={(v) => setFBirth(v)}
-                  onConfirm={() => setShowBirthPicker(false)}
-                />
-              </div>
-            )}
+            <CalendarDropdown label="생년월일" value={fBirth} onChange={setFBirth} showClearButton />
           </div>
           <FormSelect label="성별" value={fGender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGender(e.target.value)} options={[{ value: "", label: "선택" }, { value: "남", label: "남" }, { value: "여", label: "여" }]} />
         </div>
@@ -2477,9 +2526,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               member={detailMember}
               db={db}
               statusHistory={[]}
-              newFamilyProgram={(db.newFamilyPrograms || []).find(p => p.member_id === detailMember.id) ?? null}
+              newFamilyProgram={(db.newFamilyPrograms ?? []).find(p => p.member_id === detailMember.id) ?? null}
               onEdit={() => { setShowDetailModal(false); openMemberModal(detailMember.id); }}
               onClose={() => setShowDetailModal(false)}
+              toast={toast}
             />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
               <Btn variant="danger" size="sm" onClick={() => detailMember && deleteMember(detailMember.id)}>삭제</Btn>
