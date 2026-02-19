@@ -202,23 +202,54 @@ function toExpense(r: Record<string, unknown>): Expense {
   };
 }
 
-/** 전체 초기화: 외래키 의존 순서대로 자식 테이블 먼저 삭제 (권장: 서버 /api/reset 사용) */
+/** 전체 초기화: FK 의존 순서대로 자식 테이블 먼저 삭제. settings 제외. (권장: 서버 POST /api/reset { scope: "all" }) */
+const ALL_RESET_TABLES = [
+  "school_attendance",
+  "school_transfer_history",
+  "school_enrollments",
+  "school_classes",
+  "school_departments",
+  "attendance",
+  "notes",
+  "visits",
+  "new_family_program",
+  "income",
+  "expense",
+  "budget",
+  "special_account_transactions",
+  "special_accounts",
+  "message_logs",
+  "frequent_groups",
+  "organization_members",
+  "organizations",
+  "user_roles",
+  "roles",
+  "audit_logs",
+  "custom_fields",
+  "custom_labels",
+  "member_status_history",
+  "families",
+  "plans",
+  "sermons",
+  "checklist",
+  "service_types",
+  "members",
+];
+
+const RESET_TABLE_SPECIAL: Record<string, { column: string; value: string | number }> = {
+  attendance: { column: "week_num", value: -1 },
+  notes: { column: "member_id", value: MATCH_ALL_ID },
+  budget: { column: "fiscal_year", value: "__none__" },
+  checklist: { column: "week_key", value: "__none__" },
+};
+
 export async function clearAllInSupabase(): Promise<void> {
   if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.");
-  const tablesInOrder = [
-    { table: "attendance", column: "week_num", value: -1 },
-    { table: "notes", column: "member_id", value: MATCH_ALL_ID },
-    { table: "visits", column: "id", value: MATCH_ALL_ID },
-    { table: "income", column: "id", value: MATCH_ALL_ID },
-    { table: "expense", column: "id", value: MATCH_ALL_ID },
-    { table: "budget", column: "fiscal_year", value: "__none__" },
-    { table: "checklist", column: "week_key", value: "__none__" },
-    { table: "plans", column: "id", value: MATCH_ALL_ID },
-    { table: "sermons", column: "id", value: MATCH_ALL_ID },
-    { table: "members", column: "id", value: MATCH_ALL_ID },
-  ];
-  for (const { table, column, value } of tablesInOrder) {
-    const { error } = await supabase.from(table).delete().neq(column, value);
+  for (const table of ALL_RESET_TABLES) {
+    const spec = RESET_TABLE_SPECIAL[table];
+    const { error } = spec
+      ? await supabase.from(table).delete().neq(spec.column, spec.value)
+      : await supabase.from(table).delete().neq("id", MATCH_ALL_ID);
     if (error) throw new Error(`${table} 초기화 실패: ${error.message}`);
   }
 }

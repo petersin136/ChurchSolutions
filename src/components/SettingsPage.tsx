@@ -200,65 +200,44 @@ export function SettingsPage({
     }
   }
 
-  async function resetTab(name: "pastoral" | "finance" | "planner" | "visit" | "bulletin") {
-    const msg =
-      name === "pastoral" ? "목양(성도·출석·노트) 데이터를 초기화하시겠습니까?"
-      : name === "finance" ? "재정(수입·지출·예산) 데이터를 초기화하시겠습니까?"
-      : name === "planner" ? "플래너 데이터를 초기화하시겠습니까?"
-      : name === "visit" ? "심방/상담 데이터를 초기화하시겠습니까?"
-      : "주보 데이터를 초기화하시겠습니까?";
-    if (typeof window === "undefined" || !window.confirm(msg)) return;
+  type ResetScope = "members" | "finance" | "visits" | "attendance" | "school" | "new_family" | "planner" | "messaging";
+
+  async function resetTab(name: ResetScope) {
+    const messages: Record<ResetScope, string> = {
+      members: "성도 데이터(members, families, member_status_history)를 초기화하시겠습니까?",
+      finance: "재정 데이터(income, expense, budget, special_accounts 등)를 초기화하시겠습니까?",
+      visits: "심방/상담 데이터(visits, notes)를 초기화하시겠습니까?",
+      attendance: "출석 데이터(attendance)를 초기화하시겠습니까?",
+      school: "교회학교 데이터(school_departments, school_classes, school_enrollments 등)를 초기화하시겠습니까?",
+      new_family: "새가족 프로그램(new_family_program) 데이터를 초기화하시겠습니까?",
+      planner: "플래너/설교(plans, sermons, checklist, service_types) 데이터를 초기화하시겠습니까?",
+      messaging: "문자/기타(message_logs, frequent_groups, organizations 등) 데이터를 초기화하시겠습니까?",
+    };
+    if (typeof window === "undefined" || !window.confirm(messages[name])) return;
 
     try {
       setResetLoading(true);
-
-      if (name === "pastoral") {
-        if (saveDb) {
-          const res = await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope: "pastoral" }) });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data?.ok) throw new Error(data?.message || res.statusText || "목양 초기화 실패");
-        }
-        setDb((prev) => ({ ...prev, members: [], attendance: {}, attendanceReasons: {}, notes: {} }));
-        save();
-        toast("목양 데이터가 초기화되었습니다", "warn");
-        window.location.reload();
-      } else if (name === "finance") {
-        if (saveDb) {
-          const res = await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope: "finance" }) });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data?.ok) throw new Error(data?.message || res.statusText || "재정 초기화 실패");
-        }
-        setDb((prev) => ({ ...prev, income: [], expense: [], budget: {} }));
-        save();
-        toast("재정 데이터가 초기화되었습니다", "warn");
-        window.location.reload();
-      } else if (name === "planner") {
-        if (saveDb) {
-          const res = await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope: "planner" }) });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data?.ok) throw new Error(data?.message || res.statusText || "플래너 초기화 실패");
-        }
-        if (typeof window !== "undefined") window.localStorage.removeItem("planner_db");
-        setDb((prev) => ({ ...prev, plans: [] }));
-        save();
-        toast("플래너 데이터가 초기화되었습니다", "warn");
-        window.location.reload();
-      } else if (name === "visit") {
-        if (saveDb) {
-          const res = await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope: "visits" }) });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data?.ok) throw new Error(data?.message || res.statusText || "심방 초기화 실패");
-        }
-        if (typeof window !== "undefined") window.localStorage.removeItem("visit_counsel_db");
-        setDb((prev) => ({ ...prev, visits: [] }));
-        save();
-        toast("심방/상담 데이터가 초기화되었습니다", "warn");
-        window.location.reload();
-      } else {
-        if (typeof window !== "undefined") window.localStorage.removeItem("bulletin_db");
-        toast("주보 데이터가 초기화되었습니다", "warn");
-        window.location.reload();
+      const apiScope = name === "members" ? "members" : name === "visits" ? "visits" : name;
+      if (saveDb) {
+        const res = await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope: apiScope }) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.ok) throw new Error(data?.message || res.statusText || `${name} 초기화 실패`);
       }
+      if (name === "members") {
+        setDb((prev) => ({ ...prev, members: [], attendance: {}, attendanceReasons: {}, notes: {} }));
+      } else if (name === "finance") {
+        setDb((prev) => ({ ...prev, income: [], expense: [], budget: {} }));
+      } else if (name === "visits") {
+        setDb((prev) => ({ ...prev, visits: [], notes: {} }));
+      } else if (name === "attendance") {
+        setDb((prev) => ({ ...prev, attendance: {}, attendanceReasons: {} }));
+      } else if (name === "planner") {
+        if (typeof window !== "undefined") window.localStorage.removeItem("planner_db");
+        setDb((prev) => ({ ...prev, plans: [], sermons: [], checklist: {} }));
+      }
+      save();
+      toast(`${name === "members" ? "성도" : name === "finance" ? "재정" : name === "visits" ? "심방/상담" : name === "attendance" ? "출석" : name === "school" ? "교회학교" : name === "new_family" ? "새가족 프로그램" : name === "planner" ? "플래너/설교" : "문자/기타"} 데이터가 초기화되었습니다`, "warn");
+      window.location.reload();
     } catch (err) {
       console.error(`${name} 초기화 오류:`, err);
       alert("초기화 중 오류가 발생했습니다.\n" + (err instanceof Error ? err.message : String(err)));
@@ -509,11 +488,14 @@ export function SettingsPage({
         </p>
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
           {[
-            { key: "pastoral" as const, label: "목양" },
-            { key: "planner" as const, label: "플래너" },
-            { key: "finance" as const, label: "재정" },
-            { key: "visit" as const, label: "심방/상담" },
-            { key: "bulletin" as const, label: "주보" },
+            { key: "members" as const, label: "성도 데이터 (members, families, member_status_history)" },
+            { key: "finance" as const, label: "재정 데이터 (income, expense, budget, special_accounts 등)" },
+            { key: "visits" as const, label: "심방/상담 데이터 (visits, notes)" },
+            { key: "attendance" as const, label: "출석 데이터 (attendance)" },
+            { key: "school" as const, label: "교회학교 데이터 (school_departments, school_classes 등)" },
+            { key: "new_family" as const, label: "새가족 프로그램 (new_family_program)" },
+            { key: "planner" as const, label: "플래너/설교 (plans, sermons, checklist, service_types)" },
+            { key: "messaging" as const, label: "문자/기타 (message_logs, frequent_groups, organizations 등)" },
           ].map(({ key, label }) => (
             <li
               key={key}
