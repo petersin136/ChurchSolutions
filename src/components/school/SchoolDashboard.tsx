@@ -41,9 +41,6 @@ export function SchoolDashboard({ db, toast }: SchoolDashboardProps) {
           .from("school_departments")
           .select("*")
           .order("sort_order");
-        console.log("=== SCHOOL DEPARTMENTS DEBUG ===");
-        console.log("data:", data);
-        console.log("error:", error);
         if (error) {
           console.error("school_departments fetch error:", error.message, error.details);
           toast(`부서 로드 실패: ${error.message}`, "err");

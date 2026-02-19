@@ -36,7 +36,7 @@ function getDepts(db: DB): string[] {
 function getMokjangList(db: DB): string[] {
   const fromSettings = (db.settings.mokjangList || "").split(",").map(s => s.trim()).filter(Boolean);
   if (fromSettings.length > 0) return fromSettings;
-  const fromMembers = Array.from(new Set(db.members.map(m => m.group).filter(Boolean))) as string[];
+  const fromMembers = Array.from(new Set(db.members.map(m => m.mokjang ?? m.group).filter(Boolean))) as string[];
   return fromMembers.sort((a, b) => (a || "").localeCompare(b || ""));
 }
 
@@ -433,7 +433,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
   const m = db.members.filter(x => x.status !== "졸업/전출");
   const total = m.length;
   const att = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "p").length;
-  const newF = m.filter(s => s.status === "새가족" || s.status === "정착중").length;
+  const newF = m.filter(s => s.is_new_family === true).length;
   const risk = m.filter(s => s.status === "위험" || s.status === "휴면").length;
   const prayers = m.filter(s => s.prayer && s.prayer.trim()).length;
   const rate = total > 0 ? Math.round(att / total * 100) : 0;
@@ -691,7 +691,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
     }
     if (deptF !== "all") r = r.filter(m => m.dept === deptF);
     if (roleF !== "all") r = r.filter(m => m.role === roleF);
-    if (mokjangF !== "all") r = r.filter(m => (m.group || "") === mokjangF);
+    if (mokjangF !== "all") r = r.filter(m => ((m.mokjang ?? m.group) || "") === mokjangF);
     if (statusF !== "all") r = r.filter(m => (m.member_status ?? m.status) === statusF);
     if (newFamilyOnly) r = r.filter(m => m.is_new_family === true);
     if (prospectOnly) r = r.filter(m => m.is_prospect === true);
@@ -703,7 +703,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const grouped = useMemo(() => {
     const map: Record<string, Member[]> = {};
     filtered.forEach(m => {
-      const g = m.group || "미배정";
+      const g = (m.mokjang ?? m.group) || "미배정";
       if (!map[g]) map[g] = [];
       map[g].push(m);
     });
@@ -802,7 +802,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         )}
         <button type="button" onClick={() => { setViewMode("card"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "card" ? C.navy : C.bg, color: viewMode === "card" ? "#fff" : C.text, cursor: "pointer" }}>🃏 카드</button>
         <button type="button" onClick={() => { setViewMode("group"); setSelectedMokjang(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "group" ? C.navy : C.bg, color: viewMode === "group" ? "#fff" : C.text, cursor: "pointer" }}>🏠 목장별</button>
-        <button type="button" onClick={() => { const csv = ["이름,부서,직분,목장,연락처,상태"].concat(filtered.slice(0, 2000).map(m => `"${(m.name||"").replace(/"/g,'""')}","${(m.dept||"").replace(/"/g,'""')}","${(m.role||"").replace(/"/g,'""')}","${(m.group||"").replace(/"/g,'""')}","${(m.phone||"").replace(/"/g,'""')}","${(m.member_status||m.status||"").replace(/"/g,'""')}"`)).join("\n"); const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `교인목록_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("엑셀(CSV) 내보내기 완료", "ok"); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>📥 Excel 내보내기</button>
+        <button type="button" onClick={() => { const csv = ["이름,부서,직분,목장,연락처,상태"].concat(filtered.slice(0, 2000).map(m => `"${(m.name||"").replace(/"/g,'""')}","${(m.dept||"").replace(/"/g,'""')}","${(m.role||"").replace(/"/g,'""')}","${((m.mokjang ?? m.group) || "").replace(/"/g,'""')}","${(m.phone||"").replace(/"/g,'""')}","${(m.member_status||m.status||"").replace(/"/g,'""')}"`)).join("\n"); const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `교인목록_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("엑셀(CSV) 내보내기 완료", "ok"); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>📥 Excel 내보내기</button>
         <div ref={printDropdownRef} style={{ position: "relative" }}>
           <button type="button" onClick={() => setPrintOpen(p => !p)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>🖨️ 인쇄</button>
           {printOpen && (
@@ -906,7 +906,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                       <div style={{ fontSize: 12, color: C.textMuted }}>{m.role || "-"} · {m.dept || "-"}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>목장 {m.group || "-"}</div>
+                  <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>목장 {(m.mokjang ?? m.group) || "-"}</div>
                   <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color: "#fff", background: badgeColor }}>{st || "활동"}</span>
                 </button>
               );
@@ -959,7 +959,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                           </div>
                         </td>
                         <td style={{ padding: "12px 16px" }}><SBadge variant="gray">{m.dept || "-"}</SBadge></td>
-                        <td style={{ padding: "12px 16px", whiteSpace: "nowrap", fontSize: 13 }}>{m.group || "-"}</td>
+                        <td style={{ padding: "12px 16px", whiteSpace: "nowrap", fontSize: 13 }}>{(m.mokjang ?? m.group) || "-"}</td>
                         <td style={{ padding: "12px 16px" }}><AttDot status={ws} onClick={() => cycleAtt(m.id)} /></td>
                         <td style={{ padding: "12px 16px", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, color: C.purple }}>{prayerSnip}</td>
                         <td style={{ padding: "12px 16px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 12)}…` : "-"}</td>
@@ -1051,7 +1051,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
   const groupedByMokjang = useMemo(() => {
     const map: Record<string, typeof m> = {};
     m.forEach(mem => {
-      const g = mem.group || "미배정";
+      const g = (mem.mokjang ?? mem.group) || "미배정";
       if (!map[g]) map[g] = [];
       map[g].push(mem);
     });
@@ -1404,7 +1404,7 @@ function NewFamilySub({ db, setDb, openProgramDetail, openMemberModal, toast }: 
   const [filter, setFilter] = useState<"all" | "진행중" | "수료" | "중단" | "no_mentor">("all");
 
   const programs = db.newFamilyPrograms || [];
-  const nfMembers = db.members.filter(m => m.status === "새가족" || m.status === "정착중");
+  const nfMembers = db.members.filter(m => m.is_new_family === true);
   const memberById = (id: string) => db.members.find(x => x.id === id)!;
   const programByMember = (memberId: string) => programs.find(p => p.member_id === memberId);
 
@@ -1734,7 +1734,7 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
     return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `기록전체_${todayStr()}.csv` };
   };
   const getNewFamily = () => {
-    const nf = db.members.filter(m => m.status === "새가족" || m.status === "정착중");
+    const nf = db.members.filter(m => m.is_new_family === true);
     const h = ["이름","등록일","경로","1주","2주","3주","4주","상태"];
     const rows = nf.map(m => {
       const att = db.attendance[m.id] || {};
@@ -1751,7 +1751,7 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
     csv += `"전체 성도","${m.length}명"\n`;
     const att = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "p").length;
     csv += `"금주 출석","${att}명 (${m.length > 0 ? Math.round(att / m.length * 100) : 0}%)"\n`;
-    csv += `"새가족","${m.filter(s => s.status === "새가족" || s.status === "정착중").length}명"\n`;
+    csv += `"새가족","${m.filter(s => s.is_new_family === true).length}명"\n`;
     csv += `"위험/휴면","${m.filter(s => s.status === "위험" || s.status === "휴면").length}명"\n\n`;
     csv += '"=== 부서별 인원 ==="\n"부서","인원"\n';
     const dc: Record<string, number> = {};
@@ -1877,7 +1877,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
     setDb(prev => ({
       ...prev,
       settings: { ...prev.settings, mokjangList: newList.join(", ") },
-      members: prev.members.map(m => m.group === oldName ? { ...m, group: trimmed } : m),
+      members: prev.members.map(m => (m.mokjang ?? m.group) === oldName ? { ...m, group: trimmed, mokjang: trimmed } : m),
     }));
     persist();
     toast("목장 이름이 변경되었습니다", "ok");
@@ -1889,7 +1889,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
     setDb(prev => ({
       ...prev,
       settings: { ...prev.settings, mokjangList: newList.join(", ") },
-      members: prev.members.map(m => m.group === name ? { ...m, group: "" } : m),
+      members: prev.members.map(m => (m.mokjang ?? m.group) === name ? { ...m, group: "", mokjang: "" } : m),
     }));
     persist();
     toast("목장이 삭제되었습니다", "ok");
@@ -1898,14 +1898,14 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
 
   const removeMemberFromMokjang = (memberId: string) => {
     if (!mokjangManage) return;
-    setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === memberId ? { ...m, group: "" } : m) }));
+    setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === memberId ? { ...m, group: "", mokjang: "" } : m) }));
     persist();
     toast("목장에서 제거되었습니다", "ok");
   };
 
   const addMemberToMokjang = () => {
     if (!mokjangManage || !addMemberSelect) return;
-    setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === addMemberSelect ? { ...m, group: mokjangManage } : m) }));
+    setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === addMemberSelect ? { ...m, group: mokjangManage, mokjang: mokjangManage } : m) }));
     persist();
     setAddMemberSelect("");
     toast("목장에 추가되었습니다", "ok");
@@ -1959,7 +1959,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
         <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>목장을 생성·이름 변경·삭제하고, 그룹원을 추가·제거할 수 있습니다.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
           {mokjangList.map(g => {
-            const count = db.members.filter(m => (m.group || "") === g).length;
+            const count = db.members.filter(m => ((m.mokjang ?? m.group) || "") === g).length;
             return (
               <div key={g} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, background: C.bg, borderRadius: 10, padding: "12px 14px", border: `1px solid ${C.border}` }}>
                 <span style={{ fontWeight: 700, fontSize: 14, color: C.navy }}>🏠 {g}</span>
@@ -1978,11 +1978,11 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
         <Modal open={true} onClose={() => { setMokjangManage(null); setAddMemberSelect(""); }} title={`${mokjangManage} 그룹원 관리`} width={480}>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>현재 그룹원</label>
-            {db.members.filter(m => (m.group || "") === mokjangManage).length === 0 ? (
+            {db.members.filter(m => ((m.mokjang ?? m.group) || "") === mokjangManage).length === 0 ? (
               <div style={{ padding: 12, background: C.bg, borderRadius: 8, fontSize: 13, color: C.textMuted }}>아직 배정된 성도가 없습니다. 아래에서 추가하세요.</div>
             ) : (
               <ul style={{ margin: 0, padding: 0, listStyle: "none", maxHeight: 200, overflowY: "auto" }}>
-                {db.members.filter(m => (m.group || "") === mokjangManage).map(m => (
+                {db.members.filter(m => ((m.mokjang ?? m.group) || "") === mokjangManage).map(m => (
                   <li key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: `1px solid ${C.borderLight}`, fontSize: 14, minWidth: 0 }}>
                     <span style={{ fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span>
                     <span style={{ fontSize: 12, color: C.textMuted }}>{m.dept || ""} {m.role || ""}</span>
@@ -1996,8 +1996,8 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
             <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>성도 추가</label>
             <select value={addMemberSelect} onChange={e => setAddMemberSelect(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, marginBottom: 8 }}>
               <option value="">선택하세요</option>
-              {db.members.filter(m => (m.group || "") !== mokjangManage && m.status !== "졸업/전출").map(m => (
-                <option key={m.id} value={m.id}>{m.name} ({m.dept || ""}) {!m.group ? "· 미배정" : `· ${m.group}`}</option>
+              {db.members.filter(m => ((m.mokjang ?? m.group) || "") !== mokjangManage && m.status !== "졸업/전출").map(m => (
+                <option key={m.id} value={m.id}>{m.name} ({m.dept || ""}) {!(m.mokjang ?? m.group) ? "· 미배정" : `· ${m.mokjang ?? m.group}`}</option>
               ))}
             </select>
             <Btn size="sm" onClick={addMemberToMokjang} disabled={!addMemberSelect}>추가</Btn>
@@ -2139,7 +2139,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       setFBirth(m.birth || ""); setFGender(m.gender || ""); setFPhone(m.phone || "");
       setFAddr(m.address || ""); setFFamily(m.family || ""); setFStatus(m.status || "새가족");
       setFSource(m.source || ""); setFPrayer(m.prayer || ""); setFMemo(m.memo || ""); setFPhoto(m.photo || "");
-      setFGroup(m.group && mokjangOptions.includes(m.group) ? m.group : (m.group || ""));
+      setFGroup((m.mokjang ?? m.group) && mokjangOptions.includes((m.mokjang ?? m.group) || "") ? ((m.mokjang ?? m.group) || "") : ((m.mokjang ?? m.group) || ""));
       setFVisitPath((m.visit_path ?? m.visitPath) || ""); setFReferrerId(m.referrer_id || ""); setFJob(m.job || ""); setFFirstVisitDate((m.first_visit_date ?? m.firstVisitDate) || todayStr());
     } else {
       setFName(""); setFDept(depts[0] || ""); setFRole(""); setFBirth(""); setFGender("");
@@ -2220,7 +2220,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     setNDate(todayStr()); setNType("memo"); setNContent("");
     if (id) {
       const m = db.members.find(x => x.id === id);
-      if (m?.group) { setNoteFilterBy("group"); setNoteFilterValue(m.group); }
+      if ((m?.mokjang ?? m?.group)) { setNoteFilterBy("group"); setNoteFilterValue((m.mokjang ?? m.group) || ""); }
       else if (m?.dept) { setNoteFilterBy("dept"); setNoteFilterValue(m.dept); }
       else { setNoteFilterBy("all"); setNoteFilterValue(""); }
     } else { setNoteFilterBy("all"); setNoteFilterValue(""); }
@@ -2493,11 +2493,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       <Modal open={showNoteModal} onClose={() => setShowNoteModal(false)} title={noteTargetId ? (db.members.find(x => x.id === noteTargetId)?.name || "") + " — 기록 추가" : "기록 추가"} width={500}>
         {(() => {
           const activeMembers = db.members.filter(x => x.status !== "졸업/전출");
-          const groups = Array.from(new Set(activeMembers.map(m => m.group).filter(Boolean))) as string[];
+          const groups = Array.from(new Set(activeMembers.map(m => m.mokjang ?? m.group).filter(Boolean))) as string[];
           groups.sort();
           const deptList = getDepts(db);
           let filteredMembers = activeMembers;
-          if (noteFilterBy === "group" && noteFilterValue) filteredMembers = activeMembers.filter(m => m.group === noteFilterValue);
+          if (noteFilterBy === "group" && noteFilterValue) filteredMembers = activeMembers.filter(m => (m.mokjang ?? m.group) === noteFilterValue);
           else if (noteFilterBy === "dept" && noteFilterValue) filteredMembers = activeMembers.filter(m => m.dept === noteFilterValue);
           const memberOptions = filteredMembers.length
             ? filteredMembers.map(x => ({ value: x.id, label: `${x.name} (${x.dept || ""})` }))

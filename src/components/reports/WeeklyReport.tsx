@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { DB } from "@/types/db";
 import { ReportLayout } from "./ReportLayout";
 import { getWeekNum } from "@/lib/store";
 import { registerKoreanFont } from "@/utils/fontLoader";
+import { supabase } from "@/lib/supabase";
 
 const STORAGE_WEEKLY_MEMO = "report_weekly_memo";
 const STORAGE_WEEKLY_PRAYER = "report_weekly_prayer";
@@ -38,6 +39,32 @@ export function WeeklyReport({ db, toast }: WeeklyReportProps) {
   const startStr = weekDates.start.toISOString().slice(0, 10);
   const endStr = weekDates.end.toISOString().slice(0, 10);
 
+  const [attendanceRows, setAttendanceRows] = useState<{ member_id: string; date: string; status: string }[]>([]);
+  useEffect(() => {
+    if (!supabase) {
+      setAttendanceRows([]);
+      return;
+    }
+    supabase
+      .from("attendance")
+      .select("member_id, date, status")
+      .gte("date", startStr)
+      .lte("date", endStr)
+      .then(({ data, error }) => {
+        if (error) {
+          setAttendanceRows([]);
+          return;
+        }
+        setAttendanceRows(
+          (data ?? []).map((r: Record<string, unknown>) => ({
+            member_id: String(r.member_id ?? ""),
+            date: String(r.date ?? ""),
+            status: String(r.status ?? ""),
+          }))
+        );
+      });
+  }, [startStr, endStr]);
+
   const saveMemo = (v: string) => {
     setMemo(v);
     if (typeof window !== "undefined") localStorage.setItem(STORAGE_WEEKLY_MEMO, v);
@@ -48,6 +75,16 @@ export function WeeklyReport({ db, toast }: WeeklyReportProps) {
   };
 
   const attendanceSummary = useMemo(() => {
+    const total = db.members.length;
+    if (attendanceRows.length > 0) {
+      const presentIds = new Set<string>();
+      const absentIds = new Set<string>();
+      attendanceRows.forEach((r) => {
+        if (r.status === "p" || r.status === "출석") presentIds.add(r.member_id);
+        else if (r.status === "a" || r.status === "결석") absentIds.add(r.member_id);
+      });
+      return { present: presentIds.size, absent: absentIds.size, total };
+    }
     const byMember = db.attendance ?? {};
     let present = 0;
     let absent = 0;
@@ -56,8 +93,8 @@ export function WeeklyReport({ db, toast }: WeeklyReportProps) {
       if (status === "p") present++;
       else if (status === "a") absent++;
     });
-    return { present, absent, total: db.members.length };
-  }, [db.attendance, db.members, week]);
+    return { present, absent, total };
+  }, [db.attendance, db.members, week, attendanceRows]);
 
   const newFamilyThisWeek = useMemo(() => {
     return db.members.filter((m) => {

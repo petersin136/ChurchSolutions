@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { DB } from "@/types/db";
 import { ReportLayout } from "./ReportLayout";
 import { registerKoreanFont } from "@/utils/fontLoader";
+import { supabase } from "@/lib/supabase";
 
 const STORAGE_MONTHLY_CONTENT = "report_monthly_content";
 const STORAGE_MONTHLY_PLAN = "report_monthly_plan";
@@ -22,6 +23,48 @@ export function MonthlyReport({ db, toast }: MonthlyReportProps) {
 
   const monthStr = `${year}-${String(month).padStart(2, "0")}`;
   const periodLabel = `${year}년 ${month}월`;
+  const monthStart = `${monthStr}-01`;
+  const monthEnd = `${monthStr}-${new Date(year, month, 0).getDate().toString().padStart(2, "0")}`;
+
+  const [attendanceRows, setAttendanceRows] = useState<{ member_id: string; date: string; status: string }[]>([]);
+  useEffect(() => {
+    if (!supabase) {
+      setAttendanceRows([]);
+      return;
+    }
+    supabase
+      .from("attendance")
+      .select("member_id, date, status")
+      .gte("date", monthStart)
+      .lte("date", monthEnd)
+      .then(({ data, error }) => {
+        if (error) {
+          setAttendanceRows([]);
+          return;
+        }
+        setAttendanceRows(
+          (data ?? []).map((r: Record<string, unknown>) => ({
+            member_id: String(r.member_id ?? ""),
+            date: String(r.date ?? ""),
+            status: String(r.status ?? ""),
+          }))
+        );
+      });
+  }, [monthStart, monthEnd]);
+
+  const attendanceSummary = useMemo(() => {
+    const total = db.members.length;
+    if (attendanceRows.length > 0) {
+      const presentIds = new Set<string>();
+      const absentIds = new Set<string>();
+      attendanceRows.forEach((r) => {
+        if (r.status === "p" || r.status === "출석") presentIds.add(r.member_id);
+        else if (r.status === "a" || r.status === "결석") absentIds.add(r.member_id);
+      });
+      return { present: presentIds.size, absent: absentIds.size, total };
+    }
+    return { present: 0, absent: 0, total };
+  }, [db.members.length, attendanceRows]);
 
   const newFamilyThisMonth = useMemo(() => db.members.filter((m) => ((m.created_at ?? (m as unknown as { createdAt?: string }).createdAt) ?? "").slice(0, 7) === monthStr), [db.members, monthStr]);
   const visitsThisMonth = useMemo(() => (db.visits ?? []).filter((v) => v.date?.slice(0, 7) === monthStr), [db.visits, monthStr]);
@@ -51,6 +94,8 @@ export function MonthlyReport({ db, toast }: MonthlyReportProps) {
       doc.text(`월간 사역보고서 (${periodLabel})`, 20, y);
       y += 10;
       doc.setFontSize(10);
+      doc.text(`예배 출석: ${attendanceSummary.present}명 / 결석: ${attendanceSummary.absent}명`, 20, y);
+      y += 6;
       doc.text(`새가족: ${newFamilyThisMonth.length}명`, 20, y);
       y += 6;
       doc.text(`심방: ${visitsThisMonth.length}건`, 20, y);
@@ -75,6 +120,10 @@ export function MonthlyReport({ db, toast }: MonthlyReportProps) {
         </select>
       </div>
       <div className="space-y-6 text-sm">
+        <section>
+          <h3 className="font-semibold text-[#1e3a5f] mb-2">월간 출석 현황</h3>
+          <p>출석 {attendanceSummary.present}명 / 결석 {attendanceSummary.absent}명{attendanceRows.length === 0 ? " (Supabase 출석 데이터 없음)" : ""}</p>
+        </section>
         <section>
           <h3 className="font-semibold text-[#1e3a5f] mb-2">월간 새가족 현황</h3>
           <p>{newFamilyThisMonth.length}명</p>

@@ -3079,7 +3079,7 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
           {activeTab === "cashJournal" && <CashJournal toast={toast ?? (() => {})} />}
           {activeTab === "budgetManagement" && <BudgetManagement fiscalYear={String(new Date().getFullYear())} toast={toast ?? (() => {})} />}
           {activeTab === "budgetVsActual" && <BudgetVsActual year={String(new Date().getFullYear())} month={new Date().getMonth() + 1} toast={toast ?? (() => {})} />}
-          {activeTab === "donorStatistics" && <DonorStatistics year={String(new Date().getFullYear())} offerings={offerings} donors={donors} categories={DEFAULT_CATEGORIES} />}
+          {activeTab === "donorStatistics" && <DonorStatistics year={String(new Date().getFullYear())} offerings={offerings} donors={donors} categories={DEFAULT_CATEGORIES} receiptSettings={settings} />}
           {activeTab === "specialAccounts" && <SpecialAccounts toast={toast ?? (() => {})} />}
           {activeTab === "report" && <ReportTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} />}
           {activeTab === "budgetActual" && <BudgetActualTab offerings={offerings} expenses={expenses} categories={DEFAULT_CATEGORIES} expenseCategories={EXPENSE_CATEGORIES} budgetByYear={budgetByYear} setBudgetByYear={setBudgetByYear} />}

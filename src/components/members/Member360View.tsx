@@ -27,6 +27,7 @@ export interface Member360ViewProps {
 export function Member360View({ member, db, statusHistory = [], newFamilyProgram, onEdit, onClose }: Member360ViewProps) {
   const [activeTab, setActiveTab] = useState<"info" | "attendance" | "giving" | "visits" | "newfamily" | "history">("info");
   const [dbStatusHistory, setDbStatusHistory] = useState<MemberStatusHistory[]>([]);
+  const [attendanceHistory, setAttendanceHistory] = useState<{ date: string; service_type: string; status: string }[]>([]);
 
   useEffect(() => {
     if (!supabase || !member.id) {
@@ -37,6 +38,29 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
       if (error) return;
       setDbStatusHistory((data ?? []) as MemberStatusHistory[]);
     });
+  }, [member.id]);
+
+  useEffect(() => {
+    if (!supabase || !member.id) {
+      setAttendanceHistory([]);
+      return;
+    }
+    supabase
+      .from("attendance")
+      .select("date, service_type, status")
+      .eq("member_id", member.id)
+      .order("date", { ascending: false })
+      .limit(20)
+      .then(({ data, error }) => {
+        if (error) return;
+        setAttendanceHistory(
+          (data ?? []).map((r: Record<string, unknown>) => ({
+            date: String(r.date ?? ""),
+            service_type: String(r.service_type ?? "-"),
+            status: String(r.status ?? ""),
+          }))
+        );
+      });
   }, [member.id]);
 
   const displayStatusHistory = dbStatusHistory.length > 0 ? dbStatusHistory : statusHistory;
@@ -232,6 +256,33 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
 
         {activeTab === "attendance" && (
           <div className="space-y-4">
+            {attendanceHistory.length > 0 && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-2">출석 이력 (Supabase)</div>
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left py-2 px-3">날짜</th>
+                        <th className="text-left py-2 px-3">예배유형</th>
+                        <th className="text-left py-2 px-3">출석상태</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attendanceHistory.map((row, i) => (
+                        <tr key={i} className="border-t border-gray-100">
+                          <td className="py-2 px-3">{row.date}</td>
+                          <td className="py-2 px-3">{row.service_type}</td>
+                          <td className="py-2 px-3">
+                            {row.status === "p" ? "출석" : row.status === "o" ? "온라인" : row.status === "a" ? "결석" : row.status === "l" ? "병결" : row.status === "n" ? "기타" : row.status}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
             {threeWeeksAbsent && (
               <div className="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm font-medium">
                 ⚠️ 최근 3주 연속 결석

@@ -110,11 +110,12 @@ export function toMember(r: Record<string, unknown>): Member {
     phone: r.phone as string | undefined,
     address: r.address as string | undefined,
     family: r.family as string | undefined,
-    status: r.status as string | undefined,
+    status: (r.status as string | undefined) ?? (r.member_status as string | undefined) ?? "활동",
     source: r.source as string | undefined,
     prayer: r.prayer as string | undefined,
     memo: r.memo as string | undefined,
-    group: r.mokjang as string | undefined,
+    group: (r.mokjang ?? r.group) as string | undefined,
+    mokjang: (r.mokjang ?? r.group) as string | undefined,
     photo: r.photo as string | undefined,
     created_at: created,
     updated_at: r.updated_at as string | undefined,
@@ -128,7 +129,7 @@ export function toMember(r: Record<string, unknown>): Member {
     referrer_name: r.referrer_name as string | undefined,
     family_id: r.family_id as string | undefined,
     family_relation: r.family_relation as Member["family_relation"],
-    member_status: r.member_status as Member["member_status"],
+    member_status: (r.member_status as Member["member_status"]) ?? "활동",
     status_changed_at: r.status_changed_at as string | undefined,
     status_reason: r.status_reason as string | undefined,
     email: r.email as string | undefined,
@@ -317,7 +318,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
             source: m.source ?? null,
             prayer: m.prayer ?? null,
             memo: m.memo ?? null,
-            mokjang: m.group ?? null,
+            mokjang: m.mokjang ?? m.group ?? null,
             photo: m.photo ?? null,
             is_new_family: m.is_new_family ?? null,
             first_visit_date: m.first_visit_date ?? null,
@@ -357,7 +358,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
           source: m.source ?? null,
           prayer: m.prayer ?? null,
           memo: m.memo ?? null,
-          mokjang: m.group ?? null,
+          mokjang: m.mokjang ?? m.group ?? null,
           photo: m.photo ?? null,
           is_new_family: m.is_new_family ?? null,
           first_visit_date: m.first_visit_date ?? null,
@@ -382,6 +383,9 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
     }
   }
 
+  // ⚠️ 출석 저장은 AttendanceCheck.tsx의 handleSave에서 Supabase에 직접 upsert합니다.
+  // saveDBToSupabase에서 attendance를 건드리면 date+service_type 기반 데이터가 week_num 기반으로 덮어쓰여 소실됩니다.
+  /*
   for (const m of db.members) {
     if (!/^[0-9a-f-]{36}$/i.test(m.id)) continue;
     const reasons = db.attendanceReasons?.[m.id] ?? {};
@@ -397,6 +401,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       await supabase.from("attendance").insert(rows);
     }
   }
+  */
 
   for (const m of db.members) {
     if (!/^[0-9a-f-]{36}$/i.test(m.id)) continue;

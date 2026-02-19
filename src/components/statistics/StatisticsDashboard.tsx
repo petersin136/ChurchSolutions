@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -17,6 +17,7 @@ import {
   Bar,
 } from "recharts";
 import type { DB } from "@/types/db";
+import { supabase } from "@/lib/supabase";
 import { C, STAT_CARD_COLORS } from "@/styles/designTokens";
 import { Users, TrendingUp, CalendarCheck, DollarSign, MapPin, Heart } from "lucide-react";
 
@@ -51,9 +52,12 @@ export interface StatisticsDashboardProps {
   db: DB;
 }
 
+type AttendanceRow = { member_id: string; date: string; status: string };
+
 export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
+  const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([]);
 
   const members = db.members;
   const income = db.income ?? [];
@@ -63,6 +67,34 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
   const attendance = db.attendance ?? {};
 
   const yearStr = String(year);
+
+  // Supabase attendance 직접 조회 (date + service_type 기반)
+  useEffect(() => {
+    if (!supabase) {
+      setAttendanceRows([]);
+      return;
+    }
+    const start = `${yearStr}-01-01`;
+    const end = `${yearStr}-12-31`;
+    supabase
+      .from("attendance")
+      .select("member_id, date, status")
+      .gte("date", start)
+      .lte("date", end)
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn("[StatisticsDashboard] attendance load error:", error.message);
+          setAttendanceRows([]);
+          return;
+        }
+        const rows = (data ?? []).map((r: Record<string, unknown>) => ({
+          member_id: String(r.member_id ?? ""),
+          date: String(r.date ?? ""),
+          status: String(r.status ?? ""),
+        }));
+        setAttendanceRows(rows);
+      });
+  }, [yearStr]);
 
   // A5-1 교인 통계
   const memberStats = useMemo(() => {
@@ -142,45 +174,58 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
     };
   }, [members, yearStr, currentYear]);
 
-  // A5-2 출결 (week 기반)
+  // A5-2 출결: Supabase date 기반 우선, 없으면 db.attendance(week 기반) fallback
   const attendanceStats = useMemo(() => {
-    const weeksInYear = 52;
     const byMonth: Record<string, { present: number; total: number }> = {};
-    for (let m = 1; m <= 12; m++) byMonth[String(m)] = { present: 0, total: 0 };
-    let totalPresent = 0;
-    let totalPossible = 0;
-    members.forEach((m) => {
-      const att = attendance[m.id] ?? {};
-      for (let w = 1; w <= weeksInYear; w++) {
-        const status = att[w];
-        const month = Math.ceil((w * 7) / 30) || 1;
-        const key = String(month > 12 ? 12 : month);
-        byMonth[key].total += 1;
-        if (status === "p") {
-          byMonth[key].present += 1;
-          totalPresent++;
-        }
-        totalPossible++;
-      }
-    });
-    const monthlyRate = Object.entries(byMonth).map(([month, v]) => ({
-      month: `${month}월`,
-      출석률: v.total > 0 ? Math.round((v.present / v.total) * 100) : 0,
-    }));
+    for (let m = 1; m <= 12; m++) byMonth[String(m).padStart(2, "0")] = { present: 0, total: 0 };
     const deptRates: Record<string, { present: number; total: number }> = {};
-    members.forEach((m) => {
-      const dept = m.dept || "기타";
-      if (!deptRates[dept]) deptRates[dept] = { present: 0, total: 0 };
-      deptRates[dept].total += 52;
-      const att = attendance[m.id] ?? {};
-      for (let w = 1; w <= 52; w++) if (att[w] === "p") deptRates[dept].present++;
-    });
+    const memberDept = (id: string) => members.find((x) => x.id === id)?.dept || "기타";
+
+    if (attendanceRows.length > 0) {
+      // Supabase attendance (date + service_type 기반)
+      attendanceRows.forEach((r) => {
+        const monthKey = r.date.slice(0, 7).slice(5); // "01"~"12"
+        if (!monthKey || monthKey.length !== 2) return;
+        const key = monthKey;
+        if (!byMonth[key]) byMonth[key] = { present: 0, total: 0 };
+        byMonth[key].total += 1;
+        if (r.status === "p" || r.status === "출석") byMonth[key].present += 1;
+        const dept = memberDept(r.member_id);
+        if (!deptRates[dept]) deptRates[dept] = { present: 0, total: 0 };
+        deptRates[dept].total += 1;
+        if (r.status === "p" || r.status === "출석") deptRates[dept].present += 1;
+      });
+    } else {
+      // fallback: db.attendance (week 기반)
+      const weeksInYear = 52;
+      members.forEach((m) => {
+        const att = attendance[m.id] ?? {};
+        for (let w = 1; w <= weeksInYear; w++) {
+          const status = att[w];
+          const month = Math.ceil((w * 7) / 30) || 1;
+          const key = String(month > 12 ? 12 : month).padStart(2, "0");
+          if (!byMonth[key]) byMonth[key] = { present: 0, total: 0 };
+          byMonth[key].total += 1;
+          if (status === "p") byMonth[key].present += 1;
+        }
+        const dept = m.dept || "기타";
+        if (!deptRates[dept]) deptRates[dept] = { present: 0, total: 0 };
+        deptRates[dept].total += 52;
+        for (let w = 1; w <= 52; w++) if (att[w] === "p") deptRates[dept].present++;
+      });
+    }
+    const monthlyRate = Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => ({
+        month: `${parseInt(month, 10)}월`,
+        출석률: v.total > 0 ? Math.round((v.present / v.total) * 100) : 0,
+      }));
     const deptData = Object.entries(deptRates).map(([name, v]) => ({
       name,
       출석률: v.total > 0 ? Math.round((v.present / v.total) * 100) : 0,
     }));
     return { monthlyRate, deptData };
-  }, [members, attendance]);
+  }, [members, attendance, attendanceRows]);
 
   // A5-3 재정
   const financeStats = useMemo(() => {
