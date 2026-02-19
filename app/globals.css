@@ -412,10 +412,245 @@
   }
 }
 
-@media (min-width: 640px) {
+/* ========== 모바일 전용 (767px 이하). 데스크탑 레이아웃 변경 금지 ========== */
+@media (max-width: 767px) {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    -webkit-text-size-adjust: 100%;
+    padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0) + 12px);
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  .tab-bar {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: max(env(safe-area-inset-bottom, 0), 8px);
+    height: auto;
+    min-height: 64px;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-item {
+    flex: 0 0 auto;
+    min-width: 72px;
+    font-size: 10px;
+    padding: 8px 6px;
+  }
+  .tab-item .tab-icon { flex-shrink: 0; }
+  .tab-item .tab-label {
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .modal-bg {
+    align-items: flex-end;
+  }
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  .modal-body {
+    padding: 12px 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-foot {
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .modal-foot .btn {
+    min-height: 48px;
+    width: 100%;
+  }
+  .fi, .fs, .ft {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 12px 14px;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .stat {
+    padding: 10px 12px;
+  }
+  .stat .s-val {
+    font-size: 20px;
+  }
+  .stat .s-lbl {
+    font-size: 11px;
+  }
+  .plan-item {
+    min-height: 48px;
+    padding: 12px 12px;
+  }
+  .plan-item .pi-title,
+  .d-row .d-value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .superplanner-root .page table tbody td {
+    padding: 10px 12px;
+    min-height: 48px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .superplanner-root .page table tbody tr {
+    min-height: 48px;
+  }
+  .tbl-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-left: -12px;
+    margin-right: -12px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  table.tbl {
+    min-width: 480px;
+    font-size: 13px;
+  }
+  table.tbl tbody td {
+    padding: 10px 12px;
+    min-height: 48px;
+  }
+  .name-cell,
+  table.tbl tbody td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+  }
+  .name-cell .info strong,
+  .fin-row .fr-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .name-cell .info small,
+  .fin-row .fr-date,
+  .fin-row .fr-amount {
+    font-size: 11px;
+  }
+  .fin-row {
+    min-height: 48px;
+    padding: 12px 12px;
+  }
+  .page {
+    padding: 12px;
+  }
+  .card-body-padded {
+    padding: 12px;
+  }
+  .card-unified {
+    padding: 12px 16px;
+  }
+  .segment {
+    padding: 4px 2px;
+  }
+  .segment button {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .week-cell {
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+  }
+  .att-dot {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+  }
+  .btn {
+    min-height: 40px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  .btn-sm {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .search-box input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  select.flt {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  /* 모바일 리스트/행 공통 */
+  .mobile-list-row {
+    min-height: 48px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .mobile-name-nowrap {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .mobile-filter-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .mobile-filter-row::-webkit-scrollbar { display: none; }
+  .mobile-filter-row button,
+  .mobile-filter-row select {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  /* 출석 체크 모바일 */
+  .att-row-mob {
+    min-height: 48px;
+  }
+  .att-name-mob {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (min-width: 768px) {
   .modal-bg { align-items: center; }
-  .modal { border-radius: var(--radius-xl); max-height: 85vh; transform: translateY(30px) scale(0.95); opacity: 0; }
+  .modal {
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+    max-height: 85vh;
+    border-radius: var(--radius-xl);
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
   .modal-bg.open .modal { transform: translateY(0) scale(1); opacity: 1; }
+  .modal-foot .btn { width: auto; min-height: auto; }
 }
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: repeat(2,1fr); }

@@ -186,22 +186,22 @@ export function AttendanceCheck({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <label className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">날짜</span>
+      <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible gap-2 md:gap-3 bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4">
+        <label className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs md:text-sm text-gray-600">날짜</span>
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-h-[36px] md:min-h-0"
           />
         </label>
-        <label className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">예배</span>
+        <label className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs md:text-sm text-gray-600">예배</span>
           <select
             value={selectedServiceType}
             onChange={(e) => setSelectedServiceType(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-w-[140px]"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-w-[120px] md:min-w-[140px] min-h-[36px] md:min-h-0"
           >
             {serviceTypes.filter((s) => s.is_active !== false).map((s) => (
               <option key={s.id} value={s.name}>{s.name}</option>
@@ -209,9 +209,9 @@ export function AttendanceCheck({
             {serviceTypes.length === 0 && <option value="주일1부예배">주일1부예배</option>}
           </select>
         </label>
-        <label className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">부서</span>
-          <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
+        <label className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs md:text-sm text-gray-600">부서</span>
+          <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-h-[36px] md:min-h-0">
             <option value="">전체</option>
             {depts.map((d) => (
               <option key={d} value={d}>{d}</option>
@@ -223,7 +223,7 @@ export function AttendanceCheck({
           placeholder="이름 검색"
           value={searchName}
           onChange={(e) => setSearchName(e.target.value)}
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm w-40"
+          className="rounded-lg border border-gray-200 px-3 py-2 text-sm w-32 md:w-40 min-h-[36px] md:min-h-0 flex-shrink-0"
         />
       </div>
 
@@ -233,14 +233,14 @@ export function AttendanceCheck({
           <span className="ml-2 text-gray-500">출석 데이터 로딩 중...</span>
         </div>
       ) : (
-        <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 bg-white rounded-xl shadow-sm border border-gray-100">
+          <table className="w-full text-sm min-w-[320px]">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">교인</th>
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">직분</th>
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">목장</th>
-                <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">출석 상태</th>
+                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">교인</th>
+                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">직분</th>
+                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">목장</th>
+                <th className="text-center py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">출석 상태</th>
               </tr>
             </thead>
             <tbody>
@@ -250,24 +250,24 @@ export function AttendanceCheck({
                 filteredMembers.map((m) => {
                   const status = getStatus(m.id);
                   return (
-                    <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                      <td className="py-3 px-4 flex items-center gap-3">
+                    <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/50 min-h-[48px]">
+                      <td className="py-3 px-3 md:px-4 flex items-center gap-2 md:gap-3 min-h-[48px]">
                         <div
-                          className="w-9 h-9 rounded-full bg-gray-200 flex-shrink-0 bg-cover bg-center"
+                          className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-200 flex-shrink-0 bg-cover bg-center"
                           style={{ backgroundImage: m.photo ? `url(${m.photo})` : undefined }}
                         />
-                        <span className="font-medium">{m.name}</span>
+                        <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] md:max-w-none">{m.name}</span>
                       </td>
-                      <td className="py-3 px-4 text-gray-600">{m.role || "-"}</td>
-                      <td className="py-3 px-4 text-gray-600">{m.mokjang || m.group || "-"}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3 md:px-4 text-gray-600 text-xs md:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[60px] md:max-w-none">{m.role || "-"}</td>
+                      <td className="py-3 px-3 md:px-4 text-gray-600 text-xs md:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[60px] md:max-w-none">{m.mokjang || m.group || "-"}</td>
+                      <td className="py-3 px-3 md:px-4">
                         <div className="flex flex-wrap gap-1 justify-center">
                           {STATUSES.map((s) => (
                             <button
                               key={s}
                               type="button"
                               onClick={() => setStatus(m.id, s)}
-                              className="min-w-[44px] min-h-[44px] rounded-lg px-2 py-1.5 text-xs font-medium transition border-2"
+                              className="min-w-[36px] min-h-[36px] md:min-w-[44px] md:min-h-[44px] rounded-lg px-1.5 md:px-2 py-1 md:py-1.5 text-xs font-medium transition border-2"
                               style={{
                                 backgroundColor: status === s ? STATUS_COLORS[s] : "transparent",
                                 color: status === s ? "#fff" : "#374151",

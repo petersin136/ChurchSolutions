@@ -318,13 +318,32 @@ function Modal({ open, onClose, title, children, width = 540 }: { open: boolean;
   );
 }
 
-function StatCard({ label, value, sub, color = C.accent }: { label: string; value: string; sub?: string; color?: string }) {
+function StatCard({ label, value, sub, color = C.accent, compact }: { label: string; value: string; sub?: string; color?: string; compact?: boolean }) {
   return (
-    <Card style={{ display: "flex", flexDirection: "column", gap: 4, position: "relative", overflow: "hidden", padding: "20px 24px" }}>
-      <div style={{ position: "absolute", top: -10, right: -10, width: 60, height: 60, borderRadius: "50%", background: `${color}15` }} />
-      <div style={{ fontSize: 13, color: C.textMuted, fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: C.navy, letterSpacing: "-0.5px" }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: C.textMuted }}>{sub}</div>}
+    <Card
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        position: "relative",
+        overflow: "hidden",
+        padding: compact ? 12 : 24,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: compact ? -8 : -10,
+          right: compact ? -8 : -10,
+          width: compact ? 32 : 60,
+          height: compact ? 32 : 60,
+          borderRadius: "50%",
+          background: `${color}15`,
+        }}
+      />
+      <div style={{ fontSize: compact ? 11 : 13, color: C.textMuted, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: compact ? 20 : 26, fontWeight: 700, color: C.navy, letterSpacing: "-0.5px" }}>{value}</div>
+      {sub && <div style={{ fontSize: compact ? 10 : 12, color: C.textMuted }}>{sub}</div>}
     </Card>
   );
 }
@@ -499,12 +518,20 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
           <p style={{ margin: "4px 0 0", fontSize: 13, color: C.textMuted }}>목양 대시보드</p>
         </div>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-        <StatCard label="전체 성도" value={`${total}명`} sub="활성 등록" color={C.accent} />
-        <StatCard label="금주 출석률" value={`${rate}%`} sub={`${att}/${total}명 출석`} color={C.success} />
-        <StatCard label="새가족" value={`${newF}명`} sub="정착 진행중" color={C.teal} />
-        <StatCard label="위험/휴면" value={`${risk}명`} sub="관심 필요" color={C.danger} />
-        <StatCard label="기도제목" value={`${prayers}건`} sub="함께 기도합니다" color={C.purple} />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: mob ? 8 : 16,
+        }}
+      >
+        <StatCard label="전체 성도" value={`${total}명`} sub="활성 등록" color={C.accent} compact={mob} />
+        <StatCard label="금주 출석률" value={`${rate}%`} sub={`${att}/${total}명 출석`} color={C.success} compact={mob} />
+        <StatCard label="새가족" value={`${newF}명`} sub="정착 진행중" color={C.teal} compact={mob} />
+        <StatCard label="위험/휴면" value={`${risk}명`} sub="관심 필요" color={C.danger} compact={mob} />
+        <div style={mob ? { gridColumn: "1 / -1" } : undefined}>
+          <StatCard label="기도제목" value={`${prayers}건`} sub="함께 기도합니다" color={C.purple} compact={mob} />
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>

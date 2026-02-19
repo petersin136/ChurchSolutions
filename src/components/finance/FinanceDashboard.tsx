@@ -114,30 +114,30 @@ export function FinanceDashboard({
   return (
     <div className="space-y-6">
       {/* 요약 카드 4개 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-5">
           <div className="text-xs font-medium text-gray-500 mb-1">이번 달 총 수입</div>
-          <div className="text-2xl font-bold text-[#1e3a5f]">₩{fmt(monthIncome)}</div>
+          <div className="text-xl md:text-2xl font-bold text-[#1e3a5f]">₩{fmt(monthIncome)}</div>
           <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
             {incomeChange >= 0 ? "▲" : "▼"} 전월 대비 {Math.abs(incomeChange)}%
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-5">
           <div className="text-xs font-medium text-gray-500 mb-1">이번 달 총 지출</div>
-          <div className="text-2xl font-bold text-[#e74c3c]">₩{fmt(monthExpense)}</div>
+          <div className="text-xl md:text-2xl font-bold text-[#e74c3c]">₩{fmt(monthExpense)}</div>
           <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
             {expenseChange >= 0 ? "▲" : "▼"} 전월 대비 {Math.abs(expenseChange)}%
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-5">
           <div className="text-xs font-medium text-gray-500 mb-1">이번 달 순수익</div>
-          <div className={`text-2xl font-bold ${netProfit >= 0 ? "text-[#1e3a5f]" : "text-[#e74c3c]"}`}>
+          <div className={`text-xl md:text-2xl font-bold ${netProfit >= 0 ? "text-[#1e3a5f]" : "text-[#e74c3c]"}`}>
             ₩{fmt(netProfit)}
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-5">
           <div className="text-xs font-medium text-gray-500 mb-1">예산 집행률</div>
-          <div className="text-2xl font-bold text-[#1e3a5f]">{executionRate}%</div>
+          <div className="text-xl md:text-2xl font-bold text-[#1e3a5f]">{executionRate}%</div>
           <div className="text-xs text-gray-500 mt-1">이번 달 지출 / 예산</div>
         </div>
       </div>
