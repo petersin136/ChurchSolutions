@@ -159,6 +159,10 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
   );
 
   const statusColor = STATUS_BADGE_COLOR[member.member_status || ""] || "#6B7280";
+  const denom = db.settings?.denomination?.trim();
+  const isBaptist = Boolean(denom && denom.includes("침례"));
+  const baptismCertLabel = isBaptist ? "침례증명서" : "세례증명서";
+  const baptismInfoLabel = isBaptist ? "침례" : "세례";
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col">
@@ -171,18 +175,18 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
             <span className="text-2xl font-bold text-white/90">{initials}</span>
           )}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-[200px]">
           <h2 className="text-2xl font-bold truncate">{member.name}</h2>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {member.role && <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-white/20">{member.role}</span>}
-            {member.dept && <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-white/20">{member.dept}</span>}
-            <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: statusColor }}>{member.member_status || "활동"}</span>
-            {member.is_prospect && <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-amber-500/80">관심 성도</span>}
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            {member.role && <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-white/20 whitespace-nowrap shrink-0">{member.role}</span>}
+            {member.dept && <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-white/20 whitespace-nowrap shrink-0">{member.dept}</span>}
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap shrink-0" style={{ backgroundColor: statusColor }}>{member.member_status || "활동"}</span>
+            {member.is_prospect && <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-500/80 whitespace-nowrap shrink-0">관심 성도</span>}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {onEdit && <button type="button" onClick={onEdit} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">편집</button>}
-          <button type="button" onClick={async () => { try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(member, db.settings?.churchName ?? "", null); toast?.("세례증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">세례증명서 인쇄</button>
+          <button type="button" onClick={async () => { try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(member, db.settings?.churchName ?? "", null, db.settings?.denomination); toast?.(`${baptismCertLabel} PDF 다운로드됨`, "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">{baptismCertLabel} 인쇄</button>
           <button type="button" onClick={async () => { try { const { generateMemberCertificatePdf } = await import("@/components/print/MemberCertificate"); await generateMemberCertificatePdf(member, db.settings?.churchName ?? "", null); toast?.("교인증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">교인증명서 인쇄</button>
           {member.phone && <a href={`tel:${member.phone}`} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">전화</a>}
           {member.phone && <a href={`sms:${member.phone}`} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">문자</a>}
@@ -242,7 +246,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
             <InfoRow label="직분" value={member.role || "-"} />
             <InfoRow label="목장" value={member.group || "-"} />
             <InfoRow label="소그룹" value={member.small_group || "-"} />
-            <InfoRow label="세례" value={[member.baptism_type, member.baptism_date].filter(Boolean).join(" ") || "-"} />
+            <InfoRow label={baptismInfoLabel} value={[member.baptism_type, member.baptism_date].filter(Boolean).join(" ") || "-"} />
             <InfoRow label="등록일" value={member.registered_date || "-"} />
             {member.family_id && (
               <div>

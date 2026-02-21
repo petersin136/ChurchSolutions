@@ -27,9 +27,19 @@ export interface MemberFormProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
+/** 교단명에 '침례'가 포함되면 침례 표기 (예: 침례교, 기독교한국침례회, 한국침례회) */
+function isBaptistDenomination(denomination?: string | null): boolean {
+  const d = denomination?.trim();
+  return Boolean(d && d.includes("침례"));
+}
+
 export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormProps) {
   const depts = getDepts(db);
   const mokjangList = (db.settings.mokjangList || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const useChimrye = isBaptistDenomination(db.settings.denomination);
+  const baptismSectionLabel = useChimrye ? "침례/가족" : "세례/가족";
+  const baptismTypeLabel = useChimrye ? "침례 구분" : "세례 구분";
+  const baptismDateLabel = useChimrye ? "침례일" : "세례일";
 
   const [name, setName] = useState("");
   const [gender, setGender] = useState("");
@@ -270,6 +280,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         }
         memberId = (inserted as { id: string }).id;
       }
+      let savedPhotoUrl: string | undefined = member?.photo;
       if (photoFile && memberId) {
         const path = `${memberId}.jpg`;
         const { error: upErr } = await supabase.storage.from("member-photos").upload(path, photoFile, { upsert: true, contentType: photoFile.type });
@@ -277,6 +288,17 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
           const { data: signed } = await supabase.storage.from("member-photos").createSignedUrl(path, 60 * 60 * 24 * 365);
           if (signed?.signedUrl) {
             await supabase.from("members").update({ photo: signed.signedUrl }).eq("id", memberId);
+            savedPhotoUrl = signed.signedUrl;
+            const imageUrl = signed.signedUrl;
+            console.log("=== 프로필 이미지 URL 디버깅 (MemberForm) ===");
+            console.log("생성된 URL:", imageUrl);
+            fetch(imageUrl)
+              .then((res) => {
+                console.log("이미지 접근 상태코드:", res.status);
+                console.log("Content-Type:", res.headers.get("content-type"));
+                if (!res.ok) console.error("이미지 접근 실패! 상태:", res.status, res.statusText);
+              })
+              .catch((err) => console.error("이미지 fetch 에러:", err));
           }
         }
       }
@@ -296,6 +318,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         group: mokjang || undefined,
         email: email || undefined,
         job: job || undefined,
+        photo: savedPhotoUrl,
         registered_date: registeredDate || undefined,
         small_group: smallGroup || undefined,
         talent: talent || undefined,
@@ -381,15 +404,51 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
           <div className="md:col-span-2">
             <label className={labelClass}>사진</label>
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center">
-                {photoPreview ? <img src={photoPreview} alt="" className="w-full h-full object-cover" /> : <span className="text-gray-400 text-xs">사진</span>}
+              {/* 프로필 이미지: photoPreview 있으면 배경만 표시(자식 없음), 없으면 플레이스홀더만 표시. 서로 겹치지 않도록 완전 분리 */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => photoInputRef.current?.click()}
+                onKeyDown={(e) => e.key === "Enter" && photoInputRef.current?.click()}
+                data-has-photo={!!photoPreview}
+                style={{
+                  width: "120px",
+                  height: "120px",
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  backgroundColor: "#f0f0f0",
+                  backgroundImage: photoPreview ? `url("${String(photoPreview).replace(/"/g, '\\"')}")` : "none",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "column",
+                  cursor: "pointer",
+                  border: "2px solid #e5e7eb",
+                }}
+              >
+                {photoPreview ? null : (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "transparent" }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                    <span style={{ fontSize: "12px", color: "#999", marginTop: "4px" }}>사진 등록</span>
+                  </div>
+                )}
               </div>
-              <div>
-                <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
-                <button type="button" onClick={() => photoInputRef.current?.click()} className="px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                  업로드
-                </button>
-              </div>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                style={{ display: "none" }}
+              />
+              <button type="button" onClick={() => photoInputRef.current?.click()} className="px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                업로드
+              </button>
             </div>
           </div>
         </div>
@@ -439,12 +498,12 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         </div>
       </section>
 
-      {/* 섹션 3: 세례/가족 */}
+      {/* 섹션 3: 세례/침례·가족 */}
       <section className={cardClass}>
-        <h3 className="text-lg font-semibold text-[#1e3a5f] mb-4">세례/가족</h3>
+        <h3 className="text-lg font-semibold text-[#1e3a5f] mb-4">{baptismSectionLabel}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>세례 구분</label>
+            <label className={labelClass}>{baptismTypeLabel}</label>
             <select value={baptismType} onChange={(e) => setBaptismType((e.target.value || "") as Member["baptism_type"])} className={inputClass}>
               <option value="">선택</option>
               {BAPTISM_TYPES.map((b) => (
@@ -453,7 +512,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
             </select>
           </div>
           <div>
-            <CalendarDropdown label="세례일" value={baptismDate} onChange={setBaptismDate} showClearButton disabled={baptismType === "미세례" || !baptismType} />
+            <CalendarDropdown label={baptismDateLabel} value={baptismDate} onChange={setBaptismDate} showClearButton disabled={baptismType === "미세례" || !baptismType} />
           </div>
           <div>
             <CalendarDropdown label="결혼기념일" value={weddingAnniversary} onChange={setWeddingAnniversary} showClearButton />

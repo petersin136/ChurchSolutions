@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
   church_name text NOT NULL DEFAULT '',
   depts text NOT NULL DEFAULT '',
   fiscal_start text NOT NULL DEFAULT '1',
+  denomination text,
   address text,
   pastor text,
   business_number text

@@ -8,6 +8,10 @@ export async function POST(request: Request) {
     const churchName = body?.churchName ?? "";
     const depts = body?.depts ?? "";
     const fiscalStart = body?.fiscalStart ?? "1";
+    const denomination = body?.denomination ?? "";
+    const address = body?.address ?? "";
+    const pastor = body?.pastor ?? "";
+    const businessNumber = body?.businessNumber ?? "";
 
     const sb = getServiceSupabase();
 
@@ -15,6 +19,10 @@ export async function POST(request: Request) {
       church_name: churchName,
       depts,
       fiscal_start: fiscalStart,
+      denomination: denomination || null,
+      address: address || null,
+      pastor: pastor || null,
+      business_number: businessNumber || null,
     };
 
     const { data: existing } = await sb.from("settings").select("id").limit(1).maybeSingle();

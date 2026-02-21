@@ -834,8 +834,8 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
           <button type="button" onClick={() => setPrintOpen(p => !p)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>🖨️ 인쇄</button>
           {printOpen && (
             <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 50, minWidth: 160 }}>
-              <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; try { const { generateChurchRegisterPdf } = await import("@/components/print/ChurchRegisterPrint"); await generateChurchRegisterPdf(detailMember, db.settings.churchName ?? ""); toast("교적부 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>교적부 양식</button>
-              <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(detailMember, db.settings.churchName ?? "", null); toast("세례증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>세례증명서</button>
+              <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; try { const { generateChurchRegisterPdf } = await import("@/components/print/ChurchRegisterPrint"); await generateChurchRegisterPdf(detailMember, db.settings.churchName ?? "", db.settings.denomination); toast("교적부 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>교적부 양식</button>
+              <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; const denom = db.settings.denomination?.trim(); const isChimrye = denom && denom.includes("침례"); const certLabel = isChimrye ? "침례증명서" : "세례증명서"; try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(detailMember, db.settings.churchName ?? "", null, db.settings.denomination); toast(`${certLabel} PDF 다운로드됨`, "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>{isChimrye ? "침례증명서" : "세례증명서"}</button>
               <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; try { const { generateMemberCertificatePdf } = await import("@/components/print/MemberCertificate"); await generateMemberCertificatePdf(detailMember, db.settings.churchName ?? "", null); toast("교인증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>교인증명서</button>
               <button type="button" onClick={async () => { setPrintOpen(false); const list = selectedMemberIds.size > 0 ? filtered.filter(m => selectedMemberIds.has(m.id)) : filtered; if (list.length === 0) { toast("대상 교인이 없습니다", "warn"); return; } try { const { generateAddressLabelPdf } = await import("@/components/print/AddressLabelPrint"); await generateAddressLabelPdf(list.slice(0, 500)); toast("주소 라벨 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: C.text, cursor: "pointer" }}>주소 라벨</button>
               <button type="button" onClick={async () => { setPrintOpen(false); const list = selectedMemberIds.size > 0 ? filtered.filter(m => selectedMemberIds.has(m.id)) : filtered; if (list.length === 0) { toast("대상 교인이 없습니다", "warn"); return; } try { const { generateCustomReportPdf } = await import("@/components/print/CustomReportPrint"); await generateCustomReportPdf(list.slice(0, 500)); toast("커스텀 보고서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: C.text, cursor: "pointer" }}>커스텀 보고서</button>
@@ -1975,6 +1975,8 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
         <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 14 : 20 }}>⚙️ 교회 설정</h4>
         <FormInput label="교회 이름" value={db.settings.churchName || ""} placeholder="○○교회"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, churchName: e.target.value } })); persist(); }} />
+        <FormInput label="교단" value={db.settings.denomination || ""} placeholder="예: 침례교, 장로교, 감리교 (침례교면 증서에 침례 표기)"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, denomination: e.target.value } })); persist(); }} />
         <FormInput label="부서 목록 (쉼표 구분)" value={db.settings.depts || ""} placeholder="유아부,유치부,유년부,초등부,중등부,고등부,청년부,장년부"
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, depts: e.target.value } })); persist(); }} />
         <div style={{ marginTop: 12 }}>
@@ -2178,6 +2180,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       toast("저장할 수 없습니다. Supabase 연결을 확인하세요.", "err");
       return;
     }
+    const isNewFamily = fStatus === "새가족" || fStatus === "정착중";
     const insertData = {
       name: fName.trim(),
       dept: fDept || null,
@@ -2188,6 +2191,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       address: fAddr.trim() || null,
       family: fFamily.trim() || null,
       status: fStatus,
+      is_new_family: isNewFamily,
       source: fSource || null,
       prayer: fPrayer.trim() || null,
       memo: fMemo.trim() || null,
@@ -2212,7 +2216,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         const dataMerged: Partial<Member> = {
           name: insertData.name, dept: insertData.dept ?? undefined, role: insertData.role ?? undefined, birth: insertData.birth ?? undefined,
           gender: insertData.gender ?? undefined, phone: insertData.phone ?? undefined, address: insertData.address ?? undefined, family: insertData.family ?? undefined,
-          status: insertData.status, source: insertData.source ?? undefined, prayer: insertData.prayer ?? undefined, memo: insertData.memo ?? undefined,
+          status: insertData.status, is_new_family: insertData.is_new_family, source: insertData.source ?? undefined, prayer: insertData.prayer ?? undefined, memo: insertData.memo ?? undefined,
           photo: insertData.photo ?? undefined, group: insertData.mokjang ?? undefined, visit_path: insertData.visit_path as Member["visit_path"], referrer_id: insertData.referrer_id ?? undefined,
           job: insertData.job ?? undefined, first_visit_date: insertData.first_visit_date ?? undefined,
         };
@@ -2240,6 +2244,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           address: insertData.address ?? undefined,
           family: insertData.family ?? undefined,
           status: insertData.status,
+          is_new_family: insertData.is_new_family,
           source: insertData.source ?? undefined,
           prayer: insertData.prayer ?? undefined,
           memo: insertData.memo ?? undefined,
@@ -2342,8 +2347,19 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       fd.append("file", compressed);
       const r = await fetch("/api/upload-photo", { method: "POST", body: fd });
       const data = await r.json();
-      if (data.url) setFPhoto(data.url);
-      else toast("업로드 실패", "err");
+      if (data.url) {
+        const imageUrl = data.url;
+        setFPhoto(imageUrl);
+        console.log("=== 프로필 이미지 URL 디버깅 (PastoralPage) ===");
+        console.log("생성된 URL:", imageUrl);
+        fetch(imageUrl)
+          .then((res) => {
+            console.log("이미지 접근 상태코드:", res.status);
+            console.log("Content-Type:", res.headers.get("content-type"));
+            if (!res.ok) console.error("이미지 접근 실패! 상태:", res.status, res.statusText);
+          })
+          .catch((err) => console.error("이미지 fetch 에러:", err));
+      } else toast("업로드 실패", "err");
     } catch {
       toast("사진 압축 또는 업로드 실패", "err");
     }

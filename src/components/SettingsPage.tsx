@@ -93,7 +93,8 @@ export function SettingsPage({
   function saveSettings(
     churchName: string,
     depts: string,
-    fiscalStart: string
+    fiscalStart: string,
+    denomination?: string
   ) {
     setDb((prev) => ({
       ...prev,
@@ -102,6 +103,7 @@ export function SettingsPage({
         churchName,
         depts,
         fiscalStart,
+        ...(denomination !== undefined && { denomination }),
       },
     }));
     save();
@@ -348,9 +350,26 @@ export function SettingsPage({
               saveSettings(
                 (e.target as HTMLInputElement).value,
                 db.settings.depts,
-                db.settings.fiscalStart
+                db.settings.fiscalStart,
+                db.settings.denomination
               )
             }
+          />
+        </div>
+        <div className="fg">
+          <label className="fl">교단</label>
+          <input
+            type="text"
+            className="fi"
+            placeholder="예: 침례교, 장로교, 감리교 (침례교면 증서에 침례 표기)"
+            value={db.settings.denomination ?? ""}
+            onInput={(e) => {
+              setDb((prev) => ({
+                ...prev,
+                settings: { ...prev.settings, denomination: (e.target as HTMLInputElement).value },
+              }));
+              save();
+            }}
           />
         </div>
         <div className="fg">
@@ -364,7 +383,8 @@ export function SettingsPage({
               saveSettings(
                 db.settings.churchName,
                 (e.target as HTMLInputElement).value,
-                db.settings.fiscalStart
+                db.settings.fiscalStart,
+                db.settings.denomination
               )
             }
           />
@@ -378,7 +398,8 @@ export function SettingsPage({
               saveSettings(
                 db.settings.churchName,
                 db.settings.depts,
-                e.target.value
+                e.target.value,
+                db.settings.denomination
               )
             }
           >
