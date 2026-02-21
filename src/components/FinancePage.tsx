@@ -772,18 +772,15 @@ function DonorTab({ donors, setDonors, offerings }: {
   );
 }
 
-/* ====== 헌금 현황 (교인별 통계 + 3개월 미헌금자) ====== */
-function getNinetyDaysAgo() { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().slice(0, 10); }
+/* ====== 헌금 현황 (교인별 통계) ====== */
 
-function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
+function GivingStatusTab({ donors, offerings, categories }: {
   donors: Donor[]; offerings: Offering[]; categories: Category[];
-  onVisitSuggest?: (name: string) => void;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [onlyNoGiving, setOnlyNoGiving] = useState(false);
-  const [sortKey, setSortKey] = useState<"name" | "total" | "lastDate" | "prevDate" | "thisMonth" | "last3Months">("name");
+  const [sortKey, setSortKey] = useState<"name" | "total" | "lastDate" | "prevDate" | "thisMonth">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   type DonorStat = {
@@ -792,19 +789,15 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
     lastDate: string | null;
     prevDate: string | null;
     thisMonth: number;
-    last3Months: number;
-    isNoGiving90: boolean;
   };
 
   const donorStats = useMemo(() => {
     const now = new Date();
     const thisYear = now.getFullYear();
     const thisMonth = String(now.getMonth() + 1).padStart(2, "0");
-    const threeMonthsStart = new Date(now); threeMonthsStart.setMonth(threeMonthsStart.getMonth() - 3);
-    const threeStartStr = threeMonthsStart.toISOString().slice(0, 10);
 
-    const map = new Map<string, { total: number; dates: string[]; thisMonth: number; last3Months: number }>();
-    donors.forEach(d => map.set(d.id, { total: 0, dates: [], thisMonth: 0, last3Months: 0 }));
+    const map = new Map<string, { total: number; dates: string[]; thisMonth: number }>();
+    donors.forEach(d => map.set(d.id, { total: 0, dates: [], thisMonth: 0 }));
 
     offerings.forEach(o => {
       const cur = map.get(o.donorId);
@@ -812,7 +805,6 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
       cur.total += o.amount;
       if (!cur.dates.includes(o.date)) cur.dates.push(o.date);
       if (o.date.slice(0, 7) === `${thisYear}-${thisMonth}`) cur.thisMonth += o.amount;
-      if (o.date >= threeStartStr) cur.last3Months += o.amount;
     });
 
     return donors.map(donor => {
@@ -820,23 +812,18 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
       const dates = [...(cur.dates || [])].sort((a, b) => b.localeCompare(a));
       const lastDate = dates[0] || null;
       const prevDate = dates[1] || null;
-      const isNoGiving90 = !lastDate || lastDate < getNinetyDaysAgo();
       return {
         donor,
         total: cur?.total ?? 0,
         lastDate,
         prevDate,
         thisMonth: cur?.thisMonth ?? 0,
-        last3Months: cur?.last3Months ?? 0,
-        isNoGiving90,
       } as DonorStat;
     });
   }, [donors, offerings]);
 
-  const noGivingCount = useMemo(() => donorStats.filter(s => s.isNoGiving90).length, [donorStats]);
-
   const filtered = useMemo(() => {
-    let list = onlyNoGiving ? donorStats.filter(s => s.isNoGiving90) : [...donorStats];
+    let list = [...donorStats];
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(s => s.donor.name.toLowerCase().includes(q));
@@ -848,26 +835,16 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
       else if (sortKey === "lastDate") cmp = (a.lastDate || "").localeCompare(b.lastDate || "");
       else if (sortKey === "prevDate") cmp = (a.prevDate || "").localeCompare(b.prevDate || "");
       else if (sortKey === "thisMonth") cmp = a.thisMonth - b.thisMonth;
-      else if (sortKey === "last3Months") cmp = a.last3Months - b.last3Months;
       return sortDir === "asc" ? cmp : -cmp;
     });
     return list;
-  }, [donorStats, onlyNoGiving, search, sortKey, sortDir]);
+  }, [donorStats, search, sortKey, sortDir]);
 
   const paginatedFiltered = useMemo(() => filtered.slice((currentPage - 1) * 10, currentPage * 10), [filtered, currentPage]);
 
   const toggleSort = (key: typeof sortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("asc"); }
-  };
-
-  const handleVisitSuggest = (name: string) => {
-    if (onVisitSuggest) { onVisitSuggest(name); return; }
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(name);
-      if (typeof window !== "undefined" && (window as unknown as { toast?: (m: string) => void }).toast) (window as unknown as { toast: (m: string) => void }).toast(`"${name}" 이름이 복사되었습니다. 심방 관리에서 검색해 주세요.`);
-    }
-    try { navigator.clipboard.writeText(name); } catch {}
   };
 
   const Th = ({ label, keyName, align = "left" }: { label: string; keyName: typeof sortKey; align?: "left" | "right" | "center" }) => (
@@ -878,26 +855,12 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {noGivingCount > 0 && (
-        <div
-          role="button"
-          onClick={() => setOnlyNoGiving(prev => !prev)}
-          style={{
-            padding: "14px 20px", borderRadius: 12, background: onlyNoGiving ? C.danger : C.dangerLight, color: onlyNoGiving ? "#fff" : C.danger,
-            fontWeight: 600, fontSize: 14, cursor: "pointer", border: `2px solid ${C.danger}`,
-          }}
-        >
-          ⚠️ 3개월 이상 미헌금 교인: {noGivingCount}명 {onlyNoGiving ? "(전체 보기 클릭)" : "(클릭 시 미헌금자만 보기)"}
-        </div>
-      )}
-
       <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative" }}>
           <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><Icons.Search /></div>
           <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="이름 검색..."
             style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", width: 200 }} />
         </div>
-        {onlyNoGiving && <Button variant="soft" onClick={() => { setOnlyNoGiving(false); setCurrentPage(1); }}>전체 보기</Button>}
       </div>
 
       <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
@@ -910,8 +873,6 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
                 <Th label="최근 헌금일" keyName="lastDate" align="center" />
                 <Th label="이전 헌금일" keyName="prevDate" align="center" />
                 <Th label="이번 달" keyName="thisMonth" align="right" />
-                <Th label="최근 3개월" keyName="last3Months" align="right" />
-                <th style={{ padding: "12px 16px", fontWeight: 600, color: C.navy, fontSize: 13, borderBottom: `1px solid ${C.border}` }}></th>
               </tr>
             </thead>
             <tbody>
@@ -920,7 +881,7 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
                   key={s.donor.id}
                   style={{
                     borderBottom: i < paginatedFiltered.length - 1 ? `1px solid ${C.borderLight}` : "none",
-                    background: s.isNoGiving90 ? "#fde8e8" : "transparent",
+                    background: "transparent",
                   }}
                 >
                   <td style={{ padding: "12px 16px", minWidth: 90 }}>
@@ -938,12 +899,6 @@ function GivingStatusTab({ donors, offerings, categories, onVisitSuggest }: {
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>{s.lastDate || "-"}</td>
                   <td style={{ padding: "12px 16px", textAlign: "center", color: C.textMuted }}>{s.prevDate || "-"}</td>
                   <td style={{ padding: "12px 16px", textAlign: "right" }}>₩{fmt(s.thisMonth)}</td>
-                  <td style={{ padding: "12px 16px", textAlign: "right" }}>₩{fmt(s.last3Months)}</td>
-                  <td style={{ padding: "12px 16px" }}>
-                    {s.isNoGiving90 && (
-                      <Button size="sm" variant="soft" onClick={() => handleVisitSuggest(s.donor.name)}>심방 추천</Button>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
