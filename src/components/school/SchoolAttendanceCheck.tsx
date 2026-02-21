@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
@@ -9,6 +10,121 @@ const INDIGO = "#4F46E5";
 const MIN_TOUCH = 44;
 
 type AttStatus = "출석" | "결석" | "병결" | "기타";
+
+/** overflow에 가리지 않도록 포털로 옵션을 띄우는 드롭다운 (부서/반 select 대체) */
+function PortalSelect({
+  id,
+  options,
+  value,
+  onChange,
+  placeholder,
+  label,
+}: {
+  id: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  label: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  const selected = value ? options.find((o) => o.value === value) : null;
+  const displayText = selected ? selected.label : placeholder;
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target) || listRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocMouseDown, true);
+    return () => document.removeEventListener("mousedown", onDocMouseDown, true);
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPosition({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    } else {
+      setPosition(null);
+    }
+  }, [open]);
+
+  const listStyle: React.CSSProperties = position
+    ? {
+        position: "fixed",
+        left: position.left,
+        top: position.top,
+        minWidth: position.width,
+        zIndex: 9999,
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderRadius: 8,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        maxHeight: 280,
+        overflowY: "auto",
+      }
+    : { position: "fixed" as const, left: -9999, top: 0, zIndex: 9999, visibility: "hidden" as const };
+
+  return (
+    <div className="flex items-center gap-2" style={{ position: "relative", zIndex: 10 }}>
+      <span className="text-sm font-medium" id={`${id}-label`}>{label}</span>
+      <button
+        ref={btnRef}
+        id={id}
+        type="button"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          setOpen((o) => !o);
+        }}
+        className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-w-[120px] min-h-[44px] cursor-pointer text-left flex items-center justify-between gap-2 bg-white hover:bg-gray-50"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-labelledby={`${id}-label`}
+      >
+        <span className="truncate">{displayText}</span>
+        <span className="flex-shrink-0 text-gray-400" aria-hidden>▼</span>
+      </button>
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div ref={(el) => { listRef.current = el; }} style={listStyle} role="listbox">
+            <button
+              type="button"
+              role="option"
+              className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+            >
+              {placeholder}
+            </button>
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                role="option"
+                className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg"
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+}
 
 export interface SchoolAttendanceCheckProps {
   db: DB;
@@ -133,20 +249,22 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
           <span className="text-sm font-medium">날짜</span>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" />
         </label>
-        <label className="flex items-center gap-2">
-          <span className="text-sm font-medium">부서</span>
-          <select value={selectedDeptId ?? ""} onChange={(e) => { setSelectedDeptId(e.target.value || null); setSelectedClassId(null); }} className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-w-[120px]">
-            <option value="">선택</option>
-            {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
-        </label>
-        <label className="flex items-center gap-2">
-          <span className="text-sm font-medium">반</span>
-          <select value={selectedClassId ?? ""} onChange={(e) => setSelectedClassId(e.target.value || null)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-w-[120px]">
-            <option value="">전체</option>
-            {classes.filter((c) => c.department_id === selectedDeptId).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
+        <PortalSelect
+          id="school-attendance-dept"
+          label="부서"
+          placeholder="선택"
+          value={selectedDeptId ?? ""}
+          onChange={(v) => { setSelectedDeptId(v || null); setSelectedClassId(null); }}
+          options={departments.map((d) => ({ value: d.id, label: d.name }))}
+        />
+        <PortalSelect
+          id="school-attendance-class"
+          label="반"
+          placeholder="전체"
+          value={selectedClassId ?? ""}
+          onChange={(v) => setSelectedClassId(v || null)}
+          options={classes.filter((c) => c.department_id === selectedDeptId).map((c) => ({ value: c.id, label: c.name }))}
+        />
       </div>
 
       {selectedDeptId && (

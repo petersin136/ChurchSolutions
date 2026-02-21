@@ -1585,8 +1585,8 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
   );
 }
 
-function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, toast, mob }: {
-  db: DB; setDb: (fn: (prev: DB) => DB) => void; memberId: string; onClose: () => void; toast: (m: string, t?: string) => void; mob: boolean;
+function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, toast, mob }: {
+  db: DB; setDb: (fn: (prev: DB) => DB) => void; memberId: string; onClose: () => void; onSaved?: () => void; toast: (m: string, t?: string) => void; mob: boolean;
 }) {
   const member = db.members.find(m => m.id === memberId);
   const program = (db.newFamilyPrograms || []).find(p => p.member_id === memberId);
@@ -1610,7 +1610,9 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, toast, mob 
       ...prev,
       newFamilyPrograms: (prev.newFamilyPrograms || []).map(p => p.member_id === memberId ? { ...p, ...patch } : p),
     }));
-  }, [memberId, setDb]);
+    // 저장 반영 후 부모에 알려 목록/다른 탭이 동일 db로 갱신되도록 함
+    setTimeout(() => onSaved?.(), 0);
+  }, [memberId, setDb, onSaved]);
 
   const setWeekCheck = useCallback((weekIndex: 0 | 1 | 2 | 3, checkIndex: number, value: boolean) => {
     setWeekChecks(prev => {
@@ -1704,7 +1706,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, toast, mob 
       )}
 
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 16 }}>
-        <Btn variant="ghost" onClick={onClose}>닫기</Btn>
+        <Btn variant="ghost" onClick={() => { onSaved?.(); onClose(); }}>닫기</Btn>
       </div>
 
       {showMentorSelect && (
@@ -2559,7 +2561,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       </Modal>
 
       {/* New Family Program Detail Modal */}
-      {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} toast={toast} mob={mob} />}
+      {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} onSaved={() => setDb(prev => { void saveDb?.(prev); return prev; })} toast={toast} mob={mob} />}
 
       {/* Detail Modal — Member 360° 뷰 */}
       <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} title="" width={mob ? undefined : 720}>
