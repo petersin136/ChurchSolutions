@@ -708,6 +708,8 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const selectAllFiltered = () => setSelectedMemberIds(new Set(filtered.map(m => m.id)));
   const clearSelection = () => setSelectedMemberIds(new Set());
   const mokjangList = getMokjangList(db);
+  const denom = db.settings.denomination?.trim();
+  const isChimrye = !!denom && denom.includes("침례");
 
   /* 대시보드와 동일 조건: status !== "졸업/전출" (DashboardSub는 x.status만 사용) */
   const filtered = useMemo(() => {
