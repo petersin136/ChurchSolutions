@@ -78,7 +78,7 @@ function PortalSelect({
         ref={btnRef}
         id={id}
         type="button"
-        onMouseDown={(e) => {
+        onClick={(e) => {
           e.stopPropagation();
           setOpen((o) => !o);
         }}

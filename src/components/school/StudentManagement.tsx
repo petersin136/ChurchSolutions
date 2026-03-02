@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
@@ -193,70 +194,121 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
         </table>
       </div>
 
-      {addOpen && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setAddOpen(false)}>
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h4 className="font-semibold mb-4">학생 등록</h4>
-            <label className="block text-sm font-medium text-gray-700 mb-1">성도</label>
-            <select value={addMemberId} onChange={(e) => setAddMemberId(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm mb-3">
-              <option value="">선택</option>
-              {(db.members ?? []).filter((m) => !enrollments.some((x) => x.member_id === m.id && x.department_id === addDeptId)).map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-            <label className="block text-sm font-medium text-gray-700 mb-1">부서</label>
-            <select value={addDeptId} onChange={(e) => { setAddDeptId(e.target.value); setAddClassId(""); }} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm mb-3">
-              <option value="">선택</option>
-              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-            <label className="block text-sm font-medium text-gray-700 mb-1">반</label>
-            <select value={addClassId} onChange={(e) => setAddClassId(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm mb-3">
-              <option value="">미배정</option>
-              {classes.filter((c) => c.department_id === addDeptId).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
-            <select value={addRole} onChange={(e) => setAddRole(e.target.value as typeof addRole)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm mb-4">
-              <option value="학생">학생</option>
-              <option value="교사">교사</option>
-              <option value="부교사">부교사</option>
-              <option value="부장">부장</option>
-              <option value="총무">총무</option>
-            </select>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setAddOpen(false)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-              <button type="button" onClick={handleRegister} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: INDIGO }}>등록</button>
+      {addOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/30 flex items-center justify-center"
+            style={{ zIndex: 10000 }}
+            onClick={() => setAddOpen(false)}
+          >
+            <div
+              className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl"
+              style={{ position: "relative", zIndex: 10001 }}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="student-register-title"
+            >
+              <h4 id="student-register-title" className="font-semibold mb-4">학생 등록</h4>
+              <label className="block text-sm font-medium text-gray-700 mb-1">성도</label>
+              <select
+                value={addMemberId}
+                onChange={(e) => setAddMemberId(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm mb-3 min-h-[44px] cursor-pointer bg-white"
+              >
+                <option value="">선택</option>
+                {(db.members ?? []).filter((m) => !enrollments.some((x) => x.member_id === m.id && x.department_id === addDeptId)).map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">부서</label>
+              <select
+                value={addDeptId}
+                onChange={(e) => { setAddDeptId(e.target.value); setAddClassId(""); }}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm mb-3 min-h-[44px] cursor-pointer bg-white"
+              >
+                <option value="">선택</option>
+                {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">반</label>
+              <select
+                value={addClassId}
+                onChange={(e) => setAddClassId(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm mb-3 min-h-[44px] cursor-pointer bg-white"
+              >
+                <option value="">미배정</option>
+                {classes.filter((c) => c.department_id === addDeptId).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
+              <select
+                value={addRole}
+                onChange={(e) => setAddRole(e.target.value as typeof addRole)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm mb-4 min-h-[44px] cursor-pointer bg-white"
+              >
+                <option value="학생">학생</option>
+                <option value="교사">교사</option>
+                <option value="부교사">부교사</option>
+                <option value="부장">부장</option>
+                <option value="총무">총무</option>
+              </select>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setAddOpen(false)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
+                <button type="button" onClick={handleRegister} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: INDIGO }}>등록</button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
-      {editOpen && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setEditOpen(null)}>
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h4 className="font-semibold mb-4">등록 수정 — {getMember(editOpen)?.name ?? editOpen.member_id}</h4>
-            <label className="block text-sm font-medium text-gray-700 mb-1">반</label>
-            <select value={editClassId} onChange={(e) => setEditClassId(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm mb-3">
-              <option value="">미배정</option>
-              {classes.filter((c) => c.department_id === editOpen.department_id).map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
-            <select value={editRole} onChange={(e) => setEditRole(e.target.value as typeof editRole)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm mb-4">
-              <option value="학생">학생</option>
-              <option value="교사">교사</option>
-              <option value="부교사">부교사</option>
-              <option value="부장">부장</option>
-              <option value="총무">총무</option>
-            </select>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => handleDelete(editOpen)} className="py-2 rounded-lg border border-red-200 text-red-600 text-sm">등록 해제</button>
-              <button type="button" onClick={() => setEditOpen(null)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-              <button type="button" onClick={handleUpdate} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: INDIGO }}>저장</button>
+      {editOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/30 flex items-center justify-center"
+            style={{ zIndex: 10000 }}
+            onClick={() => setEditOpen(null)}
+          >
+            <div
+              className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl"
+              style={{ position: "relative", zIndex: 10001 }}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <h4 className="font-semibold mb-4">등록 수정 — {getMember(editOpen)?.name ?? editOpen.member_id}</h4>
+              <label className="block text-sm font-medium text-gray-700 mb-1">반</label>
+              <select
+                value={editClassId}
+                onChange={(e) => setEditClassId(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm mb-3 min-h-[44px] cursor-pointer bg-white"
+              >
+                <option value="">미배정</option>
+                {classes.filter((c) => c.department_id === editOpen.department_id).map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
+              <select
+                value={editRole}
+                onChange={(e) => setEditRole(e.target.value as typeof editRole)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm mb-4 min-h-[44px] cursor-pointer bg-white"
+              >
+                <option value="학생">학생</option>
+                <option value="교사">교사</option>
+                <option value="부교사">부교사</option>
+                <option value="부장">부장</option>
+                <option value="총무">총무</option>
+              </select>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => handleDelete(editOpen)} className="py-2 rounded-lg border border-red-200 text-red-600 text-sm">등록 해제</button>
+                <button type="button" onClick={() => setEditOpen(null)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
+                <button type="button" onClick={handleUpdate} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: INDIGO }}>저장</button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
