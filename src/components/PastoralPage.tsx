@@ -1602,10 +1602,10 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
   const [pendingMentorId, setPendingMentorId] = useState<string | null>(null);
   const [weekChecks, setWeekChecks] = useState<[boolean[], boolean[], boolean[], boolean[]]>(() =>
     program ? [
-      program.week1_checks ?? [program.week1_completed, program.week1_completed, program.week1_completed, program.week1_completed],
-      program.week2_checks ?? [program.week2_completed, program.week2_completed, program.week2_completed, program.week2_completed],
-      program.week3_checks ?? [program.week3_completed, program.week3_completed, program.week3_completed, program.week3_completed],
-      program.week4_checks ?? [program.week4_completed, program.week4_completed, program.week4_completed, program.week4_completed],
+      (program.week1_checks ?? [program.week1_completed, program.week1_completed, program.week1_completed, program.week1_completed]).slice(0, 4) as [boolean, boolean, boolean, boolean],
+      (program.week2_checks ?? [program.week2_completed, program.week2_completed, program.week2_completed, program.week2_completed]).slice(0, 4) as [boolean, boolean, boolean, boolean],
+      (program.week3_checks ?? [program.week3_completed, program.week3_completed, program.week3_completed, program.week3_completed]).slice(0, 4) as [boolean, boolean, boolean, boolean],
+      (program.week4_checks ?? [program.week4_completed, program.week4_completed, program.week4_completed, program.week4_completed]).slice(0, 4) as [boolean, boolean, boolean, boolean],
     ] : [[false, false, false, false], [false, false, false, false], [false, false, false, false], [false, false, false, false]]
   );
 
