@@ -11,7 +11,6 @@ import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Se
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
-import { BirthDateSelect } from "@/components/BirthDateSelect";
 import { Member360View } from "@/components/members/Member360View";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics, ServiceTypeSettings } from "@/components/attendance";
 
@@ -2613,7 +2612,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           <FormInput label="직분/학년" value={fRole} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFRole(e.target.value)} placeholder="예: 집사, 3학년" />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
-          <BirthDateSelect label="생년월일" value={fBirth} onChange={setFBirth} showClearButton />
+          <CalendarDropdown label="생년월일" value={fBirth} onChange={setFBirth} showClearButton />
           <FormSelect label="성별" value={fGender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGender(e.target.value)} options={[{ value: "", label: "선택" }, { value: "남", label: "남" }, { value: "여", label: "여" }]} />
         </div>
         <FormInput label="연락처" type="tel" value={fPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFPhone(e.target.value)} placeholder="010-0000-0000" />

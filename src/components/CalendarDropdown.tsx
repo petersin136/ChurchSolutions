@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
 const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
-const YEAR_MIN = 1920;
+const YEAR_MIN = 1940;
 const YEAR_MAX = 2030;
 
 function toYMD(d: Date) {
@@ -51,6 +51,7 @@ export function CalendarDropdown({
   const [view, setView] = useState(() => (value ? parseYMD(value) : new Date()));
   const [viewMode, setViewMode] = useState<"calendar" | "year">("calendar");
   const containerRef = useRef<HTMLDivElement>(null);
+  const yearListRef = useRef<HTMLDivElement>(null);
 
   const today = toYMD(new Date());
 
@@ -61,6 +62,13 @@ export function CalendarDropdown({
   useEffect(() => {
     if (!open) setViewMode("calendar");
   }, [open]);
+
+  useEffect(() => {
+    if (open && viewMode === "year" && yearListRef.current) {
+      const el = yearListRef.current.querySelector(`[data-year="${year}"]`);
+      if (el) (el as HTMLElement).scrollIntoView({ block: "nearest", behavior: "auto" });
+    }
+  }, [open, viewMode, year]);
 
   useEffect(() => {
     if (!open) return;
@@ -89,7 +97,7 @@ export function CalendarDropdown({
     });
   }
 
-  const years = Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MIN + i);
+  const years = Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MAX - i);
 
   const prevMonth = useCallback(() => {
     setView((v) => {
@@ -190,25 +198,29 @@ export function CalendarDropdown({
               <div style={{ padding: "14px 16px", borderBottom: "1px solid #f3f4f6", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
                 연도 선택
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", padding: "12px", gap: 6, maxHeight: 280, overflowY: "auto" }}>
+              <div
+                ref={yearListRef}
+                style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", padding: "10px", gap: 4, maxHeight: 280, overflowY: "auto" }}
+              >
                 {years.map((y) => (
                   <button
                     key={y}
                     type="button"
+                    data-year={y}
                     onClick={() => selectYear(y)}
                     style={{
-                      padding: "10px",
+                      padding: "6px 8px",
                       border: "none",
-                      borderRadius: 8,
+                      borderRadius: 6,
                       background: year === y ? "#3b82f6" : "#f3f4f6",
                       color: year === y ? "#fff" : "#1a1f36",
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: year === y ? 700 : 500,
                       cursor: "pointer",
                       fontFamily: "inherit",
                     }}
                   >
-                    {y}년
+                    {y}
                   </button>
                 ))}
               </div>
