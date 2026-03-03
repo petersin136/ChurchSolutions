@@ -66,10 +66,16 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
 
   const displayStatusHistory = dbStatusHistory.length > 0 ? dbStatusHistory : statusHistory;
 
-  const initials = useMemo(() => {
-    const n = member.name?.trim() || "";
-    if (n.length >= 2) return n.slice(0, 2);
-    return n || "?";
+  const avatarNameDisplay = useMemo(() => {
+    const n = member.name?.trim() || "?";
+    const baseFontSize = 24;
+    const len = n.length;
+    const fontSize =
+      len <= 2 ? baseFontSize
+      : len === 3 ? baseFontSize * 0.85
+      : len === 4 ? baseFontSize * 0.7
+      : baseFontSize * 0.55;
+    return { text: n, fontSize };
   }, [member.name]);
 
   const attendanceByWeek = useMemo(() => {
@@ -172,7 +178,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
           {member.photo ? (
             <img src={member.photo} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-2xl font-bold text-white/90">{initials}</span>
+            <span className="font-bold text-white/90" style={{ fontSize: avatarNameDisplay.fontSize }}>{avatarNameDisplay.text}</span>
           )}
         </div>
         <div className="flex-1 min-w-[200px]">

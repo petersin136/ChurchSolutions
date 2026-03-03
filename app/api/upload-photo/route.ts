@@ -39,7 +39,21 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    return NextResponse.json({ url: urlData.publicUrl });
+    const publicUrl = urlData.publicUrl;
+    console.log("[Photo Debug] getPublicUrl 결과:", publicUrl);
+
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(path, 60 * 60 * 24 * 365);
+
+    const imageUrl = signedError ? publicUrl : signedData?.signedUrl ?? publicUrl;
+    if (!signedError && signedData?.signedUrl) {
+      console.log("[Photo Debug] createSignedUrl 사용 (버킷 비공개 대응), 최종 URL:", imageUrl);
+    } else if (signedError) {
+      console.warn("[Photo Debug] createSignedUrl 실패, public URL 반환:", signedError.message, "| URL:", publicUrl);
+    }
+
+    return NextResponse.json({ url: imageUrl });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

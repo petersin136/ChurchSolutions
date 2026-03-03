@@ -2109,6 +2109,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [fAddr, setFAddr] = useState(""); const [fFamily, setFFamily] = useState(""); const [fStatus, setFStatus] = useState("새가족");
   const [fSource, setFSource] = useState(""); const [fPrayer, setFPrayer] = useState(""); const [fMemo, setFMemo] = useState("");
   const [fGroup, setFGroup] = useState(""); const [fPhoto, setFPhoto] = useState("");
+  const [fPhotoServerUrl, setFPhotoServerUrl] = useState("");
   const [fVisitPath, setFVisitPath] = useState(""); const [fReferrerId, setFReferrerId] = useState(""); const [fJob, setFJob] = useState(""); const [fFirstVisitDate, setFFirstVisitDate] = useState(todayStr());
   const photoRef = useRef<HTMLInputElement>(null);
 
@@ -2165,12 +2166,13 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       setFBirth(m.birth || ""); setFGender(m.gender || ""); setFPhone(m.phone || "");
       setFAddr(m.address || ""); setFFamily(m.family || ""); setFStatus(m.status || "새가족");
       setFSource(m.source || ""); setFPrayer(m.prayer || ""); setFMemo(m.memo || ""); setFPhoto(m.photo || "");
+      setFPhotoServerUrl(m.photo || "");
       setFGroup((m.mokjang ?? m.group) && mokjangOptions.includes((m.mokjang ?? m.group) || "") ? ((m.mokjang ?? m.group) || "") : ((m.mokjang ?? m.group) || ""));
       setFVisitPath((m.visit_path ?? m.visitPath) || ""); setFReferrerId(m.referrer_id || ""); setFJob(m.job || ""); setFFirstVisitDate((m.first_visit_date ?? m.firstVisitDate) || todayStr());
     } else {
       setFName(""); setFDept(depts[0] || ""); setFRole(""); setFBirth(""); setFGender("");
       setFPhone(""); setFAddr(""); setFFamily(""); setFStatus("새가족"); setFSource("");
-      setFPrayer(""); setFMemo(""); setFPhoto("");
+      setFPrayer(""); setFMemo(""); setFPhoto(""); setFPhotoServerUrl("");
       setFGroup("");
       setFVisitPath(""); setFReferrerId(""); setFJob(""); setFFirstVisitDate(todayStr());
     }
@@ -2200,7 +2202,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       prayer: fPrayer.trim() || null,
       memo: fMemo.trim() || null,
       mokjang: fGroup || null,
-      photo: fPhoto || null,
+      photo: (fPhotoServerUrl || fPhoto) || null,
       visit_path: fVisitPath || null,
       referrer_id: fReferrerId || null,
       job: fJob.trim() || null,
@@ -2343,26 +2345,34 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   };
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("[Photo Debug] onChange 실행됨, files:", e.target.files);
     const file = e.target.files?.[0];
     if (!file) return;
+    const localPreview = URL.createObjectURL(file);
+    setFPhoto(localPreview);
     try {
       const compressed = await compressImage(file, 400, 0.7);
       const fd = new FormData();
       fd.append("file", compressed);
+      console.log("[Photo Debug] 업로드 요청 시작");
       const r = await fetch("/api/upload-photo", { method: "POST", body: fd });
       const data = await r.json();
+      console.log("[Photo Debug] 업로드 응답:", data);
       if (data.url) {
-        const imageUrl = data.url;
-        setFPhoto(imageUrl);
-        console.log("=== 프로필 이미지 URL 디버깅 (PastoralPage) ===");
-        console.log("생성된 URL:", imageUrl);
-        fetch(imageUrl)
-          .then((res) => {
-            console.log("이미지 접근 상태코드:", res.status);
-            console.log("Content-Type:", res.headers.get("content-type"));
-            if (!res.ok) console.error("이미지 접근 실패! 상태:", res.status, res.statusText);
-          })
-          .catch((err) => console.error("이미지 fetch 에러:", err));
+        const serverUrl = data.url;
+        console.log("[Photo Debug] 서버 URL 확인 중:", serverUrl);
+        const testImg = new Image();
+        testImg.onload = () => {
+          console.log("[Photo Debug] 서버 URL 로드 성공, 교체함");
+          URL.revokeObjectURL(localPreview);
+          setFPhoto(serverUrl);
+          setFPhotoServerUrl(serverUrl);
+        };
+        testImg.onerror = () => {
+          console.error("[Photo Debug] 서버 URL 로드 실패, 로컬 미리보기 유지");
+          setFPhotoServerUrl(serverUrl);
+        };
+        testImg.src = serverUrl;
       } else toast("업로드 실패", "err");
     } catch {
       toast("사진 압축 또는 업로드 실패", "err");
@@ -2492,25 +2502,52 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
       {/* Member Modal */}
       <Modal open={showMemberModal} onClose={closeMemberModal} title={editMbrId ? "성도 수정" : "성도 등록"}>
-        {/* 프로필 사진 — 맨 위, 원형 100px, 가운데 */}
+        {/* 프로필 사진 — 맨 위, 원형 100px. 클릭 시 파일 선택. 미리보기는 <img>로 표시 (backgroundImage는 URL 특수문자로 깨질 수 있음) */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <div
-            onClick={() => photoRef.current?.click()}
+          <label
+            onClick={() => console.log("[Photo Debug] 사진 영역 클릭됨")}
             style={{
+              display: "block",
               width: 100, height: 100, borderRadius: "50%", background: "#f3f4f6", cursor: "pointer",
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0,
+              overflow: "hidden", flexShrink: 0, position: "relative",
+              border: "2px solid #e5e7eb",
             }}
           >
+            <input
+              ref={photoRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhoto}
+              style={{
+                position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
+                opacity: 0, cursor: "pointer", zIndex: 1,
+              }}
+              aria-label="프로필 사진 선택"
+            />
             {fPhoto ? (
-              <img src={fPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img
+                src={fPhoto}
+                alt="프로필 미리보기"
+                onError={(e) => {
+                  console.error("[Photo Debug] 이미지 로드 실패");
+                  console.error("[Photo Debug] 시도한 URL:", fPhoto);
+                  console.error("[Photo Debug] 에러:", e);
+                }}
+                onLoad={() => {
+                  console.log("[Photo Debug] 이미지 로드 성공");
+                }}
+                style={{
+                  position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
+                  objectFit: "cover", borderRadius: "50%", display: "block", zIndex: 0,
+                }}
+              />
             ) : (
-              <>
+              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
                 <div style={{ color: C.textMuted, marginBottom: 4 }}><Icons.Camera /></div>
                 <span style={{ fontSize: 11, color: C.textMuted }}>사진 등록</span>
-              </>
+              </div>
             )}
-          </div>
-          <input ref={photoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhoto} />
+          </label>
         </div>
         <FormInput label="이름 *" value={fName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFName(e.target.value)} placeholder="이름" />
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
