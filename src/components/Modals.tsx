@@ -5,6 +5,7 @@ import type { DB, Member, Note } from "@/types/db";
 import { getDepts } from "@/lib/store";
 import { CATS_INCOME, CATS_EXPENSE } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
+import { BirthDateSelect } from "@/components/BirthDateSelect";
 import { supabase } from "@/lib/supabase";
 
 const STATUS_MAP: Record<string, string> = {
@@ -750,7 +751,7 @@ export function Modals({
             </div>
             <div className="fg-row">
               <div className="fg">
-                <CalendarDropdown label="생년월일" value={mBirth} onChange={setMBirth} />
+                <BirthDateSelect label="생년월일" value={mBirth} onChange={setMBirth} showClearButton />
               </div>
               <div className="fg">
                 <label className="fl">성별</label>
