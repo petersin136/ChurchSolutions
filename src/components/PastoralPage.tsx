@@ -28,6 +28,8 @@ function useIsMobile(bp = 768) {
 /* ---------- Utilities ---------- */
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 9);
+/** UUID v4 (Supabase new_family_program 저장을 위해 항상 UUID 사용) */
+const uuid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; const v = c === "y" ? (r & 0x3 | 0x8) : r; return v.toString(16); }));
 
 function getDepts(db: DB): string[] {
   return (db.settings.depts || "").split(",").map(d => d.trim()).filter(Boolean);
@@ -451,16 +453,18 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 
   const m = db.members.filter(x => x.status !== "졸업/전출");
   const total = m.length;
-  const att = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "p").length;
+  const attInPerson = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "p").length;
+  const attOnline = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "o").length;
+  const attTotal = attInPerson + attOnline;
   const newF = m.filter(s => s.is_new_family === true).length;
   const risk = m.filter(s => s.status === "위험" || s.status === "휴면").length;
   const prayers = m.filter(s => s.prayer && s.prayer.trim()).length;
-  const rate = total > 0 ? Math.round(att / total * 100) : 0;
+  const rate = total > 0 ? Math.round(attTotal / total * 100) : 0;
 
   const weeklyAtt = useMemo(() => {
     return Array.from({ length: 52 }, (_, i) => {
       const w = i + 1;
-      return m.filter(s => (db.attendance[s.id] || {})[w] === "p").length;
+      return m.filter(s => { const st = (db.attendance[s.id] || {})[w]; return st === "p" || st === "o"; }).length;
     });
   }, [db, m]);
 
@@ -471,7 +475,8 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
       Object.keys(a).forEach(w => {
         const wn = parseInt(w);
         const mn = Math.min(11, Math.floor((wn - 1) / 4.33));
-        if (a[parseInt(w)] === "p") data[mn]++;
+        const st = a[parseInt(w)];
+        if (st === "p" || st === "o") data[mn]++;
       });
     });
     return data;
@@ -526,7 +531,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
         }}
       >
         <StatCard label="전체 성도" value={`${total}명`} sub="활성 등록" color={C.accent} compact={mob} />
-        <StatCard label="금주 출석률" value={`${rate}%`} sub={`${att}/${total}명 출석`} color={C.success} compact={mob} />
+        <StatCard label="금주 출석률" value={`${rate}%`} sub={attOnline > 0 ? `${attInPerson}명 출석 · ${attOnline}명 온라인 / 총 ${total}명` : `${attTotal}/${total}명 출석`} color={C.success} compact={mob} />
         <StatCard label="새가족" value={`${newF}명`} sub="정착 진행중" color={C.teal} compact={mob} />
         <StatCard label="위험/휴면" value={`${risk}명`} sub="관심 필요" color={C.danger} compact={mob} />
         <div style={mob ? { gridColumn: "1 / -1" } : undefined}>
@@ -1454,7 +1459,7 @@ function NewFamilySub({ db, setDb, openProgramDetail, openMemberModal, toast }: 
     setDb(prev => {
       const existing = prev.newFamilyPrograms || [];
       const toAdd: NewFamilyProgram[] = missing.map(m => ({
-        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "nfp_" + uid(),
+        id: uuid(),
         member_id: m.id,
         mentor_id: null,
         program_start_date: m.firstVisitDate || m.createdAt || todayStr(),
@@ -1587,18 +1592,20 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
   );
 }
 
-function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, toast, mob }: {
-  db: DB; setDb: (fn: (prev: DB) => DB) => void; memberId: string; onClose: () => void; onSaved?: () => void; toast: (m: string, t?: string) => void; mob: boolean;
+function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, saveDb, toast, mob }: {
+  db: DB; setDb: (fn: (prev: DB) => DB) => void; memberId: string; onClose: () => void; onSaved?: () => void; saveDb?: (d: DB) => Promise<void>; toast: (m: string, t?: string) => void; mob: boolean;
 }) {
+  const [saving, setSaving] = useState(false);
   const member = db.members.find(m => m.id === memberId);
   const program = (db.newFamilyPrograms || []).find(p => p.member_id === memberId);
   const [showMentorSelect, setShowMentorSelect] = useState(false);
+  const [pendingMentorId, setPendingMentorId] = useState<string | null>(null);
   const [weekChecks, setWeekChecks] = useState<[boolean[], boolean[], boolean[], boolean[]]>(() =>
     program ? [
-      [program.week1_completed, program.week1_completed, program.week1_completed, program.week1_completed],
-      [program.week2_completed, program.week2_completed, program.week2_completed, program.week2_completed],
-      [program.week3_completed, program.week3_completed, program.week3_completed, program.week3_completed],
-      [program.week4_completed, program.week4_completed, program.week4_completed, program.week4_completed],
+      program.week1_checks ?? [program.week1_completed, program.week1_completed, program.week1_completed, program.week1_completed],
+      program.week2_checks ?? [program.week2_completed, program.week2_completed, program.week2_completed, program.week2_completed],
+      program.week3_checks ?? [program.week3_completed, program.week3_completed, program.week3_completed, program.week3_completed],
+      program.week4_checks ?? [program.week4_completed, program.week4_completed, program.week4_completed, program.week4_completed],
     ] : [[false, false, false, false], [false, false, false, false], [false, false, false, false], [false, false, false, false]]
   );
 
@@ -1617,11 +1624,14 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, to
   }, [memberId, setDb, onSaved]);
 
   const setWeekCheck = useCallback((weekIndex: 0 | 1 | 2 | 3, checkIndex: number, value: boolean) => {
+    const key = ["week1_checks", "week2_checks", "week3_checks", "week4_checks"][weekIndex] as keyof NewFamilyProgram;
     setWeekChecks(prev => {
       const next = prev.map((arr, wi) => wi === weekIndex ? arr.map((c, i) => i === checkIndex ? value : c) : arr) as [boolean[], boolean[], boolean[], boolean[]];
+      const newWeek = next[weekIndex] as [boolean, boolean, boolean, boolean];
+      updateProgram({ [key]: newWeek });
       return next;
     });
-  }, []);
+  }, [updateProgram]);
 
   const setWeekCompletedFromChecks = useCallback((weekIndex: 0 | 1 | 2 | 3, date: string | null, note: string | null) => {
     const checks = weekChecks[weekIndex];
@@ -1660,7 +1670,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, to
             <div style={{ fontSize: 13, color: C.textMuted }}>첫 방문일 {member.firstVisitDate || program.program_start_date}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
               {mentor ? <span style={{ fontSize: 13 }}>섬김이: {mentor.name}</span> : <span style={{ fontSize: 13, color: C.danger, fontWeight: 600 }}>섬김이 미배정</span>}
-              <Btn size="sm" variant="secondary" onClick={() => setShowMentorSelect(true)}>섬김이 배정</Btn>
+              <Btn size="sm" variant="secondary" onClick={() => { setPendingMentorId(program?.mentor_id ?? null); setShowMentorSelect(true); }}>섬김이 배정</Btn>
             </div>
           </div>
         </div>
@@ -1708,17 +1718,64 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, to
       )}
 
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 16 }}>
-        <Btn variant="ghost" onClick={() => { onSaved?.(); onClose(); }}>닫기</Btn>
+        <Btn variant="ghost" onClick={onClose}>닫기</Btn>
+        <Btn
+          disabled={saving}
+          onClick={async () => {
+            if (saveDb) {
+              setSaving(true);
+              try {
+                await saveDb(db);
+                toast("저장되었습니다", "ok");
+                onClose();
+              } catch (e) {
+                console.error("정착 프로그램 저장 실패:", e);
+                toast("저장 실패: " + (e instanceof Error ? e.message : String(e)), "err");
+              } finally {
+                setSaving(false);
+              }
+            } else {
+              onSaved?.();
+              onClose();
+              toast("저장되었습니다", "ok");
+            }
+          }}
+        >
+          {saving ? "저장 중…" : "저장"}
+        </Btn>
       </div>
 
       {showMentorSelect && (
         <Modal open onClose={() => setShowMentorSelect(false)} title="섬김이 선택">
           <div style={{ maxHeight: 320, overflowY: "auto" }}>
             {mentorCandidates.length === 0 ? <div style={{ padding: 24, textAlign: "center", color: C.textMuted }}>장년부 집사/권사/장로가 없습니다</div> : mentorCandidates.map(m => (
-              <button key={m.id} type="button" onClick={() => { updateProgram({ mentor_id: m.id }); setShowMentorSelect(false); toast("섬김이 배정되었습니다"); }} style={{ display: "block", width: "100%", padding: "12px 16px", textAlign: "left", border: "none", borderBottom: `1px solid ${C.borderLight}`, background: program.mentor_id === m.id ? C.accentLight : "#fff", color: C.navy, fontSize: 14, cursor: "pointer", borderRadius: 0 }}>
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setPendingMentorId(m.id)}
+                style={{
+                  display: "block", width: "100%", padding: "12px 16px", textAlign: "left", border: "none", borderBottom: `1px solid ${C.borderLight}`,
+                  background: (pendingMentorId ?? program?.mentor_id) === m.id ? C.accentLight : "#fff",
+                  color: C.navy, fontSize: 14, cursor: "pointer", borderRadius: 0,
+                }}
+              >
                 {m.name} ({m.role || ""} {m.dept || ""})
               </button>
             ))}
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+            <Btn variant="ghost" onClick={() => setShowMentorSelect(false)}>취소</Btn>
+            <Btn
+              onClick={() => {
+                const toApply = pendingMentorId ?? program?.mentor_id ?? null;
+                if (toApply) updateProgram({ mentor_id: toApply });
+                setShowMentorSelect(false);
+                setPendingMentorId(null);
+                toast("섬김이 배정 저장되었습니다", "ok");
+              }}
+            >
+              저장
+            </Btn>
           </div>
         </Modal>
       )}
@@ -1780,8 +1837,8 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
     let csv = `"${db.settings.churchName || "교회"} 목양 종합 보고서 (${todayStr()})"\n\n`;
     csv += '"=== 현황 요약 ==="\n';
     csv += `"전체 성도","${m.length}명"\n`;
-    const att = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "p").length;
-    csv += `"금주 출석","${att}명 (${m.length > 0 ? Math.round(att / m.length * 100) : 0}%)"\n`;
+    const attTotalExport = m.filter(s => { const st = (db.attendance[s.id] || {})[currentWeek]; return st === "p" || st === "o"; }).length;
+    csv += `"금주 출석","${attTotalExport}명 (${m.length > 0 ? Math.round(attTotalExport / m.length * 100) : 0}%)"\n`;
     csv += `"새가족","${m.filter(s => s.is_new_family === true).length}명"\n`;
     csv += `"위험/휴면","${m.filter(s => s.status === "위험" || s.status === "휴면").length}명"\n\n`;
     csv += '"=== 부서별 인원 ==="\n"부서","인원"\n';
@@ -2268,7 +2325,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           const next = { ...prev, members: [...prev.members, newMember] };
           if (fStatus === "새가족" || fStatus === "정착중") {
             const program: NewFamilyProgram = {
-              id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "nfp_" + uid(),
+              id: uuid(),
               member_id: newId,
               mentor_id: null,
               program_start_date: startDate,
@@ -2600,7 +2657,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       </Modal>
 
       {/* New Family Program Detail Modal */}
-      {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} onSaved={() => setDb(prev => { void saveDb?.(prev); return prev; })} toast={toast} mob={mob} />}
+      {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} onSaved={() => setDb(prev => { void saveDb?.(prev); return prev; })} saveDb={saveDb} toast={toast} mob={mob} />}
 
       {/* Detail Modal — Member 360° 뷰 */}
       <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} title="" width={mob ? undefined : 720}>

@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { DB, Member, Note, Plan, Sermon, Visit, Income, Expense, AttStatus, ChecklistItem } from "@/types/db";
+import type { DB, Member, Note, NewFamilyProgram, Plan, Sermon, Visit, Income, Expense, AttStatus, ChecklistItem, WeekChecks } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -12,7 +12,7 @@ export async function loadDBFromSupabase(): Promise<DB> {
   if (!supabase) return { ...DEFAULT_DB };
   const empty = { ...DEFAULT_DB };
 
-  const [settingsRes, membersRes, attendanceRes, notesRes, plansRes, sermonsRes, visitsRes, incomeRes, expenseRes, budgetRes, checklistRes] = await Promise.all([
+  const [settingsRes, membersRes, attendanceRes, notesRes, plansRes, sermonsRes, visitsRes, newFamilyProgramsRes, incomeRes, expenseRes, budgetRes, checklistRes] = await Promise.all([
     supabase.from("settings").select("*").limit(1),
     supabase.from("members").select("*").order("created_at", { ascending: true }),
     supabase.from("attendance").select("*"),
@@ -20,6 +20,7 @@ export async function loadDBFromSupabase(): Promise<DB> {
     supabase.from("plans").select("*").order("date", { ascending: true }),
     supabase.from("sermons").select("*").order("date", { ascending: false }),
     supabase.from("visits").select("*").order("date", { ascending: false }),
+    supabase.from("new_family_program").select("*"),
     supabase.from("income").select("*").order("date", { ascending: false }),
     supabase.from("expense").select("*").order("date", { ascending: false }),
     supabase.from("budget").select("*").eq("fiscal_year", String(CURRENT_YEAR)),
@@ -47,6 +48,7 @@ export async function loadDBFromSupabase(): Promise<DB> {
     plans: (plansRes.data ?? []).map((r: Record<string, unknown>) => toPlan(r)),
     sermons: (sermonsRes.data ?? []).map((r: Record<string, unknown>) => toSermon(r)),
     visits: (visitsRes.data ?? []).map((r: Record<string, unknown>) => toVisit(r)),
+    newFamilyPrograms: (newFamilyProgramsRes.data ?? []).map((r: Record<string, unknown>) => toNewFamilyProgram(r)),
     income: (incomeRes.data ?? []).map((r: Record<string, unknown>) => toIncome(r)),
     expense: (expenseRes.data ?? []).map((r: Record<string, unknown>) => toExpense(r)),
     budget: {},
@@ -176,6 +178,44 @@ function toVisit(r: Record<string, unknown>): Visit {
     memberId: r.member_id ? String(r.member_id) : "",
     type: (r.type as string) ?? "",
     content: String(r.content ?? ""),
+  };
+}
+
+function parseWeekChecks(v: unknown): WeekChecks | undefined {
+  if (Array.isArray(v) && v.length >= 4) return [Boolean(v[0]), Boolean(v[1]), Boolean(v[2]), Boolean(v[3])];
+  if (typeof v === "string") try { const a = JSON.parse(v); return parseWeekChecks(a); } catch { return undefined; }
+  return undefined;
+}
+
+function toNewFamilyProgram(r: Record<string, unknown>): NewFamilyProgram {
+  const w1c = Boolean(r.week1_completed);
+  const w2c = Boolean(r.week2_completed);
+  const w3c = Boolean(r.week3_completed);
+  const w4c = Boolean(r.week4_completed);
+  return {
+    id: String(r.id ?? ""),
+    member_id: String(r.member_id ?? ""),
+    mentor_id: (r.mentor_id as string) || null,
+    program_start_date: String(r.program_start_date ?? ""),
+    week1_completed: w1c,
+    week1_date: (r.week1_date as string) || null,
+    week1_note: (r.week1_note as string) || null,
+    week1_checks: parseWeekChecks(r.week1_checks) ?? [w1c, w1c, w1c, w1c],
+    week2_completed: w2c,
+    week2_date: (r.week2_date as string) || null,
+    week2_note: (r.week2_note as string) || null,
+    week2_checks: parseWeekChecks(r.week2_checks) ?? [w2c, w2c, w2c, w2c],
+    week3_completed: w3c,
+    week3_date: (r.week3_date as string) || null,
+    week3_note: (r.week3_note as string) || null,
+    week3_checks: parseWeekChecks(r.week3_checks) ?? [w3c, w3c, w3c, w3c],
+    week4_completed: w4c,
+    week4_date: (r.week4_date as string) || null,
+    week4_note: (r.week4_note as string) || null,
+    week4_checks: parseWeekChecks(r.week4_checks) ?? [w4c, w4c, w4c, w4c],
+    status: ((r.status as string) || "진행중") as NewFamilyProgram["status"],
+    cell_group_assigned: (r.cell_group_assigned as string) || null,
+    created_at: r.created_at as string | undefined,
   };
 }
 
@@ -517,6 +557,35 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
         content: v.content,
       });
     }
+  }
+
+  for (const p of db.newFamilyPrograms ?? []) {
+    if (!/^[0-9a-f-]{36}$/i.test(p.id)) continue;
+    const row: Record<string, unknown> = {
+      id: p.id,
+      member_id: p.member_id,
+      mentor_id: p.mentor_id ?? null,
+      program_start_date: p.program_start_date,
+      week1_completed: p.week1_completed ?? false,
+      week1_date: p.week1_date ?? null,
+      week1_note: p.week1_note ?? null,
+      week2_completed: p.week2_completed ?? false,
+      week2_date: p.week2_date ?? null,
+      week2_note: p.week2_note ?? null,
+      week3_completed: p.week3_completed ?? false,
+      week3_date: p.week3_date ?? null,
+      week3_note: p.week3_note ?? null,
+      week4_completed: p.week4_completed ?? false,
+      week4_date: p.week4_date ?? null,
+      week4_note: p.week4_note ?? null,
+      status: p.status ?? "진행중",
+      cell_group_assigned: p.cell_group_assigned ?? null,
+    };
+    ["week1_checks", "week2_checks", "week3_checks", "week4_checks"].forEach((key, i) => {
+      const arr = (p as Record<string, unknown>)[key] as WeekChecks | undefined;
+      if (arr && Array.isArray(arr) && arr.length >= 4) row[key] = JSON.stringify(arr.slice(0, 4));
+    });
+    await supabase.from("new_family_program").upsert(row as Record<string, never>, { onConflict: "id" });
   }
 
   for (const i of db.income) {

@@ -84,6 +84,9 @@ export interface Family {
   created_at: string;
 }
 
+/** 주차별 체크 4개 (개별 저장용) */
+export type WeekChecks = [boolean, boolean, boolean, boolean];
+
 /** 정착 프로그램 4주 과정 (new_family_program) */
 export interface NewFamilyProgram {
   id: string;
@@ -93,15 +96,19 @@ export interface NewFamilyProgram {
   week1_completed: boolean;
   week1_date: string | null;
   week1_note: string | null;
+  week1_checks?: WeekChecks;
   week2_completed: boolean;
   week2_date: string | null;
   week2_note: string | null;
+  week2_checks?: WeekChecks;
   week3_completed: boolean;
   week3_date: string | null;
   week3_note: string | null;
+  week3_checks?: WeekChecks;
   week4_completed: boolean;
   week4_date: string | null;
   week4_note: string | null;
+  week4_checks?: WeekChecks;
   status: "진행중" | "수료" | "중단";
   cell_group_assigned: string | null;
   created_at?: string;
