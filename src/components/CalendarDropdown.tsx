@@ -1,27 +1,153 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
-const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_KR = ["일", "월", "화", "수", "목", "금", "토"];
 const YEAR_MIN = 1940;
 const YEAR_MAX = 2030;
+const ACCENT = "#f47458";
+const ITEM_H = 40;
+const VISIBLE = 5;
 
 function toYMD(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-
 function parseYMD(s: string): Date {
   const [y, m, d] = s.split("-").map(Number);
   return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
-
+function daysInMonth(y: number, m: number) {
+  return new Date(y, m + 1, 0).getDate();
+}
+function displayBtn(d: Date): string {
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const dow = DAY_KR[d.getDay()];
+  return `${m}월 ${day}일(${dow}) 선택`;
+}
 function displayValue(value: string): string {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
   const [y, m, d] = value.split("-");
   return `${y}. ${parseInt(m ?? "0", 10)}. ${parseInt(d ?? "0", 10)}.`;
+}
+
+function WheelColumn({
+  items,
+  value,
+  onChange,
+  suffix,
+}: {
+  items: number[];
+  value: number;
+  onChange: (v: number) => void;
+  suffix: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scrolling = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+
+  const idx = items.indexOf(value);
+
+  useEffect(() => {
+    if (!ref.current || scrolling.current) return;
+    const top = idx * ITEM_H;
+    ref.current.scrollTo({ top, behavior: "auto" });
+  }, [idx]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const top = items.indexOf(value) * ITEM_H;
+    el.scrollTo({ top, behavior: "auto" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    scrolling.current = true;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      if (!ref.current) return;
+      const scrollTop = ref.current.scrollTop;
+      const newIdx = Math.round(scrollTop / ITEM_H);
+      const clamped = Math.max(0, Math.min(newIdx, items.length - 1));
+      ref.current.scrollTo({ top: clamped * ITEM_H, behavior: "smooth" });
+      if (items[clamped] !== undefined && items[clamped] !== value) {
+        onChange(items[clamped]);
+      }
+      scrolling.current = false;
+    }, 80);
+  }, [items, value, onChange]);
+
+  const pad = (VISIBLE - 1) / 2;
+
+  return (
+    <div style={{ position: "relative", height: ITEM_H * VISIBLE, flex: 1, overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: ITEM_H * pad,
+          left: 4,
+          right: 4,
+          height: ITEM_H,
+          borderRadius: 10,
+          border: `1.5px solid ${ACCENT}`,
+          background: "rgba(244,116,88,0.06)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
+      />
+      <div
+        ref={ref}
+        className="scrollbar-hide"
+        onScroll={handleScroll}
+        style={{
+          height: "100%",
+          overflowY: "auto",
+          scrollSnapType: "y mandatory",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
+        {Array.from({ length: pad }).map((_, i) => (
+          <div key={`pad-t-${i}`} style={{ height: ITEM_H }} />
+        ))}
+        {items.map((item) => {
+          const sel = item === value;
+          return (
+            <div
+              key={item}
+              style={{
+                height: ITEM_H,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                scrollSnapAlign: "start",
+                fontSize: sel ? 18 : 15,
+                fontWeight: sel ? 700 : 400,
+                color: sel ? "#1a1f36" : "#b0b0b0",
+                transition: "color 0.15s, font-size 0.15s, font-weight 0.15s",
+                cursor: "pointer",
+                userSelect: "none",
+                fontFamily: "inherit",
+              }}
+              onClick={() => {
+                onChange(item);
+                if (ref.current) {
+                  const target = items.indexOf(item) * ITEM_H;
+                  ref.current.scrollTo({ top: target, behavior: "smooth" });
+                }
+              }}
+            >
+              {item}{suffix}
+            </div>
+          );
+        })}
+        {Array.from({ length: pad }).map((_, i) => (
+          <div key={`pad-b-${i}`} style={{ height: ITEM_H }} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 interface CalendarDropdownProps {
@@ -48,96 +174,97 @@ export function CalendarDropdown({
   style,
 }: CalendarDropdownProps) {
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState(() => (value ? parseYMD(value) : new Date()));
-  const [viewMode, setViewMode] = useState<"calendar" | "year">("calendar");
+  const [sel, setSel] = useState(() => (value ? parseYMD(value) : new Date()));
+  const [mode, setMode] = useState<"calendar" | "wheel">("calendar");
   const containerRef = useRef<HTMLDivElement>(null);
-  const yearListRef = useRef<HTMLDivElement>(null);
 
-  const today = toYMD(new Date());
+  const today = new Date();
+  const todayYMD = toYMD(today);
 
   useEffect(() => {
-    if (value) setView(parseYMD(value));
+    if (value) setSel(parseYMD(value));
   }, [value]);
 
   useEffect(() => {
-    if (!open) setViewMode("calendar");
+    if (!open) setMode("calendar");
   }, [open]);
-
-  useEffect(() => {
-    if (open && viewMode === "year" && yearListRef.current) {
-      const y = view.getFullYear();
-      const el = yearListRef.current.querySelector(`[data-year="${y}"]`);
-      if (el) (el as HTMLElement).scrollIntoView({ block: "nearest", behavior: "auto" });
-    }
-  }, [open, viewMode, view]);
 
   useEffect(() => {
     if (!open) return;
-    const onOutside = (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const year = view.getFullYear();
-  const month = view.getMonth();
-  const first = new Date(year, month, 1);
-  const start = new Date(first);
-  start.setDate(start.getDate() - start.getDay());
-  const grid: { date: Date; ymd: string; isCurrent: boolean; isToday: boolean }[] = [];
-  for (let i = 0; i < 42; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    const ymd = toYMD(d);
-    grid.push({
-      date: d,
-      ymd,
-      isCurrent: d.getMonth() === month,
-      isToday: ymd === today,
-    });
-  }
+  const year = sel.getFullYear();
+  const month = sel.getMonth();
+  const day = sel.getDate();
 
-  const years = Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MAX - i);
+  const grid = useMemo(() => {
+    const first = new Date(year, month, 1);
+    const startDay = first.getDay();
+    const dim = daysInMonth(year, month);
+    const prev = daysInMonth(year, month - 1);
+    const cells: { d: number; current: boolean; ymd: string }[] = [];
+    for (let i = startDay - 1; i >= 0; i--) {
+      const dd = prev - i;
+      const dt = new Date(year, month - 1, dd);
+      cells.push({ d: dd, current: false, ymd: toYMD(dt) });
+    }
+    for (let i = 1; i <= dim; i++) {
+      const dt = new Date(year, month, i);
+      cells.push({ d: i, current: true, ymd: toYMD(dt) });
+    }
+    const rem = 42 - cells.length;
+    for (let i = 1; i <= rem; i++) {
+      const dt = new Date(year, month + 1, i);
+      cells.push({ d: i, current: false, ymd: toYMD(dt) });
+    }
+    return cells;
+  }, [year, month]);
+
+  const yearItems = useMemo(() => Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MIN + i), []);
+  const monthItems = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), []);
+  const dayItems = useMemo(() => {
+    const dim = daysInMonth(year, month);
+    return Array.from({ length: dim }, (_, i) => i + 1);
+  }, [year, month]);
+
+  const confirm = useCallback(() => {
+    onChange(toYMD(sel));
+    setOpen(false);
+  }, [onChange, sel]);
+
+  const setWheelYear = useCallback((y: number) => {
+    setSel((prev) => {
+      const dim = daysInMonth(y, prev.getMonth());
+      return new Date(y, prev.getMonth(), Math.min(prev.getDate(), dim));
+    });
+  }, []);
+  const setWheelMonth = useCallback((m: number) => {
+    setSel((prev) => {
+      const dim = daysInMonth(prev.getFullYear(), m - 1);
+      return new Date(prev.getFullYear(), m - 1, Math.min(prev.getDate(), dim));
+    });
+  }, []);
+  const setWheelDay = useCallback((d: number) => {
+    setSel((prev) => new Date(prev.getFullYear(), prev.getMonth(), d));
+  }, []);
+
+  const selectDate = useCallback((ymd: string) => {
+    setSel(parseYMD(ymd));
+  }, []);
 
   const prevMonth = useCallback(() => {
-    setView((v) => {
-      const n = new Date(v);
-      n.setMonth(n.getMonth() - 1);
-      return n;
-    });
+    setSel((v) => { const n = new Date(v); n.setMonth(n.getMonth() - 1); return n; });
   }, []);
   const nextMonth = useCallback(() => {
-    setView((v) => {
-      const n = new Date(v);
-      n.setMonth(n.getMonth() + 1);
-      return n;
-    });
+    setSel((v) => { const n = new Date(v); n.setMonth(n.getMonth() + 1); return n; });
   }, []);
 
-  const selectDate = useCallback(
-    (ymd: string) => {
-      onChange(ymd);
-      setOpen(false);
-    },
-    [onChange]
-  );
-
-  const selectYear = useCallback((y: number) => {
-    setView((v) => {
-      const n = new Date(v);
-      n.setFullYear(y);
-      return n;
-    });
-    setViewMode("calendar");
-  }, []);
-
-  const setToday = useCallback(() => {
-    const t = today;
-    onChange(t);
-    setView(parseYMD(t));
-    setOpen(false);
-  }, [onChange, today]);
+  const selYMD = toYMD(sel);
 
   return (
     <div ref={containerRef} style={{ position: "relative", ...style }} className={className}>
@@ -146,6 +273,7 @@ export function CalendarDropdown({
           {label}
         </label>
       )}
+
       <button
         type="button"
         id={id}
@@ -187,70 +315,66 @@ export function CalendarDropdown({
             right: 0,
             marginTop: 8,
             background: "#fff",
-            borderRadius: 16,
+            borderRadius: 20,
             border: "1px solid #e5e7eb",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
             zIndex: 1000,
             overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          {viewMode === "year" ? (
-            <>
-              <div style={{ padding: "14px 16px", borderBottom: "1px solid #f3f4f6", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
-                연도 선택
-              </div>
-              <div
-                ref={yearListRef}
-                style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", padding: "10px", gap: 4, maxHeight: 280, overflowY: "auto" }}
-              >
-                {years.map((y) => (
-                  <button
-                    key={y}
-                    type="button"
-                    data-year={y}
-                    onClick={() => selectYear(y)}
-                    style={{
-                      padding: "6px 8px",
-                      border: "none",
-                      borderRadius: 6,
-                      background: year === y ? "#3b82f6" : "#f3f4f6",
-                      color: year === y ? "#fff" : "#1a1f36",
-                      fontSize: 13,
-                      fontWeight: year === y ? 700 : 500,
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    {y}
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #f3f4f6" }}>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("year")}
-                  style={{ fontSize: 16, fontWeight: 700, color: "#1a1f36", background: "none", border: "none", cursor: "pointer", padding: "4px 8px", borderRadius: 8 }}
-                  title="연도 선택"
-                >
-                  {year}년
+          {/* Header */}
+          <div style={{ padding: "16px 20px 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <button
+              type="button"
+              onClick={() => setMode((m) => (m === "calendar" ? "wheel" : "calendar"))}
+              style={{
+                fontSize: 17,
+                fontWeight: 700,
+                color: ACCENT,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontFamily: "inherit",
+              }}
+            >
+              {year}년 {month + 1}월
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 1 }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {mode === "calendar" && (
+              <div style={{ display: "flex", gap: 2 }}>
+                <button type="button" onClick={prevMonth} style={{ width: 30, height: 30, border: "none", background: "transparent", cursor: "pointer", fontSize: 16, color: "#9ca3af", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
                 </button>
-                <span style={{ fontSize: 16, fontWeight: 700, color: "#1a1f36" }}>{month + 1}월</span>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button type="button" onClick={prevMonth} style={{ width: 32, height: 32, border: "none", background: "#f3f4f6", borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>◀</button>
-                  <button type="button" onClick={nextMonth} style={{ width: 32, height: 32, border: "none", background: "#f3f4f6", borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>▶</button>
-                </div>
+                <button type="button" onClick={nextMonth} style={{ width: 30, height: 30, border: "none", background: "transparent", cursor: "pointer", fontSize: 16, color: "#9ca3af", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "10px 12px", gap: 2 }}>
-                {DAYS.map((d) => (
-                  <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "#6b7280", padding: "6px 0" }}>
+            )}
+          </div>
+
+          {mode === "calendar" ? (
+            <div style={{ padding: "4px 16px 0" }}>
+              {/* Day headers */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
+                {DAYS.map((d, i) => (
+                  <div key={d} style={{ textAlign: "center", fontSize: 12, fontWeight: 500, color: i === 0 ? "#f47458" : "#b0b0b0", padding: "4px 0" }}>
                     {d}
                   </div>
                 ))}
-                {grid.map(({ date, ymd, isCurrent, isToday }) => {
-                  const selected = value === ymd;
+              </div>
+              {/* Date grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 0 }}>
+                {grid.map(({ d, current, ymd }) => {
+                  const selected = selYMD === ymd;
+                  const isToday = todayYMD === ymd;
                   return (
                     <button
                       key={ymd}
@@ -259,42 +383,81 @@ export function CalendarDropdown({
                       style={{
                         width: "100%",
                         aspectRatio: "1",
-                        maxWidth: 40,
+                        maxWidth: 42,
                         margin: "0 auto",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         border: "none",
                         borderRadius: "50%",
-                        background: selected ? "#3b82f6" : "transparent",
-                        color: selected ? "#fff" : isCurrent ? "#1a1f36" : "#d1d5db",
+                        background: selected ? ACCENT : "transparent",
+                        color: selected ? "#fff" : current ? "#1a1f36" : "#d1d5db",
                         fontSize: 14,
-                        fontWeight: selected ? 700 : 500,
+                        fontWeight: selected ? 700 : isToday ? 600 : 400,
                         cursor: "pointer",
                         fontFamily: "inherit",
-                        boxSizing: "border-box",
-                        borderWidth: 1,
-                        borderStyle: "solid",
-                        borderColor: isToday && !selected ? "#9ca3af" : "transparent",
+                        position: "relative",
                       }}
                     >
-                      {date.getDate()}
+                      {d}
+                      {isToday && !selected && (
+                        <span style={{ position: "absolute", bottom: 3, left: "50%", transform: "translateX(-50%)", width: 4, height: 4, borderRadius: "50%", background: ACCENT }} />
+                      )}
                     </button>
                   );
                 })}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid #f3f4f6", gap: 8 }}>
-                {(showClearButton || onClear) ? (
-                  <button type="button" onClick={() => { if (onClear) onClear(); else onChange(""); setOpen(false); }} style={{ padding: "8px 14px", fontSize: 14, fontWeight: 600, color: "#6b7280", background: "none", border: "none", cursor: "pointer" }}>
-                    삭제
-                  </button>
-                ) : <span />}
-                <button type="button" onClick={setToday} style={{ padding: "8px 14px", fontSize: 14, fontWeight: 600, color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}>
-                  오늘
-                </button>
-              </div>
-            </>
+            </div>
+          ) : (
+            <div style={{ padding: "8px 12px 0", display: "flex", gap: 0 }}>
+              <WheelColumn items={yearItems} value={year} onChange={setWheelYear} suffix="년" />
+              <WheelColumn items={monthItems} value={month + 1} onChange={setWheelMonth} suffix="월" />
+              <WheelColumn items={dayItems} value={day} onChange={setWheelDay} suffix="일" />
+            </div>
           )}
+
+          {/* Bottom confirm */}
+          <div style={{ padding: "10px 16px 14px" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                style={{
+                  flex: "0 0 auto",
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "none",
+                  background: "#f3f4f6",
+                  color: "#6b7280",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                닫기
+              </button>
+              <button
+                type="button"
+                onClick={confirm}
+                style={{
+                  flex: 1,
+                  padding: "12px 0",
+                  borderRadius: 14,
+                  border: "none",
+                  background: ACCENT,
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  letterSpacing: -0.3,
+                }}
+              >
+                {displayBtn(sel)}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

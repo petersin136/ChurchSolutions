@@ -56,7 +56,7 @@ export function AbsenteeManagement({
     const fromDate = nWeeksAgo.toISOString().split("T")[0];
 
     const [memRes, attRes] = await Promise.all([
-      supabase.from("members").select("id, name, dept, mokjang, group, phone, member_status, status").order("name"),
+      supabase.from("members").select("id, name, dept, mokjang, phone, member_status, status").order("name"),
       supabase
         .from("attendance")
         .select("member_id, date, status")
@@ -158,7 +158,7 @@ export function AbsenteeManagement({
               <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">연속 결석</th>
               <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">마지막 출석일</th>
               <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">연락처</th>
-              <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">액션</th>
+              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">액션</th>
             </tr>
           </thead>
           <tbody>
@@ -189,21 +189,23 @@ export function AbsenteeManagement({
                       "-"
                     )}
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {member.phone && (
+                  <td className="py-3 px-4 align-middle">
+                    <div className="flex items-center gap-2 justify-start min-w-[140px]">
+                      {member.phone ? (
                         <a
                           href={`tel:${member.phone}`}
-                          className="px-3 py-1 rounded-lg border border-gray-200 text-xs font-medium hover:bg-gray-50"
+                          className="inline-flex shrink-0 px-3 py-1 rounded-lg border border-gray-200 text-xs font-medium hover:bg-gray-50"
                         >
                           전화
                         </a>
+                      ) : (
+                        <span className="inline-block w-[52px]" aria-hidden />
                       )}
                       {onAddVisit && (
                         <button
                           type="button"
                           onClick={() => onAddVisit(member.id)}
-                          className="px-3 py-1 rounded-lg bg-[#1e3a5f] text-white text-xs font-medium hover:opacity-90"
+                          className="inline-flex shrink-0 px-3 py-1 rounded-lg bg-[#1e3a5f] text-white text-xs font-medium hover:opacity-90"
                         >
                           심방 등록
                         </button>

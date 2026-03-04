@@ -60,6 +60,12 @@
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-thumb { background: var(--text3); border-radius: var(--radius-full); }
   .wheel-column-scroll::-webkit-scrollbar { display: none; }
+  /* 스크롤은 되지만 스크롤바 비표시 (연도 선택 등) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 }
 
 @layer components {

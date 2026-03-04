@@ -4,6 +4,39 @@ import { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, 
 import type { DB } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { LayoutDashboard, Home, MessageCircle, Bell, Heart, User, ScrollText, TrendingUp, ClipboardList, Settings } from "lucide-react";
+
+const iconStyle = { strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+const Icons = {
+  Visit: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  Counsel: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
+  Check: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+  Bell: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>,
+  Prayer: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>,
+  Chart: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  Printer: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/></svg>,
+  Export: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>,
+  Memo: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+  Lock: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>,
+  Hospital: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M12 7v6M9 10h6"/></svg>,
+  Sprout: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M7 20h10M10 20c5.5-2.5 8-7 8-12a4 4 0 00-8 0c0 5 2.5 9.5 8 12"/><path d="M12 20c-3-2-5-5-5-8a3 3 0 016 0c0 3-2 6-5 8"/></svg>,
+  Clipboard: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M8 12h8M8 16h8"/></svg>,
+  Alert: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>,
+  Party: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M5 14l2 2 4-4"/><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>,
+  Home: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  Users: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
+  Cross: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M12 2v20M2 12h20"/></svg>,
+  Target: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  Heart: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>,
+  Dollar: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
+  FileText: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+  Search: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
+  Scroll: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M8 3h8l4 4v12H4V7l4-4z"/><path d="M8 3v4h8V3"/></svg>,
+  Phone: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>,
+  Package: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
+  Folder: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>,
+  Save: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+  Trash: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
+};
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 
@@ -121,22 +154,23 @@ interface VCDB {
   prayers?: Prayer[]; memos?: Memo[];
 }
 
-const VISIT_TYPES: Record<VisitType, { label: string; icon: string; color: string; bg: string }> = {
-  sick: { label: "병문안", icon: "🏥", color: C.red, bg: C.redBg },
-  new_family: { label: "새가족", icon: "🌱", color: C.green, bg: C.greenBg },
-  regular: { label: "정기심방", icon: "📋", color: C.accent, bg: C.accentLight },
-  crisis: { label: "위기심방", icon: "🚨", color: C.orange, bg: C.orangeBg },
-  celebration: { label: "경조사", icon: "🎉", color: C.purple, bg: C.purpleBg },
-  routine: { label: "일반방문", icon: "🏠", color: C.textMuted, bg: C.borderLight },
+type IconComp = () => JSX.Element;
+const VISIT_TYPES: Record<VisitType, { label: string; Icon: IconComp; color: string; bg: string }> = {
+  sick: { label: "병문안", Icon: Icons.Hospital, color: C.red, bg: C.redBg },
+  new_family: { label: "새가족", Icon: Icons.Sprout, color: C.green, bg: C.greenBg },
+  regular: { label: "정기심방", Icon: Icons.Clipboard, color: C.accent, bg: C.accentLight },
+  crisis: { label: "위기심방", Icon: Icons.Alert, color: C.orange, bg: C.orangeBg },
+  celebration: { label: "경조사", Icon: Icons.Party, color: C.purple, bg: C.purpleBg },
+  routine: { label: "일반방문", Icon: Icons.Home, color: C.textMuted, bg: C.borderLight },
 };
 
-const COUNSEL_TYPES: Record<CounselType, { label: string; icon: string; color: string; bg: string }> = {
-  family: { label: "가정", icon: "👨‍👩‍👧‍👦", color: C.pink, bg: C.pinkBg },
-  faith: { label: "신앙", icon: "✝️", color: C.indigo, bg: C.indigoBg },
-  career: { label: "진로", icon: "🎯", color: C.teal, bg: C.tealBg },
-  health: { label: "건강", icon: "❤️", color: C.red, bg: C.redBg },
-  finance: { label: "재정", icon: "💰", color: C.yellow, bg: C.yellowBg },
-  other: { label: "기타", icon: "📝", color: C.textMuted, bg: C.borderLight },
+const COUNSEL_TYPES: Record<CounselType, { label: string; Icon: IconComp; color: string; bg: string }> = {
+  family: { label: "가정", Icon: Icons.Users, color: C.pink, bg: C.pinkBg },
+  faith: { label: "신앙", Icon: Icons.Cross, color: C.indigo, bg: C.indigoBg },
+  career: { label: "진로", Icon: Icons.Target, color: C.teal, bg: C.tealBg },
+  health: { label: "건강", Icon: Icons.Heart, color: C.red, bg: C.redBg },
+  finance: { label: "재정", Icon: Icons.Dollar, color: C.yellow, bg: C.yellowBg },
+  other: { label: "기타", Icon: Icons.FileText, color: C.textMuted, bg: C.borderLight },
 };
 
 const STATUS_LABELS: Record<VisitStatus, string> = {
@@ -240,7 +274,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style, icon,
   return <button type="button" disabled={disabled} onClick={disabled ? undefined : onClick} style={{ ...base, ...sizes[size], ...variants[variant], ...style }}>{icon}{children}</button>;
 }
 
-function Modal({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
+function Modal({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode }) {
   const mob = useIsMobile();
   if (!open) return null;
   return (
@@ -274,11 +308,11 @@ function FTextarea({ value, onChange, placeholder, style }: { value: string; onC
   return <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", background: C.bg, outline: "none", resize: "vertical", minHeight: 80, ...style }} />;
 }
 
-function StatCard({ label, value, sub, icon, color, bg }: { label: string; value: string; sub?: string; icon: string; color: string; bg: string }) {
+function StatCard({ label, value, sub, icon, color, bg }: { label: string; value: string; sub?: string; icon: ReactNode; color: string; bg: string }) {
   const mob = useIsMobile();
   return (
     <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: mob ? 14 : 20, transition: "all 0.2s" }}>
-      <div style={{ width: mob ? 34 : 42, height: mob ? 34 : 42, borderRadius: 12, background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 16 : 20, marginBottom: mob ? 10 : 14 }}>{icon}</div>
+      <div style={{ width: mob ? 34 : 42, height: mob ? 34 : 42, borderRadius: 12, background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: mob ? 10 : 14 }}>{icon}</div>
       <div style={{ fontSize: mob ? 22 : 28, fontWeight: 800, letterSpacing: -1 }}>{value}</div>
       <div style={{ fontSize: mob ? 12 : 13, color: C.textMuted, marginTop: 2 }}>{label}</div>
       {sub && <div style={{ fontSize: 12, fontWeight: 600, marginTop: 6, display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 20, background: bg, color }}>{sub}</div>}
@@ -286,8 +320,13 @@ function StatCard({ label, value, sub, icon, color, bg }: { label: string; value
   );
 }
 
-function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return <span onClick={onClick} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? C.accent : C.border}`, background: active ? C.accent : C.bg, color: active ? "#fff" : C.text, transition: "all 0.2s" }}>{label}</span>;
+function Chip({ label, active, onClick, icon }: { label: string; active: boolean; onClick: () => void; icon?: ReactNode }) {
+  return (
+    <span onClick={onClick} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? C.accent : C.border}`, background: active ? C.accent : C.bg, color: active ? "#fff" : C.text, transition: "all 0.2s", display: "inline-flex", alignItems: "center", gap: 6 }}>
+      {icon}
+      {label}
+    </span>
+  );
 }
 
 /* ---------- Follow-up Helpers ---------- */
@@ -346,23 +385,23 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(5, 1fr)", gap: mob ? 10 : 16 }}>
-        <StatCard icon="🏠" label="이번 달 심방" value={String(mv.length)} sub={`${vDiff >= 0 ? "▲" : "▼"} 전월 대비 ${Math.abs(vDiff)}건`} color={C.teal} bg={C.tealBg} />
-        <StatCard icon="💬" label="이번 달 상담" value={String(mc.length)} sub={`${cDiff >= 0 ? "▲" : "▼"} 전월 대비 ${Math.abs(cDiff)}건`} color={C.pink} bg={C.pinkBg} />
-        <StatCard icon="✅" label="완료 심방" value={String(completed)} sub={`예정 ${scheduled}건`} color={C.green} bg={C.greenBg} />
-        <StatCard icon="🔔" label="기한 초과 조치" value={String(overdueFU.length)} sub={`${allFU.length}건 대기`} color={C.red} bg={C.redBg} />
-        <div onClick={() => goPage("prayers")} style={{ cursor: "pointer" }}><StatCard icon="🙏" label="활성 기도제목" value={String(activePrayers.length)} sub="건" color={C.purple} bg={C.purpleBg} /></div>
+        <StatCard icon={<Icons.Visit />} label="이번 달 심방" value={String(mv.length)} sub={`${vDiff >= 0 ? "▲" : "▼"} 전월 대비 ${Math.abs(vDiff)}건`} color={C.teal} bg={C.tealBg} />
+        <StatCard icon={<Icons.Counsel />} label="이번 달 상담" value={String(mc.length)} sub={`${cDiff >= 0 ? "▲" : "▼"} 전월 대비 ${Math.abs(cDiff)}건`} color={C.pink} bg={C.pinkBg} />
+        <StatCard icon={<Icons.Check />} label="완료 심방" value={String(completed)} sub={`예정 ${scheduled}건`} color={C.green} bg={C.greenBg} />
+        <StatCard icon={<Icons.Bell />} label="기한 초과 조치" value={String(overdueFU.length)} sub={`${allFU.length}건 대기`} color={C.red} bg={C.redBg} />
+        <div onClick={() => goPage("prayers")} style={{ cursor: "pointer" }}><StatCard icon={<Icons.Prayer />} label="활성 기도제목" value={String(activePrayers.length)} sub="건" color={C.purple} bg={C.purpleBg} /></div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "2fr 1fr", gap: 20 }}>
         {/* Follow-up needed */}
         <Card>
           <div style={{ padding: mob ? "14px 16px" : "18px 22px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: mob ? 14 : 16, fontWeight: 700 }}>🔔 후속 조치 필요</span>
+            <span style={{ fontSize: mob ? 14 : 16, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}><Icons.Bell /> 후속 조치 필요</span>
             <Btn variant="ghost" size="sm" onClick={() => goPage("followup")}>전체 보기 →</Btn>
           </div>
           <div style={{ padding: mob ? 14 : 22 }}>
             {urgentFU.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 20, color: C.textMuted, fontSize: 14 }}>긴급한 후속 조치가 없습니다 👏</div>
+              <div style={{ textAlign: "center", padding: 20, color: C.textMuted, fontSize: 14, display: "inline-flex", alignItems: "center", gap: 6 }}>긴급한 후속 조치가 없습니다 <Icons.Check /></div>
             ) : urgentFU.map(f => {
               const m = getMember(f.memberId);
               const diff = daysFromNow(f.date);
@@ -370,7 +409,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
               const clsBg = diff < 0 ? C.redBg : diff === 0 ? C.yellowBg : C.accentLight;
               return (
                 <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, marginBottom: 8, border: `1px solid ${C.borderLight}`, borderLeft: `3px solid ${cls}`, background: clsBg }}>
-                  <span style={{ fontSize: 20 }}>{f.kind === "visit" ? "🏠" : "💬"}</span>
+                  <span style={{ display: "flex", color: f.kind === "visit" ? C.teal : C.pink }}>{f.kind === "visit" ? <Icons.Visit /> : <Icons.Counsel />}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div>
                     <div style={{ fontSize: 12, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.note || f.originType}</div>
@@ -385,7 +424,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
         {/* Chart */}
         <Card>
           <div style={{ padding: mob ? "14px 16px" : "18px 22px", borderBottom: `1px solid ${C.borderLight}` }}>
-            <span style={{ fontSize: mob ? 14 : 16, fontWeight: 700 }}>📊 이번 달 유형별</span>
+            <span style={{ fontSize: mob ? 14 : 16, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}><Icons.Chart /> 이번 달 유형별</span>
           </div>
           <div style={{ padding: mob ? 14 : 22 }}>
             {Object.keys(typeCounts).length === 0 ? (
@@ -408,7 +447,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
         {/* Recent visits */}
         <Card>
           <div style={{ padding: mob ? "14px 16px" : "18px 22px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: mob ? 14 : 16, fontWeight: 700 }}>🏠 최근 심방</span>
+            <span style={{ fontSize: mob ? 14 : 16, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}><Icons.Visit /> 최근 심방</span>
             <Btn variant="ghost" size="sm" onClick={() => goPage("visits")}>전체 →</Btn>
           </div>
           <div style={{ padding: mob ? 14 : 22 }}>
@@ -424,7 +463,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0 }}>
                       <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: vt.bg, color: vt.color, flexShrink: 0 }}>{vt.icon} {vt.label}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: vt.bg, color: vt.color, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4 }}><vt.Icon /> {vt.label}</span>
                     </div>
                     <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDate(v.date)} {v.time || ""} · {v.location || ""}</div>
                     {v.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.summary}</div>}
@@ -442,7 +481,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
         {/* Recent counsels */}
         <Card>
           <div style={{ padding: mob ? "14px 16px" : "18px 22px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: mob ? 14 : 16, fontWeight: 700 }}>💬 최근 상담</span>
+            <span style={{ fontSize: mob ? 14 : 16, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }}><Icons.Counsel /> 최근 상담</span>
             <Btn variant="ghost" size="sm" onClick={() => goPage("counsels")}>전체 →</Btn>
           </div>
           <div style={{ padding: mob ? 14 : 22 }}>
@@ -457,8 +496,8 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                       <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: ct.bg, color: ct.color, flexShrink: 0 }}>{ct.icon} {ct.label}</span>
-                      {c.confidential && <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>🔒 비공개</span>}
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: ct.bg, color: ct.color, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4 }}><ct.Icon /> {ct.label}</span>
+                      {c.confidential && <span style={{ fontSize: 11, color: C.red, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}><Icons.Lock /> 비공개</span>}
                     </div>
                     <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDate(c.date)}</div>
                     {c.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.summary}</div>}
@@ -501,19 +540,19 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint }}>🔍</span>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex" }}><Icons.Search /></span>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름, 사유, 내용 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
         </div>
         <Btn variant="primary" size="sm" onClick={() => openVisitModal()}>＋ 심방 등록</Btn>
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         <Chip label="전체" active={filter === "all"} onClick={() => setFilter("all")} />
-        {Object.entries(VISIT_TYPES).map(([k, v]) => <Chip key={k} label={`${v.icon} ${v.label}`} active={filter === k} onClick={() => setFilter(k)} />)}
+        {Object.entries(VISIT_TYPES).map(([k, v]) => <Chip key={k} icon={<v.Icon />} label={v.label} active={filter === k} onClick={() => setFilter(k)} />)}
       </div>
       <Card>
         <div style={{ padding: mob ? 14 : 22 }}>
           {list.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>🏠</div><div style={{ fontSize: 14 }}>심방 기록이 없습니다</div></div>
+            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ opacity: 0.3, marginBottom: 12, display: "flex", justifyContent: "center" }}><Icons.Visit /></div><div style={{ fontSize: 14 }}>심방 기록이 없습니다</div></div>
           ) : list.map(v => {
             const m = getMember(v.memberId);
             const vt = VISIT_TYPES[v.type] || VISIT_TYPES.routine;
@@ -524,11 +563,11 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0 }}>
                     <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: vt.bg, color: vt.color, flexShrink: 0 }}>{vt.icon} {vt.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: vt.bg, color: vt.color, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4 }}><vt.Icon /> {vt.label}</span>
                   </div>
                   <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDateFull(v.date)} {v.time || ""} · {v.location || ""}</div>
                   {v.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.summary}</div>}
-                  {v.prayerNote && <div style={{ fontSize: 12, color: C.purple, marginTop: 4 }}>🙏 {v.prayerNote}</div>}
+                  {v.prayerNote && <div style={{ fontSize: 12, color: C.purple, marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}><Icons.Prayer /> {v.prayerNote}</div>}
                 </div>
                 <div style={{ flexShrink: 0, textAlign: "right" }}>
                   <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>{relDate(v.date)}</div>
@@ -638,7 +677,7 @@ function MainDBVisitList({
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint }}>🔍</span>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex" }}><Icons.Search /></span>
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="이름, 내용 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
         </div>
         <Btn variant="primary" size="sm" onClick={() => setShowAddModal(true)}>＋ 심방 등록</Btn>
@@ -653,7 +692,7 @@ function MainDBVisitList({
       <div ref={listRef}><Card>
         <div style={{ padding: mob ? 14 : 22 }}>
           {filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>🏠</div><div style={{ fontSize: 14 }}>심방 기록이 없습니다</div></div>
+            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ opacity: 0.3, marginBottom: 12, display: "flex", justifyContent: "center" }}><Icons.Visit /></div><div style={{ fontSize: 14 }}>심방 기록이 없습니다</div></div>
           ) : viewMode === "byGroup" ? (
             Object.entries(byGroup).sort(([a], [b]) => a.localeCompare(b)).map(([groupName, list]) => (
               <div key={groupName} style={{ marginBottom: 24 }}>
@@ -718,19 +757,19 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint }}>🔍</span>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex" }}><Icons.Search /></span>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름, 유형, 내용 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
         </div>
         <Btn variant="primary" size="sm" onClick={() => openCounselModal()}>＋ 상담 등록</Btn>
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         <Chip label="전체" active={filter === "all"} onClick={() => setFilter("all")} />
-        {Object.entries(COUNSEL_TYPES).map(([k, v]) => <Chip key={k} label={`${v.icon} ${v.label}`} active={filter === k} onClick={() => setFilter(k)} />)}
+        {Object.entries(COUNSEL_TYPES).map(([k, v]) => <Chip key={k} icon={<v.Icon />} label={v.label} active={filter === k} onClick={() => setFilter(k)} />)}
       </div>
       <Card>
         <div style={{ padding: mob ? 14 : 22 }}>
           {list.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>💬</div><div style={{ fontSize: 14 }}>상담 기록이 없습니다</div></div>
+            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ opacity: 0.3, marginBottom: 12, display: "flex", justifyContent: "center" }}><Icons.Counsel /></div><div style={{ fontSize: 14 }}>상담 기록이 없습니다</div></div>
           ) : list.map(c => {
             const m = getMember(c.memberId);
             const ct = COUNSEL_TYPES[c.type] || COUNSEL_TYPES.other;
@@ -740,8 +779,8 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                     <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: ct.bg, color: ct.color, flexShrink: 0 }}>{ct.icon} {ct.label}</span>
-                    {c.confidential && <span style={{ fontSize: 11, color: C.red, fontWeight: 600, flexShrink: 0 }}>🔒 비공개</span>}
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: ct.bg, color: ct.color, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4 }}><ct.Icon /> {ct.label}</span>
+                    {c.confidential && <span style={{ fontSize: 11, color: C.red, fontWeight: 600, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4 }}><Icons.Lock /> 비공개</span>}
                   </div>
                   <div style={{ fontSize: 12, color: C.textMuted }}>{fmtDateFull(c.date)}</div>
                   {c.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{c.summary}</div>}
@@ -800,7 +839,7 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
       <Card>
         <div style={{ padding: mob ? 14 : 22 }}>
           {filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>🔔</div><div style={{ fontSize: 14 }}>해당하는 후속 조치가 없습니다</div></div>
+            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ opacity: 0.3, marginBottom: 12, display: "flex", justifyContent: "center" }}><Icons.Bell /></div><div style={{ fontSize: 14 }}>해당하는 후속 조치가 없습니다</div></div>
           ) : filtered.map(f => {
             const m = getMember(f.memberId);
             const diff = daysFromNow(f.date);
@@ -808,7 +847,7 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
             const bgColor = f.done ? "transparent" : diff < 0 ? C.redBg : diff === 0 ? C.yellowBg : C.accentLight;
             return (
               <div key={f.refId + f.kind} onClick={() => f.kind === "visit" ? openVisitModal(f.refId) : openCounselModal(f.refId)} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, borderRadius: 8, marginBottom: 8, border: `1px solid ${C.borderLight}`, borderLeft: `3px solid ${borderColor}`, background: bgColor, cursor: "pointer" }}>
-                <span style={{ fontSize: 20, flexShrink: 0 }}>{f.kind === "visit" ? "🏠" : "💬"}</span>
+                <span style={{ fontSize: 20, flexShrink: 0, display: "flex" }}>{f.kind === "visit" ? <Icons.Visit /> : <Icons.Counsel />}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} <span style={{ fontSize: 12, color: C.textFaint, fontWeight: 400 }}>· {f.originType}</span></div>
                   <div style={{ fontSize: 12, color: C.textMuted }}>{f.note || "후속 조치 필요"}</div>
@@ -875,7 +914,7 @@ function PrayersSub({
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint }}>🔍</span>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex" }}><Icons.Search /></span>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름, 기도제목 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
         </div>
         <Btn variant="primary" size="sm" onClick={openPrayerModal}>＋ 기도제목 등록</Btn>
@@ -886,7 +925,7 @@ function PrayersSub({
         <Chip label="응답됨" active={filter === "answered"} onClick={() => setFilter("answered")} />
       </div>
       {list.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>🙏</div><div style={{ fontSize: 14 }}>기도제목이 없습니다</div></div>
+        <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ opacity: 0.3, marginBottom: 12, display: "flex", justifyContent: "center" }}><Icons.Prayer /></div><div style={{ fontSize: 14 }}>기도제목이 없습니다</div></div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {list.map(p => {
@@ -928,11 +967,11 @@ function MembersSub({ db, openMemberDetail }: { db: VCDB; openMemberDetail: (id:
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ position: "relative" }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint }}>🔍</span>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex" }}><Icons.Search /></span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="성도 이름 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
       </div>
       {members.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>👤</div><div style={{ fontSize: 14 }}>검색 결과가 없습니다</div></div>
+        <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ opacity: 0.3, marginBottom: 12, display: "flex", justifyContent: "center" }}><User size={40} strokeWidth={1.5} /></div><div style={{ fontSize: 14 }}>검색 결과가 없습니다</div></div>
       ) : members.map(m => {
         const vc = (db.visits ?? []).filter(v => v.memberId === m.id).length;
         const cc = (db.counsels ?? []).filter(c => c.memberId === m.id).length;
@@ -945,7 +984,7 @@ function MembersSub({ db, openMemberDetail }: { db: VCDB; openMemberDetail: (id:
                 <div style={{ width: mob ? 48 : 56, height: mob ? 48 : 56, borderRadius: "50%", background: C.accentLight, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 20 : 24, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: mob ? 15 : 17, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} <span style={{ fontSize: 13, fontWeight: 400, color: C.textMuted }}>{m.role} · {m.group}</span></div>
-                  <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>📱 {m.phone}{m.note ? ` · ${m.note}` : ""}</div>
+                  <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}><Icons.Phone /> {m.phone}{m.note ? ` · ${m.note}` : ""}</div>
                   <div style={{ display: "flex", gap: mob ? 12 : 20, marginTop: 8 }}>
                     {[{ v: vc, l: "심방" }, { v: cc, l: "상담" }, { v: lastV ? fmtShort(lastV.date) : "-", l: "최근 심방" }, { v: lastC ? fmtShort(lastC.date) : "-", l: "최근 상담" }].map((s, i) => (
                       <div key={i} style={{ textAlign: "center" }}>
@@ -989,19 +1028,19 @@ function TimelineSub({ db, openVisitModal, openCounselModal }: { db: VCDB; openV
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200 }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint }}>🔍</span>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex" }}><Icons.Search /></span>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <Chip label="전체" active={filter === "all"} onClick={() => setFilter("all")} />
-          <Chip label="🏠 심방" active={filter === "visit"} onClick={() => setFilter("visit")} />
-          <Chip label="💬 상담" active={filter === "counsel"} onClick={() => setFilter("counsel")} />
+          <Chip icon={<Icons.Visit />} label="심방" active={filter === "visit"} onClick={() => setFilter("visit")} />
+          <Chip icon={<Icons.Counsel />} label="상담" active={filter === "counsel"} onClick={() => setFilter("counsel")} />
         </div>
       </div>
       <Card>
         <div style={{ padding: mob ? 14 : 22 }}>
           {all.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>📜</div><div style={{ fontSize: 14 }}>기록이 없습니다</div></div>
+            <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ opacity: 0.3, marginBottom: 12, display: "flex", justifyContent: "center" }}><Icons.Scroll /></div><div style={{ fontSize: 14 }}>기록이 없습니다</div></div>
           ) : (
             <div style={{ position: "relative", paddingLeft: 32 }}>
               <div style={{ position: "absolute", left: 10, top: 0, bottom: 0, width: 2, background: C.border }} />
@@ -1017,7 +1056,7 @@ function TimelineSub({ db, openVisitModal, openCounselModal }: { db: VCDB; openV
                     <div style={{ position: "absolute", left: -28, top: 2, width: 16, height: 16, borderRadius: "50%", border: `3px solid ${completed ? C.green : dotColor}`, background: completed ? C.green : "#fff", zIndex: 1 }} />
                     <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>{fmtDateFull(item._date)} {vItem ? vItem.time || "" : ""}</div>
                     <div onClick={() => isVisit ? openVisitModal(item.id) : openCounselModal(item.id)} style={{ background: C.bg, borderRadius: 8, padding: "12px 16px", marginTop: 6, border: `1px solid ${C.borderLight}`, cursor: "pointer", transition: "all 0.2s" }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isVisit ? "🏠" : "💬"} {m.name} · {vItem ? (VISIT_TYPES[vItem.type]?.label || "") : ((COUNSEL_TYPES[cItem!.type]?.label || "") + " 상담")}{cItem?.confidential ? " 🔒" : ""}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>{isVisit ? <Icons.Visit /> : <Icons.Counsel />} {m.name} · {vItem ? (VISIT_TYPES[vItem.type]?.label || "") : ((COUNSEL_TYPES[cItem!.type]?.label || "") + " 상담")}{cItem?.confidential ? <><Icons.Lock /> </> : null}</div>
                       {item.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, lineHeight: 1.5 }}>{item.summary}</div>}
                       <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                         {vItem && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 12, background: VISIT_TYPES[vItem.type]?.bg, color: VISIT_TYPES[vItem.type]?.color }}>{VISIT_TYPES[vItem.type]?.label}</span>}
@@ -1084,8 +1123,8 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
         <div style={{ padding: mob ? "14px 16px" : "18px 22px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
           <span style={{ fontSize: mob ? 14 : 16, fontWeight: 700 }}>월간 심방/상담 보고서</span>
           <div style={{ display: "flex", gap: 8 }}>
-            <Btn variant="secondary" size="sm" onClick={() => window.print()}>🖨 인쇄</Btn>
-            <Btn variant="primary" size="sm" onClick={exportCSV}>📥 엑셀</Btn>
+            <Btn variant="secondary" size="sm" onClick={() => window.print()} icon={<Icons.Printer />}>인쇄</Btn>
+            <Btn variant="primary" size="sm" onClick={exportCSV} icon={<Icons.Export />}>엑셀</Btn>
           </div>
         </div>
         <div style={{ padding: mob ? 14 : 22 }}>
@@ -1093,15 +1132,15 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
             <div style={{ fontSize: mob ? 16 : 20, fontWeight: 800 }}>{db.settings.church} · {db.settings.name} {db.settings.role}</div>
             <div style={{ fontSize: 14, color: C.textMuted }}>{now.getFullYear()}년 {now.getMonth() + 1}월 심방/상담 보고서</div>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>📊 월간 요약</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Chart /> 월간 요약</div>
           <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(4, 1fr)", gap: mob ? 10 : 16, marginBottom: 24 }}>
-            <StatCard icon="🏠" label="심방 건수" value={String(mv.length)} color={C.teal} bg={C.tealBg} />
-            <StatCard icon="✅" label="완료" value={String(completed.length)} color={C.green} bg={C.greenBg} />
-            <StatCard icon="💬" label="상담 건수" value={String(mc.length)} color={C.pink} bg={C.pinkBg} />
-            <StatCard icon="🔔" label="후속 조치 대기" value={String(allFU.length)} color={C.red} bg={C.redBg} />
+            <StatCard icon={<Icons.Visit />} label="심방 건수" value={String(mv.length)} color={C.teal} bg={C.tealBg} />
+            <StatCard icon={<Icons.Check />} label="완료" value={String(completed.length)} color={C.green} bg={C.greenBg} />
+            <StatCard icon={<Icons.Counsel />} label="상담 건수" value={String(mc.length)} color={C.pink} bg={C.pinkBg} />
+            <StatCard icon={<Icons.Bell />} label="후속 조치 대기" value={String(allFU.length)} color={C.red} bg={C.redBg} />
           </div>
 
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>🏠 심방 유형별 현황</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Visit /> 심방 유형별 현황</div>
           <div style={{ marginBottom: 24 }}>
             {Object.entries(vTypes).map(([k, v]) => (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -1115,7 +1154,7 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
             ))}
           </div>
 
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>💬 상담 유형별 현황</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Counsel /> 상담 유형별 현황</div>
           <div style={{ marginBottom: 24 }}>
             {Object.entries(cTypes).map(([k, v]) => (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -1129,15 +1168,15 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
             ))}
           </div>
 
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>📋 심방 상세 내역</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Clipboard /> 심방 상세 내역</div>
           <div style={{ marginBottom: 24 }}>
             {completed.length ? completed.map(v => {
               const m = getMember(v.memberId);
-              return <div key={v.id} style={{ padding: 12, background: C.bg, borderRadius: 8, marginBottom: 8 }}><div style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 12, color: C.purple, marginTop: 4 }}>🙏 {v.prayerNote}</div>}</div>;
+              return <div key={v.id} style={{ padding: 12, background: C.bg, borderRadius: 8, marginBottom: 8 }}><div style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 12, color: C.purple, marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}><Icons.Prayer /> {v.prayerNote}</div>}</div>;
             }) : <div style={{ color: C.textFaint }}>완료된 심방 없음</div>}
           </div>
 
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>🔔 미완료 후속 조치</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Bell /> 미완료 후속 조치</div>
           <div>
             {allFU.length ? allFU.map(f => {
               const m = getMember(f.memberId);
@@ -1180,14 +1219,14 @@ function HandoverSub({ db, toast, getMember }: { db: VCDB; toast: (m: string) =>
           <div style={{ fontSize: 13, color: C.textMuted }}>교역자: {db.settings.name} {db.settings.role} · 작성일: {todayStr()}</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <Btn variant="secondary" size="sm" onClick={() => window.print()}>🖨 인쇄</Btn>
-          <Btn variant="primary" size="sm" onClick={exportHandoverCSV}>📥 엑셀</Btn>
+          <Btn variant="secondary" size="sm" onClick={() => window.print()} icon={<Icons.Printer />}>인쇄</Btn>
+          <Btn variant="primary" size="sm" onClick={exportHandoverCSV} icon={<Icons.Export />}>엑셀</Btn>
         </div>
       </div>
 
       <Card>
         <div style={{ padding: mob ? 14 : 22 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📊 전체 현황 요약</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Chart /> 전체 현황 요약</div>
           <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(4, 1fr)", gap: 16 }}>
             <div><div style={{ fontSize: 24, fontWeight: 800 }}>{(db.members ?? []).length}</div><div style={{ fontSize: 12, color: C.textMuted }}>전체 성도</div></div>
             <div><div style={{ fontSize: 24, fontWeight: 800 }}>{(db.visits ?? []).length}</div><div style={{ fontSize: 12, color: C.textMuted }}>총 심방</div></div>
@@ -1209,11 +1248,11 @@ function HandoverSub({ db, toast, getMember }: { db: VCDB; toast: (m: string) =>
         return (
           <Card key={m.id} style={{ breakInside: "avoid" }}>
             <div style={{ padding: mob ? 14 : 22 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {m.role} · {m.group} · 📱 {m.phone}</div>
-              {notes && <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 10 }}>📝 {notes}</div>}
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>{m.name} · {m.role} · {m.group} · <span style={{ display: "inline-flex" }}><Icons.Phone /></span> {m.phone}</div>
+              {notes && <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 10, display: "flex", alignItems: "flex-start", gap: 6 }}><Icons.Memo /> {notes}</div>}
               {memberPrayers.length > 0 && (
                 <div style={{ marginBottom: 10 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: C.purple }}>🙏 활성 기도제목: </span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: C.purple, display: "inline-flex", alignItems: "center", gap: 4 }}><Icons.Prayer /> 활성 기도제목: </span>
                   <span style={{ fontSize: 13 }}>{memberPrayers.map(p => p.text).join("; ")}</span>
                 </div>
               )}
@@ -1278,12 +1317,12 @@ function SettingsSub({ db, setDb, persist, toast }: { db: VCDB; setDb: React.Dis
       </Card>
       <Card>
         <div style={{ padding: mob ? 14 : 22 }}>
-          <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: 12 }}>💾 데이터</h4>
+          <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Save /> 데이터</h4>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Btn variant="secondary" onClick={backupAll}>{mob ? "📦 백업" : "📦 전체 백업"}</Btn>
-            <Btn variant="secondary" onClick={() => fileRef.current?.click()}>{mob ? "📂 복원" : "📂 복원"}</Btn>
+            <Btn variant="secondary" onClick={backupAll} icon={<Icons.Package />}>{mob ? "백업" : "전체 백업"}</Btn>
+            <Btn variant="secondary" onClick={() => fileRef.current?.click()} icon={<Icons.Folder />}>복원</Btn>
             <input ref={fileRef} type="file" accept=".json" style={{ display: "none" }} onChange={restoreAll} />
-            <Btn variant="danger" size="sm" onClick={resetAll}>🗑 초기화</Btn>
+            <Btn variant="danger" size="sm" onClick={resetAll} icon={<Icons.Trash />}>초기화</Btn>
           </div>
         </div>
       </Card>
@@ -1678,7 +1717,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-            <Btn variant="secondary" size="sm" onClick={exportCSV}>{mob ? "📥" : "📥 엑셀"}</Btn>
+            <Btn variant="secondary" size="sm" onClick={exportCSV} icon={<Icons.Export />}>{mob ? "엑셀" : "엑셀"}</Btn>
             <Btn variant="primary" size="sm" onClick={() => {
               if (activeSub === "visits" || activeSub === "dash") openVisitModal();
               else if (activeSub === "counsels") openCounselModal();
@@ -1717,7 +1756,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         <FormField label="심방 유형">
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {Object.entries(VISIT_TYPES).map(([k, v]) => (
-              <span key={k} onClick={() => setVType(k as VisitType)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${vType === k ? C.accent : C.border}`, background: vType === k ? C.accent : C.bg, color: vType === k ? "#fff" : C.text, transition: "all 0.2s" }}>{v.icon} {v.label}</span>
+              <span key={k} onClick={() => setVType(k as VisitType)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${vType === k ? C.accent : C.border}`, background: vType === k ? C.accent : C.bg, color: vType === k ? "#fff" : C.text, transition: "all 0.2s", display: "inline-flex", alignItems: "center", gap: 6 }}><v.Icon /> {v.label}</span>
             ))}
           </div>
         </FormField>
@@ -1730,13 +1769,13 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           <FormField label="상태"><FSelect value={vStatus} onChange={v => setVStatus(v as VisitStatus)}>{Object.entries(STATUS_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</FSelect></FormField>
         </div>
         <FormField label="심방 내용"><FTextarea value={vSummary} onChange={setVSummary} placeholder="심방 내용을 상세히 기록하세요" /></FormField>
-        <FormField label="🙏 기도 제목"><FTextarea value={vPrayer} onChange={setVPrayer} placeholder="기도 제목을 기록하세요" style={{ minHeight: 60 }} /></FormField>
+        <FormField label={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icons.Prayer /> 기도 제목</span>}><FTextarea value={vPrayer} onChange={setVPrayer} placeholder="기도 제목을 기록하세요" style={{ minHeight: 60 }} /></FormField>
         <FormField label="사진 (선택)">
           <input type="file" accept="image/*" onChange={e => setVPhotoFile(e.target.files?.[0] ?? null)} style={{ fontSize: 13 }} />
           {vPhotoFile && <span style={{ fontSize: 12, color: C.textMuted, marginTop: 4, display: "block" }}>{vPhotoFile.name}</span>}
         </FormField>
         <hr style={{ margin: "12px 0", border: "none", borderTop: `1px solid ${C.borderLight}` }} />
-        <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12 }}>🔔 후속 조치</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Bell /> 후속 조치</div>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
           <FormField label="후속 조치 일자"><CalendarDropdown value={vFUDate} onChange={setVFUDate} /><div style={{ fontSize: 12, color: C.textFaint, marginTop: 4 }}>비워두면 후속 조치 없음</div></FormField>
           <FormField label="조치 내용"><FInput value={vFUNote} onChange={setVFUNote} placeholder="예: 재방문, 연락 확인 등" /></FormField>
@@ -1757,17 +1796,17 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         <FormField label="상담 유형">
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {Object.entries(COUNSEL_TYPES).map(([k, v]) => (
-              <span key={k} onClick={() => setCType(k as CounselType)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${cType === k ? C.accent : C.border}`, background: cType === k ? C.accent : C.bg, color: cType === k ? "#fff" : C.text, transition: "all 0.2s" }}>{v.icon} {v.label}</span>
+              <span key={k} onClick={() => setCType(k as CounselType)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${cType === k ? C.accent : C.border}`, background: cType === k ? C.accent : C.bg, color: cType === k ? "#fff" : C.text, transition: "all 0.2s", display: "inline-flex", alignItems: "center", gap: 6 }}><v.Icon /> {v.label}</span>
             ))}
           </div>
         </FormField>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
           <FormField label="상담 날짜"><CalendarDropdown value={cDate} onChange={setCDate} /></FormField>
-          <FormField label="비공개 설정"><label style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", cursor: "pointer" }}><input type="checkbox" checked={cConf} onChange={e => setCConf(e.target.checked)} /><span style={{ fontSize: 13 }}>🔒 민감한 상담 (비공개)</span></label></FormField>
+          <FormField label="비공개 설정"><label style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", cursor: "pointer" }}><input type="checkbox" checked={cConf} onChange={e => setCConf(e.target.checked)} /><span style={{ fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}><Icons.Lock /> 민감한 상담 (비공개)</span></label></FormField>
         </div>
         <FormField label="상담 내용"><FTextarea value={cSummary} onChange={setCSummary} placeholder={"상담 내용을 상세히 기록하세요\n\n- 상담 배경\n- 주요 논의 내용\n- 조언/권면 사항"} style={{ minHeight: 120 }} /></FormField>
         <hr style={{ margin: "12px 0", border: "none", borderTop: `1px solid ${C.borderLight}` }} />
-        <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12 }}>🔔 후속 조치 / 재상담</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Bell /> 후속 조치 / 재상담</div>
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
           <FormField label="재상담 / 후속 일자"><CalendarDropdown value={cFUDate} onChange={setCFUDate} /><div style={{ fontSize: 12, color: C.textFaint, marginTop: 4 }}>비워두면 재상담 없음</div></FormField>
           <FormField label="조치 내용"><FInput value={cFUNote} onChange={setCFUNote} placeholder="예: 2차 상담, 전문 상담 연결 등" /></FormField>
@@ -1779,10 +1818,10 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
       <Modal open={showMemberDetailModal} onClose={() => setShowMemberDetailModal(false)} title={detailMember ? `${detailMember.name} 성도 이력` : "성도 이력"} footer={
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <Btn variant="secondary" onClick={() => setShowMemberDetailModal(false)}>닫기</Btn>
-          {detailMemberId && <Btn variant="secondary" onClick={() => { setMMemberId(detailMemberId); setMText(""); setMDate(todayStr()); setMCategory("other"); setShowMemberDetailModal(false); setShowMemoModal(true); }}>📝 메모 추가</Btn>}
-          {detailMemberId && <Btn variant="secondary" onClick={() => exportMemberCSV(detailMemberId)}>📥 이력 내보내기</Btn>}
-          {detailMemberId && <Btn variant="primary" onClick={() => { setShowMemberDetailModal(false); setTimeout(() => { setVMember(detailMemberId); openVisitModal(); }, 300); }}>🏠 심방 등록</Btn>}
-          {detailMemberId && <Btn variant="primary" onClick={() => { setShowMemberDetailModal(false); setTimeout(() => { setCMember(detailMemberId); openCounselModal(); }, 300); }}>💬 상담 등록</Btn>}
+          {detailMemberId && <Btn variant="secondary" onClick={() => { setMMemberId(detailMemberId); setMText(""); setMDate(todayStr()); setMCategory("other"); setShowMemberDetailModal(false); setShowMemoModal(true); }} icon={<Icons.Memo />}>메모 추가</Btn>}
+          {detailMemberId && <Btn variant="secondary" onClick={() => exportMemberCSV(detailMemberId)} icon={<Icons.Export />}>이력 내보내기</Btn>}
+          {detailMemberId && <Btn variant="primary" onClick={() => { setShowMemberDetailModal(false); setTimeout(() => { setVMember(detailMemberId); openVisitModal(); }, 300); }} icon={<Icons.Visit />}>심방 등록</Btn>}
+          {detailMemberId && <Btn variant="primary" onClick={() => { setShowMemberDetailModal(false); setTimeout(() => { setCMember(detailMemberId); openCounselModal(); }, 300); }} icon={<Icons.Counsel />}>상담 등록</Btn>}
         </div>
       }>
         {detailMember && detailMemberId && (() => {
@@ -1800,13 +1839,13 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
                 <div style={{ width: 64, height: 64, borderRadius: "50%", background: C.accentLight, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, flexShrink: 0 }}>{detailMember.name[0]}</div>
                 <div>
                   <div style={{ fontSize: 20, fontWeight: 700 }}>{detailMember.name}</div>
-                  <div style={{ fontSize: 13, color: C.textMuted }}>{detailMember.role} · {detailMember.group} · 📱 {detailMember.phone}</div>
-                  {detailMember.note && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>📝 {detailMember.note}</div>}
+                  <div style={{ fontSize: 13, color: C.textMuted, display: "flex", alignItems: "center", gap: 6 }}>{detailMember.role} · {detailMember.group} · <span style={{ display: "inline-flex" }}><Icons.Phone /></span> {detailMember.phone}</div>
+                  {detailMember.note && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, display: "flex", alignItems: "flex-start", gap: 6 }}><Icons.Memo /> {detailMember.note}</div>}
                 </div>
               </div>
               {allItems.length > 0 ? (
                 <>
-                  <div style={{ fontSize: 15, fontWeight: 700, margin: "20px 0 12px" }}>📜 전체 이력 ({allItems.length}건)</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, margin: "20px 0 12px", display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Scroll /> 전체 이력 ({allItems.length}건)</div>
                   <div style={{ position: "relative", paddingLeft: 32 }}>
                     <div style={{ position: "absolute", left: 10, top: 0, bottom: 0, width: 2, background: C.border }} />
                     {allItems.map(item => {
@@ -1821,9 +1860,9 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
                           <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>{fmtDateFull(item._date)}</div>
                           <div style={{ background: bgColor, borderRadius: 8, padding: "12px 16px", marginTop: 6, border: `1px solid ${C.borderLight}` }}>
                             {isMemo ? (
-                              <div style={{ fontSize: 14, fontWeight: 700 }}>📝 메모 · {MEMO_CATEGORIES[("category" in item ? item.category : "other") as MemoCategory]}</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}><Icons.Memo /> 메모 · {MEMO_CATEGORIES[("category" in item ? item.category : "other") as MemoCategory]}</div>
                             ) : (
-                              <div style={{ fontSize: 14, fontWeight: 700 }}>{isVisit ? `🏠 ${VISIT_TYPES[("type" in item ? item.type : "routine") as VisitType]?.label}: ${("location" in item ? item.location : "") || ""}` : `💬 ${COUNSEL_TYPES[("type" in item ? item.type : "other") as CounselType]?.label} 상담${("confidential" in item && item.confidential) ? " 🔒" : ""}`}</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>{isVisit ? (() => { const vt = VISIT_TYPES[("type" in item ? item.type : "routine") as VisitType]; return <><vt.Icon /> {vt.label}: {("location" in item ? item.location : "") || ""}</>; })() : (() => { const ct = COUNSEL_TYPES[("type" in item ? item.type : "other") as CounselType]; return <><ct.Icon /> {ct.label} 상담{("confidential" in item && item.confidential) ? <><Icons.Lock /> </> : ""}</>; })()}</div>
                             )}
                             {item.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>{item.summary}</div>}
                           </div>
@@ -1852,7 +1891,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
       </Modal>
 
       {/* Memo Modal */}
-      <Modal open={showMemoModal} onClose={() => { setShowMemoModal(false); if (detailMemberId) setTimeout(() => setShowMemberDetailModal(true), 200); }} title="📝 메모 추가" footer={
+      <Modal open={showMemoModal} onClose={() => { setShowMemoModal(false); if (detailMemberId) setTimeout(() => setShowMemberDetailModal(true), 200); }} title={<span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icons.Memo /> 메모 추가</span>} footer={
         <div style={{ display: "flex", gap: 10, width: "100%", justifyContent: "flex-end" }}>
           <Btn variant="secondary" onClick={() => { setShowMemoModal(false); if (detailMemberId) setTimeout(() => setShowMemberDetailModal(true), 200); }}>취소</Btn>
           <Btn onClick={saveMemo}>저장</Btn>

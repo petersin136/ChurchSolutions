@@ -11,7 +11,6 @@ export const metadata: Metadata = {
     apple: "/favicon.svg",
   },
   appleWebApp: {
-    capable: true,
     statusBarStyle: "black-translucent",
     title: "슈퍼플래너",
   },
@@ -31,6 +30,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body className="antialiased">
         {children}
       </body>

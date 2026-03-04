@@ -7,7 +7,7 @@ import { saveDBToSupabase, getWeekNum } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
-import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Sliders } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Sliders, Heart } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -78,13 +78,22 @@ const badgeBg: Record<string, [string, string]> = {
 };
 
 /* ---------- Icons ---------- */
+const iconStyle = { strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
 const Icons = {
-  Search: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
+  Search: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
   Plus: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>,
-  X: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>,
-  Export: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>,
+  X: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M18 6L6 18M6 6l12 12"/></svg>,
+  Export: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>,
   Church: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2v4M10 6h4M8 6v4l-5 3v9h18v-9l-5-3V6"/><rect x="10" y="16" width="4" height="6"/></svg>,
   Camera: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+  Table: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>,
+  Card: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+  Mokjang: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
+  Printer: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/></svg>,
+  New: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>,
+  Clipboard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M8 12h8M8 16h8"/></svg>,
+  Graduation: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M22 10v6M2 10l10 5 10-5-10-5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>,
+  Alert: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>,
 };
 
 /* ---------- Shared UI ---------- */
@@ -826,7 +835,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
 
       {/* ─── 뷰 토글 ─── */}
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" onClick={() => { setViewMode("list"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "list" ? C.navy : C.bg, color: viewMode === "list" ? "#fff" : C.text, cursor: "pointer" }}>📋 테이블</button>
+        <button type="button" onClick={() => { setViewMode("list"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "list" ? C.navy : C.bg, color: viewMode === "list" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Table /></span> 테이블</button>
         {viewMode === "list" && (
           <>
             <button type="button" onClick={selectAllFiltered} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>선택 전체</button>
@@ -834,11 +843,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             {selectedMemberIds.size > 0 && <span style={{ fontSize: 12, color: C.textMuted }}>{selectedMemberIds.size}명 선택</span>}
           </>
         )}
-        <button type="button" onClick={() => { setViewMode("card"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "card" ? C.navy : C.bg, color: viewMode === "card" ? "#fff" : C.text, cursor: "pointer" }}>🃏 카드</button>
-        <button type="button" onClick={() => { setViewMode("group"); setSelectedMokjang(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "group" ? C.navy : C.bg, color: viewMode === "group" ? "#fff" : C.text, cursor: "pointer" }}>🏠 목장별</button>
-        <button type="button" onClick={() => { const csv = ["이름,부서,직분,목장,연락처,상태"].concat(filtered.slice(0, 2000).map(m => `"${(m.name||"").replace(/"/g,'""')}","${(m.dept||"").replace(/"/g,'""')}","${(m.role||"").replace(/"/g,'""')}","${((m.mokjang ?? m.group) || "").replace(/"/g,'""')}","${(m.phone||"").replace(/"/g,'""')}","${(m.member_status||m.status||"").replace(/"/g,'""')}"`)).join("\n"); const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `교인목록_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("엑셀(CSV) 내보내기 완료", "ok"); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>📥 Excel 내보내기</button>
+        <button type="button" onClick={() => { setViewMode("card"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "card" ? C.navy : C.bg, color: viewMode === "card" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Card /></span> 카드</button>
+        <button type="button" onClick={() => { setViewMode("group"); setSelectedMokjang(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "group" ? C.navy : C.bg, color: viewMode === "group" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
+        <button type="button" onClick={() => { const csv = ["이름,부서,직분,목장,연락처,상태"].concat(filtered.slice(0, 2000).map(m => `"${(m.name||"").replace(/"/g,'""')}","${(m.dept||"").replace(/"/g,'""')}","${(m.role||"").replace(/"/g,'""')}","${((m.mokjang ?? m.group) || "").replace(/"/g,'""')}","${(m.phone||"").replace(/"/g,'""')}","${(m.member_status||m.status||"").replace(/"/g,'""')}"`)).join("\n"); const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `교인목록_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("엑셀(CSV) 내보내기 완료", "ok"); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Export /></span> Excel 내보내기</button>
         <div ref={printDropdownRef} style={{ position: "relative" }}>
-          <button type="button" onClick={() => setPrintOpen(p => !p)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>🖨️ 인쇄</button>
+          <button type="button" onClick={() => setPrintOpen(p => !p)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Printer /></span> 인쇄</button>
           {printOpen && (
             <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 50, minWidth: 160 }}>
               <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; try { const { generateChurchRegisterPdf } = await import("@/components/print/ChurchRegisterPrint"); await generateChurchRegisterPdf(detailMember, db.settings.churchName ?? "", db.settings.denomination); toast("교적부 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>교적부 양식</button>
@@ -1151,8 +1160,8 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
       </Card>
 
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
-        <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "list" ? C.navy : C.bg, color: viewModeAtt === "list" ? "#fff" : C.text, cursor: "pointer" }}>📋 전체 목록</button>
-        <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "group" ? C.navy : C.bg, color: viewModeAtt === "group" ? "#fff" : C.text, cursor: "pointer" }}>🏠 목장별</button>
+        <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "list" ? C.navy : C.bg, color: viewModeAtt === "list" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Table /></span> 전체 목록</button>
+        <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "group" ? C.navy : C.bg, color: viewModeAtt === "group" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fit, minmax(180px, 1fr))", gap: mob ? 10 : 16 }}>
@@ -1511,22 +1520,22 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 12 }}>
         <Card style={{ padding: 16 }}>
-          <div style={{ fontSize: 24, marginBottom: 4 }}>🆕</div>
+          <div style={{ marginBottom: 4, color: C.navy, display: "flex" }}><Icons.New /></div>
           <div style={{ fontSize: 22, fontWeight: 800, color: C.navy }}>{thisMonthCount}명</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>이번 달 새가족</div>
         </Card>
         <Card style={{ padding: 16 }}>
-          <div style={{ fontSize: 24, marginBottom: 4 }}>📋</div>
+          <div style={{ marginBottom: 4, color: C.accent, display: "flex" }}><Icons.Clipboard /></div>
           <div style={{ fontSize: 22, fontWeight: 800, color: C.accent }}>{inProgressCount}명</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>정착 진행중</div>
         </Card>
         <Card style={{ padding: 16 }}>
-          <div style={{ fontSize: 24, marginBottom: 4 }}>🎓</div>
+          <div style={{ marginBottom: 4, color: C.success, display: "flex" }}><Icons.Graduation /></div>
           <div style={{ fontSize: 22, fontWeight: 800, color: C.success }}>{completedCount}명</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>수료 완료</div>
         </Card>
         <Card style={{ padding: 16 }}>
-          <div style={{ fontSize: 24, marginBottom: 4 }}>⚠️</div>
+          <div style={{ marginBottom: 4, color: C.orange, display: "flex" }}><Icons.Alert /></div>
           <div style={{ fontSize: 22, fontWeight: 800, color: C.orange }}>{needAttentionCount}명</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>관리 필요</div>
         </Card>
@@ -1851,13 +1860,15 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
     return { csv, filename: `목양종합보고서_${todayStr()}.csv` };
   };
 
+  const reportIconColor = C.navy;
+  const reportIconSize = 24;
   const reportDefs = [
-    { icon: "👥", title: "성도 명단", desc: "전체 성도 정보", color: C.accent, getData: getMembers },
-    { icon: "📅", title: "출석 현황", desc: "52주 출석 기록", color: C.success, getData: getAttendance },
-    { icon: "🙏", title: "기도제목 목록", desc: "전 성도 기도제목", color: C.purple, getData: getPrayers },
-    { icon: "📝", title: "메모/기록 전체", desc: "메모, 심방, 경조사 기록", color: C.teal, getData: getNotes },
-    { icon: "🌱", title: "새가족 현황", desc: "새가족 4주 트래킹", color: C.pink, getData: getNewFamily },
-    { icon: "📊", title: "목양 종합 보고서", desc: "당회 제출용 종합 보고서", color: C.navy, getData: getFull },
+    { Icon: Users, title: "성도 명단", desc: "전체 성도 정보", getData: getMembers },
+    { Icon: CalendarCheck, title: "출석 현황", desc: "52주 출석 기록", getData: getAttendance },
+    { Icon: Heart, title: "기도제목 목록", desc: "전 성도 기도제목", getData: getPrayers },
+    { Icon: FileText, title: "메모/기록 전체", desc: "메모, 심방, 경조사 기록", getData: getNotes },
+    { Icon: Sprout, title: "새가족 현황", desc: "새가족 4주 트래킹", getData: getNewFamily },
+    { Icon: BarChart3, title: "목양 종합 보고서", desc: "당회 제출용 종합 보고서", getData: getFull },
   ];
 
   const openViewer = (r: typeof reportDefs[0]) => {
@@ -1879,7 +1890,9 @@ function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; t
         {reportDefs.map((r, i) => (
           <Card key={i} onClick={() => openViewer(r)} style={{ cursor: "pointer", transition: "all 0.2s" }}>
             <div style={{ display: "flex", alignItems: "center", gap: mob ? 12 : 16 }}>
-              <div style={{ width: mob ? 42 : 52, height: mob ? 42 : 52, borderRadius: 14, background: `${r.color}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 20 : 24, flexShrink: 0 }}>{r.icon}</div>
+              <div style={{ width: mob ? 42 : 52, height: mob ? 42 : 52, borderRadius: 12, background: "rgba(27,42,74,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <r.Icon size={reportIconSize} strokeWidth={1.8} style={{ color: reportIconColor }} />
+              </div>
               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 700, color: C.navy, fontSize: mob ? 14 : 16, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</div><div style={{ fontSize: mob ? 12 : 13, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</div></div>
               <div style={{ color: C.textMuted, flexShrink: 0 }}><Icons.Export /></div>
             </div>
