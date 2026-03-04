@@ -1,3 +1,5 @@
+const withPWA = require("@ducanh2912/next-pwa").default;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Next 14: dev 모드에서 Supabase 번들 분리 (청크 경로 오류 방지)
@@ -10,4 +12,8 @@ const nextConfig = {
     return [{ source: "/favicon.ico", destination: "/api/favicon" }];
   },
 };
-module.exports = nextConfig;
+
+module.exports = withPWA({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+})(nextConfig);
