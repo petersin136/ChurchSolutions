@@ -66,7 +66,22 @@ export function AbsenteeManagement({
     if (memRes.error) {
       console.error(memRes.error);
       toast?.("데이터 로드 실패: " + memRes.error.message, "err");
-    } else setMembersFetched((memRes.data ?? []) as Member[]);
+    } else {
+      const rows = (memRes.data ?? []) as Record<string, unknown>[];
+      setMembersFetched(
+        rows.map((r) => ({
+          ...r,
+          id: String(r.id ?? ""),
+          name: String(r.name ?? ""),
+          dept: r.dept as string | undefined,
+          mokjang: r.mokjang as string | undefined,
+          group: (r.mokjang ?? r.group) as string | undefined,
+          phone: r.phone as string | undefined,
+          member_status: r.member_status as string | undefined,
+          status: r.status as string | undefined,
+        })) as Member[]
+      );
+    }
     if (attRes.error) {
       const fallback = await supabase.from("attendance").select("member_id, date, status").gte("date", fromDate);
       if (fallback.error) {
@@ -182,7 +197,7 @@ export function AbsenteeManagement({
                 <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                   <td className="py-3 px-4 font-medium">{member.name}</td>
                   <td className="py-3 px-4 text-gray-600">{member.dept || "-"}</td>
-                  <td className="py-3 px-4 text-gray-600">{member.mokjang || member.group || "-"}</td>
+                  <td className="py-3 px-4 text-gray-600">{(member.mokjang ?? member.group) || "-"}</td>
                   <td className="py-3 px-4 text-center">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                       {cw}주

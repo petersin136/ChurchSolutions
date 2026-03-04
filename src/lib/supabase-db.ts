@@ -494,9 +494,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const m of db.members) {
     if (!/^[0-9a-f-]{36}$/i.test(m.id)) continue;
     const list = db.notes[m.id] ?? [];
-    console.log("[Delete Debug] Supabase 요청:", { table: "notes", member_id: m.id, deleteThenInsert: true, remainingCount: list.length });
-    const delRes = await supabase.from("notes").delete().eq("member_id", m.id);
-    console.log("[Delete Debug] Supabase 응답 (delete):", { data: delRes.data, error: delRes.error });
+    await supabase.from("notes").delete().eq("member_id", m.id);
     if (list.length > 0) {
       const rows = list.map((n) => {
         const key = `note\t${m.id}\t${n.date}\t${n.createdAt || n.date}\t${n.content}`;
@@ -512,8 +510,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
           answered_at: answered && answeredAt ? answeredAt : null,
         };
       });
-      const { data, error } = await supabase.from("notes").insert(rows);
-      console.log("[Delete Debug] Supabase 응답 (insert):", { data, error });
+      const { error } = await supabase.from("notes").insert(rows);
       if (error) {
         await supabase.from("notes").insert(
           list.map((n) => ({
@@ -527,7 +524,6 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       }
     }
   }
-  console.log("[Delete Debug] Supabase notes 동기화 루프 완료");
 
   for (const p of db.plans) {
     if (/^[0-9a-f-]{36}$/i.test(p.id)) {

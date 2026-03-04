@@ -13,6 +13,7 @@ import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics, ServiceTypeSettings } from "@/components/attendance";
+import { ReportModal } from "@/components/report/ReportModal";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -78,7 +79,7 @@ const badgeBg: Record<string, [string, string]> = {
 };
 
 /* ---------- Icons ---------- */
-const iconStyle = { strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
+const iconStyle = { strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
 const Icons = {
   Search: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
   Plus: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>,
@@ -392,12 +393,12 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: 
         background: "#fff",
         borderRadius: 16,
         border: "1px solid #e5e7eb",
-        boxShadow: hover ? "0 4px 12px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.04)",
-        transform: hover ? "translateY(-1px)" : "none",
+        boxShadow: hover ? "0 4px 12px rgba(0,0,0,0.12)" : "0 1px 3px rgba(0,0,0,0.08)",
         padding: 24,
         marginBottom: 12,
         cursor: onClick ? "pointer" : "default",
-        transition: "all 0.2s ease",
+        transition: "box-shadow 0.2s ease, transform 0.2s ease",
+        transform: hover ? "translateY(-1px)" : "none",
       }}
     >
       <div
@@ -1481,7 +1482,7 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
 
   const [searchFocused, setSearchFocused] = useState(false);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, background: "#f8f9fc", minHeight: "100%" }}>
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
           <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }}><Icons.Search /></div>
@@ -1502,7 +1503,7 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
               borderRadius: 12,
               color: C.text,
               outline: "none",
-              boxShadow: searchFocused ? "0 0 0 3px rgba(79,70,229,0.1)" : "none",
+              boxShadow: searchFocused ? "0 0 0 2px rgba(79,70,229,0.2)" : "none",
               transition: "border-color 0.2s, box-shadow 0.2s",
             }}
           />
@@ -1521,14 +1522,14 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
             전체 공유중
           </span>
         )}
-        <Btn variant="accent" size="sm" onClick={() => openNoteModal()} style={{ borderRadius: 10 }}>+ 기록</Btn>
+        <Btn variant="accent" size="sm" onClick={() => openNoteModal()} style={{ borderRadius: 10, background: "#3b82f6", color: "#fff" }}>+ 기록</Btn>
       </div>
       <div ref={listRefNotes}>
         {filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: 48, color: "#9CA3AF" }}>
+          <div style={{ textAlign: "center", padding: 48 }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🙏</div>
-            <div style={{ fontSize: 17, fontWeight: 600, color: "#374151", marginBottom: 8 }}>등록된 기도제목이 없습니다</div>
-            <Btn variant="accent" size="sm" onClick={() => openNoteModal()} style={{ borderRadius: 10 }}>+ 기록</Btn>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "#1F2937", marginBottom: 8 }}>등록된 기도제목이 없습니다</div>
+            <Btn variant="accent" size="sm" onClick={() => openNoteModal()} style={{ borderRadius: 10, background: "#3b82f6", color: "#fff" }}>+ 기록</Btn>
           </div>
         ) : (
           <>
@@ -1647,8 +1648,6 @@ function PrayerModal({
   };
 
   const deletePrayer = (n: Note & { createdAt: string; isProfilePrayer?: boolean }) => {
-    const id = `${memberId}|${n.date}|${n.createdAt || n.date}|${n.content?.slice(0, 20)}`;
-    console.log("[Delete Debug] 삭제 시작, id:", id);
     if (typeof window !== "undefined" && !window.confirm("이 기도제목을 삭제하시겠습니까?")) return;
     const key = getPrayerAnsweredKey({ ...n, mbrId: memberId, isProfilePrayer: n.isProfilePrayer });
     setDb(prev => {
@@ -1667,7 +1666,6 @@ function PrayerModal({
       }
       return { ...prev, notes, answeredPrayerKeys, answeredPrayerDates };
     });
-    console.log("[Delete Debug] state 업데이트 완료");
     persist();
     setEditingKey(null);
     toast("삭제되었습니다", "warn");
@@ -2225,162 +2223,258 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
 /* ====== Reports ====== */
 function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; toast: (m: string, t?: string) => void }) {
   const mob = useIsMobile();
-  const listRefReport = useRef<HTMLDivElement>(null);
-  const [viewer, setViewer] = useState<{ title: string; csv: string; filename: string } | null>(null);
-  const [currentPageReport, setCurrentPageReport] = useState(1);
+  const [activeReport, setActiveReport] = useState<string | null>(null);
 
-  const getMembers = () => {
-    const h = ["이름","부서","직분","상태","성별","생년월일","연락처","주소","가족관계","등록경로","기도제목","메모"];
-    const rows = db.members.map(m => csvRow([m.name, m.dept || "", m.role || "", m.status || "", m.gender || "", m.birth || "", m.phone || "", m.address || "", m.family || "", m.source || "", m.prayer || "", m.memo || ""]));
-    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `성도명단_${todayStr()}.csv` };
-  };
-  const getAttendance = () => {
-    const h = ["이름","부서","상태", ...Array.from({ length: 52 }, (_, i) => `${i + 1}주`)];
-    const rows = db.members.filter(m => m.status !== "졸업/전출").map(m => {
+  const answeredSet = useMemo(() => new Set(db.answeredPrayerKeys || []), [db.answeredPrayerKeys]);
+
+  /* ── 1. 성도 명단 ── */
+  const membersCols: RCol[] = useMemo(() => [
+    { key: "name", label: "이름", width: 80, excelWidth: 12 },
+    { key: "dept", label: "구역", width: 60, align: "center", excelWidth: 8 },
+    { key: "role", label: "직분", width: 60, align: "center", excelWidth: 8 },
+    { key: "gender", label: "성별", width: 50, align: "center", excelWidth: 6 },
+    { key: "birth", label: "생년월일", width: 100, align: "center", excelWidth: 14 },
+    { key: "phone", label: "연락처", width: 120, excelWidth: 16 },
+    { key: "address", label: "주소", excelWidth: 30 },
+    { key: "family", label: "가족관계", width: 80, excelWidth: 12 },
+    { key: "mokjang", label: "목장/소속", width: 80, align: "center", excelWidth: 10 },
+    { key: "prayer", label: "기도제목", width: 120, excelWidth: 40 },
+    { key: "memo", label: "비고", width: 80, excelWidth: 15 },
+  ], []);
+  const membersData = useMemo(() => db.members.map(m => ({
+    name: m.name, dept: m.dept || "", role: m.role || "", gender: m.gender || "",
+    birth: m.birth || "", phone: m.phone || "", address: m.address || "",
+    family: m.family || "", mokjang: (m.mokjang ?? m.group) || "", prayer: m.prayer || "", memo: m.memo || "",
+  })), [db.members]);
+
+  /* ── 2. 출석 현황 ── */
+  const recentSundays = useMemo(() => {
+    const out: string[] = [];
+    const d = new Date();
+    for (let i = 0; i < 8; i++) {
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? 0 : -7);
+      const sun = new Date(d); sun.setDate(diff - i * 7);
+      out.unshift(sun.toISOString().slice(0, 10));
+    }
+    return out;
+  }, []);
+  const attCols: RCol[] = useMemo(() => [
+    { key: "name", label: "이름", width: 80, excelWidth: 12 },
+    { key: "mokjang", label: "목장/소속", width: 80, align: "center", excelWidth: 10 },
+    ...recentSundays.map(d => ({
+      key: `w_${d}`, label: d.slice(5), width: 60, align: "center" as const, excelWidth: 6,
+      render: (v: unknown) => {
+        if (v === "✓") return <span style={{ color: "#10B981", fontWeight: 600 }}>✓</span>;
+        if (v === "✗") return <span style={{ color: "#EF4444", fontWeight: 600 }}>✗</span>;
+        return <span style={{ color: "#D1D5DB" }}>—</span>;
+      },
+    })),
+    { key: "rate", label: "출석률", width: 70, align: "right", excelWidth: 10 },
+    { key: "status", label: "상태", width: 60, align: "center", excelWidth: 8 },
+  ], [recentSundays]);
+  const attData = useMemo(() => {
+    const active = db.members.filter(m => (m.member_status || m.status) !== "졸업/전출");
+    return active.map(m => {
       const att = db.attendance[m.id] || {};
-      const weeks = Array.from({ length: 52 }, (_, i) => ({ p: "O", a: "X" } as Record<string, string>)[att[i + 1] as string] || "");
-      return csvRow([m.name, m.dept || "", m.status || "", ...weeks]);
+      const weekEntries: Record<string, string> = {};
+      let present = 0;
+      recentSundays.forEach(d => {
+        const wn = getWeekFromDate(d);
+        const s = att[wn] as string | undefined;
+        weekEntries[`w_${d}`] = s === "p" || s === "o" ? "✓" : s === "a" ? "✗" : "";
+        if (s === "p" || s === "o") present++;
+      });
+      const rate = recentSundays.length > 0 ? `${Math.round(present / recentSundays.length * 100)}%` : "—";
+      return { name: m.name, mokjang: (m.mokjang ?? m.group) || "", ...weekEntries, rate, status: m.member_status || m.status || "" };
     });
-    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `출석부_${todayStr()}.csv` };
-  };
-  const getPrayers = () => {
-    const h = ["이름","부서","기도제목"];
-    const rows = db.members.filter(m => m.prayer).map(m => csvRow([m.name, m.dept || "", m.prayer || ""]));
-    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `기도제목_${todayStr()}.csv` };
-  };
-  const getNotes = () => {
-    const h = ["날짜","이름","부서","유형","내용"];
-    const rows: string[] = [];
+  }, [db, recentSundays]);
+
+  /* ── 3. 기도제목 목록 ── */
+  const prayerCols: RCol[] = useMemo(() => [
+    { key: "name", label: "이름", width: 80, excelWidth: 12 },
+    { key: "dept", label: "구역", width: 60, align: "center", excelWidth: 8 },
+    { key: "content", label: "기도제목", excelWidth: 40 },
+    { key: "date", label: "등록일", width: 100, align: "center", excelWidth: 14 },
+    { key: "answered", label: "응답상태", width: 80, align: "center", excelWidth: 10,
+      render: (v: unknown) => {
+        if (v === "응답완료") return <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#ECFDF5", color: "#059669" }}>응답완료</span>;
+        return <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#EFF6FF", color: "#2563EB" }}>기도중</span>;
+      }
+    },
+  ], []);
+  const prayerData = useMemo(() => {
+    const rows: Record<string, unknown>[] = [];
     Object.keys(db.notes).forEach(mid => {
       const mbr = db.members.find(x => x.id === mid);
-      (db.notes[mid] || []).forEach(n => rows.push(csvRow([n.date, mbr?.name || "", mbr?.dept || "", NOTE_LABELS[n.type] || "메모", n.content])));
+      (db.notes[mid] || []).filter(n => n.type === "prayer").forEach(n => {
+        const key = `note\t${mid}\t${n.date}\t${n.createdAt || n.date}\t${n.content}`;
+        rows.push({
+          name: mbr?.name || "", dept: mbr?.dept || "", content: n.content,
+          date: n.date, answered: answeredSet.has(key) ? "응답완료" : "기도중",
+        });
+      });
     });
-    rows.sort().reverse();
-    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `기록전체_${todayStr()}.csv` };
-  };
-  const getNewFamily = () => {
-    const nf = db.members.filter(m => m.is_new_family === true);
-    const h = ["이름","등록일","경로","1주","2주","3주","4주","상태"];
-    const rows = nf.map(m => {
-      const att = db.attendance[m.id] || {};
-      const rw = currentWeek;
-      const weeks = [0, 1, 2, 3].map(i => ({ p: "O", a: "X" } as Record<string, string>)[att[rw + i] as string] || "-");
-      return csvRow([m.name, m.createdAt || "", m.source || "", ...weeks, m.status || ""]);
+    db.members.forEach(m => {
+      if (!m.prayer?.trim()) return;
+      const already = (db.notes[m.id] || []).some(n => n.type === "prayer" && n.content === m.prayer);
+      if (already) return;
+      rows.push({ name: m.name, dept: m.dept || "", content: m.prayer, date: m.createdAt?.slice(0, 10) || "", answered: "기도중" });
     });
-    return { csv: csvRow(h) + "\n" + rows.join("\n"), filename: `새가족현황_${todayStr()}.csv` };
-  };
-  const getFull = () => {
-    const m = db.members.filter(x => x.status !== "졸업/전출");
-    let csv = `"${db.settings.churchName || "교회"} 목양 종합 보고서 (${todayStr()})"\n\n`;
-    csv += '"=== 현황 요약 ==="\n';
-    csv += `"전체 성도","${m.length}명"\n`;
-    const attTotalExport = m.filter(s => { const st = (db.attendance[s.id] || {})[currentWeek]; return st === "p" || st === "o"; }).length;
-    csv += `"금주 출석","${attTotalExport}명 (${m.length > 0 ? Math.round(attTotalExport / m.length * 100) : 0}%)"\n`;
-    csv += `"새가족","${m.filter(s => s.is_new_family === true).length}명"\n`;
-    csv += `"위험/휴면","${m.filter(s => s.status === "위험" || s.status === "휴면").length}명"\n\n`;
-    csv += '"=== 부서별 인원 ==="\n"부서","인원"\n';
+    return rows.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  }, [db, answeredSet]);
+
+  /* ── 4. 메모/기록 전체 ── */
+  const notesCols: RCol[] = useMemo(() => [
+    { key: "date", label: "날짜", width: 100, align: "center", excelWidth: 14 },
+    { key: "name", label: "이름", width: 80, excelWidth: 12 },
+    { key: "type", label: "유형", width: 60, align: "center", excelWidth: 8 },
+    { key: "dept", label: "부서", width: 60, align: "center", excelWidth: 8 },
+    { key: "content", label: "내용", excelWidth: 40 },
+  ], []);
+  const notesData = useMemo(() => {
+    const rows: Record<string, unknown>[] = [];
+    Object.keys(db.notes).forEach(mid => {
+      const mbr = db.members.find(x => x.id === mid);
+      (db.notes[mid] || []).forEach(n => {
+        rows.push({ date: n.date, name: mbr?.name || "", type: NOTE_LABELS[n.type] || "메모", dept: mbr?.dept || "", content: n.content });
+      });
+    });
+    return rows.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  }, [db]);
+
+  /* ── 5. 새가족 현황 ── */
+  const nfCols: RCol[] = useMemo(() => [
+    { key: "name", label: "이름", width: 80, excelWidth: 12 },
+    { key: "date", label: "등록일", width: 100, align: "center", excelWidth: 14 },
+    { key: "source", label: "구분", width: 60, align: "center", excelWidth: 10 },
+    { key: "w1", label: "1주", width: 50, align: "center", excelWidth: 6, render: renderCheck },
+    { key: "w2", label: "2주", width: 50, align: "center", excelWidth: 6, render: renderCheck },
+    { key: "w3", label: "3주", width: 50, align: "center", excelWidth: 6, render: renderCheck },
+    { key: "w4", label: "4주", width: 50, align: "center", excelWidth: 6, render: renderCheck },
+    { key: "graduated", label: "수료", width: 60, align: "center", excelWidth: 10,
+      render: (v: unknown) => v === "수료"
+        ? <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#ECFDF5", color: "#059669" }}>수료</span>
+        : <span style={{ color: "#D1D5DB" }}>—</span>,
+    },
+    { key: "status", label: "상태", width: 70, align: "center", excelWidth: 10 },
+  ], []);
+  const nfData = useMemo(() => {
+    return db.members.filter(m => m.is_new_family === true).map(m => {
+      const prg = (db.newFamilyPrograms || []).find(p => p.member_id === m.id);
+      return {
+        name: m.name,
+        date: m.first_visit_date || m.firstVisitDate || m.createdAt?.slice(0, 10) || "",
+        source: m.visit_path || m.visitPath || m.source || "",
+        w1: prg?.week1_completed ? "✓" : "",
+        w2: prg?.week2_completed ? "✓" : "",
+        w3: prg?.week3_completed ? "✓" : "",
+        w4: prg?.week4_completed ? "✓" : "",
+        graduated: prg?.week1_completed && prg?.week2_completed && prg?.week3_completed && prg?.week4_completed ? "수료" : "",
+        status: prg?.status || "",
+      };
+    });
+  }, [db]);
+
+  /* ── 6. 목양 종합 보고서 ── */
+  const fullCols: RCol[] = useMemo(() => [
+    { key: "item", label: "항목", width: 150, excelWidth: 20 },
+    { key: "value", label: "수치", width: 100, align: "right", excelWidth: 10 },
+    { key: "diff", label: "전주 대비", width: 80, align: "center", excelWidth: 10,
+      render: (v: unknown) => {
+        const s = String(v || "");
+        if (s.startsWith("▲")) return <span style={{ color: "#10B981", fontWeight: 600 }}>{s}</span>;
+        if (s.startsWith("▼")) return <span style={{ color: "#EF4444", fontWeight: 600 }}>{s}</span>;
+        return <span style={{ color: "#6B7280" }}>{s || "—"}</span>;
+      },
+    },
+    { key: "note", label: "비고", excelWidth: 30 },
+  ], []);
+  const fullData = useMemo(() => {
+    const m = db.members.filter(x => (x.member_status || x.status) !== "졸업/전출");
+    const attNow = m.filter(s => { const st = (db.attendance[s.id] || {})[currentWeek]; return st === "p" || st === "o"; }).length;
+    const attPrev = m.filter(s => { const st = (db.attendance[s.id] || {})[currentWeek - 1]; return st === "p" || st === "o"; }).length;
+    const diff = attNow - attPrev;
+    const nf = m.filter(s => s.is_new_family === true).length;
     const dc: Record<string, number> = {};
-    m.forEach(s => { dc[s.dept || ""] = (dc[s.dept || ""] || 0) + 1; });
-    Object.entries(dc).forEach(([d, c]) => { csv += `"${d}","${c}"\n`; });
-    csv += "\n";
-    csv += '"=== 기도제목 ==="\n"이름","부서","기도제목"\n';
-    m.filter(s => s.prayer).forEach(s => { csv += csvRow([s.name, s.dept || "", s.prayer || ""]) + "\n"; });
-    return { csv, filename: `목양종합보고서_${todayStr()}.csv` };
-  };
+    m.forEach(s => { dc[s.dept || "미분류"] = (dc[s.dept || "미분류"] || 0) + 1; });
+    const prayerCount = Object.values(db.notes).flat().filter(n => n.type === "prayer").length;
+    const rows: Record<string, unknown>[] = [
+      { item: "전체 성도", value: `${m.length}명`, diff: "", note: "" },
+      { item: "금주 출석", value: `${attNow}명`, diff: diff > 0 ? `▲ ${diff}명` : diff < 0 ? `▼ ${Math.abs(diff)}명` : "— 동일", note: `${m.length > 0 ? Math.round(attNow / m.length * 100) : 0}%` },
+      { item: "새가족", value: `${nf}명`, diff: "", note: "" },
+      { item: "기도제목", value: `${prayerCount}건`, diff: "", note: "" },
+    ];
+    Object.entries(dc).forEach(([d, c]) => rows.push({ item: `부서: ${d}`, value: `${c}명`, diff: "", note: "" }));
+    return rows;
+  }, [db, currentWeek]);
 
-  const reportIconColor = C.navy;
-  const reportIconSize = 24;
-  const reportDefs = [
-    { Icon: Users, title: "성도 명단", desc: "전체 성도 정보", getData: getMembers },
-    { Icon: CalendarCheck, title: "출석 현황", desc: "52주 출석 기록", getData: getAttendance },
-    { Icon: Heart, title: "기도제목 목록", desc: "전 성도 기도제목", getData: getPrayers },
-    { Icon: FileText, title: "메모/기록 전체", desc: "메모, 심방, 경조사 기록", getData: getNotes },
-    { Icon: Sprout, title: "새가족 현황", desc: "새가족 4주 트래킹", getData: getNewFamily },
-    { Icon: BarChart3, title: "목양 종합 보고서", desc: "당회 제출용 종합 보고서", getData: getFull },
-  ];
+  type RCol = { key: string; label: string; width?: number; align?: "left" | "center" | "right"; excelWidth?: number; render?: (v: unknown, row: Record<string, unknown>, i: number) => React.ReactNode };
 
-  const openViewer = (r: typeof reportDefs[0]) => {
-    const { csv, filename } = r.getData();
-    setCurrentPageReport(1);
-    setViewer({ title: r.title, csv, filename });
-  };
+  const reportDefs = useMemo(() => [
+    { id: "members", Icon: Users, title: "성도 명단", desc: "전체 성도 정보", columns: membersCols, data: membersData, filename: `성도명단_${todayStr()}.xlsx` },
+    { id: "attendance", Icon: CalendarCheck, title: "출석 현황", desc: "최근 8주 출석 기록", columns: attCols, data: attData, filename: `출석현황_${todayStr()}.xlsx` },
+    { id: "prayers", Icon: Heart, title: "기도제목 목록", desc: "전 성도 기도제목", columns: prayerCols, data: prayerData, filename: `기도제목_${todayStr()}.xlsx` },
+    { id: "notes", Icon: FileText, title: "메모/기록 전체", desc: "메모, 심방, 경조사 기록", columns: notesCols, data: notesData, filename: `기록전체_${todayStr()}.xlsx` },
+    { id: "newfamily", Icon: Sprout, title: "새가족 현황", desc: "새가족 4주 트래킹", columns: nfCols, data: nfData, filename: `새가족현황_${todayStr()}.xlsx` },
+    { id: "full", Icon: BarChart3, title: "목양 종합 보고서", desc: "당회 제출용 종합 보고서", columns: fullCols, data: fullData, filename: `목양종합보고서_${todayStr()}.xlsx` },
+  ], [membersCols, membersData, attCols, attData, prayerCols, prayerData, notesCols, notesData, nfCols, nfData, fullCols, fullData]);
 
-  const doDownload = () => {
-    if (!viewer) return;
-    dlCSV(viewer.csv, viewer.filename);
-    toast("다운로드 완료", "ok");
+  const active = activeReport ? reportDefs.find(r => r.id === activeReport) : null;
+
+  const handleDownload = async () => {
+    if (!active) return;
+    const { downloadExcel } = await import("@/components/report/excelExport");
+    await downloadExcel(active.title, active.columns, active.data, active.filename);
+    toast("엑셀 다운로드 완료", "ok");
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <Card><p style={{ margin: 0, color: C.textMuted, fontSize: mob ? 13 : 14 }}>보고서를 클릭하면 미리보기가 열립니다. 다운로드는 뷰어에서 버튼으로 받을 수 있습니다.</p></Card>
+      <Card><p style={{ margin: 0, color: C.textMuted, fontSize: mob ? 13 : 14 }}>보고서를 클릭하면 미리보기가 열립니다. 엑셀 다운로드는 뷰어에서 받을 수 있습니다.</p></Card>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fit, minmax(280px, 1fr))", gap: mob ? 10 : 16 }}>
-        {reportDefs.map((r, i) => (
-          <Card key={i} onClick={() => openViewer(r)} style={{ cursor: "pointer", transition: "all 0.2s" }}>
+        {reportDefs.map((r) => (
+          <Card key={r.id} onClick={() => setActiveReport(r.id)} style={{ cursor: "pointer", transition: "all 0.2s" }}>
             <div style={{ display: "flex", alignItems: "center", gap: mob ? 12 : 16 }}>
               <div style={{ width: mob ? 42 : 52, height: mob ? 42 : 52, borderRadius: 12, background: "rgba(27,42,74,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <r.Icon size={reportIconSize} strokeWidth={1.8} style={{ color: reportIconColor }} />
+                <r.Icon size={24} strokeWidth={1.8} style={{ color: C.navy }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 700, color: C.navy, fontSize: mob ? 14 : 16, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</div><div style={{ fontSize: mob ? 12 : 13, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</div></div>
-              <div style={{ color: C.textMuted, flexShrink: 0 }}><Icons.Export /></div>
+              <div style={{ color: C.textMuted, flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500 }}>
+                <span>{r.data.length}건</span>
+                <Icons.Export />
+              </div>
             </div>
           </Card>
         ))}
       </div>
 
-      {viewer && (() => {
-        const rows = parseCSVToRows(viewer.csv);
-        const hasTable = rows.length >= 1 && rows[0].length >= 1;
-        const dataRows = hasTable ? rows.slice(1) : [];
-        const totalReportRows = dataRows.length;
-        const paginatedReportRows = dataRows.slice((currentPageReport - 1) * 10, currentPageReport * 10);
-        return (
-          <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", padding: 16 }} onClick={() => { setViewer(null); setCurrentPageReport(1); }}>
-            <div style={{ background: C.card, borderRadius: 16, maxWidth: "min(95vw, 1000px)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
-              <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.navy }}>{viewer.title}</h3>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Btn variant="primary" size="sm" onClick={doDownload}>📥 다운로드</Btn>
-                  <Btn variant="ghost" size="sm" onClick={() => { setViewer(null); setCurrentPageReport(1); }}>닫기</Btn>
-                </div>
-              </div>
-              <div ref={listRefReport} style={{ padding: 16, overflow: "auto", flex: 1, minHeight: 200 }}>
-                {hasTable ? (
-                  <>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: rows[0].length > 10 ? 800 : undefined }}>
-                      <thead>
-                        <tr style={{ background: C.bg }}>
-                          {rows[0].map((cell, j) => (
-                            <th key={j} style={{ padding: "8px 10px", textAlign: "left", fontWeight: 600, color: C.navy, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap" }}>{cell}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedReportRows.map((row, i) => (
-                          <tr key={i} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
-                            {row.map((cell, j) => (
-                              <td key={j} style={{ padding: "6px 10px", color: C.text, whiteSpace: "nowrap", maxWidth: j >= 3 && row.length > 10 ? 32 : undefined, overflow: "hidden", textOverflow: "ellipsis" }} title={cell}>{cell || "—"}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <Pagination totalItems={totalReportRows} itemsPerPage={10} currentPage={currentPageReport} onPageChange={(p) => { setCurrentPageReport(p); listRefReport.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
-                  </>
-                ) : (
-                  <pre style={{ margin: 0, fontSize: 12, fontFamily: "ui-monospace, monospace", whiteSpace: "pre-wrap", wordBreak: "break-all", color: C.text }}>{viewer.csv}</pre>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {active && (
+        <ReportModal
+          title={active.title}
+          columns={active.columns}
+          data={active.data}
+          onClose={() => setActiveReport(null)}
+          onDownloadExcel={handleDownload}
+        />
+      )}
     </div>
   );
 }
 
-/* ====== Settings ====== */
-function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; toast: (m: string, t?: string) => void; saveDb: (d: DB) => Promise<void> }) {
+function renderCheck(v: unknown) {
+  if (v === "✓") return <span style={{ color: "#10B981", fontWeight: 600 }}>✓</span>;
+  return <span style={{ color: "#D1D5DB" }}>—</span>;
+}
+
+function getWeekFromDate(dateStr: string): number {
+  const d = new Date(dateStr);
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil(((d.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7);
+}
+
+/* ====== Settings (목장그룹관리: 목양 탭 전용, 교회 전체 설정 제외) ====== */
+function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; toast: (m: string, t?: string) => void; saveDb: (d: DB) => Promise<void>; mokjangOnly?: boolean }) {
   const mob = useIsMobile();
   const fileRef = useRef<HTMLInputElement>(null);
   const [mokjangManage, setMokjangManage] = useState<string | null>(null);
@@ -2473,18 +2567,20 @@ function SettingsSub({ db, setDb, persist, toast, saveDb }: { db: DB; setDb: (fn
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: mob ? "100%" : 960 }}>
-      <Card>
-        <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 14 : 20 }}>⚙️ 교회 설정</h4>
-        <FormInput label="교회 이름" value={db.settings.churchName || ""} placeholder="○○교회"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, churchName: e.target.value } })); persist(); }} />
-        <FormInput label="교단" value={db.settings.denomination || ""} placeholder="예: 침례교, 장로교, 감리교 (침례교면 증서에 침례 표기)"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, denomination: e.target.value } })); persist(); }} />
-        <FormInput label="부서 목록 (쉼표 구분)" value={db.settings.depts || ""} placeholder="유아부,유치부,유년부,초등부,중등부,고등부,청년부,장년부"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, depts: e.target.value } })); persist(); }} />
-        <div style={{ marginTop: 12 }}>
-          <Btn onClick={handleSaveSettings}>저장</Btn>
-        </div>
-      </Card>
+      {!mokjangOnly && (
+        <Card>
+          <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 14 : 20 }}>⚙️ 교회 설정</h4>
+          <FormInput label="교회 이름" value={db.settings.churchName || ""} placeholder="○○교회"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, churchName: e.target.value } })); persist(); }} />
+          <FormInput label="교단" value={db.settings.denomination || ""} placeholder="예: 침례교, 장로교, 감리교 (침례교면 증서에 침례 표기)"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, denomination: e.target.value } })); persist(); }} />
+          <FormInput label="부서 목록 (쉼표 구분)" value={db.settings.depts || ""} placeholder="유아부,유치부,유년부,초등부,중등부,고등부,청년부,장년부"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, depts: e.target.value } })); persist(); }} />
+          <div style={{ marginTop: 12 }}>
+            <Btn onClick={handleSaveSettings}>저장</Btn>
+          </div>
+        </Card>
+      )}
       <Card>
         <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 12 : 16 }}>🏠 목장 관리</h4>
         <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>목장을 생성·이름 변경·삭제하고, 그룹원을 추가·제거할 수 있습니다.</p>
@@ -2563,7 +2659,7 @@ const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[
   { id: "notes", Icon: StickyNote, label: "기도/메모" },
   { id: "newfamily", Icon: Sprout, label: "새가족 관리" },
   { id: "reports", Icon: FileText, label: "보고서" },
-  { id: "settings", Icon: Settings, label: "설정" },
+  { id: "settings", Icon: Settings, label: "목장그룹관리" },
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: string }> = {
@@ -2573,7 +2669,7 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기록" },
   newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
   reports: { title: "보고서", desc: "엑셀 보고서를 즉시 다운로드합니다" },
-  settings: { title: "설정", desc: "교회 정보 및 데이터 관리" },
+  settings: { title: "목장그룹관리", desc: "목장·소그룹 생성 및 그룹원 관리" },
 };
 
 const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "reports", "settings"];
@@ -2648,7 +2744,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       return;
     }
     const t = setTimeout(() => {
-      saveDb?.(db).catch(() => {});
+      if (!saveDb) return;
+      saveDb(db).catch(() => {});
     }, 400);
     return () => clearTimeout(t);
   }, [db, saveDb]);
@@ -2857,7 +2954,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   };
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("[Photo Debug] onChange 실행됨, files:", e.target.files);
     const file = e.target.files?.[0];
     if (!file) return;
     const localPreview = URL.createObjectURL(file);
@@ -2866,22 +2962,17 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       const compressed = await compressImage(file, 400, 0.7);
       const fd = new FormData();
       fd.append("file", compressed);
-      console.log("[Photo Debug] 업로드 요청 시작");
       const r = await fetch("/api/upload-photo", { method: "POST", body: fd });
       const data = await r.json();
-      console.log("[Photo Debug] 업로드 응답:", data);
       if (data.url) {
         const serverUrl = data.url;
-        console.log("[Photo Debug] 서버 URL 확인 중:", serverUrl);
         const testImg = new Image();
         testImg.onload = () => {
-          console.log("[Photo Debug] 서버 URL 로드 성공, 교체함");
           URL.revokeObjectURL(localPreview);
           setFPhoto(serverUrl);
           setFPhotoServerUrl(serverUrl);
         };
         testImg.onerror = () => {
-          console.error("[Photo Debug] 서버 URL 로드 실패, 로컬 미리보기 유지");
           setFPhotoServerUrl(serverUrl);
         };
         testImg.src = serverUrl;
@@ -3007,7 +3098,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openPrayerModal={openPrayerModal} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
           {activeSub === "reports" && <ReportsSub db={db} currentWeek={currentWeek} toast={toast} />}
-          {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} />}
+          {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} mokjangOnly />}
     </UnifiedPageLayout>
 
       {/* ===== MODALS ===== */}
@@ -3017,7 +3108,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         {/* 프로필 사진 — 맨 위, 원형 100px. 클릭 시 파일 선택. 미리보기는 <img>로 표시 (backgroundImage는 URL 특수문자로 깨질 수 있음) */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
           <label
-            onClick={() => console.log("[Photo Debug] 사진 영역 클릭됨")}
+            onClick={() => {}}
             style={{
               display: "block",
               width: 100, height: 100, borderRadius: "50%", background: "#f3f4f6", cursor: "pointer",
@@ -3040,14 +3131,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               <img
                 src={fPhoto}
                 alt="프로필 미리보기"
-                onError={(e) => {
-                  console.error("[Photo Debug] 이미지 로드 실패");
-                  console.error("[Photo Debug] 시도한 URL:", fPhoto);
-                  console.error("[Photo Debug] 에러:", e);
-                }}
-                onLoad={() => {
-                  console.log("[Photo Debug] 이미지 로드 성공");
-                }}
+                onError={() => {}}
+                onLoad={() => {}}
                 style={{
                   position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
                   objectFit: "cover", borderRadius: "50%", display: "block", zIndex: 0,

@@ -168,7 +168,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
       </main>
 
       <nav className="tab-bar">
-        {(["pastoral", "school", "planner", "visit", "messaging", "finance", "bulletin", "statistics", "settings"] as const).map(
+        {(["pastoral", "visit", "planner", "school", "messaging", "finance", "bulletin", "statistics", "settings"] as const).map(
           (page) => {
             const isActive = currentPage === page;
             const iconColor = isActive ? "#3b82f6" : "#9ca3af";
