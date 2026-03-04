@@ -19,17 +19,28 @@ function getActiveMembers(members: Member[]) {
   return members.filter((m) => (m.member_status || m.status) === "활동" || !m.member_status);
 }
 
+function fmtLocalDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function getRecentSundays(count: number): string[] {
+  const now = new Date();
+  const thisSunday = new Date(now);
+  thisSunday.setDate(now.getDate() - now.getDay());
   const out: string[] = [];
-  const d = new Date();
   for (let i = 0; i < count; i++) {
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? 0 : -7);
-    const sun = new Date(d);
-    sun.setDate(diff - i * 7);
-    out.unshift(sun.toISOString().slice(0, 10));
+    const sun = new Date(thisSunday);
+    sun.setDate(thisSunday.getDate() - i * 7);
+    out.unshift(fmtLocalDate(sun));
   }
   return out;
+}
+
+function getSundayOfWeek(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const sun = new Date(d);
+  sun.setDate(d.getDate() - d.getDay());
+  return fmtLocalDate(sun);
 }
 
 export function AbsenteeManagement({
@@ -44,9 +55,10 @@ export function AbsenteeManagement({
   const [attendanceFetched, setAttendanceFetched] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const useSupabase = !!supabase;
-  const members = useSupabase ? membersFetched : (membersProp ?? []);
-  const attendanceList = useSupabase ? attendanceFetched : (attendanceListProp ?? []);
+  const propsProvided = !!(attendanceListProp && attendanceListProp.length > 0);
+  const useSupabase = !!supabase && !propsProvided;
+  const members = propsProvided ? (membersProp ?? []) : (useSupabase ? membersFetched : (membersProp ?? []));
+  const attendanceList = propsProvided ? attendanceListProp : (useSupabase ? attendanceFetched : (attendanceListProp ?? []));
 
   const loadFromSupabase = useCallback(async () => {
     if (!supabase) return;
@@ -99,15 +111,15 @@ export function AbsenteeManagement({
 
   const activeMembers = useMemo(() => getActiveMembers(members), [members]);
   const recentSundays = useMemo(() => getRecentSundays(nWeeks), [nWeeks]);
-  const byDateService = useMemo(() => {
+  const byWeekService = useMemo(() => {
     const map: Record<string, Record<string, Set<string>>> = {};
     attendanceList.forEach((a) => {
       if (!a.date) return;
+      const weekKey = getSundayOfWeek(a.date);
       const st = a.service_type || "주일예배";
-      const key = `${a.date}_${st}`;
-      if (!map[a.date]) map[a.date] = {};
-      if (!map[a.date][st]) map[a.date][st] = new Set();
-      if (a.status === "출석" || a.status === "온라인") map[a.date][st].add(a.member_id);
+      if (!map[weekKey]) map[weekKey] = {};
+      if (!map[weekKey][st]) map[weekKey][st] = new Set();
+      if (a.status === "출석" || a.status === "온라인") map[weekKey][st].add(a.member_id);
     });
     return map;
   }, [attendanceList]);
@@ -119,11 +131,11 @@ export function AbsenteeManagement({
       let consecutive = 0;
       let lastPresent: string | null = null;
       for (let i = lastNSundays.length - 1; i >= 0; i--) {
-        const d = lastNSundays[i];
+        const weekKey = lastNSundays[i];
         const present =
-          (byDateService[d]?.["주일1부예배"] || byDateService[d]?.["주일예배"])?.has(m.id) ?? false;
+          (byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"])?.has(m.id) ?? false;
         if (present) {
-          lastPresent = d;
+          lastPresent = weekKey;
           break;
         }
         consecutive++;
@@ -133,7 +145,7 @@ export function AbsenteeManagement({
       }
     });
     return result.sort((a, b) => b.consecutiveWeeks - a.consecutiveWeeks);
-  }, [activeMembers, byDateService, recentSundays, nWeeks]);
+  }, [activeMembers, byWeekService, recentSundays, nWeeks]);
 
   if (useSupabase && loading) {
     return (

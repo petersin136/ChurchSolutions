@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance, ServiceType } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
-import { saveDBToSupabase, getWeekNum } from "@/lib/store";
+import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
@@ -2735,6 +2735,59 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [dateBasedAttendance, setDateBasedAttendance] = useState<Attendance[]>([]);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(DEFAULT_SERVICE_TYPES);
 
+  // 출석부 대시보드/결석자/통계: Supabase attendance 테이블(date + service_type)에서 로드 (출석 체크 탭과 동일 소스)
+  const DB_STATUS_TO_UI: Record<string, Attendance["status"]> = { p: "출석", o: "온라인", a: "결석", l: "병결", n: "기타" };
+  useEffect(() => {
+    if (!supabase) return;
+    const end = new Date();
+    const start = new Date(end);
+    start.setDate(start.getDate() - 16 * 7);
+    const startStr = start.toISOString().slice(0, 10);
+    const endStr = end.toISOString().slice(0, 10);
+    supabase
+      .from("attendance")
+      .select("id, member_id, date, status, service_type")
+      .gte("date", startStr)
+      .lte("date", endStr)
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn("[PastoralPage] dateBasedAttendance load error:", error.message);
+          return;
+        }
+        const list: Attendance[] = (data ?? []).map((r: { id?: string; member_id?: string; date?: string; status?: string; service_type?: string }) => ({
+          id: String(r.id ?? ""),
+          member_id: String(r.member_id ?? ""),
+          date: String(r.date ?? ""),
+          status: (DB_STATUS_TO_UI[r.status ?? ""] ?? "결석") as Attendance["status"],
+          service_type: r.service_type ?? undefined,
+        }));
+        setDateBasedAttendance(list);
+      });
+  }, [activeSub, attendanceSubTab]);
+
+  // Supabase 데이터가 없을 때 메인 대시보드와 동일한 db.attendance(주차별)를 날짜 기준으로 변환해 사용
+  const attendanceListForDashboard = useMemo(() => {
+    if (dateBasedAttendance.length > 0) return dateBasedAttendance;
+    const year = new Date().getFullYear();
+    const list: Attendance[] = [];
+    db.members.forEach((m) => {
+      const att = db.attendance?.[m.id] ?? {};
+      for (let w = 1; w <= 52; w++) {
+        const st = att[w];
+        if (st !== "p" && st !== "o") continue;
+        const date = getSundayForWeekNum(year, w);
+        list.push({
+          id: `${m.id}-${w}`,
+          member_id: m.id,
+          date,
+          status: st === "p" ? "출석" : "온라인",
+          service_type: "주일1부예배",
+        });
+      }
+    });
+    return list;
+  }, [dateBasedAttendance, db.members, db.attendance]);
+
   const persist = useCallback(() => { /* 실제 저장은 아래 useEffect(db) 디바운스 저장으로 수행 */ }, []);
 
   const didMountRef = useRef(false);
@@ -3047,7 +3100,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               {attendanceSubTab === "dashboard" && (
                 <AttendanceDashboard
                   members={db.members}
-                  attendanceList={dateBasedAttendance}
+                  attendanceList={attendanceListForDashboard}
                   serviceTypes={serviceTypes}
                   onOpenCheck={() => setAttendanceSubTab("check")}
                   onOpenAbsentee={() => setAttendanceSubTab("absentee")}
@@ -3064,7 +3117,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               {attendanceSubTab === "absentee" && (
                 <AbsenteeManagement
                   members={db.members}
-                  attendanceList={dateBasedAttendance}
+                  attendanceList={attendanceListForDashboard}
                   consecutiveWeeks={3}
                   toast={toast}
                   onAddVisit={(memberId) => { setNoteTargetId(memberId); setShowNoteModal(true); toast("심방 등록은 기도/메모에서 기록해 주세요", "ok"); }}
@@ -3073,7 +3126,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               {attendanceSubTab === "statistics" && (
                 <AttendanceStatistics
                   members={db.members}
-                  attendanceList={dateBasedAttendance}
+                  attendanceList={attendanceListForDashboard}
                   toast={toast}
                   onExportExcel={(csv, filename) => {
                     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

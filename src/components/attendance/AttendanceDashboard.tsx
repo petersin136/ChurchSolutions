@@ -36,18 +36,31 @@ function getActiveMembers(members: Member[]) {
   return members.filter((m) => (m.member_status || m.status) === "활동" || !m.member_status);
 }
 
-/** 주일 날짜 목록 (최근 12주) */
+/** 로컬 날짜를 YYYY-MM-DD로 포맷 (toISOString은 UTC라 KST 등에서 하루 밀림) */
+function fmtDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** 이번 주 일요일부터 과거 count주의 일요일 목록 */
 function getRecentSundays(count: number): string[] {
+  const now = new Date();
+  const thisSunday = new Date(now);
+  thisSunday.setDate(now.getDate() - now.getDay());
   const out: string[] = [];
-  const d = new Date();
   for (let i = 0; i < count; i++) {
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? 0 : -7);
-    const sun = new Date(d);
-    sun.setDate(diff - i * 7);
-    out.unshift(sun.toISOString().slice(0, 10));
+    const sun = new Date(thisSunday);
+    sun.setDate(thisSunday.getDate() - i * 7);
+    out.unshift(fmtDate(sun));
   }
   return out;
+}
+
+/** 날짜(YYYY-MM-DD)가 속한 주의 일요일 날짜 반환 */
+function getSundayOfWeek(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const sun = new Date(d);
+  sun.setDate(d.getDate() - d.getDay());
+  return fmtDate(sun);
 }
 
 export function AttendanceDashboard({
@@ -77,17 +90,42 @@ export function AttendanceDashboard({
     return map;
   }, [attendanceList]);
 
+  /** 주 단위 집계 (일요일이 아닌 날 저장된 출석도 같은 주로 합침) */
+  const byWeekService = useMemo(() => {
+    const map: Record<string, Record<string, Attendance[]>> = {};
+    attendanceList.forEach((a) => {
+      if (!a.date) return;
+      const weekKey = getSundayOfWeek(a.date);
+      if (!map[weekKey]) map[weekKey] = {};
+      const st = a.service_type || "주일예배";
+      if (!map[weekKey][st]) map[weekKey][st] = [];
+      map[weekKey][st].push(a);
+    });
+    return map;
+  }, [attendanceList]);
+
+  /** 이번 주 출석 인원 (주일1부/주일예배, 주 단위 집계, 동일인 중복 제거) */
   const thisWeekPresent = useMemo(() => {
-    const st = "주일1부예배";
-    const list = byDateService[thisWeek]?.[st] || byDateService[thisWeek]?.["주일예배"] || [];
-    return list.filter((a) => a.status === "출석" || a.status === "온라인").length;
-  }, [byDateService, thisWeek]);
+    const st1 = "주일1부예배";
+    const st2 = "주일예배";
+    const list = byWeekService[thisWeek]?.[st1] || byWeekService[thisWeek]?.[st2] || [];
+    const presentIds = new Set<string>();
+    list.forEach((a) => {
+      if (a.status === "출석" || a.status === "온라인") presentIds.add(a.member_id);
+    });
+    return presentIds.size;
+  }, [byWeekService, thisWeek]);
 
   const lastWeekPresent = useMemo(() => {
-    const st = "주일1부예배";
-    const list = byDateService[lastWeek]?.[st] || byDateService[lastWeek]?.["주일예배"] || [];
-    return list.filter((a) => a.status === "출석" || a.status === "온라인").length;
-  }, [byDateService, lastWeek]);
+    const st1 = "주일1부예배";
+    const st2 = "주일예배";
+    const list = byWeekService[lastWeek]?.[st1] || byWeekService[lastWeek]?.[st2] || [];
+    const presentIds = new Set<string>();
+    list.forEach((a) => {
+      if (a.status === "출석" || a.status === "온라인") presentIds.add(a.member_id);
+    });
+    return presentIds.size;
+  }, [byWeekService, lastWeek]);
 
   const attendanceRate = totalActive > 0 ? Math.round((thisWeekPresent / totalActive) * 100) : 0;
   const prevRate = totalActive > 0 && lastWeekPresent > 0 ? Math.round((lastWeekPresent / totalActive) * 100) : 0;
@@ -96,62 +134,63 @@ export function AttendanceDashboard({
   const monthlyRate = useMemo(() => {
     const thisMonth = new Date().getMonth();
     const thisYear = new Date().getFullYear();
-    const monthStarts = recentSundays.filter((d) => {
+    const monthSundays = recentSundays.filter((d) => {
       const [y, m] = d.split("-").map(Number);
       return y === thisYear && m - 1 === thisMonth;
     });
     let totalPresent = 0;
     let totalPossible = 0;
-    monthStarts.forEach((d) => {
-      const list = (byDateService[d]?.["주일1부예배"] || byDateService[d]?.["주일예배"] || []);
-      const present = list.filter((a) => a.status === "출석" || a.status === "온라인").length;
-      totalPresent += present;
+    monthSundays.forEach((weekKey) => {
+      const list = byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"] || [];
+      const presentIds = new Set<string>();
+      list.forEach((a) => {
+        if (a.status === "출석" || a.status === "온라인") presentIds.add(a.member_id);
+      });
+      totalPresent += presentIds.size;
       totalPossible += totalActive;
     });
     return totalPossible > 0 ? Math.round((totalPresent / totalPossible) * 100) : 0;
-  }, [byDateService, recentSundays, totalActive]);
+  }, [byWeekService, recentSundays, totalActive]);
 
   const consecutiveAbsent = useMemo(() => {
     const n = 3;
-    const lastNSundays = recentSundays.slice(-n);
+    const lastNWeeks = recentSundays.slice(-n);
     const absentIds: string[] = [];
     activeMembers.forEach((m) => {
-      const hadAttendance = lastNSundays.some((d) => {
-        const list = (byDateService[d]?.["주일1부예배"] || byDateService[d]?.["주일예배"] || []).filter(
-          (a) => a.member_id === m.id && (a.status === "출석" || a.status === "온라인")
-        );
-        return list.length > 0;
+      const hadAttendance = lastNWeeks.some((weekKey) => {
+        const list = byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"] || [];
+        return list.some((a) => a.member_id === m.id && (a.status === "출석" || a.status === "온라인"));
       });
       if (!hadAttendance) absentIds.push(m.id);
     });
     return absentIds;
-  }, [activeMembers, byDateService, recentSundays]);
+  }, [activeMembers, byWeekService, recentSundays]);
 
   const weeklyTrendData = useMemo(() => {
-    return recentSundays.map((d) => {
-      const st1 = byDateService[d]?.["주일1부예배"] || byDateService[d]?.["주일예배"] || [];
-      const st2 = byDateService[d]?.["수요예배"] || [];
-      const st3 = byDateService[d]?.["금요기도회"] || [];
-      const sun = st1.filter((a) => a.status === "출석" || a.status === "온라인").length;
-      const wed = st2.filter((a) => a.status === "출석" || a.status === "온라인").length;
-      const fri = st3.filter((a) => a.status === "출석" || a.status === "온라인").length;
-      const label = d.slice(5).replace("-", "/");
-      return { week: label, 주일: sun, 수요: wed, 금요: fri };
+    return recentSundays.map((weekKey) => {
+      const st1 = byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"] || [];
+      const st2 = byWeekService[weekKey]?.["수요예배"] || [];
+      const st3 = byWeekService[weekKey]?.["금요기도회"] || [];
+      const sunSet = new Set<string>();
+      const wedSet = new Set<string>();
+      const friSet = new Set<string>();
+      st1.forEach((a) => { if (a.status === "출석" || a.status === "온라인") sunSet.add(a.member_id); });
+      st2.forEach((a) => { if (a.status === "출석" || a.status === "온라인") wedSet.add(a.member_id); });
+      st3.forEach((a) => { if (a.status === "출석" || a.status === "온라인") friSet.add(a.member_id); });
+      const label = weekKey.slice(5).replace("-", "/");
+      return { week: label, 주일: sunSet.size, 수요: wedSet.size, 금요: friSet.size };
     });
-  }, [byDateService, recentSundays]);
+  }, [byWeekService, recentSundays]);
 
   const deptRates = useMemo(() => {
     const deptMap: Record<string, { present: number; total: number }> = {};
+    const list = byWeekService[thisWeek]?.["주일1부예배"] || byWeekService[thisWeek]?.["주일예배"] || [];
+    const presentIds = new Set(list.filter((a) => a.status === "출석" || a.status === "온라인").map((a) => a.member_id));
     activeMembers.forEach((m) => {
       const dept = m.dept || "기타";
       if (!deptMap[dept]) deptMap[dept] = { present: 0, total: 0 };
       deptMap[dept].total += 1;
-      const list =
-        byDateService[thisWeek]?.["주일1부예배"] ||
-        byDateService[thisWeek]?.["주일예배"] ||
-        [];
-      const present = list.some((a) => a.member_id === m.id && (a.status === "출석" || a.status === "온라인"));
-      if (present) deptMap[dept].present += 1;
+      if (presentIds.has(m.id)) deptMap[dept].present += 1;
     });
     return Object.entries(deptMap).map(([dept, { present, total }]) => ({
       dept,
@@ -159,17 +198,17 @@ export function AttendanceDashboard({
       present,
       total,
     }));
-  }, [activeMembers, byDateService, thisWeek]);
+  }, [activeMembers, byWeekService, thisWeek]);
 
   const heatmapData = useMemo(() => {
     const weeks = recentSundays.slice(-8);
-    return weeks.map((d) => {
-      const list = byDateService[d]?.["주일1부예배"] || byDateService[d]?.["주일예배"] || [];
-      const present = list.filter((a) => a.status === "출석" || a.status === "온라인").length;
-      const rate = totalActive > 0 ? (present / totalActive) * 100 : 0;
-      return { date: d.slice(5), rate: Math.round(rate), present, total: totalActive };
+    return weeks.map((weekKey) => {
+      const list = byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"] || [];
+      const presentIds = new Set(list.filter((a) => a.status === "출석" || a.status === "온라인").map((a) => a.member_id));
+      const rate = totalActive > 0 ? (presentIds.size / totalActive) * 100 : 0;
+      return { date: weekKey.slice(5), rate: Math.round(rate), present: presentIds.size, total: totalActive };
     });
-  }, [byDateService, recentSundays, totalActive]);
+  }, [byWeekService, recentSundays, totalActive]);
 
   return (
     <div className="space-y-6">

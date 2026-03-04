@@ -21,15 +21,26 @@ function getActiveMembers(members: Member[]) {
   return members.filter((m) => (m.member_status || m.status) === "활동" || !m.member_status);
 }
 
+function fmtLocalDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function getSundayOfWeek(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const sun = new Date(d);
+  sun.setDate(d.getDate() - d.getDay());
+  return fmtLocalDate(sun);
+}
+
 /** 기간 내 주일 날짜 목록 */
 function getSundaysBetween(start: string, end: string): string[] {
   const out: string[] = [];
-  const s = new Date(start);
-  const e = new Date(end);
+  const s = new Date(start + "T12:00:00");
+  const e = new Date(end + "T12:00:00");
   const d = new Date(s);
   while (d.getDay() !== 0) d.setDate(d.getDate() + 1);
   while (d <= e) {
-    out.push(d.toISOString().slice(0, 10));
+    out.push(fmtLocalDate(d));
     d.setDate(d.getDate() + 7);
   }
   return out;
@@ -54,9 +65,10 @@ export function AttendanceStatistics({
   const [attendanceFetched, setAttendanceFetched] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const useSupabase = !!supabase;
-  const members = useSupabase ? membersFetched : (membersProp ?? []);
-  const attendanceList = useSupabase ? attendanceFetched : (attendanceListProp ?? []);
+  const propsProvided = !!(attendanceListProp && attendanceListProp.length > 0);
+  const useSupabase = !!supabase && !propsProvided;
+  const members = propsProvided ? (membersProp ?? []) : (useSupabase ? membersFetched : (membersProp ?? []));
+  const attendanceList = propsProvided ? attendanceListProp : (useSupabase ? attendanceFetched : (attendanceListProp ?? []));
 
   const loadFromSupabase = useCallback(async () => {
     if (!supabase) return;
@@ -85,30 +97,31 @@ export function AttendanceStatistics({
   const sundays = useMemo(() => getSundaysBetween(startDate, endDate), [startDate, endDate]);
   const totalSundays = sundays.length;
 
-  const byMemberDate = useMemo(() => {
+  const byMemberWeek = useMemo(() => {
     const map: Record<string, Record<string, string>> = {};
     attendanceList.forEach((a) => {
       if (!a.date) return;
       const st = a.service_type || "주일예배";
       const isSun = st.includes("주일") || st === "주일예배";
       if (!isSun) return;
+      const weekKey = getSundayOfWeek(a.date);
       if (!map[a.member_id]) map[a.member_id] = {};
       const status = a.status === "출석" || a.status === "온라인" ? "출석" : a.status;
-      map[a.member_id][a.date] = status;
+      if (!map[a.member_id][weekKey] || status === "출석") map[a.member_id][weekKey] = status;
     });
     return map;
   }, [attendanceList]);
 
   const tableRows = useMemo(() => {
     let list = activeMembers.map((m) => {
-      const byDate = byMemberDate[m.id] || {};
+      const byWeek = byMemberWeek[m.id] || {};
       let 출석 = 0,
         온라인 = 0,
         결석 = 0,
         병결 = 0,
         기타 = 0;
       sundays.forEach((d) => {
-        const s = byDate[d];
+        const s = byWeek[d];
         if (s === "출석") 출석++;
         else if (s === "온라인") 온라인++;
         else if (s === "결석") 결석++;
@@ -132,7 +145,7 @@ export function AttendanceStatistics({
     if (sortBy === "rate") list = list.sort((a, b) => b.출석률 - a.출석률);
     else list = list.sort((a, b) => (a.member.name || "").localeCompare(b.member.name || ""));
     return list;
-  }, [activeMembers, byMemberDate, sundays, totalSundays, deptFilter, sortBy]);
+  }, [activeMembers, byMemberWeek, sundays, totalSundays, deptFilter, sortBy]);
 
   const deptSummary = useMemo(() => {
     const deptMap: Record<string, { total: number; sumRate: number; count: number }> = {};
@@ -157,8 +170,8 @@ export function AttendanceStatistics({
       if (!byMonth[monthKey]) byMonth[monthKey] = { present: 0, total: 0 };
       byMonth[monthKey].total += activeMembers.length;
       activeMembers.forEach((m) => {
-        const byDate = byMemberDate[m.id] || {};
-        const s = byDate[d];
+        const byWeek = byMemberWeek[m.id] || {};
+        const s = byWeek[d];
         if (s === "출석" || s === "온라인") byMonth[monthKey].present += 1;
       });
     });
@@ -168,7 +181,7 @@ export function AttendanceStatistics({
       present: v.present,
       total: v.total,
     }));
-  }, [sundays, activeMembers, byMemberDate]);
+  }, [sundays, activeMembers, byMemberWeek]);
 
   const depts = useMemo(() => Array.from(new Set(activeMembers.map((m) => m.dept).filter(Boolean))) as string[], [activeMembers]);
 
