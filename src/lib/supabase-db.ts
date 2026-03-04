@@ -69,16 +69,29 @@ export async function loadDBFromSupabase(): Promise<DB> {
     }
   });
 
+  const answeredPrayerKeys: string[] = [];
+  const answeredPrayerDates: Record<string, string> = {};
   (notesRes.data ?? []).forEach((r: Record<string, unknown>) => {
     const mid = r.member_id as string;
     if (!db.notes[mid]) db.notes[mid] = [];
-    db.notes[mid].push({
+    const createdAt = (r.created_at as string) || "";
+    const note: Note & { createdAt: string } = {
       date: (r.date as string) || "",
       type: ((r.type as string) || "memo") as Note["type"],
       content: (r.content as string) || "",
-      createdAt: (r.created_at as string) || "",
-    });
+      createdAt,
+    };
+    db.notes[mid].push(note);
+    if (note.type === "prayer" && (r.answered === true || r.answered_at)) {
+      const key = `note\t${mid}\t${note.date}\t${createdAt}\t${note.content}`;
+      answeredPrayerKeys.push(key);
+      if (r.answered_at) answeredPrayerDates[key] = String(r.answered_at).slice(0, 10);
+    }
   });
+  if (answeredPrayerKeys.length > 0) {
+    db.answeredPrayerKeys = [...new Set([...(db.answeredPrayerKeys || []), ...answeredPrayerKeys])];
+    db.answeredPrayerDates = { ...(db.answeredPrayerDates || {}), ...answeredPrayerDates };
+  }
 
   (budgetRes.data ?? []).forEach((r: Record<string, unknown>) => {
     if (r.fiscal_year != null && r.category_type != null && r.category != null) {
@@ -476,21 +489,45 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   }
   */
 
+  const aKeys = new Set(db.answeredPrayerKeys || []);
+  const aDates = db.answeredPrayerDates || {};
   for (const m of db.members) {
     if (!/^[0-9a-f-]{36}$/i.test(m.id)) continue;
-    await supabase.from("notes").delete().eq("member_id", m.id);
     const list = db.notes[m.id] ?? [];
+    console.log("[Delete Debug] Supabase 요청:", { table: "notes", member_id: m.id, deleteThenInsert: true, remainingCount: list.length });
+    const delRes = await supabase.from("notes").delete().eq("member_id", m.id);
+    console.log("[Delete Debug] Supabase 응답 (delete):", { data: delRes.data, error: delRes.error });
     if (list.length > 0) {
-      await supabase.from("notes").insert(
-        list.map((n) => ({
+      const rows = list.map((n) => {
+        const key = `note\t${m.id}\t${n.date}\t${n.createdAt || n.date}\t${n.content}`;
+        const answered = aKeys.has(key);
+        const answeredAt = aDates[key] || null;
+        return {
           member_id: m.id,
           date: n.date,
           type: n.type,
           content: n.content,
-        }))
-      );
+          created_at: n.createdAt || new Date().toISOString(),
+          answered: answered || false,
+          answered_at: answered && answeredAt ? answeredAt : null,
+        };
+      });
+      const { data, error } = await supabase.from("notes").insert(rows);
+      console.log("[Delete Debug] Supabase 응답 (insert):", { data, error });
+      if (error) {
+        await supabase.from("notes").insert(
+          list.map((n) => ({
+            member_id: m.id,
+            date: n.date,
+            type: n.type,
+            content: n.content,
+            created_at: n.createdAt || new Date().toISOString(),
+          }))
+        );
+      }
     }
   }
+  console.log("[Delete Debug] Supabase notes 동기화 루프 완료");
 
   for (const p of db.plans) {
     if (/^[0-9a-f-]{36}$/i.test(p.id)) {

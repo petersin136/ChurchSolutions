@@ -148,8 +148,17 @@ export function AbsenteeManagement({
         </label>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto pr-4">
         <table className="w-full text-sm">
+          <colgroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col className="w-[1px]" />
+          </colgroup>
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50/50">
               <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">이름</th>
@@ -158,7 +167,7 @@ export function AbsenteeManagement({
               <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">연속 결석</th>
               <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">마지막 출석일</th>
               <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">연락처</th>
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">액션</th>
+              <th className="text-left py-3 pl-4 pr-6 font-semibold text-[#1e3a5f] whitespace-nowrap">액션</th>
             </tr>
           </thead>
           <tbody>
@@ -189,27 +198,27 @@ export function AbsenteeManagement({
                       "-"
                     )}
                   </td>
-                  <td className="py-3 px-4 align-middle">
-                    <div className="flex items-center gap-2 justify-start min-w-[140px]">
-                      {member.phone ? (
-                        <a
-                          href={`tel:${member.phone}`}
-                          className="inline-flex shrink-0 px-3 py-1 rounded-lg border border-gray-200 text-xs font-medium hover:bg-gray-50"
-                        >
-                          전화
-                        </a>
-                      ) : (
-                        <span className="inline-block w-[52px]" aria-hidden />
-                      )}
-                      {onAddVisit && (
+                  <td className="py-3 pl-4 pr-6 align-middle">
+                    <div className="flex items-center gap-2">
+                      <div className="w-[60px] shrink-0 flex items-center justify-start">
+                        {member.phone ? (
+                          <a
+                            href={`tel:${member.phone}`}
+                            className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-medium hover:bg-gray-50 whitespace-nowrap"
+                          >
+                            전화
+                          </a>
+                        ) : null}
+                      </div>
+                      {onAddVisit ? (
                         <button
                           type="button"
                           onClick={() => onAddVisit(member.id)}
-                          className="inline-flex shrink-0 px-3 py-1 rounded-lg bg-[#1e3a5f] text-white text-xs font-medium hover:opacity-90"
+                          className="inline-flex items-center justify-center shrink-0 px-3 py-1 rounded-lg bg-[#1e3a5f] text-white text-xs font-medium hover:opacity-90 whitespace-nowrap"
                         >
                           심방 등록
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </td>
                 </tr>

@@ -478,6 +478,8 @@ export interface DB {
   notes: Record<string, Note[]>;
   /** 기도 응답됨 키 목록 (타임라인/프로필 기도 구분용) */
   answeredPrayerKeys?: string[];
+  /** 기도 응답일자 (키 -> YYYY-MM-DD) */
+  answeredPrayerDates?: Record<string, string>;
   plans: Plan[];
   sermons: Sermon[];
   visits: Visit[];

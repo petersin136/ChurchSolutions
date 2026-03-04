@@ -103,7 +103,7 @@ export function Pagination({
             style={{
               ...btnBase,
               flexShrink: 0,
-              ...(p === safePage ? { background: "#3b82f6", color: "white", borderColor: "#3b82f6" } : {}),
+              ...(p === safePage ? { background: "#4F46E5", color: "white", borderColor: "#4F46E5" } : {}),
             }}
           >
             {p}

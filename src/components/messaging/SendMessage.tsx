@@ -53,7 +53,7 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
     let q = supabase.from("members").select("id, name, phone, dept, mokjang, member_status, status").not("phone", "is", null);
     if (search.trim()) q = q.ilike("name", `%${search.trim()}%`);
     if (deptFilter) q = q.eq("dept", deptFilter);
-    if (groupFilter) q = q.or(`mokjang.eq.${groupFilter},group.eq.${groupFilter}`);
+    if (groupFilter) q = q.eq("mokjang", groupFilter);
     (async () => {
       try {
         const { data, error } = await q;

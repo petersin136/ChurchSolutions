@@ -32,10 +32,12 @@ const LAYOUT = {
   mainHeaderPaddingMob: "0 12px",
   mainContentPadding: 24,
   mainContentPaddingMob: 12,
-  mainBg: "#f8f7f4",
-  headerTitleFontSize: 20,
-  headerTitleFontSizeMob: 16,
-  headerDescFontSize: 13,
+  mainBg: "#f8f9fc",
+  headerTitleFontSize: 24,
+  headerTitleFontSizeMob: 18,
+  headerDescFontSize: 14,
+  headerTitleColor: "#1F2937",
+  headerDescColor: "#9CA3AF",
   border: "#e5e7eb",
   textMuted: "#6b7280",
 } as const;
@@ -318,6 +320,7 @@ export function UnifiedPageLayout({
                   fontSize: mob ? LAYOUT.headerTitleFontSizeMob : LAYOUT.headerTitleFontSize,
                   fontWeight: 700,
                   letterSpacing: -0.5,
+                  color: LAYOUT.headerTitleColor,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -326,7 +329,7 @@ export function UnifiedPageLayout({
                 {headerTitle}
               </div>
               {!mob && headerDesc && (
-                <div style={{ fontSize: LAYOUT.headerDescFontSize, color: LAYOUT.textMuted }}>{headerDesc}</div>
+                <div style={{ fontSize: LAYOUT.headerDescFontSize, color: LAYOUT.headerDescColor }}>{headerDesc}</div>
               )}
             </div>
           </div>

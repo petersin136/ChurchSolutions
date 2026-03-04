@@ -369,24 +369,134 @@ function AttDot({ status, onClick }: { status: string; onClick: () => void }) {
   return <div onClick={e => { e.stopPropagation(); onClick(); }} style={{ width: 14, height: 14, borderRadius: "50%", background: colors[s] || C.border, cursor: "pointer", transition: "transform 0.15s", border: `2px solid ${(colors[s] || C.border)}30` }} title={s === "p" ? "출석" : s === "a" ? "결석" : "미체크"} />;
 }
 
+function fmtNoteDate(s: string) {
+  if (!s) return "";
+  const d = new Date(s);
+  const now = new Date();
+  const diff = Math.floor((now.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
+  if (diff === 0) return "오늘";
+  if (diff === 1) return "어제";
+  if (diff < 7) return `${diff}일 전`;
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: { n: Note; mbrName?: string; mbrDept?: string; onClick?: () => void; answered?: boolean; onToggleAnswered?: () => void }) {
-  const borderColors: Record<string, string> = { memo: C.accent, prayer: C.purple, visit: C.teal, event: C.pink };
-  const badgeV: Record<string, string> = { memo: "gray", prayer: "purple", visit: "teal", event: "pink" };
+  const [hover, setHover] = useState(false);
   const isPrayer = n.type === "prayer";
   return (
-    <div onClick={onClick} style={{ background: answered ? `${C.bg}ee` : C.bg, borderRadius: 10, padding: "14px 16px", borderLeft: `3px solid ${borderColors[n.type] || C.accent}`, marginBottom: 10, cursor: onClick ? "pointer" : "default" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
-        <span style={{ fontSize: 15, color: C.navy, fontWeight: 700 }}>{n.date}{mbrName ? ` · ${mbrName}` : ""}{mbrDept ? ` (${mbrDept})` : ""}</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {isPrayer && onToggleAnswered && (
-            <button type="button" onClick={e => { e.stopPropagation(); onToggleAnswered(); }} style={{ padding: "4px 10px", fontSize: 12, border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, background: answered ? C.success : C.border, color: answered ? "#fff" : C.textMuted }}>
-              {answered ? "✓ 응답됨" : "응답됨 표시"}
-            </button>
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        background: "#fff",
+        borderRadius: 16,
+        border: "1px solid #e5e7eb",
+        boxShadow: hover ? "0 4px 12px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.04)",
+        transform: hover ? "translateY(-1px)" : "none",
+        padding: 24,
+        marginBottom: 12,
+        cursor: onClick ? "pointer" : "default",
+        transition: "all 0.2s ease",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+          flexWrap: "wrap",
+          gap: 8,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: "#1F2937" }}>{mbrName ?? "?"}</span>
+          {mbrDept && (
+            <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#EEF2FF", color: "#4F46E5" }}>
+              {mbrDept}
+            </span>
           )}
-          <SBadge variant={badgeV[n.type] || "gray"}>{NOTE_ICONS[n.type] || "📝"} {NOTE_LABELS[n.type] || "메모"}</SBadge>
         </div>
+        <span style={{ fontSize: 14, color: "#9CA3AF" }}>{fmtNoteDate(n.date)}</span>
       </div>
-      <div style={{ fontSize: 14, lineHeight: 1.6, color: C.text, textDecoration: answered ? "line-through" : undefined, opacity: answered ? 0.85 : 1 }}>{n.content}</div>
+      <div
+        style={{
+          fontSize: 15,
+          lineHeight: 1.6,
+          color: "#374151",
+          textDecoration: answered ? "line-through" : undefined,
+          opacity: answered ? 0.85 : 1,
+          display: "-webkit-box",
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+      >
+        {n.content}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 8,
+          marginTop: 12,
+          opacity: hover ? 1 : 0.85,
+          transition: "opacity 0.2s",
+        }}
+      >
+        {isPrayer && onToggleAnswered && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onToggleAnswered(); }}
+            style={{
+              padding: "4px 12px",
+              fontSize: 12,
+              border: "none",
+              borderRadius: 9999,
+              cursor: "pointer",
+              fontWeight: 500,
+              background: "transparent",
+              color: "#6B7280",
+            }}
+          >
+            {answered ? "✓ 응답됨" : "응답체크 표시"}
+          </button>
+        )}
+        {isPrayer && (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "2px 8px",
+              borderRadius: 9999,
+              fontSize: 12,
+              fontWeight: 500,
+              background: "#EEF2FF",
+              color: "#4F46E5",
+            }}
+          >
+            {NOTE_ICONS[n.type] || "📝"} {NOTE_LABELS[n.type] || "메모"}
+          </span>
+        )}
+        {!isPrayer && (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "2px 8px",
+              borderRadius: 9999,
+              fontSize: 12,
+              fontWeight: 500,
+              background: badgeBg[n.type === "visit" ? "teal" : n.type === "event" ? "pink" : "gray"]?.[1] ?? "rgba(107,123,158,0.1)",
+              color: badgeBg[n.type === "visit" ? "teal" : n.type === "event" ? "pink" : "gray"]?.[0] ?? C.textMuted,
+            }}
+          >
+            {NOTE_ICONS[n.type] || "📝"} {NOTE_LABELS[n.type] || "메모"}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -1307,7 +1417,7 @@ function getPrayerAnsweredKey(n: Note & { mbrId: string; isProfilePrayer?: boole
 }
 
 /* ====== Notes ====== */
-function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; openDetail: (id: string) => void; openNoteModal: (id?: string) => void }) {
+function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; openPrayerModal: (id: string) => void; openNoteModal: (id?: string) => void }) {
   const mob = useIsMobile();
   const listRefNotes = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
@@ -1369,23 +1479,57 @@ function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; s
     persist();
   };
 
+  const [searchFocused, setSearchFocused] = useState(false);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
-          <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted }}><Icons.Search /></div>
-          <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="이름, 기도제목 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none" }} />
+          <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }}><Icons.Search /></div>
+          <input
+            value={search}
+            onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            placeholder="제목, 기도제목 검색"
+            style={{
+              width: "100%",
+              height: 44,
+              padding: "0 14px 0 40px",
+              fontFamily: "inherit",
+              fontSize: 14,
+              background: "#fff",
+              border: `1px solid ${searchFocused ? "#4F46E5" : "#e5e7eb"}`,
+              borderRadius: 12,
+              color: C.text,
+              outline: "none",
+              boxShadow: searchFocused ? "0 0 0 3px rgba(79,70,229,0.1)" : "none",
+              transition: "border-color 0.2s, box-shadow 0.2s",
+            }}
+          />
         </div>
-        <select value={typeF} onChange={e => { setTypeF(e.target.value); setCurrentPage(1); }} style={{ height: mob ? 36 : 40, padding: "0 12px", fontFamily: "inherit", fontSize: mob ? 12 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
-          <option value="all">전체 유형</option>
+        <select
+          value={typeF}
+          onChange={e => { setTypeF(e.target.value); setCurrentPage(1); }}
+          style={{ height: 44, padding: "0 12px 0 14px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}
+        >
+          <option value="all">전체 공유</option>
           <option value="memo">📝 메모</option><option value="prayer">🙏 기도</option>
           <option value="visit">🏠 심방</option><option value="event">🎉 경조</option>
         </select>
-        <Btn variant="accent" size="sm" onClick={() => openNoteModal()}>+ 기록</Btn>
+        {typeF === "all" && (
+          <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#ECFDF5", color: "#059669" }}>
+            전체 공유중
+          </span>
+        )}
+        <Btn variant="accent" size="sm" onClick={() => openNoteModal()} style={{ borderRadius: 10 }}>+ 기록</Btn>
       </div>
       <div ref={listRefNotes}>
         {filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: 48, color: C.textMuted }}><div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>📝</div><div style={{ fontSize: 17, fontWeight: 600 }}>기록이 없습니다</div></div>
+          <div style={{ textAlign: "center", padding: 48, color: "#9CA3AF" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🙏</div>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "#374151", marginBottom: 8 }}>등록된 기도제목이 없습니다</div>
+            <Btn variant="accent" size="sm" onClick={() => openNoteModal()} style={{ borderRadius: 10 }}>+ 기록</Btn>
+          </div>
         ) : (
           <>
             {paginatedNotes.map((n, i) => {
@@ -1397,7 +1541,7 @@ function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; s
                   n={n}
                   mbrName={n.mbrName}
                   mbrDept={n.mbrDept}
-                  onClick={() => openDetail(n.mbrId)}
+                  onClick={() => openPrayerModal(n.mbrId)}
                   answered={n.type === "prayer" ? answered : undefined}
                   onToggleAnswered={n.type === "prayer" ? () => toggleAnswered(key) : undefined}
                 />
@@ -1406,6 +1550,285 @@ function NotesSub({ db, setDb, persist, openDetail, openNoteModal }: { db: DB; s
             <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRefNotes.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ====== Prayer Modal (기도/메모 전용) ====== */
+function fmtPrayerDate(s: string) {
+  if (!s) return "";
+  const d = new Date(s);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function PrayerModal({
+  memberId,
+  member,
+  db,
+  setDb,
+  persist,
+  toast,
+  onClose,
+  mob,
+}: {
+  memberId: string;
+  member: Member;
+  db: DB;
+  setDb: (fn: (prev: DB) => DB) => void;
+  persist: () => void;
+  toast: (m: string, t?: string) => void;
+  onClose: () => void;
+  mob: boolean;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [filter, setFilter] = useState<"all" | "active" | "answered">("all");
+  const [addDate, setAddDate] = useState(todayStr());
+  const [addContent, setAddContent] = useState("");
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [hoverCardKey, setHoverCardKey] = useState<string | null>(null);
+
+  const answeredSet = useMemo(() => new Set(db.answeredPrayerKeys || []), [db.answeredPrayerKeys]);
+  const answeredDates = db.answeredPrayerDates || {};
+
+  const prayerList = useMemo(() => {
+    const list: (Note & { createdAt: string; isProfilePrayer?: boolean })[] = [];
+    const fromNotes = (db.notes[memberId] || []).filter(n => n.type === "prayer");
+    fromNotes.forEach(n => list.push({ ...n, createdAt: n.createdAt || n.date }));
+    const profilePrayer = (member.prayer || "").trim();
+    if (profilePrayer && !fromNotes.some(n => n.content === profilePrayer)) {
+      list.push({
+        date: member.createdAt?.slice(0, 10) || member.created_at?.slice(0, 10) || todayStr(),
+        type: "prayer",
+        content: profilePrayer,
+        createdAt: member.createdAt || member.created_at || new Date().toISOString(),
+        isProfilePrayer: true,
+      });
+    }
+    return list.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""));
+  }, [db.notes, memberId, member.prayer, member.createdAt, member.created_at]);
+
+  const filteredList = useMemo(() => {
+    if (filter === "all") return prayerList;
+    return prayerList.filter(n => {
+      const key = getPrayerAnsweredKey({ ...n, mbrId: memberId, isProfilePrayer: n.isProfilePrayer });
+      const answered = answeredSet.has(key);
+      if (filter === "answered") return answered;
+      return !answered;
+    });
+  }, [prayerList, filter, answeredSet, memberId]);
+
+  const toggleAnswered = (key: string) => {
+    const list = db.answeredPrayerKeys || [];
+    const next = list.includes(key) ? list.filter(k => k !== key) : [...list, key];
+    const dates = { ...(db.answeredPrayerDates || {}) };
+    if (next.includes(key)) dates[key] = todayStr();
+    else delete dates[key];
+    setDb(prev => ({ ...prev, answeredPrayerKeys: next, answeredPrayerDates: dates }));
+    persist();
+  };
+
+  const addPrayer = () => {
+    const content = addContent.trim();
+    if (!content) { toast("기도제목을 입력하세요", "err"); return; }
+    setDb(prev => {
+      const notes = { ...prev.notes };
+      if (!notes[memberId]) notes[memberId] = [];
+      notes[memberId] = [...notes[memberId], { date: addDate, type: "prayer", content, createdAt: new Date().toISOString() }];
+      let members = prev.members;
+      if (!member.prayer) members = members.map(m => m.id === memberId ? { ...m, prayer: content } : m);
+      return { ...prev, notes, members };
+    });
+    persist();
+    setAddContent("");
+    setAddDate(todayStr());
+    toast("기도제목이 등록되었습니다", "ok");
+  };
+
+  const deletePrayer = (n: Note & { createdAt: string; isProfilePrayer?: boolean }) => {
+    const id = `${memberId}|${n.date}|${n.createdAt || n.date}|${n.content?.slice(0, 20)}`;
+    console.log("[Delete Debug] 삭제 시작, id:", id);
+    if (typeof window !== "undefined" && !window.confirm("이 기도제목을 삭제하시겠습니까?")) return;
+    const key = getPrayerAnsweredKey({ ...n, mbrId: memberId, isProfilePrayer: n.isProfilePrayer });
+    setDb(prev => {
+      const notes = { ...prev.notes };
+      if (!n.isProfilePrayer) {
+        notes[memberId] = (notes[memberId] || []).filter(
+          x => !(x.type === "prayer" && x.date === n.date && (x.createdAt || x.date) === n.createdAt && x.content === n.content)
+        );
+      }
+      const answeredPrayerKeys = (prev.answeredPrayerKeys || []).filter(k => k !== key);
+      const answeredPrayerDates = { ...(prev.answeredPrayerDates || {}) };
+      delete answeredPrayerDates[key];
+      if (n.isProfilePrayer && member.prayer) {
+        const members = prev.members.map(m => m.id === memberId ? { ...m, prayer: "" } : m);
+        return { ...prev, notes, members, answeredPrayerKeys, answeredPrayerDates };
+      }
+      return { ...prev, notes, answeredPrayerKeys, answeredPrayerDates };
+    });
+    console.log("[Delete Debug] state 업데이트 완료");
+    persist();
+    setEditingKey(null);
+    toast("삭제되었습니다", "warn");
+  };
+
+  const saveEdit = (n: Note & { createdAt: string; isProfilePrayer?: boolean }) => {
+    const content = editContent.trim();
+    if (!content) { setEditingKey(null); return; }
+    setDb(prev => {
+      if (n.isProfilePrayer) {
+        const members = prev.members.map(m => m.id === memberId ? { ...m, prayer: content } : m);
+        return { ...prev, members };
+      }
+      const notes = { ...prev.notes };
+      const arr = notes[memberId] || [];
+      const idx = arr.findIndex(x => x.type === "prayer" && x.date === n.date && (x.createdAt || x.date) === n.createdAt && x.content === n.content);
+      if (idx >= 0) {
+        const copy = [...arr];
+        copy[idx] = { ...copy[idx], content };
+        notes[memberId] = copy;
+      }
+      return { ...prev, notes };
+    });
+    persist();
+    setEditingKey(null);
+    toast("수정되었습니다", "ok");
+  };
+
+  const navBg = C.navy;
+  const width = mob ? undefined : 720;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(27,42,74,0.4)", backdropFilter: "blur(4px)", padding: mob ? 0 : 20 }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: mob ? "20px 20px 0 0" : 20, width: mob ? "100%" : "90%", maxWidth: width, maxHeight: mob ? "92vh" : "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(27,42,74,0.15)" }}>
+        {/* Header — 남색 */}
+        <div style={{ background: navBg, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#fff" }}>
+              {member.photo ? <img src={member.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (member.name || "?")[0]}
+            </div>
+            <div>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>{member.name}</span>
+              {member.dept && (
+                <span style={{ marginLeft: 8, display: "inline-flex", alignItems: "center", padding: "2px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "rgba(255,255,255,0.2)", color: "#fff" }}>
+                  {member.dept}
+                </span>
+              )}
+            </div>
+          </div>
+          <button type="button" onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "none", width: 36, height: 36, borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }} aria-label="닫기">✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 4, padding: "12px 20px", borderBottom: `1px solid ${C.border}`, background: "#fff", flexShrink: 0 }}>
+          {(["all", "active", "answered"] as const).map(f => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 8,
+                border: "none",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                background: filter === f ? C.navy : "transparent",
+                color: filter === f ? "#fff" : C.textMuted,
+              }}
+            >
+              {f === "all" ? "전체" : f === "active" ? "기도중" : "응답완료"}
+            </button>
+          ))}
+        </div>
+
+        {/* List — scroll */}
+        <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+          {filteredList.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 40, color: "#9CA3AF", fontSize: 15 }}>
+              등록된 기도제목이 없습니다
+              <div style={{ marginTop: 12, fontSize: 13 }}>아래 입력창에서 바로 작성해 보세요.</div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {filteredList.map((n, i) => {
+                const key = getPrayerAnsweredKey({ ...n, mbrId: memberId, isProfilePrayer: n.isProfilePrayer });
+                const answered = answeredSet.has(key);
+                const cardKey = `${n.date}-${n.createdAt}-${i}`;
+                const isHover = hoverCardKey === cardKey;
+                const isEditing = editingKey === cardKey;
+                return (
+                  <div
+                    key={cardKey}
+                    onMouseEnter={() => setHoverCardKey(cardKey)}
+                    onMouseLeave={() => setHoverCardKey(null)}
+                    style={{
+                      background: answered ? "#F0FDF4" : "#fff",
+                      borderRadius: 16,
+                      border: "1px solid #e5e7eb",
+                      padding: 16,
+                      transition: "background 0.2s",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <span style={{ fontSize: 14, color: "#9CA3AF" }}>{fmtPrayerDate(n.date)}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); toggleAnswered(key); }}
+                          style={{ padding: "4px 10px", fontSize: 12, border: "none", borderRadius: 9999, cursor: "pointer", fontWeight: 500, background: answered ? "#10B981" : "transparent", color: answered ? "#fff" : "#6B7280" }}
+                        >
+                          {answered ? "✓ 응답완료" : "기도중"}
+                        </button>
+                        {(isHover || isEditing) && (
+                          <>
+                            <button type="button" onClick={() => { setEditingKey(cardKey); setEditContent(n.content); }} style={{ padding: 4, border: "none", background: "none", cursor: "pointer", color: C.textMuted, fontSize: 12 }}>편집</button>
+                            <button type="button" onClick={() => deletePrayer(n)} style={{ padding: 4, border: "none", background: "none", cursor: "pointer", color: "#EF4444", fontSize: 12 }}>삭제</button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {isEditing ? (
+                      <div style={{ marginTop: 8 }}>
+                        <textarea value={editContent} onChange={e => setEditContent(e.target.value)} style={{ width: "100%", padding: 10, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 14, minHeight: 80, resize: "vertical" }} />
+                        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                          <Btn variant="ghost" size="sm" onClick={() => setEditingKey(null)}>취소</Btn>
+                          <Btn variant="accent" size="sm" onClick={() => saveEdit(n)}>저장</Btn>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 15, color: "#374151", lineHeight: 1.6 }}>{n.content}</div>
+                        {answered && answeredDates[key] && (
+                          <div style={{ fontSize: 12, color: "#059669", marginTop: 6 }}>응답일 {fmtPrayerDate(answeredDates[key])}</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom form — 고정 */}
+        <div style={{ padding: 16, borderTop: `1px solid ${C.border}`, background: "#fff", flexShrink: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div style={{ flex: "0 0 auto", minWidth: 140 }}>
+                <CalendarDropdown label="날짜" value={addDate} onChange={setAddDate} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.navy, marginBottom: 6 }}>기도제목</label>
+                <textarea value={addContent} onChange={e => setAddContent(e.target.value)} placeholder="기도제목을 입력하세요..." style={{ width: "100%", padding: "12px 14px", border: `1px solid ${C.border}`, borderRadius: 12, fontSize: 15, minHeight: 48, resize: "vertical", fontFamily: "inherit" }} />
+              </div>
+              <div style={{ flex: "0 0 auto", alignSelf: "flex-end" }}>
+                <Btn variant="accent" size="sm" onClick={addPrayer} style={{ borderRadius: 10, padding: "12px 20px" }}>등록</Btn>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1587,7 +2010,12 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
                       <div key={i} style={{ flex: 1, height: "100%", background: [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed][i - 1] ? C.success : C.borderLight, marginRight: i < 4 ? 2 : 0 }} />
                     ))}
                   </div>
-                  <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6 }}>{done}/4주 완료</div>
+                  <div style={{ display: "flex", marginTop: 6, gap: 2 }}>
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} style={{ flex: 1, fontSize: 10, fontWeight: 600, color: C.textMuted, textAlign: "center" }}>{i}주차</div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{done}/4주 완료</div>
                 </Card>
               );
             })}
@@ -2172,6 +2600,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [programDetailMemberId, setProgramDetailMemberId] = useState<string | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
+  const [prayerModalMemberId, setPrayerModalMemberId] = useState<string | null>(null);
 
   // Member form
   const [fName, setFName] = useState(""); const [fDept, setFDept] = useState(""); const [fRole, setFRole] = useState("");
@@ -2210,7 +2639,19 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [dateBasedAttendance, setDateBasedAttendance] = useState<Attendance[]>([]);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(DEFAULT_SERVICE_TYPES);
 
-  const persist = useCallback(() => { /* 부모에서 db 변경 시 자동 저장 */ }, []);
+  const persist = useCallback(() => { /* 실제 저장은 아래 useEffect(db) 디바운스 저장으로 수행 */ }, []);
+
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    const t = setTimeout(() => {
+      saveDb?.(db).catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [db, saveDb]);
 
   const toastIdRef = useRef(0);
   const toastTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -2369,6 +2810,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   };
 
   const openDetail = useCallback((id: string) => { setDetailId(id); setShowDetailModal(true); }, []);
+  const openPrayerModal = useCallback((id: string) => { setPrayerModalMemberId(id); }, []);
 
   const deleteMember = (id: string) => {
     if (typeof window !== "undefined" && !window.confirm("삭제하시겠습니까?")) return;
@@ -2562,7 +3004,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               {attendanceSubTab === "weekly" && <AttendanceSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} setCurrentWeek={setCurrentWeek} />}
             </>
           )}
-          {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openDetail={openDetail} openNoteModal={openNoteModal} />}
+          {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openPrayerModal={openPrayerModal} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
           {activeSub === "reports" && <ReportsSub db={db} currentWeek={currentWeek} toast={toast} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} />}
@@ -2670,7 +3112,24 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       {/* New Family Program Detail Modal */}
       {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} onSaved={() => setDb(prev => { void saveDb?.(prev); return prev; })} saveDb={saveDb} toast={toast} mob={mob} />}
 
-      {/* Detail Modal — Member 360° 뷰 */}
+      {/* Prayer Modal — 기도/메모 페이지에서 이름 클릭 시 */}
+      {prayerModalMemberId && (() => {
+        const member = db.members.find(x => x.id === prayerModalMemberId);
+        return member ? (
+          <PrayerModal
+            memberId={prayerModalMemberId}
+            member={member}
+            db={db}
+            setDb={setDb}
+            persist={persist}
+            toast={toast}
+            onClose={() => setPrayerModalMemberId(null)}
+            mob={mob}
+          />
+        ) : null;
+      })()}
+
+      {/* Detail Modal — Member 360° 뷰 (성도 관리 등에서만 사용) */}
       <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} title="" width={mob ? undefined : 720}>
         {detailMember && (
           <div style={{ maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
