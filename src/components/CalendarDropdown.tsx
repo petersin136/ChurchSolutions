@@ -65,10 +65,11 @@ export function CalendarDropdown({
 
   useEffect(() => {
     if (open && viewMode === "year" && yearListRef.current) {
-      const el = yearListRef.current.querySelector(`[data-year="${year}"]`);
+      const y = view.getFullYear();
+      const el = yearListRef.current.querySelector(`[data-year="${y}"]`);
       if (el) (el as HTMLElement).scrollIntoView({ block: "nearest", behavior: "auto" });
     }
-  }, [open, viewMode, year]);
+  }, [open, viewMode, view]);
 
   useEffect(() => {
     if (!open) return;

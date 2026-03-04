@@ -114,7 +114,7 @@ export interface NewFamilyProgram {
   created_at?: string;
 }
 
-export type AttStatus = "p" | "a" | "n";
+export type AttStatus = "p" | "o" | "a" | "n";
 
 /** 날짜+예배별 출결 (Phase 3) */
 export interface Attendance {

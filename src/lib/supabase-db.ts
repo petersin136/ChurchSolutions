@@ -582,7 +582,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       cell_group_assigned: p.cell_group_assigned ?? null,
     };
     ["week1_checks", "week2_checks", "week3_checks", "week4_checks"].forEach((key, i) => {
-      const arr = (p as Record<string, unknown>)[key] as WeekChecks | undefined;
+      const arr = (p as unknown as Record<string, unknown>)[key] as WeekChecks | undefined;
       if (arr && Array.isArray(arr) && arr.length >= 4) row[key] = JSON.stringify(arr.slice(0, 4));
     });
     await supabase.from("new_family_program").upsert(row as Record<string, never>, { onConflict: "id" });
