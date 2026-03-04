@@ -292,7 +292,7 @@ function Modal({ open, onClose, title, children, footer }: { open: boolean; onCl
   );
 }
 
-function FormField({ label, children }: { label: string; children: ReactNode }) {
+function FormField({ label, children }: { label: React.ReactNode; children: ReactNode }) {
   return <div style={{ marginBottom: 16 }}><label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>{label}</label>{children}</div>;
 }
 
