@@ -1769,7 +1769,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           <FormField label="상태"><FSelect value={vStatus} onChange={v => setVStatus(v as VisitStatus)}>{Object.entries(STATUS_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</FSelect></FormField>
         </div>
         <FormField label="심방 내용"><FTextarea value={vSummary} onChange={setVSummary} placeholder="심방 내용을 상세히 기록하세요" /></FormField>
-        <FormField label={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icons.Prayer /> 기도 제목</span>}><FTextarea value={vPrayer} onChange={setVPrayer} placeholder="기도 제목을 기록하세요" style={{ minHeight: 60 }} /></FormField>
+        <FormField label="기도 제목"><FTextarea value={vPrayer} onChange={setVPrayer} placeholder="기도 제목을 기록하세요" style={{ minHeight: 60 }} /></FormField>
         <FormField label="사진 (선택)">
           <input type="file" accept="image/*" onChange={e => setVPhotoFile(e.target.files?.[0] ?? null)} style={{ fontSize: 13 }} />
           {vPhotoFile && <span style={{ fontSize: 12, color: C.textMuted, marginTop: 4, display: "block" }}>{vPhotoFile.name}</span>}
