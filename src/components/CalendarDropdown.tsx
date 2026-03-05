@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_KR = ["일", "월", "화", "수", "목", "금", "토"];
 const YEAR_MIN = 1940;
 const YEAR_MAX = 2030;
-const ACCENT = "#f47458";
+/** 앱 테마와 통일 (남색) */
+const ACCENT = "#1b2a4a";
 const ITEM_H = 40;
 const VISIBLE = 5;
 
@@ -160,6 +162,8 @@ interface CalendarDropdownProps {
   id?: string;
   className?: string;
   style?: React.CSSProperties;
+  /** 작은 트리거(출석부 등 행 내 배치용), 높이 36px */
+  compact?: boolean;
 }
 
 export function CalendarDropdown({
@@ -172,11 +176,16 @@ export function CalendarDropdown({
   id,
   className,
   style,
+  compact = false,
 }: CalendarDropdownProps) {
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState(() => (value ? parseYMD(value) : new Date()));
   const [mode, setMode] = useState<"calendar" | "wheel">("calendar");
+  const [alignRight, setAlignRight] = useState(false);
+  const [portalPosition, setPortalPosition] = useState<{ top: number; left?: number; right?: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
+  const POPUP_WIDTH = 320;
 
   const today = new Date();
   const todayYMD = toYMD(today);
@@ -189,10 +198,36 @@ export function CalendarDropdown({
     if (!open) setMode("calendar");
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open) {
+      setPortalPosition(null);
+      return;
+    }
+    if (typeof window === "undefined" || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const spaceOnRight = window.innerWidth - rect.right;
+    const spaceOnLeft = rect.left;
+    const useRight = spaceOnRight < POPUP_WIDTH && spaceOnLeft >= POPUP_WIDTH;
+    setAlignRight(useRight);
+    const top = rect.bottom + 8;
+    const maxW = Math.min(window.innerWidth - 24, 360);
+    if (useRight) {
+      const right = Math.max(12, window.innerWidth - rect.right);
+      setPortalPosition({ top, right });
+    } else {
+      let left = rect.left;
+      if (left + maxW > window.innerWidth - 12) left = window.innerWidth - maxW - 12;
+      if (left < 12) left = 12;
+      setPortalPosition({ top, left });
+    }
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target) || portalRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -284,17 +319,18 @@ export function CalendarDropdown({
           display: "flex",
           alignItems: "center",
           gap: 8,
-          padding: "12px 14px",
+          padding: compact ? "6px 12px" : "12px 14px",
           borderRadius: 12,
           border: "1px solid #e5e7eb",
           background: disabled ? "#f9fafb" : "#fff",
-          fontSize: 15,
+          fontSize: compact ? 14 : 15,
           color: value ? "#1a1f36" : "#9ca3af",
           fontFamily: "inherit",
           cursor: disabled ? "not-allowed" : "pointer",
           outline: "none",
           textAlign: "left",
           opacity: disabled ? 0.7 : 1,
+          minHeight: compact ? 36 : undefined,
         }}
       >
         <span style={{ flex: 1 }}>{value ? displayValue(value) : "날짜 선택"}</span>
@@ -306,19 +342,22 @@ export function CalendarDropdown({
         </svg>
       </button>
 
-      {open && (
+      {open && portalPosition && typeof document !== "undefined" && createPortal(
         <div
+          ref={portalRef}
           style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            marginTop: 8,
+            position: "fixed",
+            top: portalPosition.top,
+            ...(portalPosition.left != null ? { left: portalPosition.left } : {}),
+            ...(portalPosition.right != null ? { right: portalPosition.right } : {}),
+            minWidth: POPUP_WIDTH,
+            width: compact ? POPUP_WIDTH : "100%",
+            maxWidth: "min(100vw - 24px, 360px)",
             background: "#fff",
             borderRadius: 20,
             border: "1px solid #e5e7eb",
             boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
-            zIndex: 1000,
+            zIndex: 100000,
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
@@ -364,14 +403,14 @@ export function CalendarDropdown({
             <div style={{ padding: "4px 16px 0" }}>
               {/* Day headers */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
-                {DAYS.map((d, i) => (
-                  <div key={d} style={{ textAlign: "center", fontSize: 12, fontWeight: 500, color: i === 0 ? "#f47458" : "#b0b0b0", padding: "4px 0" }}>
+                {DAY_KR.map((d, i) => (
+                  <div key={d} style={{ textAlign: "center", fontSize: 12, fontWeight: 500, color: i === 0 ? ACCENT : "#9ca3af", padding: "4px 0" }}>
                     {d}
                   </div>
                 ))}
               </div>
               {/* Date grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, maxWidth: 320 }}>
                 {grid.map(({ d, current, ymd }) => {
                   const selected = selYMD === ymd;
                   const isToday = todayYMD === ymd;
@@ -383,7 +422,7 @@ export function CalendarDropdown({
                       style={{
                         width: "100%",
                         aspectRatio: "1",
-                        maxWidth: 42,
+                        maxWidth: 40,
                         margin: "0 auto",
                         display: "flex",
                         alignItems: "center",
@@ -442,7 +481,7 @@ export function CalendarDropdown({
                 onClick={confirm}
                 style={{
                   flex: 1,
-                  padding: "12px 0",
+                  padding: "12px 12px",
                   borderRadius: 14,
                   border: "none",
                   background: ACCENT,
@@ -452,13 +491,16 @@ export function CalendarDropdown({
                   cursor: "pointer",
                   fontFamily: "inherit",
                   letterSpacing: -0.3,
+                  whiteSpace: "nowrap",
+                  minWidth: 0,
                 }}
               >
                 {displayBtn(sel)}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

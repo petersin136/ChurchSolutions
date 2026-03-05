@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Member } from "@/types/db";
 import type { ServiceType } from "@/types/db";
+import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 const STATUSES = ["출석", "온라인", "결석", "병결", "기타"] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -37,6 +38,8 @@ export interface AttendanceCheckProps {
   /** 토스트 (Supabase 저장 결과) */
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
   getCurrentUserId?: () => string | null;
+  /** 출석 저장 성공 후 호출 (성도 관리 등 다른 화면에 즉시 반영용) */
+  onAttendanceSaved?: () => void;
 }
 
 function getActiveMembers(members: Member[]) {
@@ -48,6 +51,7 @@ export function AttendanceCheck({
   serviceTypes,
   toast,
   getCurrentUserId,
+  onAttendanceSaved,
 }: AttendanceCheckProps) {
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [selectedDate, setSelectedDate] = useState(today);
@@ -182,26 +186,29 @@ export function AttendanceCheck({
     setTimeout(() => setSaved(false), 2000);
     setSaving(false);
     loadAttendance(selectedDate, selectedServiceType);
+    onAttendanceSaved?.();
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible gap-2 md:gap-3 bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4">
-        <label className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs md:text-sm text-gray-600">날짜</span>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-h-[36px] md:min-h-0"
-          />
+      <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4 bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4">
+        <label className="flex items-center gap-2 shrink-0">
+          <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">날짜</span>
+          <div className="min-w-[160px] md:min-w-[180px]">
+            <CalendarDropdown
+              value={selectedDate}
+              onChange={setSelectedDate}
+              compact
+              style={{ marginBottom: 0 }}
+            />
+          </div>
         </label>
-        <label className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs md:text-sm text-gray-600">예배</span>
+        <label className="flex items-center gap-2 shrink-0">
+          <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">예배</span>
           <select
             value={selectedServiceType}
             onChange={(e) => setSelectedServiceType(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-w-[120px] md:min-w-[140px] min-h-[36px] md:min-h-0"
+            className="rounded-lg border border-gray-200 pl-3 pr-9 py-2 text-sm min-w-[120px] md:min-w-[140px] min-h-[36px] md:min-h-0"
           >
             {serviceTypes.filter((s) => s.is_active !== false).map((s) => (
               <option key={s.id} value={s.name}>{s.name}</option>
@@ -209,22 +216,25 @@ export function AttendanceCheck({
             {serviceTypes.length === 0 && <option value="주일1부예배">주일1부예배</option>}
           </select>
         </label>
-        <label className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs md:text-sm text-gray-600">부서</span>
-          <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-h-[36px] md:min-h-0">
+        <label className="flex items-center gap-2 shrink-0">
+          <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">부서</span>
+          <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-w-[72px] min-h-[36px] md:min-h-0">
             <option value="">전체</option>
             {depts.map((d) => (
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
         </label>
-        <input
-          type="search"
-          placeholder="이름 검색"
-          value={searchName}
-          onChange={(e) => setSearchName(e.target.value)}
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm w-32 md:w-40 min-h-[36px] md:min-h-0 flex-shrink-0"
-        />
+        <label className="flex items-center gap-2 shrink-0">
+          <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">이름 검색</span>
+          <input
+            type="search"
+            placeholder="이름 검색"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm w-28 md:w-40 min-h-[36px] md:min-h-0"
+          />
+        </label>
       </div>
 
       {loading ? (

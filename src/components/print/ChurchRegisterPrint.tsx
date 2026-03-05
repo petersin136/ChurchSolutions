@@ -32,6 +32,7 @@ export async function generateChurchRegisterPdf(
   y += 14;
 
   doc.setFontSize(10);
+  const baptismTypeDisplay = useChimrye && member.baptism_type === "세례" ? "침례" : (member.baptism_type ?? "-");
   const rows: [string, string][] = [
     ["성명", member.name ?? "-"],
     ["부서", member.dept ?? "-"],
@@ -41,7 +42,7 @@ export async function generateChurchRegisterPdf(
     ["연락처", member.phone ?? "-"],
     ["주소", (member.address ?? "-").slice(0, 50)],
     [dateLabel, member.baptism_date ?? "-"],
-    [typeLabel, member.baptism_type ?? "-"],
+    [typeLabel, baptismTypeDisplay],
     ["등록일", member.registered_date ?? "-"],
     ["비고", (member.memo ?? "-").slice(0, 60)],
   ];

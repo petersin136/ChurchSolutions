@@ -169,9 +169,10 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
   const isBaptist = Boolean(denom && denom.includes("침례"));
   const baptismCertLabel = isBaptist ? "침례증명서" : "세례증명서";
   const baptismInfoLabel = isBaptist ? "침례" : "세례";
+  const baptismDisplayValue = isBaptist && member.baptism_type === "세례" ? "침례" : member.baptism_type;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col flex-1 min-h-0">
       {/* 프로필 헤더 */}
       <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8e] text-white p-6 flex flex-wrap items-center gap-4">
         <div className="w-[100px] h-[100px] rounded-full border-4 border-white/30 overflow-hidden bg-white/20 flex items-center justify-center shrink-0">
@@ -239,7 +240,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 min-h-0 overflow-y-auto p-5">
         {activeTab === "info" && (
           <div className="space-y-4">
             <InfoRow label="성별" value={member.gender || "-"} />
@@ -252,7 +253,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
             <InfoRow label="직분" value={member.role || "-"} />
             <InfoRow label="목장" value={member.group || "-"} />
             <InfoRow label="소그룹" value={member.small_group || "-"} />
-            <InfoRow label={baptismInfoLabel} value={[member.baptism_type, member.baptism_date].filter(Boolean).join(" ") || "-"} />
+            <InfoRow label={baptismInfoLabel} value={[baptismDisplayValue, member.baptism_date].filter(Boolean).join(" ") || "-"} />
             <InfoRow label="등록일" value={member.registered_date || "-"} />
             {member.family_id && (
               <div>

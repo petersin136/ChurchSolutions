@@ -150,7 +150,11 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
     const roleData = Object.entries(byRole).map(([name, value], i) => ({ name, value, fill: COLORS[i % COLORS.length] }));
     const deptData = Object.entries(byDept).map(([name, value]) => ({ name, 인원: value }));
     const mokjangData = Object.entries(byMokjang).map(([name, value]) => ({ name, 인원: value }));
-    const baptismData = Object.entries(byBaptism).map(([name, value], i) => ({ name, value, fill: COLORS[i % COLORS.length] }));
+    const isChimrye = Boolean(db.settings?.denomination?.trim().includes("침례"));
+    const baptismDataRaw = Object.entries(byBaptism).map(([name, value], i) => ({ name, value, fill: COLORS[i % COLORS.length] }));
+    const baptismData = isChimrye
+      ? baptismDataRaw.filter((d) => d.name !== "유아세례").map((d) => ({ ...d, name: d.name === "세례" ? "침례" : d.name }))
+      : baptismDataRaw;
     const statusPieData = Object.entries(byStatusPie).map(([name, value], i) => ({ name, value, fill: COLORS[i % COLORS.length] }));
     const newTrendData = Object.entries(newByMonth)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -172,7 +176,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       statusPieData,
       newTrendData,
     };
-  }, [members, yearStr, currentYear]);
+  }, [members, yearStr, currentYear, db.settings?.denomination]);
 
   // A5-2 출결: Supabase date 기반 우선, 없으면 db.attendance(week 기반) fallback
   const attendanceStats = useMemo(() => {

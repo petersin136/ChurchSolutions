@@ -9,7 +9,13 @@ import { CalendarDropdown } from "@/components/CalendarDropdown";
 const ROLES = ["담임목사", "부목사", "전도사", "장로", "안수집사", "권사", "집사", "성도", "청년", "학생"];
 const VISIT_PATHS: Member["visit_path"][] = ["지인소개", "전도", "자진방문", "이전교회", "기타"];
 const FAMILY_RELATIONS: Member["family_relation"][] = ["본인", "배우자", "자녀", "부모", "형제", "기타"];
-const BAPTISM_TYPES: Member["baptism_type"][] = ["유아세례", "세례", "입교", "미세례"];
+const BAPTISM_TYPES_ALL: Member["baptism_type"][] = ["유아세례", "세례", "입교", "미세례"];
+/** 침례교회용: 유아세례 제거, 세례 → 침례 표기 (value는 DB 호환으로 '세례' 유지) */
+const BAPTISM_OPTIONS_CHIMRYE: { value: Member["baptism_type"]; label: string }[] = [
+  { value: "세례", label: "침례" },
+  { value: "입교", label: "입교" },
+  { value: "미세례", label: "미세례" },
+];
 const MEMBER_STATUSES: Member["member_status"][] = ["활동", "휴적", "은퇴", "별세", "이적", "제적", "미등록"];
 
 function formatPhone(v: string): string {
@@ -40,6 +46,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
   const baptismSectionLabel = useChimrye ? "침례/가족" : "세례/가족";
   const baptismTypeLabel = useChimrye ? "침례 구분" : "세례 구분";
   const baptismDateLabel = useChimrye ? "침례일" : "세례일";
+  const baptismTypeOptions = useChimrye ? BAPTISM_OPTIONS_CHIMRYE : BAPTISM_TYPES_ALL.map((b) => ({ value: b, label: b }));
 
   const [name, setName] = useState("");
   const [gender, setGender] = useState("");
@@ -506,8 +513,8 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
             <label className={labelClass}>{baptismTypeLabel}</label>
             <select value={baptismType} onChange={(e) => setBaptismType((e.target.value || "") as Member["baptism_type"])} className={inputClass}>
               <option value="">선택</option>
-              {BAPTISM_TYPES.map((b) => (
-                <option key={b} value={b}>{b}</option>
+              {baptismTypeOptions.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </div>

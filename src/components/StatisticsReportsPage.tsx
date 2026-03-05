@@ -66,7 +66,7 @@ export function StatisticsReportsPage({ db, toast }: StatisticsReportsPageProps)
       {subTab === "senior" && <SeniorPastorReport db={db} toast={toast} />}
       {subTab === "department" && <DepartmentReport db={db} toast={toast} />}
       {subTab === "visitPlan" && <VisitPlanReport db={db} toast={toast} />}
-      {subTab === "upcoming" && <UpcomingEvents members={db.members} />}
+      {subTab === "upcoming" && <UpcomingEvents members={db.members} db={db} />}
     </UnifiedPageLayout>
   );
 }

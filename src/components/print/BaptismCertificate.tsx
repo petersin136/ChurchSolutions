@@ -35,7 +35,8 @@ export async function generateBaptismCertificatePdf(
   y += 20;
 
   doc.setFontSize(10);
-  doc.text(`위 사람은 본 교회에서 ${member.baptism_type ?? defaultType}를 받았음을 증명합니다.`, 105, y, { align: "center" });
+  const displayType = useChimrye && member.baptism_type === "세례" ? "침례" : (member.baptism_type ?? defaultType);
+  doc.text(`위 사람은 본 교회에서 ${displayType}를 받았음을 증명합니다.`, 105, y, { align: "center" });
   y += 10;
   doc.text(`${dateLabel}: ${member.baptism_date ?? "-"}`, 105, y, { align: "center" });
   y += 18;

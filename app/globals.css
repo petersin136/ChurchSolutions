@@ -66,6 +66,45 @@
     scrollbar-width: none;
   }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* 모던 드롭다운 공통 (네이티브 select) — 트리거·옵션 색 통일 */
+  select,
+  select.select-modern,
+  .select-modern {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    background-color: var(--surface);
+    color: var(--text1);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 10px 40px 10px 14px;
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.4;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+  }
+  select.select-modern:hover,
+  .select-modern:hover {
+    border-color: var(--text3);
+  }
+  select.select-modern:focus,
+  .select-modern:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-light);
+  }
+  select.select-modern option,
+  .select-modern option {
+    background: var(--surface);
+    color: var(--text1);
+    padding: 10px 14px;
+  }
 }
 
 @layer components {
@@ -263,7 +302,7 @@
   }
   .modal-bg.open { opacity: 1; visibility: visible; }
   .modal {
-    width: 100%; max-width: 560px; max-height: 92vh;
+    width: 100%; max-width: 560px; height: 92vh; max-height: 92vh;
     background: var(--surface);
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     overflow: hidden; display: flex; flex-direction: column;
@@ -281,7 +320,7 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; color: var(--text2);
   }
-  .modal-body { flex: 1; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
+  .modal-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
   .modal-foot {
     padding: 12px 20px; border-top: 0.5px solid var(--sep);
     display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0;
@@ -649,13 +688,14 @@
   .modal {
     width: 100%;
     max-width: 560px;
-    height: auto;
+    height: 85vh;
     max-height: 85vh;
     border-radius: var(--radius-xl);
     transform: translateY(30px) scale(0.95);
     opacity: 0;
   }
   .modal-bg.open .modal { transform: translateY(0) scale(1); opacity: 1; }
+  .modal-body { min-height: 0; }
   .modal-foot .btn { width: auto; min-height: auto; }
 }
 @media (max-width: 768px) {

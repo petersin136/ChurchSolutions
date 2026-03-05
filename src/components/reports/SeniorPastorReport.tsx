@@ -90,7 +90,7 @@ export function SeniorPastorReport({ db, toast }: SeniorPastorReportProps) {
         </section>
         <section className="md:col-span-2">
           <h3 className="font-semibold text-[#1e3a5f] mb-2">경조사 예정 (이번 주)</h3>
-          <UpcomingEvents members={db.members} />
+          <UpcomingEvents members={db.members} db={db} />
         </section>
       </div>
     </ReportLayout>

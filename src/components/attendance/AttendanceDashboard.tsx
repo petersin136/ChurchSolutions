@@ -67,8 +67,6 @@ export function AttendanceDashboard({
   members,
   attendanceList,
   serviceTypes = [],
-  onOpenCheck,
-  onOpenAbsentee,
   onOpenAbsenteeList,
 }: AttendanceDashboardProps) {
   const activeMembers = useMemo(() => getActiveMembers(members), [members]);
@@ -301,27 +299,6 @@ export function AttendanceDashboard({
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        {onOpenCheck && (
-          <button
-            type="button"
-            onClick={onOpenCheck}
-            className="px-5 py-2.5 rounded-xl bg-[#1e3a5f] text-white text-sm font-semibold hover:opacity-90"
-          >
-            출석 체크
-          </button>
-        )}
-        {onOpenAbsentee && (
-          <button
-            type="button"
-            onClick={onOpenAbsentee}
-            className="px-5 py-2.5 rounded-xl border border-red-200 text-red-700 text-sm font-semibold hover:bg-red-50"
-          >
-            결석자 관리
-          </button>
-        )}
       </div>
     </div>
   );

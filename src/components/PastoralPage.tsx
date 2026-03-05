@@ -7,13 +7,14 @@ import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
-import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Sliders, Heart } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Sliders, Heart, Home, Gift } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics, ServiceTypeSettings } from "@/components/attendance";
 import { ReportModal } from "@/components/report/ReportModal";
+import { ModernSelect } from "@/components/common/ModernSelect";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -50,8 +51,9 @@ const STATUS_BADGE: Record<string, string> = {
 const MEMBER_STATUS_LIST: (string | null)[] = ["활동", "휴적", "은퇴", "별세", "이적", "제적", "미등록"];
 const ROLES_LIST = ["담임목사", "부목사", "전도사", "장로", "안수집사", "권사", "집사", "성도", "청년", "학생"];
 const BAPTISM_LIST = ["유아세례", "세례", "입교", "미세례"];
-const NOTE_ICONS: Record<string, string> = { memo: "📝", prayer: "🙏", visit: "🏠", event: "🎉" };
-const NOTE_LABELS: Record<string, string> = { memo: "메모", prayer: "기도제목", visit: "심방", event: "경조사" };
+const NOTE_ICON_SIZE = 12;
+const NOTE_ICONS: Record<string, ReactNode> = { memo: <FileText size={NOTE_ICON_SIZE} />, prayer: <Heart size={NOTE_ICON_SIZE} />, visit: <Home size={NOTE_ICON_SIZE} />, event: <Gift size={NOTE_ICON_SIZE} /> };
+const NOTE_LABELS: Record<string, string> = { memo: "메모", prayer: "기도", visit: "심방", event: "경조사" };
 
 /* ---------- Colors (same as FinancePage) ---------- */
 const C = {
@@ -91,6 +93,7 @@ const Icons = {
   Card: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
   Mokjang: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
   Printer: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/></svg>,
+  Trash2: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
   New: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>,
   Clipboard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M8 12h8M8 16h8"/></svg>,
   Graduation: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M22 10v6M2 10l10 5 10-5-10-5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>,
@@ -128,13 +131,18 @@ function FormInput({ label, ...props }: { label?: string; [k: string]: unknown }
 }
 
 function FormSelect({ label, options, ...props }: { label?: string; options: { value: string; label: string }[]; [k: string]: unknown }) {
+  const p = props as React.SelectHTMLAttributes<HTMLSelectElement> & { style?: CSSProperties };
+  const value = String(p.value ?? "");
   return (
-    <div style={{ marginBottom: 16 }}>
-      {label && <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>{label}</label>}
-      <select {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", color: C.text, background: "#fff", outline: "none", cursor: "pointer", ...(props.style as CSSProperties || {}) }}>
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    </div>
+    <ModernSelect
+      label={label}
+      options={options}
+      value={value}
+      onChange={(v) => p.onChange?.({ target: { value: v } } as React.ChangeEvent<HTMLSelectElement>)}
+      disabled={p.disabled}
+      id={p.id}
+      style={p.style}
+    />
   );
 }
 
@@ -313,18 +321,34 @@ function DateWheelPicker({ value, onChange, onConfirm }: { value: string; onChan
   );
 }
 
-function Modal({ open, onClose, title, children, width = 540 }: { open: boolean; onClose: () => void; title: string; children: ReactNode; width?: number }) {
+function Modal({ open, onClose, title, children, width = 540, hideScrollbar }: { open: boolean; onClose: () => void; title: string; children: ReactNode; width?: number; hideScrollbar?: boolean }) {
   const mob = useIsMobile();
   if (!open) return null;
+  const modalHeight = mob ? "92vh" : "85vh";
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: mob ? "flex-end" : "center", justifyContent: "center", background: "rgba(27,42,74,0.4)", backdropFilter: "blur(4px)", padding: mob ? 0 : 20 }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: mob ? "20px 20px 0 0" : 20, padding: mob ? 20 : 32, width: mob ? "100%" : "90%", maxWidth: mob ? "100%" : width, maxHeight: mob ? "92vh" : "85vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(27,42,74,0.15)" }}>
-        {mob && <div style={{ width: 36, height: 4, background: C.border, borderRadius: 4, margin: "0 auto 12px" }} />}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: mob ? "20px 20px 0 0" : 20,
+          padding: mob ? 20 : 32,
+          width: mob ? "100%" : "90%",
+          maxWidth: mob ? "100%" : width,
+          height: modalHeight,
+          maxHeight: modalHeight,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          boxShadow: "0 20px 60px rgba(27,42,74,0.15)",
+        }}
+      >
+        {mob && <div style={{ width: 36, height: 4, background: C.border, borderRadius: 4, margin: "0 auto 12px", flexShrink: 0 }} />}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
           <h3 style={{ margin: 0, fontSize: mob ? 17 : 20, color: C.navy }}>{title}</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 8, display: "flex" }}><Icons.X /></button>
         </div>
-        {children}
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }} className={hideScrollbar ? "scrollbar-hide" : undefined}>{children}</div>
       </div>
     </div>
   );
@@ -478,7 +502,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: 
               color: "#4F46E5",
             }}
           >
-            {NOTE_ICONS[n.type] || "📝"} {NOTE_LABELS[n.type] || "메모"}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>{NOTE_ICONS[n.type] ?? <FileText size={NOTE_ICON_SIZE} />} {NOTE_LABELS[n.type] || "메모"}</span>
           </span>
         )}
         {!isPrayer && (
@@ -486,6 +510,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: 
             style={{
               display: "inline-flex",
               alignItems: "center",
+              gap: 4,
               padding: "2px 8px",
               borderRadius: 9999,
               fontSize: 12,
@@ -494,7 +519,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: 
               color: badgeBg[n.type === "visit" ? "teal" : n.type === "event" ? "pink" : "gray"]?.[0] ?? C.textMuted,
             }}
           >
-            {NOTE_ICONS[n.type] || "📝"} {NOTE_LABELS[n.type] || "메모"}
+            {NOTE_ICONS[n.type] ?? <FileText size={NOTE_ICON_SIZE} />} {NOTE_LABELS[n.type] || "메모"}
           </span>
         )}
       </div>
@@ -660,11 +685,14 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
-        <Card style={{ padding: 0, overflow: "hidden" }}>
+        {/* minWidth: 0으로 그리드 셀이 주별 차트 너비에 의해 늘어나 옆 칸(상태별 현황)을 침범하지 않도록 함 */}
+        <div style={{ minWidth: 0 }}>
+        {/* overflow: visible so 연도 선택 드롭다운이 카드에 잘리지 않음 */}
+        <Card style={{ padding: 0, overflow: "visible", minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: mob ? "12px 16px" : "16px 24px", borderBottom: `1px solid ${C.border}` }}>
             <h4 style={{ margin: 0, fontSize: mob ? 14 : 16, fontWeight: 700, color: C.navy }}>출석 추이</h4>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <select value={attChartYear} onChange={e => setAttChartYear(Number(e.target.value))} style={{ height: 32, padding: "0 8px", fontSize: 12, border: `1px solid ${C.border}`, borderRadius: 8, background: "#fff", color: C.navy, cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
+              <select value={attChartYear} onChange={e => setAttChartYear(Number(e.target.value))} className="select-modern" style={{ height: 38, minHeight: 38, padding: "9px 36px 9px 12px", width: "auto", minWidth: 80, fontSize: 13, lineHeight: 1.35, boxSizing: "border-box" }}>
                 {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
               </select>
               <div style={{ display: "flex", gap: 2, background: C.bg, borderRadius: 8, padding: 2 }}>
@@ -676,19 +704,22 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
               </div>
             </div>
           </div>
-          <div style={{ padding: "20px 24px 16px", minHeight: 180 }}>
+          {/* 고정 높이: 연간/월별/주별 전환 시 카드 크기 변하지 않음 (월별·주별 그래프 160px + 주별 안내문) */}
+          <div style={{ padding: "20px 24px 16px", height: 220, minHeight: 220, boxSizing: "border-box", overflow: "hidden" }}>
             {attChartView === "year" && (
-              <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
-                <div style={{ background: C.accentBg, borderRadius: 12, padding: 20, textAlign: "center" }}>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: C.accent }}>{annualSummary.totalPresent}</div>
-                  <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>총 출석 인원·주</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", justifyContent: "center" }}>
+                <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
+                  <div style={{ background: `linear-gradient(135deg, ${C.accentBg} 0%, rgba(255,255,255,0.9) 100%)`, borderRadius: 14, padding: "16px 20px", border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 72 }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: C.accent, letterSpacing: "-0.02em" }}>{annualSummary.totalPresent}</div>
+                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4, fontWeight: 500 }}>총 출석 인원·주</div>
+                  </div>
+                  <div style={{ background: `linear-gradient(135deg, ${C.successBg} 0%, rgba(255,255,255,0.9) 100%)`, borderRadius: 14, padding: "16px 20px", border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 72 }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: C.success, letterSpacing: "-0.02em" }}>{annualSummary.avgRate}%</div>
+                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4, fontWeight: 500 }}>평균 출석률 (기록된 주)</div>
+                  </div>
                 </div>
-                <div style={{ background: C.successBg, borderRadius: 12, padding: 20, textAlign: "center" }}>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: C.success }}>{annualSummary.avgRate}%</div>
-                  <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>평균 출석률 (기록된 주)</div>
-                </div>
-                <div style={{ gridColumn: mob ? "1" : "1 / -1", fontSize: 13, color: C.textMuted }}>
-                  기록된 주: {annualSummary.weeksWithData}주 · 주당 평균 출석 {annualSummary.avgPerWeek}명
+                <div style={{ fontSize: 12, color: C.textMuted, padding: "8px 12px", background: C.bg, borderRadius: 10, border: `1px solid ${C.border}` }}>
+                  기록된 주 <strong style={{ color: C.navy }}>{annualSummary.weeksWithData}주</strong> · 주당 평균 출석 <strong style={{ color: C.navy }}>{annualSummary.avgPerWeek}명</strong>
                 </div>
               </div>
             )}
@@ -708,25 +739,28 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
               </div>
             )}
             {attChartView === "week" && (
-              <div style={{ overflowX: "auto", paddingBottom: 8 }}>
-                <div style={{ display: "flex", alignItems: "end", gap: 2, minWidth: mob ? 520 : 1040, height: 160 }}>
-                  {weeklyAtt.map((v, i) => {
-                    const maxW = Math.max(...weeklyAtt, 1);
-                    const h = Math.max(4, (v / maxW) * 140);
-                    return (
-                      <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                        <span style={{ fontSize: 9, color: C.textMuted }}>{v || ""}</span>
-                        <div style={{ width: "100%", height: h, minHeight: 4, background: `linear-gradient(to top, ${C.teal}, ${C.teal}aa)`, borderRadius: "4px 4px 0 0", transition: "height 0.3s" }} />
-                        <span style={{ fontSize: 9, color: C.textMuted }}>{i + 1}</span>
-                      </div>
-                    );
-                  })}
+              <div style={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+                <div style={{ overflowX: "auto", overflowY: "hidden", paddingBottom: 6, height: 160, flexShrink: 0 }}>
+                  <div style={{ display: "flex", alignItems: "end", gap: 2, minWidth: mob ? 520 : 1040, height: 160 }}>
+                    {weeklyAtt.map((v, i) => {
+                      const maxW = Math.max(...weeklyAtt, 1);
+                      const h = Math.max(4, (v / maxW) * 140);
+                      return (
+                        <div key={i} style={{ flex: 1, minWidth: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                          <span style={{ fontSize: 9, color: C.textMuted }}>{v || ""}</span>
+                          <div style={{ width: "100%", height: h, minHeight: 4, background: `linear-gradient(to top, ${C.teal}, ${C.teal}aa)`, borderRadius: "4px 4px 0 0", transition: "height 0.3s" }} />
+                          <span style={{ fontSize: 9, color: C.textMuted }}>{i + 1}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 8 }}>1~52주 (가로 스크롤 가능)</div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, flexShrink: 0 }}>1~52주 (가로 스크롤 가능)</div>
               </div>
             )}
           </div>
         </Card>
+        </div>
 
         <Card style={{ padding: 0, overflow: "hidden" }}>
           <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
@@ -784,11 +818,11 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 /* ====== Members ====== */
 const ROLE_PRIORITY: Record<string, number> = { "장로": 0, "안수집사": 1, "권사": 2, "집사": 3, "청년": 4, "성도": 5, "학생": 6, "새가족": 7, "영아": 8 };
 
-function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, detailId }: {
+function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, detailId, deleteMember }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
   toast: (m: string, t?: string) => void; currentWeek: number;
   openMemberModal: (id?: string) => void; openDetail: (id: string) => void; openNoteModal: (id: string) => void;
-  detailId: string | null;
+  detailId: string | null; deleteMembers: (ids: string[]) => void;
 }) {
   const mob = useIsMobile();
   const listRef = useRef<HTMLDivElement>(null);
@@ -835,6 +869,10 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const mokjangList = getMokjangList(db);
   const denom = db.settings.denomination?.trim();
   const isChimrye = !!denom && denom.includes("침례");
+  /* 침례교회: 침례·입교만 표시 (DB 값은 '세례' 유지), 미세례·유아세례 제거 */
+  const baptismOptions = isChimrye
+    ? [{ value: "세례", label: "침례" }, { value: "입교", label: "입교" }]
+    : BAPTISM_LIST.map(b => ({ value: b, label: b }));
 
   /* 대시보드와 동일 조건: status !== "졸업/전출" (DashboardSub는 x.status만 사용) */
   const filtered = useMemo(() => {
@@ -901,42 +939,42 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         </div>
         {mob ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, width: "100%" }}>
-            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ flex: "1 1 80px", height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ flex: "1 1 80px", height: 36, width: "auto", fontSize: 12 }}>
               <option value="all">부서</option>
               {depts.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ flex: "1 1 80px", height: 36, padding: "0 8px", fontFamily: "inherit", fontSize: 12, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ flex: "1 1 80px", height: 36, width: "auto", fontSize: 12 }}>
               <option value="all">전체 상태</option>
               {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
             </select>
             <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer" }}><input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} /> 새가족</label>
             <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer" }}><input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} /> 관심성도</label>
             <SBadge variant="accent">{filtered.length}명</SBadge>
-            <Btn onClick={() => openMemberModal()} icon={<Icons.Plus />}>등록</Btn>
+            <Btn onClick={() => openMemberModal()} icon={<Icons.Plus />}>새 교인 등록</Btn>
           </div>
         ) : (
           <>
-            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
               <option value="all">부서</option>
               {depts.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-            <select value={roleF} onChange={e => { setRoleF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={roleF} onChange={e => { setRoleF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
               <option value="all">직분</option>
               {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
-            <select value={mokjangF} onChange={e => { setMokjangF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={mokjangF} onChange={e => { setMokjangF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
               <option value="all">목장</option>
               {mokjangList.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
-            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
+            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
               <option value="all">전체 상태</option>
               {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
             </select>
             <label style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} /> 새가족</label>
             <label style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} /> 관심성도</label>
-            <select value={baptismF} onChange={e => { setBaptismF(e.target.value); setPageList(1); setPageGroup(1); }} style={{ height: 40, padding: "0 32px 0 12px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
-              <option value="all">세례</option>
-              {BAPTISM_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+            <select value={baptismF} onChange={e => { setBaptismF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
+              <option value="all">전체</option>
+              {baptismOptions.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
             </select>
             <SBadge variant="accent">{filtered.length}명</SBadge>
             <Btn onClick={() => openMemberModal()} icon={<Icons.Plus />}>새 교인 등록</Btn>
@@ -947,16 +985,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       {/* ─── 뷰 토글 ─── */}
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
         <button type="button" onClick={() => { setViewMode("list"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "list" ? C.navy : C.bg, color: viewMode === "list" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Table /></span> 테이블</button>
-        {viewMode === "list" && (
-          <>
-            <button type="button" onClick={selectAllFiltered} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>선택 전체</button>
-            <button type="button" onClick={clearSelection} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer" }}>선택 해제</button>
-            {selectedMemberIds.size > 0 && <span style={{ fontSize: 12, color: C.textMuted }}>{selectedMemberIds.size}명 선택</span>}
-          </>
-        )}
-        <button type="button" onClick={() => { setViewMode("card"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "card" ? C.navy : C.bg, color: viewMode === "card" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Card /></span> 카드</button>
+        <button type="button" onClick={() => { setViewMode("card"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "card" ? C.navy : C.bg, color: viewMode === "card" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Card /></span> 카드별</button>
         <button type="button" onClick={() => { setViewMode("group"); setSelectedMokjang(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "group" ? C.navy : C.bg, color: viewMode === "group" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
-        <button type="button" onClick={() => { const csv = ["이름,부서,직분,목장,연락처,상태"].concat(filtered.slice(0, 2000).map(m => `"${(m.name||"").replace(/"/g,'""')}","${(m.dept||"").replace(/"/g,'""')}","${(m.role||"").replace(/"/g,'""')}","${((m.mokjang ?? m.group) || "").replace(/"/g,'""')}","${(m.phone||"").replace(/"/g,'""')}","${(m.member_status||m.status||"").replace(/"/g,'""')}"`)).join("\n"); const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `교인목록_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("엑셀(CSV) 내보내기 완료", "ok"); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Export /></span> Excel 내보내기</button>
+        {viewMode === "list" && selectedMemberIds.size > 0 && (
+          <button type="button" onClick={() => { deleteMembers(Array.from(selectedMemberIds)); setSelectedMemberIds(new Set()); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.danger}`, fontSize: 13, fontFamily: "inherit", background: C.dangerBg || "#fee2e2", color: C.danger, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Trash2 /></span> 삭제 ({selectedMemberIds.size}명)</button>
+        )}
         <div ref={printDropdownRef} style={{ position: "relative" }}>
           <button type="button" onClick={() => setPrintOpen(p => !p)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Printer /></span> 인쇄</button>
           {printOpen && (
@@ -1089,7 +1122,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                     <tr><td colSpan={9} style={{ padding: 48, textAlign: "center", color: C.textMuted }}>
                       <div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>📭</div>
                       <div style={{ fontSize: 17, fontWeight: 600, color: C.text, marginBottom: 6 }}>성도가 없습니다</div>
-                      <div style={{ fontSize: 14 }}>&apos;+ 성도 등록&apos; 버튼으로 첫 성도를 등록해 주세요</div>
+                      <div style={{ fontSize: 14 }}>&apos;새 교인 등록&apos; 버튼으로 첫 성도를 등록해 주세요</div>
                     </td></tr>
                   ) : pageListMembers.map(m => {
                     const ws = (db.attendance[m.id] || {})[currentWeek] || "n";
@@ -1118,9 +1151,9 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                         <td style={{ padding: "12px 16px", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, color: C.purple }}>{prayerSnip}</td>
                         <td style={{ padding: "12px 16px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 12)}…` : "-"}</td>
                         <td style={{ padding: "12px 16px" }}>
-                          {lastNote ? <SBadge variant={lastNote.type === "prayer" ? "purple" : "gray"}>{lastNote.type === "visit" ? "🏠" : (NOTE_ICONS[lastNote.type] || "📝")} {lastNote.content.substring(0, 12)}…</SBadge> : <span style={{ color: C.textFaint, fontSize: 12 }}>-</span>}
+                          {lastNote ? <SBadge variant={lastNote.type === "prayer" ? "purple" : "gray"}><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>{NOTE_ICONS[lastNote.type] ?? <FileText size={NOTE_ICON_SIZE} />} {lastNote.content.substring(0, 12)}…</span></SBadge> : <span style={{ color: C.textFaint, fontSize: 12 }}>-</span>}
                         </td>
-                        <td style={{ padding: "12px 16px" }}><Btn variant="soft" size="sm" onClick={(e) => { e?.stopPropagation(); openNoteModal(m.id); }}>📝</Btn></td>
+                        <td style={{ padding: "12px 16px" }}><Btn variant="soft" size="sm" icon={<FileText size={14} />} onClick={(e) => { e?.stopPropagation(); openNoteModal(m.id); }} /></td>
                       </tr>
                     );
                   })}
@@ -1236,38 +1269,69 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <Card>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: mob ? 8 : 12, marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <select value={attYear} onChange={e => setAttYear(Number(e.target.value))} style={{ height: mob ? 34 : 38, padding: "0 10px", fontFamily: "inherit", fontSize: mob ? 12 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.navy, fontWeight: 600, cursor: "pointer" }}>
-              {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
-            </select>
-            <select value={attMonth} onChange={e => { const v = Number(e.target.value); setAttMonth(v); setCurrentWeek(getWeeksInMonth(v)[0] ?? 1); }} style={{ height: mob ? 34 : 38, padding: "0 10px", fontFamily: "inherit", fontSize: mob ? 12 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, color: C.navy, fontWeight: 600, cursor: "pointer" }}>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map(mo => <option key={mo} value={mo}>{mo}월</option>)}
-            </select>
-            <span style={{ color: C.textMuted, fontSize: 12 }}>·</span>
-            <Btn variant="ghost" size="sm" onClick={goPrevWeek} style={{ width: 32, height: 32, padding: 0, justifyContent: "center" }}>◀</Btn>
-            <span style={{ fontSize: mob ? 15 : 18, fontWeight: 700, minWidth: mob ? 56 : 72, textAlign: "center" }}>제{currentWeek}주</span>
-            <Btn variant="ghost" size="sm" onClick={goNextWeek} style={{ width: 32, height: 32, padding: 0, justifyContent: "center" }}>▶</Btn>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap", minWidth: 0, flex: "1 1 auto" }}>
+            <ModernSelect
+              value={String(attYear)}
+              onChange={(v) => setAttYear(Number(v))}
+              options={[currentYear, currentYear - 1, currentYear - 2].map(y => ({ value: String(y), label: `${y}년` }))}
+              style={{ marginBottom: 0, width: 96, minWidth: 88, flexShrink: 0 }}
+            />
+            <ModernSelect
+              value={String(attMonth)}
+              onChange={(v) => {
+                const num = Number(v);
+                setAttMonth(num);
+                setCurrentWeek(getWeeksInMonth(num)[0] ?? 1);
+              }}
+              options={Array.from({ length: 12 }, (_, i) => i + 1).map(mo => ({ value: String(mo), label: `${mo}월` }))}
+              style={{ marginBottom: 0, width: 80, minWidth: 72, flexShrink: 0 }}
+            />
+            <span style={{ color: C.textMuted, fontSize: 12, flexShrink: 0 }}>·</span>
+            <Btn variant="ghost" size="sm" onClick={goPrevWeek} style={{ width: 32, height: 32, padding: 0, justifyContent: "center", flexShrink: 0 }}>◀</Btn>
+            <span style={{ fontSize: mob ? 15 : 18, fontWeight: 700, minWidth: mob ? 56 : 72, textAlign: "center", flexShrink: 0 }}>제{currentWeek}주</span>
+            <Btn variant="ghost" size="sm" onClick={goNextWeek} style={{ width: 32, height: 32, padding: 0, justifyContent: "center", flexShrink: 0 }}>▶</Btn>
+            {!mob && (
+              <div style={{ display: "flex", gap: 3, flexWrap: "nowrap", alignItems: "center" }}>
+                {weeksInRange.map((w, idx) => {
+                  const hasData = db.members.some(x => db.attendance[x.id] && db.attendance[x.id][w]);
+                  const isActive = w === currentWeek;
+                  return (
+                    <div key={w} onClick={() => setCurrentWeek(w)} style={{
+                      width: 24, height: 24, borderRadius: 6, fontSize: 10, fontWeight: 600, flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                      background: isActive ? C.accent : hasData ? C.accentBg : C.bg,
+                      color: isActive ? "#fff" : hasData ? C.accent : C.textFaint,
+                      border: isActive ? `1.5px solid ${C.accent}30` : "1.5px solid transparent", transition: "all 0.15s",
+                    }}>{idx + 1}</div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          <select value={deptF} onChange={e => setDeptF(e.target.value)} style={{ height: mob ? 36 : 40, padding: "0 12px", fontFamily: "inherit", fontSize: mob ? 12 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none", cursor: "pointer" }}>
-            <option value="all">전체 부서</option>
-            {depts.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
+          <ModernSelect
+            value={deptF}
+            onChange={(v) => setDeptF(v)}
+            options={[{ value: "all", label: "전체 부서" }, ...depts.map(d => ({ value: d, label: d }))]}
+            style={{ marginBottom: 0, width: 120, minWidth: 90, flexShrink: 0 }}
+          />
         </div>
-        {!mob && <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-          {weeksInRange.map((w, idx) => {
-            const hasData = db.members.some(x => db.attendance[x.id] && db.attendance[x.id][w]);
-            const isActive = w === currentWeek;
-            return (
-              <div key={w} onClick={() => setCurrentWeek(w)} style={{
-                width: 24, height: 24, borderRadius: 6, fontSize: 10, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-                background: isActive ? C.accent : hasData ? C.accentBg : C.bg,
-                color: isActive ? "#fff" : hasData ? C.accent : C.textFaint,
-                border: isActive ? `1.5px solid ${C.accent}30` : "1.5px solid transparent", transition: "all 0.15s",
-              }}>{idx + 1}</div>
-            );
-          })}
-        </div>}
+        {mob && (
+          <div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginBottom: 4 }}>
+            {weeksInRange.map((w, idx) => {
+              const hasData = db.members.some(x => db.attendance[x.id] && db.attendance[x.id][w]);
+              const isActive = w === currentWeek;
+              return (
+                <div key={w} onClick={() => setCurrentWeek(w)} style={{
+                  width: 24, height: 24, borderRadius: 6, fontSize: 10, fontWeight: 600,
+                  display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                  background: isActive ? C.accent : hasData ? C.accentBg : C.bg,
+                  color: isActive ? "#fff" : hasData ? C.accent : C.textFaint,
+                  border: isActive ? `1.5px solid ${C.accent}30` : "1.5px solid transparent", transition: "all 0.15s",
+                }}>{idx + 1}</div>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
@@ -1509,27 +1573,28 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
           />
         </div>
         <select
-          value={typeF}
+          value={typeF === "visit" || typeF === "event" ? "all" : typeF}
           onChange={e => { setTypeF(e.target.value); setCurrentPage(1); }}
-          style={{ height: 44, padding: "0 12px 0 14px", fontFamily: "inherit", fontSize: 14, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, color: C.text, outline: "none", cursor: "pointer" }}
+          className="select-modern"
+          style={{ height: 44, width: "auto", minWidth: 120 }}
         >
-          <option value="all">전체 공유</option>
-          <option value="memo">📝 메모</option><option value="prayer">🙏 기도</option>
-          <option value="visit">🏠 심방</option><option value="event">🎉 경조</option>
+          <option value="all">전체</option>
+          <option value="prayer">기도</option>
+          <option value="memo">메모</option>
         </select>
         {typeF === "all" && (
           <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 12px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#ECFDF5", color: "#059669" }}>
-            전체 공유중
+            전체
           </span>
         )}
-        <Btn variant="accent" size="sm" onClick={() => openNoteModal()} style={{ borderRadius: 10, background: "#3b82f6", color: "#fff" }}>+ 기록</Btn>
+        <Btn variant="primary" icon={<Icons.Plus />} onClick={() => openNoteModal()}>+ 기도</Btn>
       </div>
       <div ref={listRefNotes}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: 48 }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🙏</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><Heart size={40} strokeWidth={1.5} style={{ color: C.textMuted }} /></div>
             <div style={{ fontSize: 17, fontWeight: 600, color: "#1F2937", marginBottom: 8 }}>등록된 기도제목이 없습니다</div>
-            <Btn variant="accent" size="sm" onClick={() => openNoteModal()} style={{ borderRadius: 10, background: "#3b82f6", color: "#fff" }}>+ 기록</Btn>
+            <Btn variant="primary" icon={<Icons.Plus />} onClick={() => openNoteModal()}>+ 기도</Btn>
           </div>
         ) : (
           <>
@@ -1699,7 +1764,7 @@ function PrayerModal({
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(27,42,74,0.4)", backdropFilter: "blur(4px)", padding: mob ? 0 : 20 }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: mob ? "20px 20px 0 0" : 20, width: mob ? "100%" : "90%", maxWidth: width, maxHeight: mob ? "92vh" : "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(27,42,74,0.15)" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: mob ? "20px 20px 0 0" : 20, width: mob ? "100%" : "90%", maxWidth: width, height: mob ? "92vh" : "85vh", maxHeight: mob ? "92vh" : "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(27,42,74,0.15)" }}>
         {/* Header — 남색 */}
         <div style={{ background: navBg, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1742,7 +1807,7 @@ function PrayerModal({
         </div>
 
         {/* List — scroll */}
-        <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+        <div ref={listRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 20 }}>
           {filteredList.length === 0 ? (
             <div style={{ textAlign: "center", padding: 40, color: "#9CA3AF", fontSize: 15 }}>
               등록된 기도제목이 없습니다
@@ -2582,14 +2647,20 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
         </Card>
       )}
       <Card>
-        <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 12 : 16 }}>🏠 목장 관리</h4>
+        <h4 style={{ fontSize: mob ? 15 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 12 : 16, display: "flex", alignItems: "center", gap: 8 }}>
+          <Home size={20} strokeWidth={2} style={{ flexShrink: 0, color: C.navy }} />
+          목장 관리
+        </h4>
         <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>목장을 생성·이름 변경·삭제하고, 그룹원을 추가·제거할 수 있습니다.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
           {mokjangList.map(g => {
             const count = db.members.filter(m => ((m.mokjang ?? m.group) || "") === g).length;
             return (
               <div key={g} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, background: C.bg, borderRadius: 10, padding: "12px 14px", border: `1px solid ${C.border}` }}>
-                <span style={{ fontWeight: 700, fontSize: 14, color: C.navy }}>🏠 {g}</span>
+                <span style={{ fontWeight: 700, fontSize: 14, color: C.navy, display: "flex", alignItems: "center", gap: 6 }}>
+                  <Home size={18} strokeWidth={2} style={{ flexShrink: 0, color: C.navy }} />
+                  {g}
+                </span>
                 <span style={{ fontSize: 12, color: C.textMuted }}>{count}명</span>
                 <button type="button" onClick={() => { setMokjangManage(g); setAddMemberSelect(""); }} style={{ padding: "4px 10px", fontSize: 12, border: "none", background: C.navy, color: "#fff", borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>그룹원 관리</button>
                 <button type="button" onClick={() => renameMokjang(g)} style={{ padding: "4px 10px", fontSize: 12, border: "none", background: C.accentBg, color: C.accent, borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>이름 변경</button>
@@ -2621,7 +2692,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
           </div>
           <div>
             <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>성도 추가</label>
-            <select value={addMemberSelect} onChange={e => setAddMemberSelect(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, marginBottom: 8 }}>
+            <select value={addMemberSelect} onChange={e => setAddMemberSelect(e.target.value)} className="select-modern" style={{ marginBottom: 8 }}>
               <option value="">선택하세요</option>
               {db.members.filter(m => ((m.mokjang ?? m.group) || "") !== mokjangManage && m.status !== "졸업/전출").map(m => (
                 <option key={m.id} value={m.id}>{m.name} ({m.dept || ""}) {!(m.mokjang ?? m.group) ? "· 미배정" : `· ${m.mokjang ?? m.group}`}</option>
@@ -2663,10 +2734,10 @@ const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: string }> = {
-  dashboard: { title: "대시보드", desc: "목양 현황을 한눈에 파악합니다", addLabel: "+ 성도 등록" },
-  members: { title: "성도 관리", desc: "성도의 삶을 기억하고 돌봅니다", addLabel: "+ 성도 등록" },
+  dashboard: { title: "대시보드", desc: "목양 현황을 한눈에 파악합니다" },
+  members: { title: "성도 관리", desc: "성도의 삶을 기억하고 돌봅니다" },
   attendance: { title: "출석부", desc: "52주 출석 기록을 관리합니다" },
-  notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기록" },
+  notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기도" },
   newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
   reports: { title: "보고서", desc: "엑셀 보고서를 즉시 다운로드합니다" },
   settings: { title: "목장그룹관리", desc: "목장·소그룹 생성 및 그룹원 관리" },
@@ -2709,7 +2780,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const photoRef = useRef<HTMLInputElement>(null);
 
   // Note form
-  const [nDate, setNDate] = useState(todayStr()); const [nType, setNType] = useState<Note["type"]>("memo"); const [nContent, setNContent] = useState(""); const [nMbrSelect, setNMbrSelect] = useState("");
+  const [nDate, setNDate] = useState(todayStr()); const [nType, setNType] = useState<Note["type"]>("prayer"); const [nContent, setNContent] = useState(""); const [nMbrSelect, setNMbrSelect] = useState("");
   const [noteFilterBy, setNoteFilterBy] = useState<"all" | "group" | "dept">("all");
   const [noteFilterValue, setNoteFilterValue] = useState("");
 
@@ -2737,7 +2808,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
   // 출석부 대시보드/결석자/통계: Supabase attendance 테이블(date + service_type)에서 로드 (출석 체크 탭과 동일 소스)
   const DB_STATUS_TO_UI: Record<string, Attendance["status"]> = { p: "출석", o: "온라인", a: "결석", l: "병결", n: "기타" };
-  useEffect(() => {
+
+  const fetchDateBasedAttendance = useCallback(() => {
     if (!supabase) return;
     const end = new Date();
     const start = new Date(end);
@@ -2763,7 +2835,39 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         }));
         setDateBasedAttendance(list);
       });
-  }, [activeSub, attendanceSubTab]);
+  }, []);
+
+  useEffect(() => {
+    fetchDateBasedAttendance();
+  }, [activeSub, attendanceSubTab, fetchDateBasedAttendance]);
+
+  /** 출석 체크 저장 후 호출: db.attendance(주차별)와 dateBasedAttendance를 재조회해 성도 관리 등에 즉시 반영 */
+  const refetchAttendanceAfterSave = useCallback(() => {
+    if (!supabase) return;
+    supabase.from("attendance").select("member_id, week_num, status, reason").then(({ data, error }) => {
+      if (error) {
+        console.warn("[PastoralPage] refetchAttendance error:", error.message);
+        return;
+      }
+      const attendance: DB["attendance"] = {};
+      const attendanceReasons: Record<string, Record<number, string>> = {};
+      (data ?? []).forEach((r: Record<string, unknown>) => {
+        const mid = r.member_id as string;
+        const week = r.week_num as number;
+        if (!mid) return;
+        if (!attendance[mid]) attendance[mid] = {};
+        const status = r.status as string;
+        attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as AttStatus;
+        const reason = r.reason as string | undefined;
+        if (reason?.trim()) {
+          if (!attendanceReasons[mid]) attendanceReasons[mid] = {};
+          attendanceReasons[mid][week] = reason;
+        }
+      });
+      setDb(prev => ({ ...prev, attendance, attendanceReasons }));
+      fetchDateBasedAttendance();
+    });
+  }, [setDb, fetchDateBasedAttendance]);
 
   // Supabase 데이터가 없을 때 메인 대시보드와 동일한 db.attendance(주차별)를 날짜 기준으로 변환해 사용
   const attendanceListForDashboard = useMemo(() => {
@@ -2978,10 +3082,29 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     toast("삭제 완료", "warn");
   };
 
+  const deleteMembers = (ids: string[]) => {
+    if (ids.length === 0) return;
+    if (typeof window !== "undefined" && !window.confirm(`선택한 ${ids.length}명을 삭제하시겠습니까?`)) return;
+    const idSet = new Set(ids);
+    setDb(prev => {
+      const attendance = { ...prev.attendance }; ids.forEach(id => delete attendance[id]);
+      const attendanceReasons = { ...(prev.attendanceReasons || {}) }; ids.forEach(id => delete attendanceReasons[id]);
+      const notes = { ...prev.notes }; ids.forEach(id => delete notes[id]);
+      const newFamilyPrograms = (prev.newFamilyPrograms || []).filter(p => !idSet.has(p.member_id));
+      const next = { ...prev, members: prev.members.filter(m => !idSet.has(m.id)), attendance, attendanceReasons, notes, newFamilyPrograms };
+      saveDb?.(next).catch(() => toast("저장 실패", "err"));
+      return next;
+    });
+    setShowDetailModal(false);
+    setDetailId(null);
+    setProgramDetailMemberId(null);
+    toast(`선택한 ${ids.length}명이 삭제되었습니다`, "warn");
+  };
+
   const openNoteModal = useCallback((id?: string) => {
     setNoteTargetId(id || null);
     setNMbrSelect(id || db.members[0]?.id || "");
-    setNDate(todayStr()); setNType("memo"); setNContent("");
+    setNDate(todayStr()); setNType("prayer"); setNContent("");
     if (id) {
       const m = db.members.find(x => x.id === id);
       if ((m?.mokjang ?? m?.group)) { setNoteFilterBy("group"); setNoteFilterValue((m.mokjang ?? m.group) || ""); }
@@ -3062,13 +3185,13 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       headerActions={
         <>
           {!mob && <SBadge variant="success">● 정상 운영중</SBadge>}
-          {info.addLabel && <Btn size="sm" onClick={topAdd}>{mob ? "+" : info.addLabel}</Btn>}
+          {info.addLabel && activeSub !== "notes" && <Btn variant="primary" size="sm" onClick={topAdd}>{mob ? "+" : info.addLabel}</Btn>}
         </>
       }
       SidebarIcon={Church}
     >
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} />}
-          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} detailId={detailId} />}
+          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} detailId={detailId} deleteMembers={deleteMembers} />}
           {activeSub === "attendance" && (
             <>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
@@ -3077,8 +3200,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                   { id: "check" as const, label: "출석 체크", Icon: CalendarCheck },
                   { id: "absentee" as const, label: "결석자 관리", Icon: UserX },
                   { id: "statistics" as const, label: "출석 통계", Icon: BarChart3 },
-                  { id: "serviceType" as const, label: "예배 설정", Icon: Sliders },
                   { id: "weekly" as const, label: "52주 출석", Icon: ListOrdered },
+                  { id: "serviceType" as const, label: "예배 설정", Icon: Sliders },
                 ].map(({ id, label, Icon }) => (
                   <button
                     key={id}
@@ -3112,6 +3235,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                   members={db.members}
                   serviceTypes={serviceTypes}
                   toast={toast}
+                  onAttendanceSaved={refetchAttendanceAfterSave}
                 />
               )}
               {attendanceSubTab === "absentee" && (
@@ -3157,7 +3281,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       {/* ===== MODALS ===== */}
 
       {/* Member Modal */}
-      <Modal open={showMemberModal} onClose={closeMemberModal} title={editMbrId ? "성도 수정" : "성도 등록"}>
+      <Modal open={showMemberModal} onClose={closeMemberModal} title={editMbrId ? "성도 수정" : "성도 등록"} hideScrollbar>
         {/* 프로필 사진 — 맨 위, 원형 100px. 클릭 시 파일 선택. 미리보기는 <img>로 표시 (backgroundImage는 URL 특수문자로 깨질 수 있음) */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
           <label
@@ -3199,48 +3323,49 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
             )}
           </label>
         </div>
-        <FormInput label="이름 *" value={fName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFName(e.target.value)} placeholder="이름" />
-        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <FormInput label="이름 *" value={fName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFName(e.target.value)} placeholder="이름" />
+          <CalendarDropdown label="생년월일" value={fBirth} onChange={setFBirth} showClearButton />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <FormSelect label="성별" value={fGender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGender(e.target.value)} options={[{ value: "", label: "선택" }, { value: "남", label: "남" }, { value: "여", label: "여" }]} />
+          <FormInput label="연락처" type="tel" value={fPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFPhone(e.target.value)} placeholder="010-0000-0000" />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
           <FormSelect label="부서" value={fDept} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFDept(e.target.value)} options={depts.map(d => ({ value: d, label: d }))} />
           <FormInput label="직분/학년" value={fRole} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFRole(e.target.value)} placeholder="예: 집사, 3학년" />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
-          <CalendarDropdown label="생년월일" value={fBirth} onChange={setFBirth} showClearButton />
-          <FormSelect label="성별" value={fGender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGender(e.target.value)} options={[{ value: "", label: "선택" }, { value: "남", label: "남" }, { value: "여", label: "여" }]} />
+        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <FormSelect label="목장" value={fGroup} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGroup(e.target.value)} options={[
+            { value: "", label: "미배정" },
+            ...getMokjangList(db).map(g => ({ value: g, label: g })),
+            ...(fGroup && !getMokjangList(db).includes(fGroup) ? [{ value: fGroup, label: fGroup }] : []),
+          ]} />
+          <FormInput label="주소" value={fAddr} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFAddr(e.target.value)} placeholder="주소" />
         </div>
-        <FormInput label="연락처" type="tel" value={fPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFPhone(e.target.value)} placeholder="010-0000-0000" />
-        <FormInput label="주소" value={fAddr} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFAddr(e.target.value)} placeholder="주소" />
-        <FormInput label="가족관계" value={fFamily} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFFamily(e.target.value)} placeholder="예: 김○○ 집사(배우자)" />
-        <FormSelect label="상태" value={fStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFStatus(e.target.value)} options={[
-          { value: "새가족", label: "새가족" }, { value: "정착중", label: "정착중" }, { value: "정착", label: "정착" },
-          { value: "간헐", label: "간헐" }, { value: "위험", label: "위험" }, { value: "휴면", label: "휴면" }, { value: "졸업/전출", label: "졸업/전출" },
-        ]} />
-        <FormSelect label="등록 경로" value={fSource} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFSource(e.target.value)} options={[
-          { value: "", label: "선택" }, { value: "기존교인자녀", label: "기존 교인 자녀" }, { value: "전도", label: "전도" },
-          { value: "전입", label: "타교회 전입" }, { value: "지인소개", label: "지인 소개" }, { value: "기타", label: "기타" },
-        ]} />
-        {(fStatus === "새가족" || fStatus === "정착중") && (
-          <>
-            <FormSelect label="방문경로" value={fVisitPath} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFVisitPath(e.target.value)} options={[
-              { value: "", label: "선택" }, { value: "지인소개", label: "지인소개" }, { value: "전도", label: "전도" }, { value: "인터넷검색", label: "인터넷검색" }, { value: "자진방문", label: "자진방문" }, { value: "기타", label: "기타" },
+        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <FormSelect label="상태" value={fStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFStatus(e.target.value)} options={[
+            { value: "새가족", label: "새가족" }, { value: "정착중", label: "정착중" }, { value: "정착", label: "정착" },
+            { value: "간헐", label: "간헐" }, { value: "위험", label: "위험" }, { value: "휴면", label: "휴면" }, { value: "졸업/전출", label: "졸업/전출" },
+          ]} />
+          <FormSelect label="방문경로" value={fVisitPath} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFVisitPath(e.target.value)} options={[
+            { value: "", label: "선택" }, { value: "지인소개", label: "지인소개" }, { value: "전도", label: "전도" }, { value: "인터넷검색", label: "인터넷검색" }, { value: "자진방문", label: "자진방문" }, { value: "기타", label: "기타" },
+          ]} />
+        </div>
+        {(fStatus === "새가족" || fStatus === "정착중") && fVisitPath === "지인소개" && (
+          <div style={{ marginBottom: 12 }}>
+            <FormSelect label="소개자" value={fReferrerId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFReferrerId(e.target.value)} options={[
+              { value: "", label: "선택" },
+              ...db.members.filter(x => x.status !== "새가족" && x.id !== editMbrId).map(m => ({ value: m.id, label: `${m.name} (${m.dept || ""})` })),
             ]} />
-            {fVisitPath === "지인소개" && (
-              <FormSelect label="소개자" value={fReferrerId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFReferrerId(e.target.value)} options={[
-                { value: "", label: "선택" },
-                ...db.members.filter(x => x.status !== "새가족" && x.id !== editMbrId).map(m => ({ value: m.id, label: `${m.name} (${m.dept || ""})` })),
-              ]} />
-            )}
-            <FormInput label="직업" value={fJob} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFJob(e.target.value)} placeholder="직업" />
-            <div style={{ marginBottom: 16 }}><CalendarDropdown label="첫 방문일" value={fFirstVisitDate} onChange={setFFirstVisitDate} /></div>
-          </>
+          </div>
         )}
-        <FormSelect label="목장" value={fGroup} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGroup(e.target.value)} options={[
-          { value: "", label: "미배정" },
-          ...getMokjangList(db).map(g => ({ value: g, label: g })),
-          ...(fGroup && !getMokjangList(db).includes(fGroup) ? [{ value: fGroup, label: fGroup }] : []),
-        ]} />
-        <FormTextarea label="기도제목" value={fPrayer} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFPrayer(e.target.value)} placeholder="이 성도를 위한 기도제목" />
-        <FormTextarea label="특이사항 메모" value={fMemo} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFMemo(e.target.value)} placeholder="사업장 개업, 병원치료, 가정문제, 진학, 취업 등" />
+        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          {(fStatus === "새가족" || fStatus === "정착중") && <CalendarDropdown label="첫 방문일" value={fFirstVisitDate} onChange={setFFirstVisitDate} />}
+          <div style={!mob && (fStatus !== "새가족" && fStatus !== "정착중") ? { gridColumn: "1 / -1" } : undefined}>
+            <FormTextarea label="특이사항 메모" value={fMemo} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFMemo(e.target.value)} placeholder="직업, 사업장 개업, 병원치료, 가정문제, 진학·취업 등 특이사항" />
+          </div>
+        </div>
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
           <Btn variant="ghost" onClick={closeMemberModal}>취소</Btn>
           <Btn onClick={saveMember}>저장</Btn>
@@ -3270,7 +3395,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       {/* Detail Modal — Member 360° 뷰 (성도 관리 등에서만 사용) */}
       <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} title="" width={mob ? undefined : 720}>
         {detailMember && (
-          <div style={{ maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
             <Member360View
               member={detailMember}
               db={db}
@@ -3282,14 +3407,14 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
             />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
               <Btn variant="danger" size="sm" onClick={() => detailMember && deleteMember(detailMember.id)}>삭제</Btn>
-              <Btn variant="accent" size="sm" onClick={() => { detailMember && openNoteModal(detailMember.id); setShowDetailModal(false); }}>기록 추가</Btn>
+              <Btn variant="accent" size="sm" onClick={() => { detailMember && openNoteModal(detailMember.id); setShowDetailModal(false); }}>기도 추가</Btn>
             </div>
           </div>
         )}
       </Modal>
 
       {/* Note Modal */}
-      <Modal open={showNoteModal} onClose={() => setShowNoteModal(false)} title={noteTargetId ? (db.members.find(x => x.id === noteTargetId)?.name || "") + " — 기록 추가" : "기록 추가"} width={500}>
+      <Modal open={showNoteModal} onClose={() => setShowNoteModal(false)} title={noteTargetId ? (db.members.find(x => x.id === noteTargetId)?.name || "") + " — 기도 추가" : "기도 추가"} width={500}>
         {(() => {
           const activeMembers = db.members.filter(x => x.status !== "졸업/전출");
           const groups = Array.from(new Set(activeMembers.map(m => m.mokjang ?? m.group).filter(Boolean))) as string[];
@@ -3306,7 +3431,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
                 <div style={{ flex: "1 1 140px" }}>
                   <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>범위</label>
-                  <select value={noteFilterBy} onChange={e => { const v = e.target.value as "all" | "group" | "dept"; setNoteFilterBy(v); setNoteFilterValue(""); setNMbrSelect(""); }} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: "#fff", cursor: "pointer" }}>
+                  <select value={noteFilterBy} onChange={e => { const v = e.target.value as "all" | "group" | "dept"; setNoteFilterBy(v); setNoteFilterValue(""); setNMbrSelect(""); }} className="select-modern">
                     <option value="all">전체</option>
                     <option value="group">목장별</option>
                     <option value="dept">부서별</option>
@@ -3315,7 +3440,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                 {noteFilterBy === "group" && (
                   <div style={{ flex: "1 1 160px" }}>
                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>목장</label>
-                    <select value={noteFilterValue} onChange={e => { setNoteFilterValue(e.target.value); setNMbrSelect(""); }} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: "#fff", cursor: "pointer" }}>
+                    <select value={noteFilterValue} onChange={e => { setNoteFilterValue(e.target.value); setNMbrSelect(""); }} className="select-modern">
                       <option value="">선택</option>
                       {groups.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
@@ -3324,7 +3449,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                 {noteFilterBy === "dept" && (
                   <div style={{ flex: "1 1 160px" }}>
                     <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>부서</label>
-                    <select value={noteFilterValue} onChange={e => { setNoteFilterValue(e.target.value); setNMbrSelect(""); }} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, background: "#fff", cursor: "pointer" }}>
+                    <select value={noteFilterValue} onChange={e => { setNoteFilterValue(e.target.value); setNMbrSelect(""); }} className="select-modern">
                       <option value="">선택</option>
                       {deptList.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
@@ -3338,8 +3463,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         })()}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div style={{ marginBottom: 16 }}><CalendarDropdown label="날짜" value={nDate} onChange={setNDate} /></div>
-          <FormSelect label="유형" value={nType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNType(e.target.value as Note["type"])}
-            options={[{ value: "memo", label: "📝 메모" }, { value: "prayer", label: "🙏 기도제목" }, { value: "visit", label: "🏠 심방" }, { value: "event", label: "🎉 경조사" }]} />
+          <FormSelect label="유형" value={nType === "visit" || nType === "event" ? "prayer" : nType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNType(e.target.value as Note["type"])}
+            options={[{ value: "prayer", label: "기도" }, { value: "memo", label: "메모" }]} />
         </div>
         <FormTextarea label="내용" value={nContent} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNContent(e.target.value)} placeholder="기록 내용" style={{ minHeight: 100 }} />
         <div style={{ marginTop: 16 }}>

@@ -288,6 +288,7 @@ function Modal({ open, onClose, title, children, width = 520 }: {
   open: boolean; onClose: () => void; title: string; children: ReactNode; width?: number;
 }) {
   const mob = useIsMobile();
+  const modalHeight = mob ? "92vh" : "85vh";
   if (!open) return null;
   return (
     <div style={{
@@ -297,17 +298,19 @@ function Modal({ open, onClose, title, children, width = 520 }: {
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: "#fff", borderRadius: mob ? "20px 20px 0 0" : 20, padding: mob ? 20 : 32,
-        width: mob ? "100%" : "90%", maxWidth: mob ? "100%" : width, maxHeight: mob ? "92vh" : "85vh",
-        overflowY: "auto", boxShadow: "0 20px 60px rgba(27,42,74,0.15)",
+        width: mob ? "100%" : "90%", maxWidth: mob ? "100%" : width,
+        height: modalHeight, maxHeight: modalHeight,
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        boxShadow: "0 20px 60px rgba(27,42,74,0.15)",
       }}>
-        {mob && <div style={{ width: 36, height: 4, background: C.border, borderRadius: 4, margin: "0 auto 12px" }} />}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        {mob && <div style={{ width: 36, height: 4, background: C.border, borderRadius: 4, margin: "0 auto 12px", flexShrink: 0 }} />}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
           <h3 style={{ margin: 0, fontSize: mob ? 17 : 20, color: C.navy }}>{title}</h3>
           <button onClick={onClose} style={{
             background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 8, display: "flex",
           }}><Icons.X /></button>
         </div>
-        {children}
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>{children}</div>
       </div>
     </div>
   );
@@ -2197,9 +2200,13 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
 
       {sealSettingsOpen && (
         <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setSealSettingsOpen(false)}>
-          <div style={{ maxWidth: 480, width: "100%", maxHeight: "90vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
-            <SealSettingsSection churchId={churchId} toast={toast ?? (() => {})} onSaved={() => { setSealSettingsOpen(false); if (supabase && churchId) supabase.from("church_settings").select("church_registration_number, representative_name, church_address, church_tel, seal_image_url").eq("church_id", churchId).maybeSingle().then(({ data }) => setChurchSettings(data ?? null)); }} />
-            <button type="button" onClick={() => setSealSettingsOpen(false)} style={{ marginTop: 12, width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer" }}>닫기</button>
+          <div style={{ maxWidth: 480, width: "100%", height: "90vh", maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff", borderRadius: 20 }} onClick={e => e.stopPropagation()}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 20 }}>
+              <SealSettingsSection churchId={churchId} toast={toast ?? (() => {})} onSaved={() => { setSealSettingsOpen(false); if (supabase && churchId) supabase.from("church_settings").select("church_registration_number, representative_name, church_address, church_tel, seal_image_url").eq("church_id", churchId).maybeSingle().then(({ data }) => setChurchSettings(data ?? null)); }} />
+            </div>
+            <div style={{ flexShrink: 0, paddingTop: 12 }}>
+              <button type="button" onClick={() => setSealSettingsOpen(false)} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer" }}>닫기</button>
+            </div>
           </div>
         </div>
       )}

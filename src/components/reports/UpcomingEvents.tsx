@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Member } from "@/types/db";
+import type { DB, Member } from "@/types/db";
 
 /**
  * 현재 날짜 기준 ±30일 이내 경조사 (생일, 결혼기념일, 세례기념일, 양력 기준)
@@ -42,11 +42,13 @@ function toMMDD(dateStr: string): string {
 
 export interface UpcomingEventsProps {
   members: Member[];
+  db?: DB | null;
   className?: string;
 }
 
-export function UpcomingEvents({ members, className = "" }: UpcomingEventsProps) {
+export function UpcomingEvents({ members, db, className = "" }: UpcomingEventsProps) {
   const { start, end } = useMemo(() => getRange30Days(), []);
+  const baptismEventLabel = db?.settings?.denomination?.trim().includes("침례") ? "침례기념일" : "세례기념일";
 
   const events = useMemo(() => {
     const list: { name: string; type: string; date: string; displayDate: string; phone?: string }[] = [];
@@ -57,10 +59,10 @@ export function UpcomingEvents({ members, className = "" }: UpcomingEventsProps)
       if (m.wedding_anniversary && isDateInRange(m.wedding_anniversary, start, end))
         list.push({ name, type: "결혼기념일", date: m.wedding_anniversary, displayDate: toMMDD(m.wedding_anniversary), phone: m.phone });
       if (m.baptism_date && isDateInRange(m.baptism_date, start, end))
-        list.push({ name, type: "세례기념일", date: m.baptism_date, displayDate: toMMDD(m.baptism_date), phone: m.phone });
+        list.push({ name, type: baptismEventLabel, date: m.baptism_date, displayDate: toMMDD(m.baptism_date), phone: m.phone });
     });
     return list.sort((a, b) => a.date.localeCompare(b.date));
-  }, [members, start, end]);
+  }, [members, start, end, baptismEventLabel]);
 
   if (events.length === 0) return <p className={`text-sm text-gray-500 ${className}`}>다가오는 30일 경조사가 없습니다.</p>;
 

@@ -159,12 +159,12 @@ export function AbsenteeManagement({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <label className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">연속 결석 주</span>
+        <label className="flex items-center gap-2 shrink-0">
+          <span className="text-sm text-gray-600 whitespace-nowrap">연속 결석 주</span>
           <select
             value={nWeeks}
             onChange={(e) => setNWeeks(Number(e.target.value))}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
+            className="rounded-lg border border-gray-200 pl-3 pr-9 py-2 text-sm min-w-[72px]"
           >
             {[2, 3, 4, 5, 6].map((n) => (
               <option key={n} value={n}>

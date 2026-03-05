@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
+import { CalendarDropdown } from "@/components/CalendarDropdown";
+import { ModernSelect } from "@/components/common/ModernSelect";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
@@ -206,49 +208,48 @@ export function AttendanceStatistics({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <label className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">시작일</span>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          />
+        <label className="flex items-center gap-2 shrink-0">
+          <span className="text-sm text-gray-600 whitespace-nowrap">시작일</span>
+          <div className="min-w-[160px]">
+            <CalendarDropdown
+              value={startDate}
+              onChange={setStartDate}
+              compact
+              style={{ marginBottom: 0 }}
+            />
+          </div>
         </label>
-        <label className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">종료일</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          />
+        <label className="flex items-center gap-2 shrink-0">
+          <span className="text-sm text-gray-600 whitespace-nowrap">종료일</span>
+          <div className="min-w-[160px]">
+            <CalendarDropdown
+              value={endDate}
+              onChange={setEndDate}
+              compact
+              style={{ marginBottom: 0 }}
+            />
+          </div>
         </label>
-        <label className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">부서</span>
-          <select
+        <label className="flex items-center gap-2 shrink-0">
+          <span className="text-sm text-gray-600 whitespace-nowrap">부서</span>
+          <ModernSelect
             value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          >
-            <option value="">전체</option>
-            {depts.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
+            onChange={setDeptFilter}
+            options={[{ value: "", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))]}
+            style={{ marginBottom: 0, minWidth: 88 }}
+          />
         </label>
-        <label className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">정렬</span>
-          <select
+        <label className="flex items-center gap-2 shrink-0">
+          <span className="text-sm text-gray-600 whitespace-nowrap">정렬</span>
+          <ModernSelect
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as "rate" | "name")}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          >
-            <option value="rate">출석률 순</option>
-            <option value="name">이름 순</option>
-          </select>
+            onChange={(v) => setSortBy(v as "rate" | "name")}
+            options={[
+              { value: "rate", label: "출석률 순" },
+              { value: "name", label: "이름 순" },
+            ]}
+            style={{ marginBottom: 0, minWidth: 100 }}
+          />
         </label>
         {onExportExcel && (
           <button

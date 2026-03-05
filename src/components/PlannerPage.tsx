@@ -165,17 +165,18 @@ function FormTextarea({ label, ...props }: { label?: string; [k: string]: unknow
   );
 }
 function Modal({ open, onClose, title, children, footer, mob }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; mob?: boolean }) {
+  const modalHeight = mob ? "92vh" : "85vh";
   if (!open) return null;
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)", padding: mob ? 0 : 20 }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: mob ? "20px 20px 0 0" : "20px 20px 0 0", width: "100%", maxWidth: mob ? "100%" : 560, maxHeight: mob ? "92vh" : "85vh", overflowY: "auto", animation: "slideUp 0.3s ease" }}>
-        <div style={{ width: 36, height: 4, background: C.border, borderRadius: 4, margin: "10px auto" }} />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: mob ? "12px 16px" : "16px 24px", borderBottom: `1px solid ${C.borderLight}` }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: mob ? "20px 20px 0 0" : "20px 20px 0 0", width: "100%", maxWidth: mob ? "100%" : 560, height: modalHeight, maxHeight: modalHeight, display: "flex", flexDirection: "column", overflow: "hidden", animation: "slideUp 0.3s ease" }}>
+        <div style={{ width: 36, height: 4, background: C.border, borderRadius: 4, margin: "10px auto", flexShrink: 0 }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: mob ? "12px 16px" : "16px 24px", borderBottom: `1px solid ${C.borderLight}`, flexShrink: 0 }}>
           <span style={{ fontSize: mob ? 15 : 17, fontWeight: 700 }}>{title}</span>
           <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: "50%", background: C.borderLight, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: C.textMuted }}>✕</button>
         </div>
-        <div style={{ padding: mob ? 16 : 24 }}>{children}</div>
-        {footer && <div style={{ padding: mob ? "12px 16px" : "16px 24px", borderTop: `1px solid ${C.borderLight}`, display: "flex", gap: 10, justifyContent: "flex-end" }}>{footer}</div>}
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: mob ? 16 : 24 }}>{children}</div>
+        {footer && <div style={{ padding: mob ? "12px 16px" : "16px 24px", borderTop: `1px solid ${C.borderLight}`, display: "flex", gap: 10, justifyContent: "flex-end", flexShrink: 0 }}>{footer}</div>}
       </div>
     </div>
   );
