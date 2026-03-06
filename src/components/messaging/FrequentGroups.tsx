@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 export interface FrequentGroup {
@@ -36,8 +36,7 @@ export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
     setLoading(true);
     (async () => {
       try {
-        const churchId = getChurchId();
-        const { data, error } = await supabase.from("frequent_groups").select("id, name, member_ids").eq("church_id", churchId).order("name");
+        const { data, error } = await filterByChurch(supabase.from("frequent_groups").select("id, name, member_ids")).order("name");
         if (error && toast) toast("명단 로드 실패: " + error.message, "err");
         const rows = (data ?? []).map((r: Record<string, unknown>) => ({
           id: String(r.id),

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { getChurchId } from "@/lib/tenant";
+import { filterByChurch } from "@/lib/tenant";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import type { Budget } from "@/types/db";
 import type { Income } from "@/types/db";
@@ -38,11 +38,10 @@ export function BudgetVsActual({
       return;
     }
     setLoading(true);
-    const churchId = getChurchId();
     const [budgetRes, incomeRes, expenseRes] = await Promise.all([
-      supabase.from("budget").select("*").eq("church_id", churchId).eq("fiscal_year", year),
-      supabase.from("income").select("*").eq("church_id", churchId).eq("fiscal_year", year),
-      supabase.from("expense").select("*").eq("church_id", churchId).eq("fiscal_year", year),
+      filterByChurch(supabase.from("budget").select("*")).eq("fiscal_year", year),
+      filterByChurch(supabase.from("income").select("*")).eq("fiscal_year", year),
+      filterByChurch(supabase.from("expense").select("*")).eq("fiscal_year", year),
     ]);
     if (budgetRes.error) {
       console.error(budgetRes.error);

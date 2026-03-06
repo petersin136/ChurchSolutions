@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId } from "@/lib/tenant";
+import { getChurchId, filterByChurch } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -27,10 +27,9 @@ export function SchoolReport({ db, toast }: SchoolReportProps) {
       setLoading(false);
       return;
     }
-    const churchId = getChurchId();
     Promise.all([
-      supabase.from("school_departments").select("*").eq("church_id", churchId).order("sort_order"),
-      supabase.from("school_classes").select("*").eq("church_id", churchId).order("sort_order"),
+      filterByChurch(supabase.from("school_departments").select("*")).order("sort_order"),
+      filterByChurch(supabase.from("school_classes").select("*")).order("sort_order"),
     ]).then(([d, c]) => {
       const deptList = (d.data as SchoolDepartment[]) ?? [];
       setDepartments(deptList.filter((x) => x.is_active !== false));

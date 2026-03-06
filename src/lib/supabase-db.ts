@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
 import type { DB, Member, Note, NewFamilyProgram, Plan, Sermon, Visit, Income, Expense, AttStatus, ChecklistItem, WeekChecks } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 
@@ -15,18 +15,18 @@ export async function loadDBFromSupabase(): Promise<DB> {
 
   const churchId = getChurchId();
   const [settingsRes, membersRes, attendanceRes, notesRes, plansRes, sermonsRes, visitsRes, newFamilyProgramsRes, incomeRes, expenseRes, budgetRes, checklistRes] = await Promise.all([
-    supabase.from("settings").select("*").eq("church_id", churchId).limit(1),
-    supabase.from("members").select("*").eq("church_id", churchId).order("created_at", { ascending: true }),
-    supabase.from("attendance").select("*").eq("church_id", churchId),
-    supabase.from("notes").select("*").eq("church_id", churchId),
-    supabase.from("plans").select("*").eq("church_id", churchId).order("date", { ascending: true }),
-    supabase.from("sermons").select("*").eq("church_id", churchId).order("date", { ascending: false }),
-    supabase.from("visits").select("*").eq("church_id", churchId).order("date", { ascending: false }),
-    supabase.from("new_family_program").select("*").eq("church_id", churchId),
-    supabase.from("income").select("*").eq("church_id", churchId).order("date", { ascending: false }),
-    supabase.from("expense").select("*").eq("church_id", churchId).order("date", { ascending: false }),
-    supabase.from("budget").select("*").eq("church_id", churchId).eq("fiscal_year", String(CURRENT_YEAR)),
-    supabase.from("checklist").select("*").eq("church_id", churchId).order("sort_order", { ascending: true }),
+    filterByChurch(supabase.from("settings").select("*")).limit(1),
+    filterByChurch(supabase.from("members").select("*")).order("created_at", { ascending: true }),
+    filterByChurch(supabase.from("attendance").select("*")),
+    filterByChurch(supabase.from("notes").select("*")),
+    filterByChurch(supabase.from("plans").select("*")).order("date", { ascending: true }),
+    filterByChurch(supabase.from("sermons").select("*")).order("date", { ascending: false }),
+    filterByChurch(supabase.from("visits").select("*")).order("date", { ascending: false }),
+    filterByChurch(supabase.from("new_family_program").select("*")),
+    filterByChurch(supabase.from("income").select("*")).order("date", { ascending: false }),
+    filterByChurch(supabase.from("expense").select("*")).order("date", { ascending: false }),
+    filterByChurch(supabase.from("budget").select("*")).eq("fiscal_year", String(CURRENT_YEAR)),
+    filterByChurch(supabase.from("checklist").select("*")).order("sort_order", { ascending: true }),
   ]);
 
   if (settingsRes.error) console.warn("settings load error:", settingsRes.error);

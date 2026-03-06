@@ -5,6 +5,7 @@ import type { DB } from "@/types/db";
 import type { SchoolDepartment } from "@/types/db";
 import type { SchoolAttendance } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { filterByChurch } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -31,7 +32,7 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
     const load = async () => {
       setLoading(true);
       try {
-        const { data: depts, error: deptsErr } = await client.from("school_departments").select("*").order("sort_order");
+        const { data: depts, error: deptsErr } = await filterByChurch(client.from("school_departments").select("*")).order("sort_order");
         if (deptsErr) {
           toast("부서 로드 실패: " + deptsErr.message, "err");
           setLoading(false);
@@ -51,9 +52,9 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
         const startStr = toLocalDateString(start);
         const endStr = toLocalDateString(end);
 
-        const { data: att, error: attErr } = await client
-          .from("school_attendance")
-          .select("department_id, status")
+        const { data: att, error: attErr } = await filterByChurch(
+          client.from("school_attendance").select("department_id, status")
+        )
           .gte("date", startStr)
           .lte("date", endStr);
         if (attErr) {

@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -36,11 +36,10 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
     if (!supabase) return;
     setLoading(true);
     try {
-      const churchId = getChurchId();
       const [depts, cls, enrolls] = await Promise.all([
-        supabase.from("school_departments").select("*").eq("church_id", churchId).order("sort_order"),
-        supabase.from("school_classes").select("*").eq("church_id", churchId).order("sort_order"),
-        supabase.from("school_enrollments").select("*, members(id, name, phone)").eq("church_id", churchId).eq("is_active", true),
+        filterByChurch(supabase.from("school_departments").select("*")).order("sort_order"),
+        filterByChurch(supabase.from("school_classes").select("*")).order("sort_order"),
+        filterByChurch(supabase.from("school_enrollments").select("*, members(id, name, phone)")).eq("is_active", true),
       ]);
       if (depts.error) {
         toast("부서 목록 로드 실패: " + depts.error.message, "err");

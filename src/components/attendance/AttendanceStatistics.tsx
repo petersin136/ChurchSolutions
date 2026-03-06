@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { getChurchId } from "@/lib/tenant";
+import { filterByChurch } from "@/lib/tenant";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
@@ -76,10 +76,9 @@ export function AttendanceStatistics({
   const loadFromSupabase = useCallback(async () => {
     if (!supabase) return;
     setLoading(true);
-    const churchId = getChurchId();
     const [memRes, attRes] = await Promise.all([
-      supabase.from("members").select("id, name, dept, mokjang, member_status, status").eq("church_id", churchId).order("name"),
-      supabase.from("attendance").select("*").eq("church_id", churchId).gte("date", startDate).lte("date", endDate),
+      filterByChurch(supabase.from("members").select("id, name, dept, mokjang, member_status, status")).order("name"),
+      filterByChurch(supabase.from("attendance").select("*")).gte("date", startDate).lte("date", endDate),
     ]);
     if (memRes.error) {
       console.error(memRes.error);

@@ -1975,8 +1975,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 else acc.push({ category: name, amount: o.amount });
                 return acc;
               }, []);
-            await supabase.from("donation_receipts").insert({
-              church_id: churchId,
+            await supabase.from("donation_receipts").insert(withChurchId({
               member_id: receiptDonor.id,
               member_name: receiptDonor.name,
               receipt_number: receiptNumber ?? `DR-${year}-00001`,
@@ -1987,7 +1986,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               church_name: cfg.churchName,
               church_address: cfg.churchAddress || null,
               church_representative: cfg.representativeName || null,
-            });
+            }));
           }
         } catch (_) { /* RLS or table 없으면 무시 */ }
       }

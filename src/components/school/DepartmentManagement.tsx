@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 export interface DepartmentManagementProps {
@@ -36,13 +36,13 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
     }
     setLoading(true);
     try {
-      const { data: depts, error: deptsError } = await supabase.from("school_departments").select("*").eq("church_id", getChurchId()).order("sort_order");
+      const { data: depts, error: deptsError } = await filterByChurch(supabase.from("school_departments").select("*")).order("sort_order");
       if (deptsError) {
         toast("부서 목록 로드 실패: " + deptsError.message, "err");
         return;
       }
       setDepartments((depts as SchoolDepartment[]) ?? []);
-      const { data: cls, error: clsError } = await supabase.from("school_classes").select("*").eq("church_id", getChurchId()).order("sort_order");
+      const { data: cls, error: clsError } = await filterByChurch(supabase.from("school_classes").select("*")).order("sort_order");
       if (clsError) {
         toast("반 목록 로드 실패: " + clsError.message, "err");
         return;

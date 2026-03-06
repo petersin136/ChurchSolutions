@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Member } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 const SMS_MAX = 90;
@@ -51,8 +51,7 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
       return;
     }
     setLoading(true);
-    const churchId = getChurchId();
-    let q = supabase.from("members").select("id, name, phone, dept, mokjang, member_status, status").eq("church_id", churchId).not("phone", "is", null);
+    let q = filterByChurch(supabase.from("members").select("id, name, phone, dept, mokjang, member_status, status")).not("phone", "is", null);
     if (search.trim()) q = q.ilike("name", `%${search.trim()}%`);
     if (deptFilter) q = q.eq("dept", deptFilter);
     if (groupFilter) q = q.eq("mokjang", groupFilter);

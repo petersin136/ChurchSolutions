@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolEnrollment, SchoolTransferHistory } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -27,11 +27,10 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
     if (!supabase) return;
     setLoading(true);
     try {
-      const churchId = getChurchId();
       const [depts, enrolls, hist] = await Promise.all([
-        supabase.from("school_departments").select("*").eq("church_id", churchId).order("sort_order"),
-        supabase.from("school_enrollments").select("*").eq("church_id", churchId).eq("is_active", true),
-        supabase.from("school_transfer_history").select("*").eq("church_id", churchId).order("created_at", { ascending: false }).limit(50),
+        filterByChurch(supabase.from("school_departments").select("*")).order("sort_order"),
+        filterByChurch(supabase.from("school_enrollments").select("*")).eq("is_active", true),
+        filterByChurch(supabase.from("school_transfer_history").select("*")).order("created_at", { ascending: false }).limit(50),
       ]);
       if (depts.error) {
         toast("부서 로드 실패: " + depts.error.message, "err");

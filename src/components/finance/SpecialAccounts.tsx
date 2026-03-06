@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
 import type { SpecialAccount, SpecialAccountTransaction } from "@/types/db";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
@@ -42,7 +42,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.from("special_accounts").select("*").eq("church_id", getChurchId()).order("created_at", { ascending: false });
+    const { data, error } = await filterByChurch(supabase.from("special_accounts").select("*")).order("created_at", { ascending: false });
     if (error) {
       console.error(error);
       toast("데이터 로드 실패: " + error.message, "err");
