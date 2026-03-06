@@ -327,17 +327,21 @@ export function AttendanceStatistics({
             </tbody>
           </table>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4" style={{ minHeight: 280 }}>
           <h4 className="text-sm font-semibold text-[#1e3a5f] mb-4">월별 출석률 추이</h4>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={monthlyChart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number | undefined) => [`${v ?? 0}%`, "출석률"]} />
-              <Bar dataKey="rate" name="출석률" fill="#1e3a5f" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {monthlyChart.length === 0 ? (
+            <div className="text-sm text-gray-500">출석 데이터가 없습니다.</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={monthlyChart}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: number | undefined) => [`${v ?? 0}%`, "출석률"]} />
+                <Bar dataKey="rate" name="출석률" fill="#1e3a5f" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </div>

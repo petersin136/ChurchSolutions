@@ -30,7 +30,10 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
   const [editDeptId, setEditDeptId] = useState<string | null>(null);
 
   const load = async () => {
-    if (!supabase) return;
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data: depts, error: deptsError } = await supabase.from("school_departments").select("*").eq("church_id", getChurchId()).order("sort_order");
@@ -159,6 +162,20 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
   };
 
   if (loading) return <div className="p-6 text-gray-500">로딩 중...</div>;
+
+  if (!supabase) {
+    return (
+      <div className="p-6 max-w-lg rounded-xl border border-amber-200 bg-amber-50 text-amber-900">
+        <h4 className="font-semibold mb-2">Supabase 연결이 필요합니다</h4>
+        <p className="text-sm mb-3">
+          프로젝트 루트에 <code className="bg-amber-100 px-1 rounded">.env.local</code> 파일을 만들고
+          <code className="block mt-1 bg-amber-100 px-1 rounded text-xs">NEXT_PUBLIC_SUPABASE_URL</code>,
+          <code className="block mt-0.5 bg-amber-100 px-1 rounded text-xs">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> 값을 설정한 뒤
+          개발 서버를 재시작하세요. 예시는 <code className="bg-amber-100 px-1 rounded">.env.example</code>을 참고하세요.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

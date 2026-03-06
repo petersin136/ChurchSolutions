@@ -176,6 +176,10 @@ export function AttendanceCheck({
     const { data, error } = await supabase.from("attendance").upsert(withChurchId(records), {
       onConflict: "member_id,date,service_type",
     });
+    console.log("=== 출석 저장 디버깅 ===");
+    console.log("저장할 데이터:", JSON.stringify(records, null, 2));
+    console.log("저장 결과:", JSON.stringify(data, null, 2));
+    console.log("에러:", JSON.stringify(error, null, 2));
     console.log("[출석 저장 응답]", { data, error: error?.message ?? null });
     if (error) {
       console.error(error);

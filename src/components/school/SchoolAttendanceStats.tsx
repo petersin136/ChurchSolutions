@@ -20,6 +20,7 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
   const [stats, setStats] = useState<DeptStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"week" | "month">("month");
+  const toLocalDateString = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 
   useEffect(() => {
     const client = supabase;
@@ -47,8 +48,8 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
         } else {
           start.setMonth(start.getMonth() - 1);
         }
-        const startStr = start.toISOString().slice(0, 10);
-        const endStr = end.toISOString().slice(0, 10);
+        const startStr = toLocalDateString(start);
+        const endStr = toLocalDateString(end);
 
         const { data: att, error: attErr } = await client
           .from("school_attendance")
