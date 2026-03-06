@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import type { Member } from "@/types/db";
 import type { ServiceType } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -99,6 +100,7 @@ export function AttendanceCheck({
       .select("*")
       .eq("date", date)
       .eq("service_type", serviceType)
+      .eq("church_id", getChurchId())
       .order("member_id", { ascending: true });
     loadingRef.current = false;
     if (myId !== requestIdRef.current) return;
@@ -171,7 +173,7 @@ export function AttendanceCheck({
       };
     });
     console.log("[출석 저장 요청]", { count: records.length, sample: records[0], year, week_num });
-    const { data, error } = await supabase.from("attendance").upsert(records, {
+    const { data, error } = await supabase.from("attendance").upsert(withChurchId(records), {
       onConflict: "member_id,date,service_type",
     });
     console.log("[출석 저장 응답]", { data, error: error?.message ?? null });

@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import { LayoutDashboard, Home, MessageCircle, Bell, Heart, User, ScrollText, TrendingUp, ClipboardList, Settings } from "lucide-react";
 
 const iconStyle = { strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -1383,7 +1384,8 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   const loadVisits = useCallback(async () => {
     if (!supabase) return;
     setVisitsLoading(true);
-    const { data, error } = await supabase.from("visits").select("*").order("date", { ascending: false });
+    const churchId = getChurchId();
+    const { data, error } = await supabase.from("visits").select("*").eq("church_id", churchId).order("date", { ascending: false });
     if (error) {
       console.error(error);
       setToasts(prev => [...prev.slice(-2), { id: Date.now(), msg: "데이터 로드 실패: " + error.message }]);
@@ -1474,8 +1476,8 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
       setVisitSaving(true);
       const payload = visitToPayload(data);
       const { error } = editVisitId
-        ? await supabase.from("visits").upsert(payload, { onConflict: "id" })
-        : await supabase.from("visits").insert(payload);
+        ? await supabase.from("visits").upsert(withChurchId(payload), { onConflict: "id" })
+        : await supabase.from("visits").insert(withChurchId(payload));
       if (error) {
         console.error(error);
         toast("저장 실패: " + error.message);
@@ -1516,7 +1518,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   const delVisit = async (id: string) => {
     if (typeof window !== "undefined" && !window.confirm("삭제하시겠습니까?")) return;
     if (supabase) {
-      const { error } = await supabase.from("visits").delete().eq("id", id);
+      const { error } = await supabase.from("visits").delete().eq("church_id", getChurchId()).eq("id", id);
       if (error) {
         console.error(error);
         toast("삭제 실패: " + error.message);

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import type { Budget } from "@/types/db";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -42,6 +43,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
     const { data, error } = await supabase
       .from("budget")
       .select("*")
+      .eq("church_id", getChurchId())
       .eq("fiscal_year", selectedYear)
       .order("category_type", { ascending: true })
       .order("category", { ascending: true });
@@ -106,6 +108,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
     const { data, error } = await supabase
       .from("budget")
       .select("*")
+      .eq("church_id", getChurchId())
       .eq("fiscal_year", lastYear)
       .order("category_type", { ascending: true })
       .order("category", { ascending: true });
@@ -151,14 +154,14 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
       })),
     ];
     try {
-      const { error: delErr } = await supabase.from("budget").delete().eq("fiscal_year", year);
+      const { error: delErr } = await supabase.from("budget").delete().eq("church_id", getChurchId()).eq("fiscal_year", year);
       if (delErr) {
         toast("저장 실패: " + delErr.message, "err");
         setSaving(false);
         return;
       }
       const { error: insErr } = await supabase.from("budget").insert(
-        budgetRows.map((row) => ({
+        withChurchId(budgetRows.map((row) => ({
           fiscal_year: row.fiscal_year,
           category_type: row.category_type,
           category: row.category,
@@ -166,7 +169,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
           monthly_amounts: row.monthly_amounts,
           annual_total: row.annual_total,
           notes: row.notes,
-        }))
+        })))
       );
       if (insErr) {
         toast("저장 실패: " + insErr.message, "err");

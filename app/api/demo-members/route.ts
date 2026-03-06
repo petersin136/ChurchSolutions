@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 
 const SURNAMES = "김,이,박,최,정,강,조,윤,장,임,한,오,서,신,권,황,안,송,류,홍".split(",");
 const MALE_NAMES = "민준,서준,도윤,예준,시우,하준,주원,지호,지환,준서,건우,현우,성민,재현,승현,태현,동현,정우,진우,영호,상훈,재석,용식,기태,병철,상수,영철,태식,종대,만수".split(",");
@@ -163,7 +164,8 @@ function buildDemoMembers(): DemoMemberRow[] {
 export async function POST() {
   try {
     const supabase = getServiceSupabase();
-    const { count } = await supabase.from("members").select("id", { count: "exact", head: true });
+    const churchId = getChurchId();
+    const { count } = await supabase.from("members").select("id", { count: "exact", head: true }).eq("church_id", churchId);
     if (count != null && count > 0) {
       return NextResponse.json(
         { error: "기존 교인 데이터가 있습니다. 먼저 초기화해주세요." },
@@ -172,7 +174,7 @@ export async function POST() {
     }
 
     const members = buildDemoMembers();
-    const { error } = await supabase.from("members").insert(members);
+    const { error } = await supabase.from("members").insert(withChurchId(members));
     if (error) throw error;
 
     return NextResponse.json({ ok: true, count: members.length });

@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "@/lib/supabase";
+import { getChurchId } from "@/lib/tenant";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
@@ -60,9 +61,10 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
     const end = `${year}-12-31`;
     const prevStart = `${Number(year) - 1}-01-01`;
     const prevEnd = `${Number(year) - 1}-12-31`;
+    const churchId = getChurchId();
     Promise.all([
-      supabase.from("income").select("id, date, amount, donor, member_id, type").gte("date", start).lte("date", end),
-      supabase.from("income").select("donor, member_id").gte("date", prevStart).lte("date", prevEnd),
+      supabase.from("income").select("id, date, amount, donor, member_id, type").eq("church_id", churchId).gte("date", start).lte("date", end),
+      supabase.from("income").select("donor, member_id").eq("church_id", churchId).gte("date", prevStart).lte("date", prevEnd),
     ]).then(([curr, prev]) => {
       if (curr.error && toast) toast("헌금 데이터 로드 실패: " + curr.error.message, "err");
       setIncomeRows((curr.data ?? []) as IncomeRow[]);

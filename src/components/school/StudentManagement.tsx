@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -35,10 +36,11 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
     if (!supabase) return;
     setLoading(true);
     try {
+      const churchId = getChurchId();
       const [depts, cls, enrolls] = await Promise.all([
-        supabase.from("school_departments").select("*").order("sort_order"),
-        supabase.from("school_classes").select("*").order("sort_order"),
-        supabase.from("school_enrollments").select("*, members(id, name, phone)").eq("is_active", true),
+        supabase.from("school_departments").select("*").eq("church_id", churchId).order("sort_order"),
+        supabase.from("school_classes").select("*").eq("church_id", churchId).order("sort_order"),
+        supabase.from("school_enrollments").select("*, members(id, name, phone)").eq("church_id", churchId).eq("is_active", true),
       ]);
       if (depts.error) {
         toast("부서 목록 로드 실패: " + depts.error.message, "err");
@@ -78,12 +80,12 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
       toast("성도와 부서를 선택하세요", "warn");
       return;
     }
-    const { error } = await supabase.from("school_enrollments").insert({
+    const { error } = await supabase.from("school_enrollments").insert(withChurchId({
       member_id: addMemberId,
       department_id: addDeptId,
       class_id: addClassId || null,
       role: addRole,
-    });
+    }));
     if (error) {
       toast("등록 실패: " + error.message, "err");
       return;
@@ -101,7 +103,7 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
     const { error } = await supabase.from("school_enrollments").update({
       class_id: editClassId || null,
       role: editRole,
-    }).eq("id", editOpen.id);
+    }).eq("church_id", getChurchId()).eq("id", editOpen.id);
     if (error) {
       toast("수정 실패: " + error.message, "err");
       return;
@@ -116,7 +118,7 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
     const { error } = await supabase.from("school_enrollments").update({
       is_active: false,
       left_date: new Date().toISOString().slice(0, 10),
-    }).eq("id", e.id);
+    }).eq("church_id", getChurchId()).eq("id", e.id);
     if (error) {
       toast("해제 실패: " + error.message, "err");
       return;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import type { SpecialAccount, SpecialAccountTransaction } from "@/types/db";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
@@ -41,7 +42,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.from("special_accounts").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("special_accounts").select("*").eq("church_id", getChurchId()).order("created_at", { ascending: false });
     if (error) {
       console.error(error);
       toast("데이터 로드 실패: " + error.message, "err");
@@ -58,6 +59,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
     const { data, error } = await supabase
       .from("special_account_transactions")
       .select("*")
+      .eq("church_id", getChurchId())
       .eq("account_id", accountId)
       .order("date", { ascending: false });
     if (error) {
@@ -126,7 +128,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       end_date: accountForm.end_date || null,
       status: accountForm.status || "진행중",
     };
-    const { error } = await supabase.from("special_accounts").upsert(payload as SpecialAccount, { onConflict: "id" });
+    const { error } = await supabase.from("special_accounts").upsert(withChurchId(payload as SpecialAccount), { onConflict: "id" });
     if (error) {
       toast("저장 실패: " + error.message, "err");
       setSaving(false);
@@ -140,7 +142,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
 
   const deleteAccount = async (accountId: string) => {
     if (!supabase || !window.confirm("이 특별회계를 삭제하시겠습니까?")) return;
-    const { error } = await supabase.from("special_accounts").delete().eq("id", accountId);
+    const { error } = await supabase.from("special_accounts").delete().eq("church_id", getChurchId()).eq("id", accountId);
     if (error) {
       toast("삭제 실패: " + error.message, "err");
       return;
@@ -173,14 +175,14 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       return;
     }
     setSaving(true);
-    const { error: insErr } = await supabase.from("special_account_transactions").insert({
+    const { error: insErr } = await supabase.from("special_account_transactions").insert(withChurchId({
       account_id: selectedId,
       date: txForm.date,
       type: txForm.type,
       amount: txForm.amount,
       description: txForm.description || null,
       member_name: txForm.member_name || null,
-    });
+    }));
     if (insErr) {
       toast("저장 실패: " + insErr.message, "err");
       setSaving(false);
@@ -188,7 +190,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
     }
     const newAmount =
       txForm.type === "수입" ? selected.current_amount + txForm.amount : selected.current_amount - txForm.amount;
-    const { error: updErr } = await supabase.from("special_accounts").update({ current_amount: newAmount }).eq("id", selectedId);
+    const { error: updErr } = await supabase.from("special_accounts").update({ current_amount: newAmount }).eq("church_id", getChurchId()).eq("id", selectedId);
     if (updErr) {
       toast("잔액 반영 실패: " + updErr.message, "err");
       setSaving(false);

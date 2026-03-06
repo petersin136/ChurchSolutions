@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import type { DB, Member, Family } from "@/types/db";
 import { getDepts } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 const ROLES = ["담임목사", "부목사", "전도사", "장로", "안수집사", "권사", "집사", "성도", "청년", "학생"];
@@ -173,6 +174,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
     supabase
       .from("families")
       .select("id, family_name, created_at")
+      .eq("church_id", getChurchId())
       .order("family_name")
       .then(({ data }) => setFamilies((data as Family[]) || []));
   }, [familySearchOpen]);
@@ -269,7 +271,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         memberId = member.id;
         const { id: _, ...updatePayload } = payload;
         console.log("=== DB UPDATE 시도 ===", updatePayload);
-        const { data, error } = await supabase.from("members").update(updatePayload).eq("id", member.id).select();
+        const { data, error } = await supabase.from("members").update(updatePayload).eq("id", member.id).eq("church_id", getChurchId()).select();
         console.log("=== DB UPDATE 결과 ===", { data, error });
         if (error) {
           console.error("=== DB ERROR ===", error.message, error.details, error.hint);
@@ -278,7 +280,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         }
       } else {
         console.log("=== DB INSERT 시도 ===", payload);
-        const { data: inserted, error } = await supabase.from("members").insert(payload).select("id").single();
+        const { data: inserted, error } = await supabase.from("members").insert(withChurchId(payload)).select("id").single();
         console.log("=== DB INSERT 결과 ===", { data: inserted, error });
         if (error) {
           console.error("=== DB ERROR ===", error.message, error.details, error.hint);
@@ -294,7 +296,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         if (!upErr) {
           const { data: signed } = await supabase.storage.from("member-photos").createSignedUrl(path, 60 * 60 * 24 * 365);
           if (signed?.signedUrl) {
-            await supabase.from("members").update({ photo: signed.signedUrl }).eq("id", memberId);
+            await supabase.from("members").update({ photo: signed.signedUrl }).eq("id", memberId).eq("church_id", getChurchId());
             savedPhotoUrl = signed.signedUrl;
             const imageUrl = signed.signedUrl;
             console.log("=== 프로필 이미지 URL 디버깅 (MemberForm) ===");
@@ -344,12 +346,14 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         is_prospect: isProspect,
       } as Member;
       if (memberStatus !== member?.member_status && member?.id && supabase) {
-        await supabase.from("member_status_history").insert({
-          member_id: member.id,
-          previous_status: member.member_status ?? null,
-          new_status: memberStatus,
-          reason: statusReason || null,
-        });
+        await supabase.from("member_status_history").insert(
+          withChurchId({
+            member_id: member.id,
+            previous_status: member.member_status ?? null,
+            new_status: memberStatus,
+            reason: statusReason || null,
+          })
+        );
       }
       toast("저장되었습니다", "ok");
       onSaved(saved);

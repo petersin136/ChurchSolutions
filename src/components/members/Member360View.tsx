@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { DB, Member, Note, Visit, Income, MemberStatusHistory, NewFamilyProgram } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId } from "@/lib/tenant";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 
 const STATUS_BADGE_COLOR: Record<string, string> = {
@@ -35,7 +36,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
       setDbStatusHistory([]);
       return;
     }
-    supabase.from("member_status_history").select("id, member_id, previous_status, new_status, changed_at, reason, changed_by").eq("member_id", member.id).order("changed_at", { ascending: false }).then(({ data, error }) => {
+    supabase.from("member_status_history").select("id, member_id, previous_status, new_status, changed_at, reason, changed_by").eq("church_id", getChurchId()).eq("member_id", member.id).order("changed_at", { ascending: false }).then(({ data, error }) => {
       if (error) return;
       setDbStatusHistory((data ?? []) as MemberStatusHistory[]);
     });
@@ -49,6 +50,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
     supabase
       .from("attendance")
       .select("date, service_type, status")
+      .eq("church_id", getChurchId())
       .eq("member_id", member.id)
       .order("date", { ascending: false })
       .limit(20)

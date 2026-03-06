@@ -16,6 +16,7 @@ import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import type { DB, Member, Income as DBIncome, Expense as DBExpense } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -2937,7 +2938,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 <input type="text" value={cancelModal.reason} onChange={e => setCancelModal(m => m ? { ...m, reason: e.target.value } : null)} placeholder="선택 입력" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 16 }} />
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                   <button type="button" onClick={() => setCancelModal(null)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer" }}>닫기</button>
-                  <button type="button" onClick={async () => { if (!cancelModal || !supabase) return; await supabase.from("donation_receipts").update({ status: "취소", cancelled_at: new Date().toISOString(), cancel_reason: cancelModal.reason || null }).eq("id", cancelModal.receipt.id); setReceiptHistory(prev => prev.map(r => r.id === cancelModal.receipt.id ? { ...r, status: "취소" } : r)); setCancelModal(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.danger, color: "#fff", fontWeight: 600, cursor: "pointer" }}>취소 처리</button>
+                  <button type="button" onClick={async () => { if (!cancelModal || !supabase || !churchId) return; await supabase.from("donation_receipts").update({ status: "취소", cancelled_at: new Date().toISOString(), cancel_reason: cancelModal.reason || null }).eq("church_id", churchId).eq("id", cancelModal.receipt.id); setReceiptHistory(prev => prev.map(r => r.id === cancelModal.receipt.id ? { ...r, status: "취소" } : r)); setCancelModal(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.danger, color: "#fff", fontWeight: 600, cursor: "pointer" }}>취소 처리</button>
                 </div>
               </div>
             </div>
@@ -2996,7 +2997,7 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     if (!supabase || !setDb || !db) return null;
     const row = { date: o.date, type: o.categoryId, amount: o.amount, donor: o.donorName || null, method: o.method || null, memo: o.note || null };
     console.log("=== INCOME INSERT 시도 ===", row);
-    const { data, error } = await supabase.from("income").insert(row).select("id").single();
+    const { data, error } = await supabase.from("income").insert(withChurchId(row)).select("id").single();
     console.log("=== INCOME INSERT 결과 ===", { data, error });
     if (error) {
       console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
@@ -3010,7 +3011,7 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
   const onDeleteIncome = useCallback(async (id: string) => {
     if (!supabase || !setDb) return;
     console.log("=== INCOME DELETE 시도 ===", id);
-    const { error } = await supabase.from("income").delete().eq("id", id);
+    const { error } = await supabase.from("income").delete().eq("church_id", getChurchId()).eq("id", id);
     console.log("=== INCOME DELETE 결과 ===", { error });
     if (error) {
       console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
@@ -3023,7 +3024,7 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     if (!supabase || !setDb || !db) return null;
     const row = { date: e.date, category: e.categoryId, item: e.description || null, amount: e.amount, resolution: e.departmentId || null, memo: e.note || null };
     console.log("=== EXPENSE INSERT 시도 ===", row);
-    const { data, error } = await supabase.from("expense").insert(row).select("id").single();
+    const { data, error } = await supabase.from("expense").insert(withChurchId(row)).select("id").single();
     console.log("=== EXPENSE INSERT 결과 ===", { data, error });
     if (error) {
       console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);
@@ -3037,7 +3038,7 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
   const onDeleteExpense = useCallback(async (id: string) => {
     if (!supabase || !setDb) return;
     console.log("=== EXPENSE DELETE 시도 ===", id);
-    const { error } = await supabase.from("expense").delete().eq("id", id);
+    const { error } = await supabase.from("expense").delete().eq("church_id", getChurchId()).eq("id", id);
     console.log("=== EXPENSE DELETE 결과 ===", { error });
     if (error) {
       console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);

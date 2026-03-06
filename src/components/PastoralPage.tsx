@@ -5,6 +5,7 @@ import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance, Service
 import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Sliders, Heart, Home, Gift } from "lucide-react";
@@ -847,7 +848,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   /* 성도 목록: 대시보드와 동일하게 Supabase에서 직접 로드 */
   useEffect(() => {
     if (!supabase) return;
-    supabase.from("members").select("*").order("created_at", { ascending: true }).then(({ data, error }) => {
+    supabase.from("members").select("*").eq("church_id", getChurchId()).order("created_at", { ascending: true }).then(({ data, error }) => {
       console.log("[MembersSub] members load:", { count: data?.length ?? 0, data: data ?? null, error: error ?? null });
       if (error) {
         console.error("[MembersSub] members load error:", error.message, error.details);
@@ -2819,6 +2820,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     supabase
       .from("attendance")
       .select("id, member_id, date, status, service_type")
+      .eq("church_id", getChurchId())
       .gte("date", startStr)
       .lte("date", endStr)
       .then(({ data, error }) => {
@@ -2844,7 +2846,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   /** 출석 체크 저장 후 호출: db.attendance(주차별)와 dateBasedAttendance를 재조회해 성도 관리 등에 즉시 반영 */
   const refetchAttendanceAfterSave = useCallback(() => {
     if (!supabase) return;
-    supabase.from("attendance").select("member_id, week_num, status, reason").then(({ data, error }) => {
+    supabase.from("attendance").select("id, member_id, week_num, date, status, reason").eq("church_id", getChurchId()).then(({ data, error }) => {
       if (error) {
         console.warn("[PastoralPage] refetchAttendance error:", error.message);
         return;
@@ -2977,7 +2979,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     try {
       if (editMbrId) {
         console.log("=== DB UPDATE 시도 ===", { id: editMbrId, ...insertData });
-        const { data, error } = await supabase.from("members").update(insertData).eq("id", editMbrId).select();
+        const { data, error } = await supabase.from("members").update(insertData).eq("church_id", getChurchId()).eq("id", editMbrId).select();
         console.log("=== DB UPDATE 결과 ===", { data, error });
         if (error) {
           console.error("=== DB ERROR ===", error.message, error.details, error.hint);
@@ -2995,7 +2997,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         toast("수정 완료", "ok");
       } else {
         console.log("=== DB INSERT 시도 ===", insertData);
-        const { data, error } = await supabase.from("members").insert(insertData).select();
+        const { data, error } = await supabase.from("members").insert(withChurchId(insertData)).select();
         console.log("=== DB INSERT 결과 ===", { data, error });
         if (error) {
           console.error("=== DB ERROR ===", error.message, error.details, error.hint);

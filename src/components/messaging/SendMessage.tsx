@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Member } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 const SMS_MAX = 90;
@@ -50,7 +51,8 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
       return;
     }
     setLoading(true);
-    let q = supabase.from("members").select("id, name, phone, dept, mokjang, member_status, status").not("phone", "is", null);
+    const churchId = getChurchId();
+    let q = supabase.from("members").select("id, name, phone, dept, mokjang, member_status, status").eq("church_id", churchId).not("phone", "is", null);
     if (search.trim()) q = q.ilike("name", `%${search.trim()}%`);
     if (deptFilter) q = q.eq("dept", deptFilter);
     if (groupFilter) q = q.eq("mokjang", groupFilter);
@@ -99,13 +101,15 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
     };
     if (supabase) {
       setSending(true);
-      const { error } = await supabase.from("message_logs").insert({
-        recipient_ids: payload.recipient_ids,
-        recipient_names: payload.recipient_names,
-        content: payload.content,
-        message_type: payload.message_type,
-        status: "저장됨",
-      });
+      const { error } = await supabase.from("message_logs").insert(
+        withChurchId({
+          recipient_ids: payload.recipient_ids,
+          recipient_names: payload.recipient_names,
+          content: payload.content,
+          message_type: payload.message_type,
+          status: "저장됨",
+        })
+      );
       if (error) {
         if (toast) toast("저장 실패: " + error.message, "err");
         setSending(false);

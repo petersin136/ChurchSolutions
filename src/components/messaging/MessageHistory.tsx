@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { MessageLog } from "./SendMessage";
 import { supabase } from "@/lib/supabase";
+import { getChurchId } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 export interface MessageHistoryProps {
@@ -25,7 +26,8 @@ export function MessageHistory({ logs = [], toast }: MessageHistoryProps) {
     setLoading(true);
     const start = `${startDate}T00:00:00`;
     const end = `${endDate}T23:59:59`;
-    let q = supabase.from("message_logs").select("id, recipient_ids, recipient_names, content, message_type, sent_at, status").gte("sent_at", start).lte("sent_at", end).order("sent_at", { ascending: false });
+    const churchId = getChurchId();
+    let q = supabase.from("message_logs").select("id, recipient_ids, recipient_names, content, message_type, sent_at, status").eq("church_id", churchId).gte("sent_at", start).lte("sent_at", end).order("sent_at", { ascending: false });
     if (statusFilter) q = q.eq("status", statusFilter);
     (async () => {
       try {

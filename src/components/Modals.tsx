@@ -6,6 +6,7 @@ import { getDepts } from "@/lib/store";
 import { CATS_INCOME, CATS_EXPENSE } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 
 const STATUS_MAP: Record<string, string> = {
   새가족: "badge-blue",
@@ -557,7 +558,7 @@ export function Modals({
     try {
       if (editIncId) {
         console.log("=== INCOME UPDATE 시도 ===", { id: editIncId, ...data });
-        const { data: res, error } = await supabase.from("income").update(data).eq("id", editIncId).select();
+        const { data: res, error } = await supabase.from("income").update(data).eq("id", editIncId).eq("church_id", getChurchId()).select();
         console.log("=== INCOME UPDATE 결과 ===", { data: res, error });
         if (error) {
           console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
@@ -573,7 +574,7 @@ export function Modals({
         toast("수정 완료", "ok");
       } else {
         console.log("=== INCOME INSERT 시도 ===", data);
-        const { data: inserted, error } = await supabase.from("income").insert(data).select();
+        const { data: inserted, error } = await supabase.from("income").insert(withChurchId(data)).select();
         console.log("=== INCOME INSERT 결과 ===", { data: inserted, error });
         if (error) {
           console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
@@ -617,7 +618,7 @@ export function Modals({
     try {
       if (editExpId) {
         console.log("=== EXPENSE UPDATE 시도 ===", { id: editExpId, ...data });
-        const { data: res, error } = await supabase.from("expense").update(data).eq("id", editExpId).select();
+        const { data: res, error } = await supabase.from("expense").update(data).eq("id", editExpId).eq("church_id", getChurchId()).select();
         console.log("=== EXPENSE UPDATE 결과 ===", { data: res, error });
         if (error) {
           console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);
@@ -633,7 +634,7 @@ export function Modals({
         toast("수정 완료", "ok");
       } else {
         console.log("=== EXPENSE INSERT 시도 ===", data);
-        const { data: inserted, error } = await supabase.from("expense").insert(data).select();
+        const { data: inserted, error } = await supabase.from("expense").insert(withChurchId(data)).select();
         console.log("=== EXPENSE INSERT 결과 ===", { data: inserted, error });
         if (error) {
           console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);

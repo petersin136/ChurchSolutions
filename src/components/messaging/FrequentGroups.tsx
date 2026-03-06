@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 export interface FrequentGroup {
@@ -35,7 +36,8 @@ export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
     setLoading(true);
     (async () => {
       try {
-        const { data, error } = await supabase.from("frequent_groups").select("id, name, member_ids").order("name");
+        const churchId = getChurchId();
+        const { data, error } = await supabase.from("frequent_groups").select("id, name, member_ids").eq("church_id", churchId).order("name");
         if (error && toast) toast("명단 로드 실패: " + error.message, "err");
         const rows = (data ?? []).map((r: Record<string, unknown>) => ({
           id: String(r.id),
@@ -55,7 +57,7 @@ export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
   const handleAdd = async () => {
     if (!addName.trim()) return;
     if (supabase) {
-      const { data, error } = await supabase.from("frequent_groups").insert({ name: addName.trim(), member_ids: [] }).select("id, name, member_ids").single();
+      const { data, error } = await supabase.from("frequent_groups").insert(withChurchId({ name: addName.trim(), member_ids: [] })).select("id, name, member_ids").single();
       if (error) {
         if (toast) toast("추가 실패: " + error.message, "err");
         return;
@@ -74,7 +76,7 @@ export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
 
   const handleDelete = async (id: string) => {
     if (supabase) {
-      const { error } = await supabase.from("frequent_groups").delete().eq("id", id);
+      const { error } = await supabase.from("frequent_groups").delete().eq("church_id", getChurchId()).eq("id", id);
       if (error) {
         if (toast) toast("삭제 실패: " + error.message, "err");
         return;
@@ -96,7 +98,7 @@ export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
     if (!editingId || !editName.trim()) return;
     const next = list.map((g) => (g.id === editingId ? { ...g, name: editName.trim() } : g));
     if (supabase) {
-      const { error } = await supabase.from("frequent_groups").update({ name: editName.trim() }).eq("id", editingId);
+      const { error } = await supabase.from("frequent_groups").update({ name: editName.trim() }).eq("church_id", getChurchId()).eq("id", editingId);
       if (error) {
         if (toast) toast("수정 실패: " + error.message, "err");
         return;

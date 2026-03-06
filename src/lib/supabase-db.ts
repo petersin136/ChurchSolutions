@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import type { DB, Member, Note, NewFamilyProgram, Plan, Sermon, Visit, Income, Expense, AttStatus, ChecklistItem, WeekChecks } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 
@@ -12,19 +13,20 @@ export async function loadDBFromSupabase(): Promise<DB> {
   if (!supabase) return { ...DEFAULT_DB };
   const empty = { ...DEFAULT_DB };
 
+  const churchId = getChurchId();
   const [settingsRes, membersRes, attendanceRes, notesRes, plansRes, sermonsRes, visitsRes, newFamilyProgramsRes, incomeRes, expenseRes, budgetRes, checklistRes] = await Promise.all([
-    supabase.from("settings").select("*").limit(1),
-    supabase.from("members").select("*").order("created_at", { ascending: true }),
-    supabase.from("attendance").select("*"),
-    supabase.from("notes").select("*"),
-    supabase.from("plans").select("*").order("date", { ascending: true }),
-    supabase.from("sermons").select("*").order("date", { ascending: false }),
-    supabase.from("visits").select("*").order("date", { ascending: false }),
-    supabase.from("new_family_program").select("*"),
-    supabase.from("income").select("*").order("date", { ascending: false }),
-    supabase.from("expense").select("*").order("date", { ascending: false }),
-    supabase.from("budget").select("*").eq("fiscal_year", String(CURRENT_YEAR)),
-    supabase.from("checklist").select("*").order("sort_order", { ascending: true }),
+    supabase.from("settings").select("*").eq("church_id", churchId).limit(1),
+    supabase.from("members").select("*").eq("church_id", churchId).order("created_at", { ascending: true }),
+    supabase.from("attendance").select("*").eq("church_id", churchId),
+    supabase.from("notes").select("*").eq("church_id", churchId),
+    supabase.from("plans").select("*").eq("church_id", churchId).order("date", { ascending: true }),
+    supabase.from("sermons").select("*").eq("church_id", churchId).order("date", { ascending: false }),
+    supabase.from("visits").select("*").eq("church_id", churchId).order("date", { ascending: false }),
+    supabase.from("new_family_program").select("*").eq("church_id", churchId),
+    supabase.from("income").select("*").eq("church_id", churchId).order("date", { ascending: false }),
+    supabase.from("expense").select("*").eq("church_id", churchId).order("date", { ascending: false }),
+    supabase.from("budget").select("*").eq("church_id", churchId).eq("fiscal_year", String(CURRENT_YEAR)),
+    supabase.from("checklist").select("*").eq("church_id", churchId).order("sort_order", { ascending: true }),
   ]);
 
   if (settingsRes.error) console.warn("settings load error:", settingsRes.error);
@@ -299,11 +301,12 @@ const RESET_TABLE_SPECIAL: Record<string, { column: string; value: string | numb
 
 export async function clearAllInSupabase(): Promise<void> {
   if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local의 NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.");
+  const churchId = getChurchId();
   for (const table of ALL_RESET_TABLES) {
     const spec = RESET_TABLE_SPECIAL[table];
     const { error } = spec
-      ? await supabase.from(table).delete().neq(spec.column, spec.value)
-      : await supabase.from(table).delete().neq("id", MATCH_ALL_ID);
+      ? await supabase.from(table).delete().eq("church_id", churchId).neq(spec.column, spec.value)
+      : await supabase.from(table).delete().eq("church_id", churchId).neq("id", MATCH_ALL_ID);
     if (error) throw new Error(`${table} 초기화 실패: ${error.message}`);
   }
 }
@@ -318,37 +321,41 @@ export async function clearPastoralInSupabase(confirmExplicitReset?: { onlyFromR
     throw new Error("clearPastoralInSupabase는 초기화 버튼 등 명시적 호출에서만 사용해야 하며, 페이지 로드 시 호출하면 안 됩니다.");
   }
   if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local을 확인하세요.");
-  const { error: e1 } = await supabase.from("attendance").delete().gte("week_num", 0);
+  const churchId = getChurchId();
+  const { error: e1 } = await supabase.from("attendance").delete().eq("church_id", churchId).gte("week_num", 0);
   if (e1) throw new Error(`attendance 초기화 실패: ${e1.message}`);
-  const { error: e2 } = await supabase.from("notes").delete().neq("member_id", MATCH_ALL_ID);
+  const { error: e2 } = await supabase.from("notes").delete().eq("church_id", churchId).neq("member_id", MATCH_ALL_ID);
   if (e2) throw new Error(`notes 초기화 실패: ${e2.message}`);
-  const { error: e3 } = await supabase.from("members").delete().neq("id", MATCH_ALL_ID);
+  const { error: e3 } = await supabase.from("members").delete().eq("church_id", churchId).neq("id", MATCH_ALL_ID);
   if (e3) throw new Error(`members 초기화 실패: ${e3.message}`);
 }
 
 /** 재정(수입·지출·예산)만 Supabase에서 비우기 (권장: /api/reset?scope=finance) */
 export async function clearFinanceInSupabase(): Promise<void> {
   if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local을 확인하세요.");
-  const { error: e1 } = await supabase.from("income").delete().neq("id", MATCH_ALL_ID);
+  const churchId = getChurchId();
+  const { error: e1 } = await supabase.from("income").delete().eq("church_id", churchId).neq("id", MATCH_ALL_ID);
   if (e1) throw new Error(`income 초기화 실패: ${e1.message}`);
-  const { error: e2 } = await supabase.from("expense").delete().neq("id", MATCH_ALL_ID);
+  const { error: e2 } = await supabase.from("expense").delete().eq("church_id", churchId).neq("id", MATCH_ALL_ID);
   if (e2) throw new Error(`expense 초기화 실패: ${e2.message}`);
-  const { error: e3 } = await supabase.from("budget").delete().neq("fiscal_year", "__none__");
+  const { error: e3 } = await supabase.from("budget").delete().eq("church_id", churchId).neq("fiscal_year", "__none__");
   if (e3) throw new Error(`budget 초기화 실패: ${e3.message}`);
 }
 
 /** 심방/상담만 초기화: visits (권장: /api/reset?scope=visits) */
 export async function clearVisitsInSupabase(): Promise<void> {
   if (!supabase) throw new Error("Supabase가 연결되지 않았습니다. .env.local을 확인하세요.");
-  const { error } = await supabase.from("visits").delete().neq("id", MATCH_ALL_ID);
+  const churchId = getChurchId();
+  const { error } = await supabase.from("visits").delete().eq("church_id", churchId).neq("id", MATCH_ALL_ID);
   if (error) throw new Error(`visits 초기화 실패: ${error.message}`);
 }
 
 /** 설정(교회 정보)만 Supabase에 저장. 저장 버튼 클릭 시 이 함수만 호출하면 요청 수가 적어 실패 가능성이 낮음 */
 export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<void> {
   if (!supabase) return;
-  const { data: existing } = await supabase.from("settings").select("id").limit(1).maybeSingle();
-  const payload = {
+  const churchId = getChurchId();
+  const { data: existing } = await supabase.from("settings").select("id").eq("church_id", churchId).limit(1).maybeSingle();
+  const payload = withChurchId({
     church_name: settings.churchName,
     depts: settings.depts,
     fiscal_start: settings.fiscalStart,
@@ -356,9 +363,9 @@ export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<
     ...(settings.address !== undefined && { address: settings.address }),
     ...(settings.pastor !== undefined && { pastor: settings.pastor }),
     ...(settings.businessNumber !== undefined && { business_number: settings.businessNumber }),
-  };
+  });
   if (existing?.id) {
-    const { error } = await supabase.from("settings").update(payload).eq("id", existing.id);
+    const { error } = await supabase.from("settings").update(payload).eq("id", existing.id).eq("church_id", churchId);
     if (error) throw new Error(error.message);
   } else {
     const { error } = await supabase.from("settings").insert(payload);
@@ -371,16 +378,17 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   if (!supabase) return;
   const year = CURRENT_YEAR;
 
+  const churchId = getChurchId();
   // 로컬에서 삭제된 교인을 Supabase에서도 삭제 (새로고침 시 다시 나타나지 않도록)
   const keepMemberIds = new Set(db.members.map((m) => m.id));
-  const { data: existingMembers } = await supabase.from("members").select("id");
+  const { data: existingMembers } = await supabase.from("members").select("id").eq("church_id", churchId);
   if (existingMembers?.length) {
     for (const row of existingMembers as { id: string }[]) {
       const id = row?.id;
       if (!id || keepMemberIds.has(id)) continue;
-      await supabase.from("attendance").delete().eq("member_id", id);
-      await supabase.from("notes").delete().eq("member_id", id);
-      await supabase.from("members").delete().eq("id", id);
+      await supabase.from("attendance").delete().eq("church_id", churchId).eq("member_id", id);
+      await supabase.from("notes").delete().eq("church_id", churchId).eq("member_id", id);
+      await supabase.from("members").delete().eq("church_id", churchId).eq("id", id);
     }
   }
 
@@ -390,7 +398,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       await supabase
         .from("members")
         .upsert(
-          {
+          withChurchId({
             id: m.id,
             name: m.name,
             dept: m.dept ?? null,
@@ -425,47 +433,49 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
             small_group: m.small_group ?? null,
             talent: m.talent ?? null,
             is_prospect: m.is_prospect ?? null,
-          },
+          }),
           { onConflict: "id" }
         );
     } else {
       await supabase
         .from("members")
-        .insert({
-          name: m.name,
-          dept: m.dept ?? null,
-          role: m.role ?? null,
-          birth: m.birth ?? null,
-          gender: m.gender ?? null,
-          phone: m.phone ?? null,
-          address: m.address ?? null,
-          family: m.family ?? null,
-          status: m.status ?? null,
-          source: m.source ?? null,
-          prayer: m.prayer ?? null,
-          memo: m.memo ?? null,
-          mokjang: m.mokjang ?? m.group ?? null,
-          photo: m.photo ?? null,
-          is_new_family: m.is_new_family ?? null,
-          first_visit_date: m.first_visit_date ?? null,
-          visit_path: m.visit_path ?? null,
-          referrer_id: m.referrer_id ?? null,
-          referrer_name: m.referrer_name ?? null,
-          family_id: m.family_id ?? null,
-          family_relation: m.family_relation ?? null,
-          member_status: m.member_status ?? null,
-          status_changed_at: m.status_changed_at ?? null,
-          status_reason: m.status_reason ?? null,
-          email: m.email ?? null,
-          job: m.job ?? null,
-          baptism_date: m.baptism_date ?? null,
-          baptism_type: m.baptism_type ?? null,
-          wedding_anniversary: m.wedding_anniversary ?? null,
-          registered_date: m.registered_date ?? null,
-          small_group: m.small_group ?? null,
-          talent: m.talent ?? null,
-          is_prospect: m.is_prospect ?? null,
-        });
+        .insert(
+          withChurchId({
+            name: m.name,
+            dept: m.dept ?? null,
+            role: m.role ?? null,
+            birth: m.birth ?? null,
+            gender: m.gender ?? null,
+            phone: m.phone ?? null,
+            address: m.address ?? null,
+            family: m.family ?? null,
+            status: m.status ?? null,
+            source: m.source ?? null,
+            prayer: m.prayer ?? null,
+            memo: m.memo ?? null,
+            mokjang: m.mokjang ?? m.group ?? null,
+            photo: m.photo ?? null,
+            is_new_family: m.is_new_family ?? null,
+            first_visit_date: m.first_visit_date ?? null,
+            visit_path: m.visit_path ?? null,
+            referrer_id: m.referrer_id ?? null,
+            referrer_name: m.referrer_name ?? null,
+            family_id: m.family_id ?? null,
+            family_relation: m.family_relation ?? null,
+            member_status: m.member_status ?? null,
+            status_changed_at: m.status_changed_at ?? null,
+            status_reason: m.status_reason ?? null,
+            email: m.email ?? null,
+            job: m.job ?? null,
+            baptism_date: m.baptism_date ?? null,
+            baptism_type: m.baptism_type ?? null,
+            wedding_anniversary: m.wedding_anniversary ?? null,
+            registered_date: m.registered_date ?? null,
+            small_group: m.small_group ?? null,
+            talent: m.talent ?? null,
+            is_prospect: m.is_prospect ?? null,
+          })
+        );
     }
   }
 
@@ -494,32 +504,36 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const m of db.members) {
     if (!/^[0-9a-f-]{36}$/i.test(m.id)) continue;
     const list = db.notes[m.id] ?? [];
-    await supabase.from("notes").delete().eq("member_id", m.id);
+    await supabase.from("notes").delete().eq("church_id", churchId).eq("member_id", m.id);
     if (list.length > 0) {
-      const rows = list.map((n) => {
-        const key = `note\t${m.id}\t${n.date}\t${n.createdAt || n.date}\t${n.content}`;
-        const answered = aKeys.has(key);
-        const answeredAt = aDates[key] || null;
-        return {
-          member_id: m.id,
-          date: n.date,
-          type: n.type,
-          content: n.content,
-          created_at: n.createdAt || new Date().toISOString(),
-          answered: answered || false,
-          answered_at: answered && answeredAt ? answeredAt : null,
-        };
-      });
-      const { error } = await supabase.from("notes").insert(rows);
-      if (error) {
-        await supabase.from("notes").insert(
-          list.map((n) => ({
+      const rows = withChurchId(
+        list.map((n) => {
+          const key = `note\t${m.id}\t${n.date}\t${n.createdAt || n.date}\t${n.content}`;
+          const answered = aKeys.has(key);
+          const answeredAt = aDates[key] || null;
+          return {
             member_id: m.id,
             date: n.date,
             type: n.type,
             content: n.content,
             created_at: n.createdAt || new Date().toISOString(),
-          }))
+            answered: answered || false,
+            answered_at: answered && answeredAt ? answeredAt : null,
+          };
+        })
+      );
+      const { error } = await supabase.from("notes").insert(rows);
+      if (error) {
+        await supabase.from("notes").insert(
+          withChurchId(
+            list.map((n) => ({
+              member_id: m.id,
+              date: n.date,
+              type: n.type,
+              content: n.content,
+              created_at: n.createdAt || new Date().toISOString(),
+            }))
+          )
         );
       }
     }
@@ -528,24 +542,20 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const p of db.plans) {
     if (/^[0-9a-f-]{36}$/i.test(p.id)) {
       await supabase.from("plans").upsert(
-        { id: p.id, title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null },
+        withChurchId({ id: p.id, title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null }),
         { onConflict: "id" }
       );
     } else {
-      await supabase.from("plans").insert({
-        title: p.title,
-        date: p.date,
-        time: p.time ?? null,
-        cat: p.cat ?? null,
-        memo: p.memo ?? null,
-      });
+      await supabase.from("plans").insert(
+        withChurchId({ title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null })
+      );
     }
   }
 
   for (const s of db.sermons) {
     if (/^[0-9a-f-]{36}$/i.test(s.id)) {
       await supabase.from("sermons").upsert(
-        {
+        withChurchId({
           id: s.id,
           date: s.date,
           service: s.service ?? null,
@@ -554,41 +564,45 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
           core: s.core ?? null,
           status: s.status ?? null,
           notes: s.notes ?? null,
-        },
+        }),
         { onConflict: "id" }
       );
     } else {
-      await supabase.from("sermons").insert({
-        date: s.date,
-        service: s.service ?? null,
-        bible_text: s.text ?? null,
-        title: s.title ?? null,
-        core: s.core ?? null,
-        status: s.status ?? null,
-        notes: s.notes ?? null,
-      });
+      await supabase.from("sermons").insert(
+        withChurchId({
+          date: s.date,
+          service: s.service ?? null,
+          bible_text: s.text ?? null,
+          title: s.title ?? null,
+          core: s.core ?? null,
+          status: s.status ?? null,
+          notes: s.notes ?? null,
+        })
+      );
     }
   }
 
   for (const v of db.visits) {
     if (/^[0-9a-f-]{36}$/i.test(v.id)) {
       await supabase.from("visits").upsert(
-        {
+        withChurchId({
           id: v.id,
           date: v.date,
           member_id: v.memberId || null,
           type: v.type ?? null,
           content: v.content,
-        },
+        }),
         { onConflict: "id" }
       );
     } else {
-      await supabase.from("visits").insert({
-        date: v.date,
-        member_id: v.memberId || null,
-        type: v.type ?? null,
-        content: v.content,
-      });
+      await supabase.from("visits").insert(
+        withChurchId({
+          date: v.date,
+          member_id: v.memberId || null,
+          type: v.type ?? null,
+          content: v.content,
+        })
+      );
     }
   }
 
@@ -618,13 +632,13 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       const arr = (p as unknown as Record<string, unknown>)[key] as WeekChecks | undefined;
       if (arr && Array.isArray(arr) && arr.length >= 4) row[key] = JSON.stringify(arr.slice(0, 4));
     });
-    await supabase.from("new_family_program").upsert(row as Record<string, never>, { onConflict: "id" });
+    await supabase.from("new_family_program").upsert(withChurchId(row) as Record<string, never>, { onConflict: "id" });
   }
 
   for (const i of db.income) {
     if (/^[0-9a-f-]{36}$/i.test(i.id)) {
       await supabase.from("income").upsert(
-        {
+        withChurchId({
           id: i.id,
           date: i.date,
           type: i.type,
@@ -632,25 +646,27 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
           donor: i.donor ?? null,
           method: i.method ?? null,
           memo: i.memo ?? null,
-        },
+        }),
         { onConflict: "id" }
       );
     } else {
-      await supabase.from("income").insert({
-        date: i.date,
-        type: i.type,
-        amount: i.amount,
-        donor: i.donor ?? null,
-        method: i.method ?? null,
-        memo: i.memo ?? null,
-      });
+      await supabase.from("income").insert(
+        withChurchId({
+          date: i.date,
+          type: i.type,
+          amount: i.amount,
+          donor: i.donor ?? null,
+          method: i.method ?? null,
+          memo: i.memo ?? null,
+        })
+      );
     }
   }
 
   for (const e of db.expense) {
     if (/^[0-9a-f-]{36}$/i.test(e.id)) {
       await supabase.from("expense").upsert(
-        {
+        withChurchId({
           id: e.id,
           date: e.date,
           category: e.category,
@@ -658,47 +674,53 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
           amount: e.amount,
           resolution: e.resolution ?? null,
           memo: e.memo ?? null,
-        },
+        }),
         { onConflict: "id" }
       );
     } else {
-      await supabase.from("expense").insert({
-        date: e.date,
-        category: e.category,
-        item: e.item ?? null,
-        amount: e.amount,
-        resolution: e.resolution ?? null,
-        memo: e.memo ?? null,
-      });
+      await supabase.from("expense").insert(
+        withChurchId({
+          date: e.date,
+          category: e.category,
+          item: e.item ?? null,
+          amount: e.amount,
+          resolution: e.resolution ?? null,
+          memo: e.memo ?? null,
+        })
+      );
     }
   }
 
   const fiscalYear = String(year);
-  await supabase.from("budget").delete().eq("fiscal_year", fiscalYear);
+  await supabase.from("budget").delete().eq("church_id", churchId).eq("fiscal_year", fiscalYear);
   for (const [key, amount] of Object.entries(db.budget)) {
     const numAmount = Number(amount) ?? 0;
     const parts = key.includes(":") ? key.split(":") : [null, key];
     const category_type = parts[0] === "수입" || parts[0] === "지출" ? parts[0] : "지출";
     const category = parts[1] ?? key;
-    await supabase.from("budget").insert({
-      fiscal_year: fiscalYear,
-      category_type,
-      category,
-      annual_total: numAmount,
-      monthly_amounts: { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0, "11": 0, "12": 0 },
-    });
+    await supabase.from("budget").insert(
+      withChurchId({
+        fiscal_year: fiscalYear,
+        category_type,
+        category,
+        annual_total: numAmount,
+        monthly_amounts: { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0, "11": 0, "12": 0 },
+      })
+    );
   }
 
   for (const [weekKey, items] of Object.entries(db.checklist)) {
-    await supabase.from("checklist").delete().eq("week_key", weekKey);
+    await supabase.from("checklist").delete().eq("church_id", churchId).eq("week_key", weekKey);
     if (items.length > 0) {
       await supabase.from("checklist").insert(
-        items.map((item, i) => ({
-          week_key: weekKey,
-          text: item.text,
-          done: item.done,
-          sort_order: i,
-        }))
+        withChurchId(
+          items.map((item, i) => ({
+            week_key: weekKey,
+            text: item.text,
+            done: item.done,
+            sort_order: i,
+          }))
+        )
       );
     }
   }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolEnrollment, SchoolTransferHistory } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -26,10 +27,11 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
     if (!supabase) return;
     setLoading(true);
     try {
+      const churchId = getChurchId();
       const [depts, enrolls, hist] = await Promise.all([
-        supabase.from("school_departments").select("*").order("sort_order"),
-        supabase.from("school_enrollments").select("*").eq("is_active", true),
-        supabase.from("school_transfer_history").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("school_departments").select("*").eq("church_id", churchId).order("sort_order"),
+        supabase.from("school_enrollments").select("*").eq("church_id", churchId).eq("is_active", true),
+        supabase.from("school_transfer_history").select("*").eq("church_id", churchId).order("created_at", { ascending: false }).limit(50),
       ]);
       if (depts.error) {
         toast("부서 로드 실패: " + depts.error.message, "err");
@@ -79,12 +81,12 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
       for (const enrollId of selectedIds) {
         const en = enrollments.find((e) => e.id === enrollId);
         if (!en) continue;
-        const { error: updErr } = await supabase.from("school_enrollments").update({ department_id: toDeptId, class_id: null }).eq("id", enrollId);
+        const { error: updErr } = await supabase.from("school_enrollments").update({ department_id: toDeptId, class_id: null }).eq("church_id", getChurchId()).eq("id", enrollId);
         if (updErr) {
           toast("이동 실패: " + updErr.message, "err");
           return;
         }
-        const { error: insErr } = await supabase.from("school_transfer_history").insert({
+        const { error: insErr } = await supabase.from("school_transfer_history").insert(withChurchId({
           member_id: en.member_id,
           from_department_id: fromDeptId ?? null,
           from_department_name: fromDept?.name ?? null,
@@ -92,7 +94,7 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
           to_department_name: toDept?.name ?? null,
           transfer_date: transferDate,
           reason: reason.trim() || null,
-        });
+        }));
         if (insErr) {
           toast("이력 저장 실패: " + insErr.message, "err");
           return;

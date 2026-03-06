@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { getChurchId } from "@/lib/tenant";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
 
@@ -67,11 +68,13 @@ export function AbsenteeManagement({
     nWeeksAgo.setDate(nWeeksAgo.getDate() - 7 * Math.max(nWeeks, 1));
     const fromDate = nWeeksAgo.toISOString().split("T")[0];
 
+    const churchId = getChurchId();
     const [memRes, attRes] = await Promise.all([
-      supabase.from("members").select("id, name, dept, mokjang, phone, member_status, status").order("name"),
+      supabase.from("members").select("id, name, dept, mokjang, phone, member_status, status").eq("church_id", churchId).order("name"),
       supabase
         .from("attendance")
         .select("member_id, date, status")
+        .eq("church_id", churchId)
         .gte("date", fromDate)
         .eq("service_type", "주일예배"),
     ]);
@@ -95,7 +98,7 @@ export function AbsenteeManagement({
       );
     }
     if (attRes.error) {
-      const fallback = await supabase.from("attendance").select("member_id, date, status").gte("date", fromDate);
+      const fallback = await supabase.from("attendance").select("member_id, date, status").eq("church_id", churchId).gte("date", fromDate);
       if (fallback.error) {
         console.error(fallback.error);
         toast?.("출석 데이터 로드 실패: " + fallback.error.message, "err");

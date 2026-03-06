@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId } from "@/lib/tenant";
 import { logAction } from "@/utils/auditLog";
 import type { Organization, OrganizationMember, Role, UserRole, CustomField, CustomLabel, AuditLog } from "@/types/db";
 import { DEFAULT_SETTINGS } from "@/types/db";
@@ -71,14 +72,15 @@ export function SettingsPage({
   useEffect(() => {
     if (!supabase) return;
     (async () => {
+      const churchId = getChurchId();
       const [orgRes, omRes, rolesRes, urRes, cfRes, clRes, auditRes] = await Promise.all([
-        supabase.from("organizations").select("*").order("sort_order"),
-        supabase.from("organization_members").select("*"),
-        supabase.from("roles").select("*").order("sort_order"),
-        supabase.from("user_roles").select("*, role:roles(*), member:members(*)"),
-        supabase.from("custom_fields").select("*").order("sort_order"),
-        supabase.from("custom_labels").select("*"),
-        supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(500),
+        supabase.from("organizations").select("*").eq("church_id", churchId).order("sort_order"),
+        supabase.from("organization_members").select("*").eq("church_id", churchId),
+        supabase.from("roles").select("*").eq("church_id", churchId).order("sort_order"),
+        supabase.from("user_roles").select("*, role:roles(*), member:members(*)").eq("church_id", churchId),
+        supabase.from("custom_fields").select("*").eq("church_id", churchId).order("sort_order"),
+        supabase.from("custom_labels").select("*").eq("church_id", churchId),
+        supabase.from("audit_logs").select("*").eq("church_id", churchId).order("created_at", { ascending: false }).limit(500),
       ]);
       if (orgRes.data) setOrganizations((orgRes.data as Organization[]));
       if (omRes.data) setOrganizationMembers((omRes.data as OrganizationMember[]));

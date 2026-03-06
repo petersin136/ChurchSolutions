@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 export interface DepartmentManagementProps {
@@ -32,13 +33,13 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
     if (!supabase) return;
     setLoading(true);
     try {
-      const { data: depts, error: deptsError } = await supabase.from("school_departments").select("*").order("sort_order");
+      const { data: depts, error: deptsError } = await supabase.from("school_departments").select("*").eq("church_id", getChurchId()).order("sort_order");
       if (deptsError) {
         toast("부서 목록 로드 실패: " + deptsError.message, "err");
         return;
       }
       setDepartments((depts as SchoolDepartment[]) ?? []);
-      const { data: cls, error: clsError } = await supabase.from("school_classes").select("*").order("sort_order");
+      const { data: cls, error: clsError } = await supabase.from("school_classes").select("*").eq("church_id", getChurchId()).order("sort_order");
       if (clsError) {
         toast("반 목록 로드 실패: " + clsError.message, "err");
         return;
@@ -58,11 +59,11 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
 
   const handleAddDepartment = async () => {
     if (!newName.trim() || !supabase) return;
-    const { error } = await supabase.from("school_departments").insert({
+    const { error } = await supabase.from("school_departments").insert(withChurchId({
       name: newName.trim(),
       age_range: newAgeRange.trim() || null,
       sort_order: departments.length + 1,
-    });
+    }));
     if (error) {
       toast("부서 추가 실패: " + error.message, "err");
       return;
@@ -87,7 +88,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
       name: editDeptName.trim(),
       age_range: editDeptAgeRange.trim() || null,
       updated_at: new Date().toISOString(),
-    }).eq("id", editDeptId);
+    }).eq("church_id", getChurchId()).eq("id", editDeptId);
     if (error) {
       toast("부서 수정 실패: " + error.message, "err");
       return;
@@ -101,7 +102,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
   const handleDeleteDepartment = async (d?: SchoolDepartment) => {
     const target = d ?? (editDeptId ? departments.find((x) => x.id === editDeptId) : selectedDept);
     if (!target || !supabase || !confirm(`"${target.name}" 부서를 삭제하시겠습니까?`)) return;
-    const { error } = await supabase.from("school_departments").delete().eq("id", target.id);
+    const { error } = await supabase.from("school_departments").delete().eq("church_id", getChurchId()).eq("id", target.id);
     if (error) {
       toast("부서 삭제 실패: " + error.message, "err");
       return;
@@ -116,11 +117,11 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
   const handleAddClass = async () => {
     if (!selectedDeptId || !newClassName.trim() || !supabase) return;
     const deptClassesCount = deptClasses.length;
-    const { error } = await supabase.from("school_classes").insert({
+    const { error } = await supabase.from("school_classes").insert(withChurchId({
       department_id: selectedDeptId,
       name: newClassName.trim(),
       sort_order: deptClassesCount + 1,
-    });
+    }));
     if (error) {
       toast("반 추가 실패: " + error.message, "err");
       return;
@@ -135,7 +136,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
     if (!editClassOpen || !editClassName.trim() || !supabase) return;
     const { error } = await supabase.from("school_classes").update({
       name: editClassName.trim(),
-    }).eq("id", editClassOpen.id);
+    }).eq("church_id", getChurchId()).eq("id", editClassOpen.id);
     if (error) {
       toast("반 수정 실패: " + error.message, "err");
       return;
@@ -147,7 +148,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
 
   const handleDeleteClass = async (c: SchoolClass) => {
     if (!supabase || !confirm(`"${c.name}" 반을 삭제하시겠습니까?`)) return;
-    const { error } = await supabase.from("school_classes").delete().eq("id", c.id);
+    const { error } = await supabase.from("school_classes").delete().eq("church_id", getChurchId()).eq("id", c.id);
     if (error) {
       toast("반 삭제 실패: " + error.message, "err");
       return;

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 const MIN_TOUCH = 44;
@@ -144,14 +145,14 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
 
   const loadDeptsAndClasses = async () => {
     if (!supabase) return;
-    const { data: depts, error: deptsErr } = await supabase.from("school_departments").select("*").order("sort_order");
+    const { data: depts, error: deptsErr } = await supabase.from("school_departments").select("*").eq("church_id", getChurchId()).order("sort_order");
     if (deptsErr) {
       toast("부서/반 로드 실패: " + deptsErr.message, "err");
       return;
     }
     const list = (depts as SchoolDepartment[]) ?? [];
     setDepartments(list.filter((d) => d.is_active !== false));
-    const { data: cls, error: clsErr } = await supabase.from("school_classes").select("*").order("sort_order");
+    const { data: cls, error: clsErr } = await supabase.from("school_classes").select("*").eq("church_id", getChurchId()).order("sort_order");
     if (clsErr) {
       toast("반 목록 로드 실패: " + clsErr.message, "err");
       return;
@@ -162,7 +163,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
 
   const loadEnrollments = async () => {
     if (!supabase) return;
-    let q = supabase.from("school_enrollments").select("*").eq("is_active", true).in("role", ["학생", "교사", "부교사"]);
+    let q = supabase.from("school_enrollments").select("*").eq("church_id", getChurchId()).eq("is_active", true).in("role", ["학생", "교사", "부교사"]);
     if (selectedDeptId) q = q.eq("department_id", selectedDeptId);
     if (selectedClassId) q = q.eq("class_id", selectedClassId);
     const { data, error } = await q;
@@ -175,7 +176,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
 
   const loadAttendance = async () => {
     if (!supabase || !selectedDeptId) return;
-    const { data, error } = await supabase.from("school_attendance").select("member_id, status").eq("department_id", selectedDeptId).eq("date", date);
+    const { data, error } = await supabase.from("school_attendance").select("member_id, status").eq("church_id", getChurchId()).eq("department_id", selectedDeptId).eq("date", date);
     if (error) {
       toast("출석 로드 실패: " + error.message, "err");
       return;
@@ -210,13 +211,13 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
     }
     setSaving(true);
     try {
-      const rows = enrollments.map((e) => ({
+      const rows = withChurchId(enrollments.map((e) => ({
         department_id: selectedDeptId,
         class_id: e.class_id ?? null,
         member_id: e.member_id,
         date,
         status: statusMap[e.member_id] ?? "출석",
-      }));
+      })));
       const { error } = await supabase.from("school_attendance").upsert(rows, {
         onConflict: "member_id,department_id,date",
       });
