@@ -15,7 +15,6 @@ function getSupabase(): SupabaseClient | null {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
-        flowType: "pkce",
       },
     });
   }
