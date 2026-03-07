@@ -128,7 +128,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       end_date: accountForm.end_date || null,
       status: accountForm.status || "진행중",
     };
-    const { error } = await supabase.from("special_accounts").upsert(withChurchId(payload as SpecialAccount), { onConflict: "id" });
+    const { error } = await supabase.from("special_accounts").upsert(withChurchId(payload as any), { onConflict: "id" });
     if (error) {
       toast("저장 실패: " + error.message, "err");
       setSaving(false);
@@ -182,7 +182,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       amount: txForm.amount,
       description: txForm.description || null,
       member_name: txForm.member_name || null,
-    }));
+    } as any));
     if (insErr) {
       toast("저장 실패: " + insErr.message, "err");
       setSaving(false);

@@ -364,7 +364,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                   <Pie data={memberStats.genderPie} cx="50%" cy="50%" outerRadius={70} dataKey="value" nameKey="name" label={(e) => `${e.name} ${e.value}명`}>
                     {memberStats.genderPie.map((_, i) => <Cell key={i} fill={_.color} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number | undefined) => [(v ?? 0) + "명", ""]} />
+                  <Tooltip formatter={(v: any) => [(v ?? 0) + "명", ""]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -392,7 +392,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                 <Pie data={memberStats.roleData} cx="50%" cy="50%" outerRadius={70} dataKey="value" nameKey="name">
                   {memberStats.roleData.map((_, i) => <Cell key={i} fill={_.fill} />)}
                 </Pie>
-                <Tooltip formatter={(v: number | undefined) => [(v ?? 0) + "명", ""]} />
+                <Tooltip formatter={(v: any) => [(v ?? 0) + "명", ""]} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -441,7 +441,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number | undefined) => [(v ?? 0) + "%", "출석률"]} />
+                <Tooltip formatter={(v: any) => [(v ?? 0) + "%", "출석률"]} />
                 <Line type="monotone" dataKey="출석률" stroke={C.success} strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -453,7 +453,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v: number | undefined) => [(v ?? 0) + "%", "출석률"]} />
+                    <Tooltip formatter={(v: any) => [(v ?? 0) + "%", "출석률"]} />
                     <Bar dataKey="출석률" fill={C.navy} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -479,7 +479,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                     <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => fmt(Number(v))} />
-                    <Tooltip formatter={(v: number | undefined) => [fmt(v ?? 0) + "원", ""]} />
+                    <Tooltip formatter={(v: any) => [fmt(v ?? 0) + "원", ""]} />
                     <Legend />
                     <Line type="monotone" dataKey="수입" stroke={C.navy} strokeWidth={2} dot={{ r: 3 }} />
                     <Line type="monotone" dataKey="지출" stroke={C.danger} strokeWidth={2} dot={{ r: 3 }} />
@@ -568,7 +568,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
               <Pie data={newFamilyStats.pieData} cx="50%" cy="50%" outerRadius={60} dataKey="value" nameKey="name">
                 {newFamilyStats.pieData.map((_, i) => <Cell key={i} fill={_.fill} />)}
               </Pie>
-              <Tooltip formatter={(v: number | undefined) => [(v ?? 0) + "명", ""]} />
+              <Tooltip formatter={(v: any) => [(v ?? 0) + "명", ""]} />
             </PieChart>
           </ResponsiveContainer>
         ) : <EmptyMsg />}
