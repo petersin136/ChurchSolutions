@@ -33,31 +33,46 @@ export function useAuth() {
 
 async function fetchChurchForUser(userId: string): Promise<{ churchId: string; churchName: string } | null> {
   console.log("[Auth] fetchChurchForUser 시작:", userId);
-  if (!supabase) return null;
-  const { data, error } = await supabase
-    .from("church_users")
-    .select("church_id, churches(name)")
-    .eq("user_id", userId)
-    .limit(1)
-    .maybeSingle();
-  console.log("[AuthContext] church_users 조회 결과:", { data, error: error?.message });
-  if (error || !data) {
-    console.warn("[AuthContext] church_users 조회 실패:", error?.message ?? "no data");
-    console.log("[Auth] fetchChurchForUser 결과:", null);
+  if (!supabase) {
+    console.log("[Auth] supabase 없음");
     return null;
   }
-  const cid = data.church_id as string | null;
-  if (!cid || cid === "null" || cid === "undefined") {
-    console.warn("[AuthContext] church_users에 church_id 비어있음:", cid);
-    console.log("[Auth] fetchChurchForUser 결과:", null);
+  try {
+    console.log("[Auth] supabase 쿼리 시작");
+    const { data, error } = await supabase
+      .from("church_users")
+      .select("church_id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+    console.log("[Auth] church_users 쿼리 완료:", { data, error: error?.message });
+    if (error || !data) {
+      console.log("[Auth] fetchChurchForUser 결과: null (에러 또는 데이터 없음)");
+      return null;
+    }
+    const cid = data.church_id as string;
+    if (!cid || cid === "null" || cid === "undefined") {
+      console.log("[Auth] fetchChurchForUser 결과: null (church_id 비어있음)");
+      return null;
+    }
+    // 교회 이름은 별도 쿼리
+    let churchName = "";
+    const { data: churchData } = await supabase
+      .from("churches")
+      .select("name")
+      .eq("id", cid)
+      .maybeSingle();
+    console.log("[Auth] churches 쿼리 완료:", churchData);
+    if (churchData?.name) {
+      churchName = churchData.name;
+    }
+    const result = { churchId: cid, churchName };
+    console.log("[Auth] fetchChurchForUser 결과:", result);
+    return result;
+  } catch (err) {
+    console.error("[Auth] fetchChurchForUser 에러:", err);
     return null;
   }
-  const churchName = (data as Record<string, unknown>).churches
-    ? ((data as Record<string, unknown>).churches as { name?: string })?.name ?? ""
-    : "";
-  const result = { churchId: cid, churchName };
-  console.log("[Auth] fetchChurchForUser 결과:", result);
-  return result;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
