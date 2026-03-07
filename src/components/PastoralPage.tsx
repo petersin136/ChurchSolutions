@@ -2853,14 +2853,15 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       }
       const attendance: DB["attendance"] = {};
       const attendanceReasons: Record<string, Record<number, string>> = {};
-      (data ?? []).forEach((r: Record<string, unknown>) => {
-        const mid = r.member_id as string;
-        const week = r.week_num as number;
+      (data ?? []).forEach((r) => {
+        const row = r as Record<string, unknown>;
+        const mid = row.member_id as string;
+        const week = row.week_num as number;
         if (!mid) return;
         if (!attendance[mid]) attendance[mid] = {};
-        const status = r.status as string;
+        const status = row.status as string;
         attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as AttStatus;
-        const reason = r.reason as string | undefined;
+        const reason = row.reason as string | undefined;
         if (reason?.trim()) {
           if (!attendanceReasons[mid]) attendanceReasons[mid] = {};
           attendanceReasons[mid][week] = reason;
