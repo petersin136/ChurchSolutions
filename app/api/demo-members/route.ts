@@ -174,7 +174,7 @@ export async function POST() {
     }
 
     const members = buildDemoMembers();
-    const { error } = await supabase.from("members").insert(withChurchId(members as Record<string, unknown>[]));
+    const { error } = await supabase.from("members").insert(withChurchId(members as unknown as Record<string, unknown>[]));
     if (error) throw error;
 
     return NextResponse.json({ ok: true, count: members.length });
