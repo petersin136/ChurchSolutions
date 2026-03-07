@@ -819,7 +819,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 /* ====== Members ====== */
 const ROLE_PRIORITY: Record<string, number> = { "장로": 0, "안수집사": 1, "권사": 2, "집사": 3, "청년": 4, "성도": 5, "학생": 6, "새가족": 7, "영아": 8 };
 
-function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, detailId, deleteMember }: {
+function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, detailId, deleteMembers }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
   toast: (m: string, t?: string) => void; currentWeek: number;
   openMemberModal: (id?: string) => void; openDetail: (id: string) => void; openNoteModal: (id: string) => void;
