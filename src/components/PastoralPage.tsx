@@ -854,7 +854,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         console.error("[MembersSub] members load error:", error.message, error.details);
         return;
       }
-      const members = (data ?? []).map((r: Record<string, unknown>) => toMember(r));
+      const members = (data ?? []).map((r) => toMember(r as Record<string, unknown>));
       setDb(prev => ({ ...prev, members }));
     });
   }, [setDb]);
