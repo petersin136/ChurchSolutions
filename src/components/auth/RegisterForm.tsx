@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function RegisterForm() {
   const isRegistering = useRef(false);
-  const { loading: authLoading } = useAuth();
+  const { loading: authLoading, setRegistering } = useAuth();
   const [churchName, setChurchName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,6 +40,7 @@ export default function RegisterForm() {
 
     setError("");
     setLoading(true);
+    setRegistering(true);
     isRegistering.current = true;
 
     try {
@@ -124,6 +125,7 @@ export default function RegisterForm() {
       console.error(err);
       isRegistering.current = false;
     } finally {
+      setRegistering(false);
       setLoading(false);
       isRegistering.current = false;
     }

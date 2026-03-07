@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -14,6 +14,7 @@ interface AuthState {
   churchName: string | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  setRegistering: (v: boolean) => void;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthState>({
   churchName: null,
   loading: true,
   signOut: async () => {},
+  setRegistering: () => {},
 });
 
 export function useAuth() {
@@ -60,6 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [churchId, setChurchId] = useState<string | null>(null);
   const [churchName, setChurchName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const isRegisteringRef = useRef(false);
+  useEffect(() => {
+    isRegisteringRef.current = isRegistering;
+  }, [isRegistering]);
 
   const loadChurch = useCallback(async (userId: string) => {
     const result = await fetchChurchForUser(userId);
@@ -116,6 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, s) => {
       if (cancelled) return;
+      if (isRegisteringRef.current) {
+        console.log("[AuthContext] 회원가입 중 - onAuthStateChange 무시");
+        return;
+      }
       if (typeof window !== "undefined" && window.location.pathname === "/register") {
         console.log("[AuthContext] /register 페이지에서는 자동 로드 스킵");
         setLoading(false);
@@ -181,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, churchId, churchName, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, churchId, churchName, loading, signOut, setRegistering: setIsRegistering }}>
       {children}
     </AuthContext.Provider>
   );

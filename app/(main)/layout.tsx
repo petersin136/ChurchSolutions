@@ -1,12 +1,5 @@
-"use client";
+export const dynamic = "force-dynamic";
 
-import type { ReactNode } from "react";
-import { Providers } from "@/components/Providers";
-
-export default function MainLayout({ children }: { children: ReactNode }) {
-  return (
-    <div suppressHydrationWarning>
-      <Providers>{children}</Providers>
-    </div>
-  );
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
