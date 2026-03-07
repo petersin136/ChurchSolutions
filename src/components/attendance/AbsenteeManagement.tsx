@@ -69,10 +69,10 @@ export function AbsenteeManagement({
     const fromDate = nWeeksAgo.toISOString().split("T")[0];
 
     const [memRes, attRes] = await Promise.all([
-      filterByChurch(supabase.from("members").select("id, name, dept, mokjang, phone, member_status, status")).order("name") as any,
-      filterByChurch(supabase.from("attendance").select("member_id, date, status"))
+      filterByChurch(supabase.from("members").select("id, name, dept, mokjang, phone, member_status, status") as any).order("name"),
+      filterByChurch(supabase.from("attendance").select("member_id, date, status") as any)
         .gte("date", fromDate)
-        .eq("service_type", "주일예배") as any,
+        .eq("service_type", "주일예배"),
     ]);
     if (memRes.error) {
       console.error(memRes.error);
