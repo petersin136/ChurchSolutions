@@ -36,7 +36,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
       setDbStatusHistory([]);
       return;
     }
-    filterByChurch(supabase.from("member_status_history").select("id, member_id, previous_status, new_status, changed_at, reason, changed_by")).eq("member_id", member.id).order("changed_at", { ascending: false }).then(({ data, error }) => {
+    filterByChurch(supabase.from("member_status_history").select("id, member_id, previous_status, new_status, changed_at, reason, changed_by")).eq("member_id", member.id).order("changed_at", { ascending: false }).then(({ data, error }: { data: unknown[] | null; error: { message: string } | null }) => {
       if (error) return;
       setDbStatusHistory((data ?? []) as MemberStatusHistory[]);
     });
@@ -51,7 +51,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
       .eq("member_id", member.id)
       .order("date", { ascending: false })
       .limit(20)
-      .then(({ data, error }) => {
+      .then(({ data, error }: { data: unknown[] | null; error: { message: string } | null }) => {
         if (error) return;
         setAttendanceHistory(
           (data ?? []).map((r: Record<string, unknown>) => ({

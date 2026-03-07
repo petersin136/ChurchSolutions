@@ -848,7 +848,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   /* 성도 목록: 대시보드와 동일하게 Supabase에서 직접 로드 */
   useEffect(() => {
     if (!supabase) return;
-    filterByChurch(supabase.from("members").select("*")).order("created_at", { ascending: true }).then(({ data, error }) => {
+    filterByChurch(supabase.from("members").select("*")).order("created_at", { ascending: true }).then(({ data, error }: { data: unknown[] | null; error: { message: string; details?: unknown } | null }) => {
       console.log("[MembersSub] members load:", { count: data?.length ?? 0, data: data ?? null, error: error ?? null });
       if (error) {
         console.error("[MembersSub] members load error:", error.message, error.details);
@@ -2846,7 +2846,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   /** 출석 체크 저장 후 호출: db.attendance(주차별)와 dateBasedAttendance를 재조회해 성도 관리 등에 즉시 반영 */
   const refetchAttendanceAfterSave = useCallback(() => {
     if (!supabase) return;
-    filterByChurch(supabase.from("attendance").select("id, member_id, week_num, date, status, reason")).then(({ data, error }) => {
+    filterByChurch(supabase.from("attendance").select("id, member_id, week_num, date, status, reason")).then(({ data, error }: { data: unknown[] | null; error: { message: string; details?: unknown } | null }) => {
       if (error) {
         console.warn("[PastoralPage] refetchAttendance error:", error.message);
         return;
