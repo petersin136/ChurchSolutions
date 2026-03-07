@@ -252,7 +252,7 @@ export function AttendanceDashboard({
               <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
               <XAxis dataKey="week" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number | undefined) => [`${v ?? 0}명`, ""]} />
+              <Tooltip formatter={(v: any) => [`${v ?? 0}명`, ""]} />
               <Legend />
               <Line type="monotone" dataKey="주일" stroke={NAVY} strokeWidth={2} name="주일" dot={{ r: 3 }} />
               <Line type="monotone" dataKey="수요" stroke={GOLD} strokeWidth={2} name="수요" dot={{ r: 3 }} />
