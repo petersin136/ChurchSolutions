@@ -32,6 +32,7 @@ export function useAuth() {
 }
 
 async function fetchChurchForUser(userId: string): Promise<{ churchId: string; churchName: string } | null> {
+  console.log("[Auth] fetchChurchForUser 시작:", userId);
   if (!supabase) return null;
   const { data, error } = await supabase
     .from("church_users")
@@ -42,17 +43,21 @@ async function fetchChurchForUser(userId: string): Promise<{ churchId: string; c
   console.log("[AuthContext] church_users 조회 결과:", { data, error: error?.message });
   if (error || !data) {
     console.warn("[AuthContext] church_users 조회 실패:", error?.message ?? "no data");
+    console.log("[Auth] fetchChurchForUser 결과:", null);
     return null;
   }
   const cid = data.church_id as string | null;
   if (!cid || cid === "null" || cid === "undefined") {
     console.warn("[AuthContext] church_users에 church_id 비어있음:", cid);
+    console.log("[Auth] fetchChurchForUser 결과:", null);
     return null;
   }
   const churchName = (data as Record<string, unknown>).churches
     ? ((data as Record<string, unknown>).churches as { name?: string })?.name ?? ""
     : "";
-  return { churchId: cid, churchName };
+  const result = { churchId: cid, churchName };
+  console.log("[Auth] fetchChurchForUser 결과:", result);
+  return result;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -92,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 클라이언트에서만 실행: auth 상태 + localStorage 읽기. 한 번만 구독, cleanup 필수.
   useEffect(() => {
+    console.log("[Auth] useEffect 시작, supabase:", !!supabase);
     if (!supabase) {
       setLoading(false);
       return;
@@ -100,10 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      console.log("[Auth] getSession 결과:", !!s, "user:", s?.user?.email);
       if (cancelled) return;
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
+        console.log("[Auth] loadChurch 호출:", s.user.id);
         await loadChurch(s.user.id);
       } else {
         setChurchId(null);
@@ -114,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cachedName) setChurchName(cachedName);
       }
       if (!cancelled) {
+        console.log("[Auth] setLoading(false) 실행");
         setLoading(false);
         console.log("[AuthContext] getSession 완료, loading=false, user=", !!s?.user);
       }

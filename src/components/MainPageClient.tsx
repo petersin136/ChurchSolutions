@@ -10,6 +10,7 @@ const SuperPlanner = dynamic(() => import("@/components/SuperPlanner"), { ssr: f
 export default function MainPageClient() {
   const { user, churchId, loading } = useAuth();
   const router = useRouter();
+  console.log("[MainPage] loading:", loading, "user:", !!user, "churchId:", churchId);
 
   useEffect(() => {
     if (!loading && !user) {
