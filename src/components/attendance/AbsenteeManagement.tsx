@@ -69,10 +69,10 @@ export function AbsenteeManagement({
     const fromDate = nWeeksAgo.toISOString().split("T")[0];
 
     const [memRes, attRes] = await Promise.all([
-      filterByChurch(supabase.from("members").select("id, name, dept, mokjang, phone, member_status, status")).order("name"),
+      filterByChurch(supabase.from("members").select("id, name, dept, mokjang, phone, member_status, status")).order("name") as any,
       filterByChurch(supabase.from("attendance").select("member_id, date, status"))
         .gte("date", fromDate)
-        .eq("service_type", "주일예배"),
+        .eq("service_type", "주일예배") as any,
     ]);
     if (memRes.error) {
       console.error(memRes.error);
@@ -94,7 +94,7 @@ export function AbsenteeManagement({
       );
     }
     if (attRes.error) {
-      const fallback = await filterByChurch(supabase.from("attendance").select("member_id, date, status")).gte("date", fromDate);
+      const fallback = await (filterByChurch(supabase.from("attendance").select("member_id, date, status")).gte("date", fromDate) as any);
       if (fallback.error) {
         console.error(fallback.error);
         toast?.("출석 데이터 로드 실패: " + fallback.error.message, "err");
