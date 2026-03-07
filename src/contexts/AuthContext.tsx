@@ -39,33 +39,41 @@ async function fetchChurchForUser(userId: string): Promise<{ churchId: string; c
   }
   try {
     console.log("[Auth] supabase 쿼리 시작");
-    const { data, error } = await supabase
+
+    // 5초 타임아웃
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Supabase query timeout 5s")), 5000)
+    );
+
+    const queryPromise = supabase
       .from("church_users")
       .select("church_id")
       .eq("user_id", userId)
       .limit(1)
       .maybeSingle();
+
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
     console.log("[Auth] church_users 쿼리 완료:", { data, error: error?.message });
+
     if (error || !data) {
-      console.log("[Auth] fetchChurchForUser 결과: null (에러 또는 데이터 없음)");
+      console.log("[Auth] fetchChurchForUser: 데이터 없음");
       return null;
     }
+
     const cid = data.church_id as string;
-    if (!cid || cid === "null" || cid === "undefined") {
-      console.log("[Auth] fetchChurchForUser 결과: null (church_id 비어있음)");
-      return null;
-    }
-    // 교회 이름은 별도 쿼리
+    if (!cid) return null;
+
     let churchName = "";
-    const { data: churchData } = await supabase
-      .from("churches")
-      .select("name")
-      .eq("id", cid)
-      .maybeSingle();
-    console.log("[Auth] churches 쿼리 완료:", churchData);
-    if (churchData?.name) {
-      churchName = churchData.name;
+    try {
+      const nameResult = await Promise.race([
+        supabase.from("churches").select("name").eq("id", cid).maybeSingle(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
+      ]);
+      churchName = nameResult.data?.name ?? "";
+    } catch {
+      /* 이름 조회 실패해도 진행 */
     }
+
     const result = { churchId: cid, churchName };
     console.log("[Auth] fetchChurchForUser 결과:", result);
     return result;
