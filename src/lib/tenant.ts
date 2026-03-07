@@ -60,7 +60,9 @@ export function withChurchId<T extends Row>(input: T | T[]) {
   return result;
 }
 
-export function filterByChurch<TQuery extends { eq: (col: string, val: unknown) => TQuery }>(q: TQuery): TQuery {
+/** Loose typing to avoid "Type instantiation is excessively deep" with Supabase query builders. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function filterByChurch(q: { eq: (col: string, val: unknown) => any }): any {
   const cid = getChurchId();
   if (!cid) {
     throw new Error("[filterByChurch] church_id가 비어있습니다.");
