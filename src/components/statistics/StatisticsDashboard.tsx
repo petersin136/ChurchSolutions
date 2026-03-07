@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import type { DB } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { filterByChurch } from "@/lib/tenant";
 import { C, STAT_CARD_COLORS } from "@/styles/designTokens";
 import { Users, TrendingUp, CalendarCheck, DollarSign, MapPin, Heart } from "lucide-react";
 
@@ -76,9 +77,9 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
     }
     const start = `${yearStr}-01-01`;
     const end = `${yearStr}-12-31`;
-    supabase
+    filterByChurch(supabase
       .from("attendance")
-      .select("member_id, date, status")
+      .select("member_id, date, status"))
       .gte("date", start)
       .lte("date", end)
       .then(({ data, error }) => {

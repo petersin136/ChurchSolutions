@@ -38,10 +38,12 @@ export function BudgetVsActual({
       return;
     }
     setLoading(true);
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year}-12-31`;
     const [budgetRes, incomeRes, expenseRes] = await Promise.all([
       filterByChurch(supabase.from("budget").select("*")).eq("fiscal_year", year),
-      filterByChurch(supabase.from("income").select("*")).eq("fiscal_year", year),
-      filterByChurch(supabase.from("expense").select("*")).eq("fiscal_year", year),
+      filterByChurch(supabase.from("income").select("*")).gte("date", yearStart).lte("date", yearEnd),
+      filterByChurch(supabase.from("expense").select("*")).gte("date", yearStart).lte("date", yearEnd),
     ]);
     if (budgetRes.error) {
       console.error(budgetRes.error);

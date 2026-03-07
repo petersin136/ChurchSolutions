@@ -267,23 +267,30 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         is_prospect: isProspect,
       };
       let memberId: string;
+      const currentChurchId = getChurchId();
+      console.log("=== [MemberForm] church_id 확인 ===", currentChurchId, "| localStorage:", localStorage.getItem("church_solution_church_id"), "| env:", process.env.NEXT_PUBLIC_CHURCH_ID);
+      if (!currentChurchId) {
+        alert("church_id가 없습니다. 로그인 상태를 확인해주세요.");
+        throw new Error("church_id is empty");
+      }
       if (member?.id) {
         memberId = member.id;
         const { id: _, ...updatePayload } = payload;
-        console.log("=== DB UPDATE 시도 ===", updatePayload);
-        const { data, error } = await supabase.from("members").update(updatePayload).eq("id", member.id).eq("church_id", getChurchId()).select();
-        console.log("=== DB UPDATE 결과 ===", { data, error });
+        console.log("=== [MemberForm] DB UPDATE 시도 ===", { ...updatePayload, church_id: currentChurchId });
+        const { data, error } = await supabase.from("members").update(updatePayload).eq("id", member.id).eq("church_id", currentChurchId).select();
+        console.log("=== [MemberForm] DB UPDATE 결과 ===", { data, error });
         if (error) {
-          console.error("=== DB ERROR ===", error.message, error.details, error.hint);
+          console.error("=== [MemberForm] DB ERROR ===", error.message, error.details, error.hint);
           alert("저장 실패: " + error.message);
           throw error;
         }
       } else {
-        console.log("=== DB INSERT 시도 ===", payload);
-        const { data: inserted, error } = await supabase.from("members").insert(withChurchId(payload)).select("id").single();
-        console.log("=== DB INSERT 결과 ===", { data: inserted, error });
+        const insertPayload = withChurchId(payload);
+        console.log("=== [MemberForm] DB INSERT 시도 ===", "church_id:", insertPayload.church_id, "| name:", insertPayload.name);
+        const { data: inserted, error } = await supabase.from("members").insert(insertPayload).select("id").single();
+        console.log("=== [MemberForm] DB INSERT 결과 ===", { data: inserted, error });
         if (error) {
-          console.error("=== DB ERROR ===", error.message, error.details, error.hint);
+          console.error("=== [MemberForm] DB ERROR ===", error.message, error.details, error.hint);
           alert("저장 실패: " + error.message);
           throw error;
         }

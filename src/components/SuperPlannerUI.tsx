@@ -10,10 +10,11 @@ import { BulletinPage } from "./BulletinPage";
 import { SettingsPage } from "./SettingsPage";
 import { Toast } from "./Toast";
 import { Modals } from "./Modals";
-import { Users, CalendarCheck, Wallet, Heart, FileText, Settings, BarChart3, MessageSquare, GraduationCap } from "lucide-react";
+import { Users, CalendarCheck, Wallet, Heart, FileText, Settings, BarChart3, MessageSquare, GraduationCap, LogOut } from "lucide-react";
 import { StatisticsReportsPage } from "./StatisticsReportsPage";
 import { MessagingPage } from "./messaging/MessagingPage";
 import { SchoolPage } from "./school/SchoolPage";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PAGE_LABELS: Record<PageId, string> = {
   pastoral: "목양노트",
@@ -76,6 +77,12 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
     exportReport,
   } = props;
 
+  const { user, churchName, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+  };
+
   // Stubs for Modals (pastoral + planner modals now live inside their own components)
   const noop = () => {};
   const noopStr = (_: string | null) => {};
@@ -85,7 +92,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
       {currentPage !== "finance" && currentPage !== "pastoral" && currentPage !== "planner" && currentPage !== "visit" && currentPage !== "bulletin" && currentPage !== "statistics" && currentPage !== "messaging" && currentPage !== "school" && (
         <header className="app-header">
           <h1>
-            ⛪ 슈퍼플래너{" "}
+            ⛪ {churchName || "슈퍼플래너"}{" "}
             <small
               style={{
                 fontSize: 11,
@@ -214,6 +221,14 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
               </button>
             );
           }
+        )}
+        {user && (
+          <button type="button" className="tab-item" onClick={handleLogout} title={user.email ?? ""}>
+            <span className="tab-icon">
+              <LogOut size={24} strokeWidth={1.5} style={{ color: "#9ca3af" }} />
+            </span>
+            <span className="tab-label">로그아웃</span>
+          </button>
         )}
       </nav>
 

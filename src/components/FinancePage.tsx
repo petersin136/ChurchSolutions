@@ -1806,12 +1806,10 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
   useEffect(() => {
     if (!supabase) return;
     (async () => {
-      const { data: churchRow } = await supabase.from("churches").select("id").limit(1).maybeSingle();
-      if (churchRow?.id) {
-        setChurchId(churchRow.id);
-        const { data: settingsRow } = await supabase.from("church_settings").select("church_registration_number, representative_name, church_address, church_tel, seal_image_url").eq("church_id", churchRow.id).maybeSingle();
-        setChurchSettings(settingsRow ?? null);
-      }
+      const cid = getChurchId();
+      setChurchId(cid);
+      const { data: settingsRow } = await supabase.from("church_settings").select("church_registration_number, representative_name, church_address, church_tel, seal_image_url").eq("church_id", cid).maybeSingle();
+      setChurchSettings(settingsRow ?? null);
     })();
   }, [sealSettingsOpen]);
 
@@ -1961,10 +1959,9 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
 
       if (supabase && receiptSubTab === "individual") {
         try {
-          const { data: churchRow } = await supabase.from("churches").select("id").limit(1).maybeSingle();
-          const churchId = churchRow?.id;
-          if (churchId) {
-            const { data: receiptNumber } = await supabase.rpc("generate_receipt_number", { p_church_id: churchId, p_tax_year: year });
+          const receiptChurchId = getChurchId();
+          if (receiptChurchId) {
+            const { data: receiptNumber } = await supabase.rpc("generate_receipt_number", { p_church_id: receiptChurchId, p_tax_year: year });
             const details = offerings
               .filter(o => o.donorId === receiptDonor.id && o.date.startsWith(String(year)))
               .reduce<{ category: string; amount: number }[]>((acc, o) => {
@@ -2865,7 +2862,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   {bulkFile.length > 50 && <p style={{ padding: 8, margin: 0, fontSize: 12, color: C.textMuted }}>외 {bulkFile.length - 50}명</p>}
                 </div>
                 {!bulkProgress.done && bulkProgress.total === 0 && (
-                  <button type="button" disabled={bulkFile.length === 0} onClick={async () => { setBulkProgress({ current: 0, total: bulkFile.length, done: false }); const JSZip = (await import("jszip")).default; const { saveAs } = await import("file-saver"); const zip = new JSZip(); let churchId: string | null = null; if (supabase) { const { data: churchRow } = await supabase.from("churches").select("id").limit(1).maybeSingle(); churchId = churchRow?.id ?? null; } let sealBase64: string | null = null; if (churchId && churchSettings?.seal_image_url && supabase) { try { const path = churchSettings.seal_image_url.includes("/") ? churchSettings.seal_image_url : `${churchId}/seal.png`; const { data: sealData } = await supabase.storage.from("church-seals").download(path); if (sealData) { sealBase64 = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(sealData); }); } } catch (_) {} } for (let i = 0; i < bulkFile.length; i++) { const row = bulkFile[i]; const donor = donors.find(d => d.name.trim() === row.name); if (!donor || row.ssn.length !== 13) continue; const list = offerings.filter(o => o.donorId === donor.id && o.date.startsWith(String(year))); const total = list.reduce((s, o) => s + o.amount, 0); if (total === 0) continue; setBulkProgress({ current: i + 1, total: bulkFile.length, done: false }); await new Promise(r => setTimeout(r, 50)); const { jsPDF } = await import("jspdf"); const { registerKoreanFont } = await import("@/utils/fontLoader"); const pdf = new jsPDF({ unit: "mm", format: "a4" }); await registerKoreanFont(pdf); pdf.setFont("NanumGothic", "normal"); pdf.setFontSize(16); pdf.text("기부금 영수증", 105, 20, { align: "center" }); pdf.setFontSize(10); pdf.text(`기부자: ${donor.name}  주민등록번호: ${row.ssn.slice(0, 6)}-${row.ssn.slice(6)}  주소: ${row.address || "-"}`, 20, 35); const receiptNum = `DR-${year}-${String(i + 1).padStart(5, "0")}`; pdf.text(`단체: ${cfg.churchName}  총액: ₩${total.toLocaleString("ko-KR")}  귀속연도: ${year}`, 20, 42); pdf.text(`발급일: ${new Date().toISOString().slice(0, 10)}  발급번호: ${receiptNum}`, 20, 49); if (sealBase64) pdf.addImage(sealBase64, "PNG", 150, 85, 25, 25); const blob = pdf.output("blob"); zip.file(`기부금영수증_${donor.name}_${year}.pdf`, blob); if (churchId && supabase) { try { const { data: genNum } = await supabase.rpc("generate_receipt_number", { p_church_id: churchId, p_tax_year: year }); const details = list.reduce<{ category: string; amount: number }[]>((acc, o) => { const cat = DEFAULT_CATEGORIES.find(c => c.id === o.categoryId); const name = cat?.name ?? o.categoryId; const existing = acc.find(x => x.category === name); if (existing) existing.amount += o.amount; else acc.push({ category: name, amount: o.amount }); return acc; }, []); await supabase.from("donation_receipts").insert({ church_id: churchId, member_id: donor.id, member_name: donor.name, receipt_number: genNum ?? receiptNum, tax_year: year, issue_date: new Date().toISOString().slice(0, 10), total_amount: total, donation_details: details, church_name: cfg.churchName, church_address: cfg.churchAddress || null, church_representative: cfg.representativeName || null }); } catch (_) { /* ignore */ } } } setBulkProgress({ current: bulkFile.length, total: bulkFile.length, done: true }); const blob = await zip.generateAsync({ type: "blob" }); saveAs(blob, `기부금영수증_일괄_${year}.zip`); setBulkFile([]); setBulkMatched({}); }} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: C.accent, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>일괄 PDF 생성 (ZIP)</button>
+                  <button type="button" disabled={bulkFile.length === 0} onClick={async () => { setBulkProgress({ current: 0, total: bulkFile.length, done: false }); const JSZip = (await import("jszip")).default; const { saveAs } = await import("file-saver"); const zip = new JSZip(); let churchId: string | null = null; try { churchId = getChurchId(); } catch (_) {} let sealBase64: string | null = null; if (churchId && churchSettings?.seal_image_url && supabase) { try { const path = churchSettings.seal_image_url.includes("/") ? churchSettings.seal_image_url : `${churchId}/seal.png`; const { data: sealData } = await supabase.storage.from("church-seals").download(path); if (sealData) { sealBase64 = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(sealData); }); } } catch (_) {} } for (let i = 0; i < bulkFile.length; i++) { const row = bulkFile[i]; const donor = donors.find(d => d.name.trim() === row.name); if (!donor || row.ssn.length !== 13) continue; const list = offerings.filter(o => o.donorId === donor.id && o.date.startsWith(String(year))); const total = list.reduce((s, o) => s + o.amount, 0); if (total === 0) continue; setBulkProgress({ current: i + 1, total: bulkFile.length, done: false }); await new Promise(r => setTimeout(r, 50)); const { jsPDF } = await import("jspdf"); const { registerKoreanFont } = await import("@/utils/fontLoader"); const pdf = new jsPDF({ unit: "mm", format: "a4" }); await registerKoreanFont(pdf); pdf.setFont("NanumGothic", "normal"); pdf.setFontSize(16); pdf.text("기부금 영수증", 105, 20, { align: "center" }); pdf.setFontSize(10); pdf.text(`기부자: ${donor.name}  주민등록번호: ${row.ssn.slice(0, 6)}-${row.ssn.slice(6)}  주소: ${row.address || "-"}`, 20, 35); const receiptNum = `DR-${year}-${String(i + 1).padStart(5, "0")}`; pdf.text(`단체: ${cfg.churchName}  총액: ₩${total.toLocaleString("ko-KR")}  귀속연도: ${year}`, 20, 42); pdf.text(`발급일: ${new Date().toISOString().slice(0, 10)}  발급번호: ${receiptNum}`, 20, 49); if (sealBase64) pdf.addImage(sealBase64, "PNG", 150, 85, 25, 25); const blob = pdf.output("blob"); zip.file(`기부금영수증_${donor.name}_${year}.pdf`, blob); if (churchId && supabase) { try { const { data: genNum } = await supabase.rpc("generate_receipt_number", { p_church_id: churchId, p_tax_year: year }); const details = list.reduce<{ category: string; amount: number }[]>((acc, o) => { const cat = DEFAULT_CATEGORIES.find(c => c.id === o.categoryId); const name = cat?.name ?? o.categoryId; const existing = acc.find(x => x.category === name); if (existing) existing.amount += o.amount; else acc.push({ category: name, amount: o.amount }); return acc; }, []); await supabase.from("donation_receipts").insert({ church_id: churchId, member_id: donor.id, member_name: donor.name, receipt_number: genNum ?? receiptNum, tax_year: year, issue_date: new Date().toISOString().slice(0, 10), total_amount: total, donation_details: details, church_name: cfg.churchName, church_address: cfg.churchAddress || null, church_representative: cfg.representativeName || null }); } catch (_) { /* ignore */ } } } setBulkProgress({ current: bulkFile.length, total: bulkFile.length, done: true }); const blob = await zip.generateAsync({ type: "blob" }); saveAs(blob, `기부금영수증_일괄_${year}.zip`); setBulkFile([]); setBulkMatched({}); }} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: C.accent, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>일괄 PDF 생성 (ZIP)</button>
                 )}
                 {bulkProgress.total > 0 && !bulkProgress.done && <p style={{ margin: 0, fontSize: 13, color: C.textMuted }}>처리 중... {bulkProgress.current}/{bulkProgress.total}</p>}
                 {bulkProgress.done && <p style={{ margin: 0, fontSize: 13, color: C.success }}>완료. ZIP이 다운로드되었습니다. 엑셀 데이터는 폐기되었습니다.</p>}
@@ -2882,7 +2879,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
             </select>
             <input type="text" value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="교인명 검색" style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.border}`, width: 160 }} />
-            <button type="button" onClick={async () => { if (!supabase) return; const { data: churchRow } = await supabase.from("churches").select("id").limit(1).maybeSingle(); if (!churchRow) return; const { data } = await supabase.from("donation_receipts").select("id, receipt_number, member_name, tax_year, total_amount, issue_date, status").eq("church_id", churchRow.id).eq("tax_year", historyYearFilter).order("created_at", { ascending: false }); setReceiptHistory(data ?? []); }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.navy, color: "#fff", fontWeight: 600, cursor: "pointer" }}>조회</button>
+            <button type="button" onClick={async () => { if (!supabase) return; const cid = getChurchId(); const { data } = await supabase.from("donation_receipts").select("id, receipt_number, member_name, tax_year, total_amount, issue_date, status").eq("church_id", cid).eq("tax_year", historyYearFilter).order("created_at", { ascending: false }); setReceiptHistory(data ?? []); }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.navy, color: "#fff", fontWeight: 600, cursor: "pointer" }}>조회</button>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -2995,9 +2992,10 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
   const onAddIncome = useCallback(async (o: Omit<Offering, "id">) => {
     if (!supabase || !setDb || !db) return null;
     const row = { date: o.date, type: o.categoryId, amount: o.amount, donor: o.donorName || null, method: o.method || null, memo: o.note || null };
-    console.log("=== INCOME INSERT 시도 ===", row);
-    const { data, error } = await supabase.from("income").insert(withChurchId(row)).select("id").single();
-    console.log("=== INCOME INSERT 결과 ===", { data, error });
+    const incomePayload = withChurchId(row);
+    console.log("=== [FinancePage] INCOME INSERT 시도 ===", "church_id:", incomePayload.church_id);
+    const { data, error } = await supabase.from("income").insert(incomePayload).select("id").single();
+    console.log("=== [FinancePage] INCOME INSERT 결과 ===", { data, error });
     if (error) {
       console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
       alert("저장 실패: " + error.message);
@@ -3022,9 +3020,10 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
   const onAddExpense = useCallback(async (e: Omit<Expense, "id">) => {
     if (!supabase || !setDb || !db) return null;
     const row = { date: e.date, category: e.categoryId, item: e.description || null, amount: e.amount, resolution: e.departmentId || null, memo: e.note || null };
-    console.log("=== EXPENSE INSERT 시도 ===", row);
-    const { data, error } = await supabase.from("expense").insert(withChurchId(row)).select("id").single();
-    console.log("=== EXPENSE INSERT 결과 ===", { data, error });
+    const expensePayload = withChurchId(row);
+    console.log("=== [FinancePage] EXPENSE INSERT 시도 ===", "church_id:", expensePayload.church_id);
+    const { data, error } = await supabase.from("expense").insert(expensePayload).select("id").single();
+    console.log("=== [FinancePage] EXPENSE INSERT 결과 ===", { data, error });
     if (error) {
       console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);
       alert("저장 실패: " + error.message);

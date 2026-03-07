@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
-import type { DB, Member, Note, NewFamilyProgram, Plan, Sermon, Visit, Income, Expense, AttStatus, ChecklistItem, WeekChecks } from "@/types/db";
+import type { DB, Member, Note, NewFamilyProgram, Plan, Sermon, Visit, Income, Expense, AttStatus, WeekChecks } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -373,169 +373,66 @@ export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<
   }
 }
 
-/** DB 전체를 Supabase에 저장. 설정(settings)은 클라이언트 PATCH 400 방지를 위해 저장하지 않음 — 설정 탭에서 "저장" 시 /api/settings 사용 */
+/**
+ * DB 전체를 Supabase에 저장 (insert/upsert만 수행).
+ * 삭제는 이 함수에서 절대 하지 않음 — 사용자가 UI에서 명시적으로 삭제 버튼을 누를 때만 해당 컴포넌트에서 수행.
+ * 설정(settings)은 /api/settings 또는 saveSettingsToSupabase에서 별도 저장.
+ * 출석(attendance)은 AttendanceCheck.tsx에서 직접 upsert.
+ * 노트(notes)는 PastoralPage에서 개별 저장.
+ * 예산(budget)은 BudgetManagement에서 개별 저장.
+ * 체크리스트(checklist)는 개별 저장.
+ */
 export async function saveDBToSupabase(db: DB): Promise<void> {
   if (!supabase) return;
-  const year = CURRENT_YEAR;
 
   const churchId = getChurchId();
-  // 로컬에서 삭제된 교인을 Supabase에서도 삭제 (새로고침 시 다시 나타나지 않도록)
-  const keepMemberIds = new Set(db.members.map((m) => m.id));
-  const { data: existingMembers } = await supabase.from("members").select("id").eq("church_id", churchId);
-  if (existingMembers?.length) {
-    for (const row of existingMembers as { id: string }[]) {
-      const id = row?.id;
-      if (!id || keepMemberIds.has(id)) continue;
-      await supabase.from("attendance").delete().eq("church_id", churchId).eq("member_id", id);
-      await supabase.from("notes").delete().eq("church_id", churchId).eq("member_id", id);
-      await supabase.from("members").delete().eq("church_id", churchId).eq("id", id);
-    }
+  console.log("=== [saveDBToSupabase] church_id 확인 ===", churchId, "| localStorage:", typeof window !== "undefined" ? localStorage.getItem("church_solution_church_id") : "SSR");
+  if (!churchId) {
+    console.error("[saveDBToSupabase] church_id가 비어있어 저장을 중단합니다.");
+    return;
   }
 
   for (const m of db.members) {
     const isUuid = /^[0-9a-f-]{36}$/i.test(m.id);
+    const payload = {
+      name: m.name,
+      dept: m.dept ?? null,
+      role: m.role ?? null,
+      birth: m.birth ?? null,
+      gender: m.gender ?? null,
+      phone: m.phone ?? null,
+      address: m.address ?? null,
+      family: m.family ?? null,
+      status: m.status ?? null,
+      source: m.source ?? null,
+      prayer: m.prayer ?? null,
+      memo: m.memo ?? null,
+      mokjang: m.mokjang ?? m.group ?? null,
+      photo: m.photo ?? null,
+      is_new_family: m.is_new_family ?? null,
+      first_visit_date: m.first_visit_date ?? null,
+      visit_path: m.visit_path ?? null,
+      referrer_id: m.referrer_id ?? null,
+      referrer_name: m.referrer_name ?? null,
+      family_id: m.family_id ?? null,
+      family_relation: m.family_relation ?? null,
+      member_status: m.member_status ?? null,
+      status_changed_at: m.status_changed_at ?? null,
+      status_reason: m.status_reason ?? null,
+      email: m.email ?? null,
+      job: m.job ?? null,
+      baptism_date: m.baptism_date ?? null,
+      baptism_type: m.baptism_type ?? null,
+      wedding_anniversary: m.wedding_anniversary ?? null,
+      registered_date: m.registered_date ?? null,
+      small_group: m.small_group ?? null,
+      talent: m.talent ?? null,
+      is_prospect: m.is_prospect ?? null,
+    };
     if (isUuid) {
-      await supabase
-        .from("members")
-        .upsert(
-          withChurchId({
-            id: m.id,
-            name: m.name,
-            dept: m.dept ?? null,
-            role: m.role ?? null,
-            birth: m.birth ?? null,
-            gender: m.gender ?? null,
-            phone: m.phone ?? null,
-            address: m.address ?? null,
-            family: m.family ?? null,
-            status: m.status ?? null,
-            source: m.source ?? null,
-            prayer: m.prayer ?? null,
-            memo: m.memo ?? null,
-            mokjang: m.mokjang ?? m.group ?? null,
-            photo: m.photo ?? null,
-            is_new_family: m.is_new_family ?? null,
-            first_visit_date: m.first_visit_date ?? null,
-            visit_path: m.visit_path ?? null,
-            referrer_id: m.referrer_id ?? null,
-            referrer_name: m.referrer_name ?? null,
-            family_id: m.family_id ?? null,
-            family_relation: m.family_relation ?? null,
-            member_status: m.member_status ?? null,
-            status_changed_at: m.status_changed_at ?? null,
-            status_reason: m.status_reason ?? null,
-            email: m.email ?? null,
-            job: m.job ?? null,
-            baptism_date: m.baptism_date ?? null,
-            baptism_type: m.baptism_type ?? null,
-            wedding_anniversary: m.wedding_anniversary ?? null,
-            registered_date: m.registered_date ?? null,
-            small_group: m.small_group ?? null,
-            talent: m.talent ?? null,
-            is_prospect: m.is_prospect ?? null,
-          }),
-          { onConflict: "id" }
-        );
+      await supabase.from("members").upsert(withChurchId({ id: m.id, ...payload }), { onConflict: "id" });
     } else {
-      await supabase
-        .from("members")
-        .insert(
-          withChurchId({
-            name: m.name,
-            dept: m.dept ?? null,
-            role: m.role ?? null,
-            birth: m.birth ?? null,
-            gender: m.gender ?? null,
-            phone: m.phone ?? null,
-            address: m.address ?? null,
-            family: m.family ?? null,
-            status: m.status ?? null,
-            source: m.source ?? null,
-            prayer: m.prayer ?? null,
-            memo: m.memo ?? null,
-            mokjang: m.mokjang ?? m.group ?? null,
-            photo: m.photo ?? null,
-            is_new_family: m.is_new_family ?? null,
-            first_visit_date: m.first_visit_date ?? null,
-            visit_path: m.visit_path ?? null,
-            referrer_id: m.referrer_id ?? null,
-            referrer_name: m.referrer_name ?? null,
-            family_id: m.family_id ?? null,
-            family_relation: m.family_relation ?? null,
-            member_status: m.member_status ?? null,
-            status_changed_at: m.status_changed_at ?? null,
-            status_reason: m.status_reason ?? null,
-            email: m.email ?? null,
-            job: m.job ?? null,
-            baptism_date: m.baptism_date ?? null,
-            baptism_type: m.baptism_type ?? null,
-            wedding_anniversary: m.wedding_anniversary ?? null,
-            registered_date: m.registered_date ?? null,
-            small_group: m.small_group ?? null,
-            talent: m.talent ?? null,
-            is_prospect: m.is_prospect ?? null,
-          })
-        );
-    }
-  }
-
-  // ⚠️ 출석 저장은 AttendanceCheck.tsx의 handleSave에서 Supabase에 직접 upsert합니다.
-  // saveDBToSupabase에서 attendance를 건드리면 date+service_type 기반 데이터가 week_num 기반으로 덮어쓰여 소실됩니다.
-  /*
-  for (const m of db.members) {
-    if (!/^[0-9a-f-]{36}$/i.test(m.id)) continue;
-    const reasons = db.attendanceReasons?.[m.id] ?? {};
-    const rows = Object.entries(db.attendance[m.id] ?? {}).map(([weekNum, status]) => ({
-      member_id: m.id,
-      week_num: parseInt(weekNum, 10),
-      year,
-      status: (status === "p" || status === "a") ? status : "n",
-      reason: (reasons[parseInt(weekNum, 10)] || null) as string | null,
-    }));
-    if (rows.length > 0) {
-      await supabase.from("attendance").delete().eq("member_id", m.id).eq("year", year);
-      await supabase.from("attendance").insert(rows);
-    }
-  }
-  */
-
-  const aKeys = new Set(db.answeredPrayerKeys || []);
-  const aDates = db.answeredPrayerDates || {};
-  for (const m of db.members) {
-    if (!/^[0-9a-f-]{36}$/i.test(m.id)) continue;
-    const list = db.notes[m.id] ?? [];
-    await supabase.from("notes").delete().eq("church_id", churchId).eq("member_id", m.id);
-    if (list.length > 0) {
-      const rows = withChurchId(
-        list.map((n) => {
-          const key = `note\t${m.id}\t${n.date}\t${n.createdAt || n.date}\t${n.content}`;
-          const answered = aKeys.has(key);
-          const answeredAt = aDates[key] || null;
-          return {
-            member_id: m.id,
-            date: n.date,
-            type: n.type,
-            content: n.content,
-            created_at: n.createdAt || new Date().toISOString(),
-            answered: answered || false,
-            answered_at: answered && answeredAt ? answeredAt : null,
-          };
-        })
-      );
-      const { error } = await supabase.from("notes").insert(rows);
-      if (error) {
-        await supabase.from("notes").insert(
-          withChurchId(
-            list.map((n) => ({
-              member_id: m.id,
-              date: n.date,
-              type: n.type,
-              content: n.content,
-              created_at: n.createdAt || new Date().toISOString(),
-            }))
-          )
-        );
-      }
+      await supabase.from("members").insert(withChurchId(payload));
     }
   }
 
@@ -556,27 +453,16 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
     if (/^[0-9a-f-]{36}$/i.test(s.id)) {
       await supabase.from("sermons").upsert(
         withChurchId({
-          id: s.id,
-          date: s.date,
-          service: s.service ?? null,
-          bible_text: s.text ?? null,
-          title: s.title ?? null,
-          core: s.core ?? null,
-          status: s.status ?? null,
-          notes: s.notes ?? null,
+          id: s.id, date: s.date, service: s.service ?? null, bible_text: s.text ?? null,
+          title: s.title ?? null, core: s.core ?? null, status: s.status ?? null, notes: s.notes ?? null,
         }),
         { onConflict: "id" }
       );
     } else {
       await supabase.from("sermons").insert(
         withChurchId({
-          date: s.date,
-          service: s.service ?? null,
-          bible_text: s.text ?? null,
-          title: s.title ?? null,
-          core: s.core ?? null,
-          status: s.status ?? null,
-          notes: s.notes ?? null,
+          date: s.date, service: s.service ?? null, bible_text: s.text ?? null,
+          title: s.title ?? null, core: s.core ?? null, status: s.status ?? null, notes: s.notes ?? null,
         })
       );
     }
@@ -585,23 +471,12 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const v of db.visits) {
     if (/^[0-9a-f-]{36}$/i.test(v.id)) {
       await supabase.from("visits").upsert(
-        withChurchId({
-          id: v.id,
-          date: v.date,
-          member_id: v.memberId || null,
-          type: v.type ?? null,
-          content: v.content,
-        }),
+        withChurchId({ id: v.id, date: v.date, member_id: v.memberId || null, type: v.type ?? null, content: v.content }),
         { onConflict: "id" }
       );
     } else {
       await supabase.from("visits").insert(
-        withChurchId({
-          date: v.date,
-          member_id: v.memberId || null,
-          type: v.type ?? null,
-          content: v.content,
-        })
+        withChurchId({ date: v.date, member_id: v.memberId || null, type: v.type ?? null, content: v.content })
       );
     }
   }
@@ -609,26 +484,15 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const p of db.newFamilyPrograms ?? []) {
     if (!/^[0-9a-f-]{36}$/i.test(p.id)) continue;
     const row: Record<string, unknown> = {
-      id: p.id,
-      member_id: p.member_id,
-      mentor_id: p.mentor_id ?? null,
+      id: p.id, member_id: p.member_id, mentor_id: p.mentor_id ?? null,
       program_start_date: p.program_start_date,
-      week1_completed: p.week1_completed ?? false,
-      week1_date: p.week1_date ?? null,
-      week1_note: p.week1_note ?? null,
-      week2_completed: p.week2_completed ?? false,
-      week2_date: p.week2_date ?? null,
-      week2_note: p.week2_note ?? null,
-      week3_completed: p.week3_completed ?? false,
-      week3_date: p.week3_date ?? null,
-      week3_note: p.week3_note ?? null,
-      week4_completed: p.week4_completed ?? false,
-      week4_date: p.week4_date ?? null,
-      week4_note: p.week4_note ?? null,
-      status: p.status ?? "진행중",
-      cell_group_assigned: p.cell_group_assigned ?? null,
+      week1_completed: p.week1_completed ?? false, week1_date: p.week1_date ?? null, week1_note: p.week1_note ?? null,
+      week2_completed: p.week2_completed ?? false, week2_date: p.week2_date ?? null, week2_note: p.week2_note ?? null,
+      week3_completed: p.week3_completed ?? false, week3_date: p.week3_date ?? null, week3_note: p.week3_note ?? null,
+      week4_completed: p.week4_completed ?? false, week4_date: p.week4_date ?? null, week4_note: p.week4_note ?? null,
+      status: p.status ?? "진행중", cell_group_assigned: p.cell_group_assigned ?? null,
     };
-    ["week1_checks", "week2_checks", "week3_checks", "week4_checks"].forEach((key, i) => {
+    ["week1_checks", "week2_checks", "week3_checks", "week4_checks"].forEach((key) => {
       const arr = (p as unknown as Record<string, unknown>)[key] as WeekChecks | undefined;
       if (arr && Array.isArray(arr) && arr.length >= 4) row[key] = JSON.stringify(arr.slice(0, 4));
     });
@@ -638,27 +502,12 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const i of db.income) {
     if (/^[0-9a-f-]{36}$/i.test(i.id)) {
       await supabase.from("income").upsert(
-        withChurchId({
-          id: i.id,
-          date: i.date,
-          type: i.type,
-          amount: i.amount,
-          donor: i.donor ?? null,
-          method: i.method ?? null,
-          memo: i.memo ?? null,
-        }),
+        withChurchId({ id: i.id, date: i.date, type: i.type, amount: i.amount, donor: i.donor ?? null, method: i.method ?? null, memo: i.memo ?? null }),
         { onConflict: "id" }
       );
     } else {
       await supabase.from("income").insert(
-        withChurchId({
-          date: i.date,
-          type: i.type,
-          amount: i.amount,
-          donor: i.donor ?? null,
-          method: i.method ?? null,
-          memo: i.memo ?? null,
-        })
+        withChurchId({ date: i.date, type: i.type, amount: i.amount, donor: i.donor ?? null, method: i.method ?? null, memo: i.memo ?? null })
       );
     }
   }
@@ -666,61 +515,12 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const e of db.expense) {
     if (/^[0-9a-f-]{36}$/i.test(e.id)) {
       await supabase.from("expense").upsert(
-        withChurchId({
-          id: e.id,
-          date: e.date,
-          category: e.category,
-          item: e.item ?? null,
-          amount: e.amount,
-          resolution: e.resolution ?? null,
-          memo: e.memo ?? null,
-        }),
+        withChurchId({ id: e.id, date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null }),
         { onConflict: "id" }
       );
     } else {
       await supabase.from("expense").insert(
-        withChurchId({
-          date: e.date,
-          category: e.category,
-          item: e.item ?? null,
-          amount: e.amount,
-          resolution: e.resolution ?? null,
-          memo: e.memo ?? null,
-        })
-      );
-    }
-  }
-
-  const fiscalYear = String(year);
-  await supabase.from("budget").delete().eq("church_id", churchId).eq("fiscal_year", fiscalYear);
-  for (const [key, amount] of Object.entries(db.budget)) {
-    const numAmount = Number(amount) ?? 0;
-    const parts = key.includes(":") ? key.split(":") : [null, key];
-    const category_type = parts[0] === "수입" || parts[0] === "지출" ? parts[0] : "지출";
-    const category = parts[1] ?? key;
-    await supabase.from("budget").insert(
-      withChurchId({
-        fiscal_year: fiscalYear,
-        category_type,
-        category,
-        annual_total: numAmount,
-        monthly_amounts: { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0, "11": 0, "12": 0 },
-      })
-    );
-  }
-
-  for (const [weekKey, items] of Object.entries(db.checklist)) {
-    await supabase.from("checklist").delete().eq("church_id", churchId).eq("week_key", weekKey);
-    if (items.length > 0) {
-      await supabase.from("checklist").insert(
-        withChurchId(
-          items.map((item, i) => ({
-            week_key: weekKey,
-            text: item.text,
-            done: item.done,
-            sort_order: i,
-          }))
-        )
+        withChurchId({ date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null })
       );
     }
   }

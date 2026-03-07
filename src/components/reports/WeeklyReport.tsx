@@ -6,6 +6,7 @@ import { ReportLayout } from "./ReportLayout";
 import { getWeekNum } from "@/lib/store";
 import { registerKoreanFont } from "@/utils/fontLoader";
 import { supabase } from "@/lib/supabase";
+import { filterByChurch } from "@/lib/tenant";
 
 const STORAGE_WEEKLY_MEMO = "report_weekly_memo";
 const STORAGE_WEEKLY_PRAYER = "report_weekly_prayer";
@@ -45,9 +46,9 @@ export function WeeklyReport({ db, toast }: WeeklyReportProps) {
       setAttendanceRows([]);
       return;
     }
-    supabase
+    filterByChurch(supabase
       .from("attendance")
-      .select("member_id, date, status")
+      .select("member_id, date, status"))
       .gte("date", startStr)
       .lte("date", endStr)
       .then(({ data, error }) => {

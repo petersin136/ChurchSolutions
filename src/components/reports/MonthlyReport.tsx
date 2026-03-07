@@ -5,6 +5,7 @@ import type { DB } from "@/types/db";
 import { ReportLayout } from "./ReportLayout";
 import { registerKoreanFont } from "@/utils/fontLoader";
 import { supabase } from "@/lib/supabase";
+import { filterByChurch } from "@/lib/tenant";
 
 const STORAGE_MONTHLY_CONTENT = "report_monthly_content";
 const STORAGE_MONTHLY_PLAN = "report_monthly_plan";
@@ -32,9 +33,9 @@ export function MonthlyReport({ db, toast }: MonthlyReportProps) {
       setAttendanceRows([]);
       return;
     }
-    supabase
+    filterByChurch(supabase
       .from("attendance")
-      .select("member_id, date, status")
+      .select("member_id, date, status"))
       .gte("date", monthStart)
       .lte("date", monthEnd)
       .then(({ data, error }) => {

@@ -2977,12 +2977,18 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       member_status: "활동",
     };
     try {
+      const currentChurchId = getChurchId();
+      console.log("=== [PastoralPage] church_id 확인 ===", currentChurchId, "| localStorage:", localStorage.getItem("church_solution_church_id"));
+      if (!currentChurchId) {
+        alert("church_id가 없습니다. 로그인 상태를 확인해주세요.");
+        return;
+      }
       if (editMbrId) {
-        console.log("=== DB UPDATE 시도 ===", { id: editMbrId, ...insertData });
-        const { data, error } = await supabase.from("members").update(insertData).eq("church_id", getChurchId()).eq("id", editMbrId).select();
-        console.log("=== DB UPDATE 결과 ===", { data, error });
+        console.log("=== [PastoralPage] DB UPDATE 시도 ===", { id: editMbrId, church_id: currentChurchId, ...insertData });
+        const { data, error } = await supabase.from("members").update(insertData).eq("church_id", currentChurchId).eq("id", editMbrId).select();
+        console.log("=== [PastoralPage] DB UPDATE 결과 ===", { data, error });
         if (error) {
-          console.error("=== DB ERROR ===", error.message, error.details, error.hint);
+          console.error("=== [PastoralPage] DB ERROR ===", error.message, error.details, error.hint);
           alert("저장 실패: " + error.message);
           return;
         }
@@ -2996,11 +3002,12 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === editMbrId ? { ...m, ...dataMerged } : m) }));
         toast("수정 완료", "ok");
       } else {
-        console.log("=== DB INSERT 시도 ===", insertData);
-        const { data, error } = await supabase.from("members").insert(withChurchId(insertData)).select();
-        console.log("=== DB INSERT 결과 ===", { data, error });
+        const insertPayload = withChurchId(insertData);
+        console.log("=== [PastoralPage] DB INSERT 시도 ===", "church_id:", insertPayload.church_id, "| name:", insertPayload.name);
+        const { data, error } = await supabase.from("members").insert(insertPayload).select();
+        console.log("=== [PastoralPage] DB INSERT 결과 ===", { data, error });
         if (error) {
-          console.error("=== DB ERROR ===", error.message, error.details, error.hint);
+          console.error("=== [PastoralPage] DB ERROR ===", error.message, error.details, error.hint);
           alert("저장 실패: " + error.message);
           return;
         }
