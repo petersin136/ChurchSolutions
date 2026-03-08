@@ -114,11 +114,12 @@ export function AbsenteeManagement({
     const map: Record<string, Record<string, Set<string>>> = {};
     attendanceList.forEach((a) => {
       if (!a.date) return;
-      const weekKey = getSundayOfWeek(a.date);
       const st = a.service_type || "주일예배";
+      if (st !== "주일예배" && st !== "주일1부예배") return;
+      const weekKey = getSundayOfWeek(a.date);
       if (!map[weekKey]) map[weekKey] = {};
-      if (!map[weekKey][st]) map[weekKey][st] = new Set();
-      if (a.status === "출석" || a.status === "온라인") map[weekKey][st].add(a.member_id);
+      if (!map[weekKey]["주일예배"]) map[weekKey]["주일예배"] = new Set();
+      if (a.status === "출석" || a.status === "온라인") map[weekKey]["주일예배"].add(a.member_id);
     });
     return map;
   }, [attendanceList]);
@@ -131,8 +132,7 @@ export function AbsenteeManagement({
       let lastPresent: string | null = null;
       for (let i = lastNSundays.length - 1; i >= 0; i--) {
         const weekKey = lastNSundays[i];
-        const present =
-          (byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"])?.has(m.id) ?? false;
+        const present = byWeekService[weekKey]?.["주일예배"]?.has(m.id) ?? false;
         if (present) {
           lastPresent = weekKey;
           break;

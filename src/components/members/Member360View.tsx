@@ -49,6 +49,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
     }
     filterByChurch(supabase.from("attendance").select("date, service_type, status"))
       .eq("member_id", member.id)
+      .eq("service_type", "주일예배")
       .order("date", { ascending: false })
       .limit(20)
       .then(({ data, error }: { data: unknown[] | null; error: { message: string } | null }) => {

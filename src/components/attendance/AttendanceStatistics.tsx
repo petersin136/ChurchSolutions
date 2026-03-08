@@ -105,8 +105,7 @@ export function AttendanceStatistics({
     attendanceList.forEach((a) => {
       if (!a.date) return;
       const st = a.service_type || "주일예배";
-      const isSun = st.includes("주일") || st === "주일예배";
-      if (!isSun) return;
+      if (st !== "주일예배" && st !== "주일1부예배") return;
       const weekKey = getSundayOfWeek(a.date);
       if (!map[a.member_id]) map[a.member_id] = {};
       const status = a.status === "출석" || a.status === "온라인" ? "출석" : a.status;

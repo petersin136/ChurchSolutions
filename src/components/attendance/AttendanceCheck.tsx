@@ -4,8 +4,18 @@ import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getChurchId, withChurchId } from "@/lib/tenant";
 import type { Member } from "@/types/db";
-import type { ServiceType } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
+
+function getLastSunday(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  if (day !== 0) d.setDate(d.getDate() - day);
+  return d;
+}
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const STATUSES = ["출석", "온라인", "결석", "병결", "기타"] as const;
 const STATUS_COLORS: Record<string, string> = {
@@ -35,7 +45,6 @@ if (typeof window !== "undefined") console.log("[DB_TO_UI_STATUS]", DB_TO_UI_STA
 
 export interface AttendanceCheckProps {
   members: Member[];
-  serviceTypes: ServiceType[];
   /** 토스트 (Supabase 저장 결과) */
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
   getCurrentUserId?: () => string | null;
@@ -49,14 +58,19 @@ function getActiveMembers(members: Member[]) {
 
 export function AttendanceCheck({
   members,
-  serviceTypes,
   toast,
   getCurrentUserId,
   onAttendanceSaved,
 }: AttendanceCheckProps) {
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [selectedServiceType, setSelectedServiceType] = useState(serviceTypes[0]?.name || "주일1부예배");
+  const SERVICE_TYPE = "주일예배";
+  const todaySunday = useMemo(() => toDateStr(getLastSunday(new Date())), []);
+  const [selectedDate, setSelectedDate] = useState(todaySunday);
+
+  const handleDateChange = useCallback((dateStr: string) => {
+    const d = new Date(dateStr + "T12:00:00");
+    const sunday = getLastSunday(d);
+    setSelectedDate(toDateStr(sunday));
+  }, []);
   const [deptFilter, setDeptFilter] = useState("");
   const [searchName, setSearchName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -121,8 +135,8 @@ export function AttendanceCheck({
   }, []);
 
   useEffect(() => {
-    loadAttendance(selectedDate, selectedServiceType);
-  }, [selectedDate, selectedServiceType, loadAttendance]);
+    loadAttendance(selectedDate, SERVICE_TYPE);
+  }, [selectedDate, SERVICE_TYPE, loadAttendance]);
 
   const getStatus = useCallback((memberId: string): (typeof STATUSES)[number] => {
     return statusMap[memberId] ?? "결석";
@@ -164,7 +178,7 @@ export function AttendanceCheck({
         week_num: Number(week_num),
         year: Number(year),
         date: selectedDate,
-        service_type: selectedServiceType,
+        service_type: SERVICE_TYPE,
         status: UI_TO_DB_STATUS[uiStatus as (typeof STATUSES)[number]] ?? "n",
         check_in_time: new Date().toISOString(),
         check_in_method: "수동" as const,
@@ -191,7 +205,7 @@ export function AttendanceCheck({
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     setSaving(false);
-    loadAttendance(selectedDate, selectedServiceType);
+    loadAttendance(selectedDate, SERVICE_TYPE);
     onAttendanceSaved?.();
   };
 
@@ -203,25 +217,13 @@ export function AttendanceCheck({
           <div className="min-w-[160px] md:min-w-[180px]">
             <CalendarDropdown
               value={selectedDate}
-              onChange={setSelectedDate}
+              onChange={handleDateChange}
               compact
               style={{ marginBottom: 0 }}
             />
           </div>
         </label>
-        <label className="flex items-center gap-2 shrink-0">
-          <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">예배</span>
-          <select
-            value={selectedServiceType}
-            onChange={(e) => setSelectedServiceType(e.target.value)}
-            className="rounded-lg border border-gray-200 pl-3 pr-9 py-2 text-sm min-w-[120px] md:min-w-[140px] min-h-[36px] md:min-h-0"
-          >
-            {serviceTypes.filter((s) => s.is_active !== false).map((s) => (
-              <option key={s.id} value={s.name}>{s.name}</option>
-            ))}
-            {serviceTypes.length === 0 && <option value="주일1부예배">주일1부예배</option>}
-          </select>
-        </label>
+        <span className="text-xs md:text-sm text-[#1e3a5f] font-semibold px-3 py-2 bg-blue-50 rounded-lg">주일예배</span>
         <label className="flex items-center gap-2 shrink-0">
           <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">부서</span>
           <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm min-w-[72px] min-h-[36px] md:min-h-0">

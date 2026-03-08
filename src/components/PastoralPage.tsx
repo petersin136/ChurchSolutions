@@ -1,21 +1,22 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
-import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance, ServiceType } from "@/types/db";
+import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
-import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Sliders, Heart, Home, Gift } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Heart, Home, Gift } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
-import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics, ServiceTypeSettings } from "@/components/attendance";
+import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics } from "@/components/attendance";
 import { ReportModal } from "@/components/report/ReportModal";
 import { ModernSelect } from "@/components/common/ModernSelect";
+import { ServantSchoolManager } from "@/components/settling/ServantSchoolManager";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -1932,6 +1933,7 @@ function NewFamilySub({ db, setDb, openProgramDetail, openMemberModal, toast }: 
   const listRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState<"all" | "진행중" | "수료" | "중단" | "no_mentor">("all");
+  const [nfSubTab, setNfSubTab] = useState<"list" | "servant">("list");
 
   const programs = db.newFamilyPrograms || [];
   const nfMembers = db.members.filter(m => m.is_new_family === true);
@@ -2005,6 +2007,27 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+        {([{ id: "list" as const, label: "새가족 정착" }, { id: "servant" as const, label: "섬김이 학교" }]).map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setNfSubTab(tab.id)}
+            style={{
+              padding: "8px 16px", borderRadius: 10, border: "1px solid", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              background: nfSubTab === tab.id ? C.navy : "transparent",
+              color: nfSubTab === tab.id ? "#fff" : C.text,
+              borderColor: nfSubTab === tab.id ? C.navy : C.border,
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {nfSubTab === "servant" && <ServantSchoolManager members={db.members.map(m => ({ id: m.id, name: m.name || "", dept: m.dept, role: m.role }))} toast={toast} />}
+
+      {nfSubTab === "list" && <>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 12 }}>
         <Card style={{ padding: 16 }}>
           <div style={{ marginBottom: 4, color: C.navy, display: "flex" }}><Icons.New /></div>
@@ -2089,6 +2112,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
           <Pagination totalItems={filteredList.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
         )}
       </div>
+      </>}
     </div>
   );
 }
@@ -2111,7 +2135,26 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
   );
 
   const mentor = program?.mentor_id ? db.members.find(m => m.id === program.mentor_id) : null;
-  const mentorCandidates = useMemo(() => db.members.filter(m => m.id !== memberId && MENTOR_ROLES.some(r => (m.role || "").includes(r)) && (m.dept === "장년부" || !m.dept)), [db.members, memberId]);
+  const [mentorCandidates, setMentorCandidates] = useState<{ id: string; name: string; dept?: string; role?: string }[]>([]);
+  useEffect(() => {
+    if (!supabase) return;
+    supabase
+      .from("servant_school_graduates")
+      .select("member_id, name")
+      .eq("church_id", getChurchId())
+      .eq("is_active", true)
+      .then(({ data, error }: any) => {
+        if (error || !data) {
+          setMentorCandidates(db.members.filter(m => m.id !== memberId && MENTOR_ROLES.some(r => (m.role || "").includes(r))));
+          return;
+        }
+        const graduateIds = new Set((data as any[]).map((g: any) => g.member_id));
+        const candidates = db.members
+          .filter(m => graduateIds.has(m.id) && m.id !== memberId)
+          .map(m => ({ id: m.id, name: m.name || "", dept: m.dept, role: m.role }));
+        setMentorCandidates(candidates);
+      });
+  }, [db.members, memberId]);
   const currentWeekNum = program ? getProgramWeekFromStart(program.program_start_date) : 1;
   const allFourDone = program?.week1_completed && program?.week2_completed && program?.week3_completed && program?.week4_completed;
 
@@ -2249,7 +2292,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
       {showMentorSelect && (
         <Modal open onClose={() => setShowMentorSelect(false)} title="섬김이 선택">
           <div style={{ maxHeight: 320, overflowY: "auto" }}>
-            {mentorCandidates.length === 0 ? <div style={{ padding: 24, textAlign: "center", color: C.textMuted }}>장년부 집사/권사/장로가 없습니다</div> : mentorCandidates.map(m => (
+            {mentorCandidates.length === 0 ? <div style={{ padding: 24, textAlign: "center", color: C.textMuted }}>섬김이 학교 수료자를 먼저 등록해주세요.<br/><span style={{ fontSize: 12 }}>새가족 관리 → 섬김이 학교 탭에서 등록</span></div> : mentorCandidates.map(m => (
               <button
                 key={m.id}
                 type="button"
@@ -2786,8 +2829,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [noteFilterValue, setNoteFilterValue] = useState("");
 
   // 출결 Phase 3: 예배별 출결
-  type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "serviceType" | "weekly";
-  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "check", "absentee", "statistics", "serviceType", "weekly"];
+  type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "weekly";
+  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "check", "absentee", "statistics", "weekly"];
   const [attendanceSubTab, setAttendanceSubTabState] = useState<AttendanceSubTab>(() => {
     if (typeof window === "undefined") return "dashboard";
     const v = localStorage.getItem("pastoral_attendance_sub_tab");
@@ -2797,15 +2840,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem("pastoral_attendance_sub_tab", attendanceSubTab);
   }, [attendanceSubTab]);
-  const DEFAULT_SERVICE_TYPES: ServiceType[] = [
-    { id: "st-1", name: "주일1부예배", day_of_week: 0, default_time: "09:00", is_active: true, sort_order: 0 },
-    { id: "st-2", name: "주일2부예배", day_of_week: 0, default_time: "11:00", is_active: true, sort_order: 1 },
-    { id: "st-3", name: "수요예배", day_of_week: 3, default_time: "19:30", is_active: true, sort_order: 2 },
-    { id: "st-4", name: "금요기도회", day_of_week: 5, default_time: "21:00", is_active: true, sort_order: 3 },
-    { id: "st-5", name: "새벽기도", day_of_week: undefined, default_time: "05:30", is_active: true, sort_order: 4 },
-  ];
   const [dateBasedAttendance, setDateBasedAttendance] = useState<Attendance[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(DEFAULT_SERVICE_TYPES);
 
   // 출석부 대시보드/결석자/통계: Supabase attendance 테이블(date + service_type)에서 로드 (출석 체크 탭과 동일 소스)
   const DB_STATUS_TO_UI: Record<string, Attendance["status"]> = { p: "출석", o: "온라인", a: "결석", l: "병결", n: "기타" };
@@ -2821,6 +2856,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       .from("attendance")
       .select("id, member_id, date, status, service_type")
       .eq("church_id", getChurchId())
+      .eq("service_type", "주일예배")
       .gte("date", startStr)
       .lte("date", endStr)
       .then(({ data, error }) => {
@@ -2888,7 +2924,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           member_id: m.id,
           date,
           status: st === "p" ? "출석" : "온라인",
-          service_type: "주일1부예배",
+          service_type: "주일예배",
         });
       }
     });
@@ -3211,7 +3247,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                   { id: "absentee" as const, label: "결석자 관리", Icon: UserX },
                   { id: "statistics" as const, label: "출석 통계", Icon: BarChart3 },
                   { id: "weekly" as const, label: "52주 출석", Icon: ListOrdered },
-                  { id: "serviceType" as const, label: "예배 설정", Icon: Sliders },
                 ].map(({ id, label, Icon }) => (
                   <button
                     key={id}
@@ -3234,7 +3269,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                 <AttendanceDashboard
                   members={db.members}
                   attendanceList={attendanceListForDashboard}
-                  serviceTypes={serviceTypes}
                   onOpenCheck={() => setAttendanceSubTab("check")}
                   onOpenAbsentee={() => setAttendanceSubTab("absentee")}
                   onOpenAbsenteeList={() => setAttendanceSubTab("absentee")}
@@ -3243,7 +3277,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               {attendanceSubTab === "check" && (
                 <AttendanceCheck
                   members={db.members}
-                  serviceTypes={serviceTypes}
                   toast={toast}
                   onAttendanceSaved={refetchAttendanceAfterSave}
                 />
@@ -3273,12 +3306,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                   }}
                 />
               )}
-              {attendanceSubTab === "serviceType" && (
-                <ServiceTypeSettings
-                  serviceTypes={serviceTypes}
-                  onSave={async (list) => { setServiceTypes(list); toast("예배 유형이 저장되었습니다", "ok"); }}
-                />
-              )}
+              {/* 예배 설정 탭 제거 - 주일예배 전용 */}
               {attendanceSubTab === "weekly" && <AttendanceSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} setCurrentWeek={setCurrentWeek} />}
             </>
           )}

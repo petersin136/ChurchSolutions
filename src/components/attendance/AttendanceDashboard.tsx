@@ -15,7 +15,6 @@ import {
 } from "recharts";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
-import type { ServiceType } from "@/types/db";
 
 const NAVY = "#1e3a5f";
 const GOLD = "#d4a853";
@@ -26,7 +25,6 @@ const DANGER = "#ef476f";
 export interface AttendanceDashboardProps {
   members: Member[];
   attendanceList: Attendance[];
-  serviceTypes?: ServiceType[];
   onOpenCheck?: () => void;
   onOpenAbsentee?: () => void;
   onOpenAbsenteeList?: (memberIds: string[]) => void;
@@ -66,7 +64,6 @@ function getSundayOfWeek(dateStr: string): string {
 export function AttendanceDashboard({
   members,
   attendanceList,
-  serviceTypes = [],
   onOpenAbsenteeList,
 }: AttendanceDashboardProps) {
   const activeMembers = useMemo(() => getActiveMembers(members), [members]);
@@ -80,33 +77,31 @@ export function AttendanceDashboard({
     const map: Record<string, Record<string, Attendance[]>> = {};
     attendanceList.forEach((a) => {
       if (!a.date) return;
-      if (!map[a.date]) map[a.date] = {};
       const st = a.service_type || "주일예배";
-      if (!map[a.date][st]) map[a.date][st] = [];
-      map[a.date][st].push(a);
+      if (st !== "주일예배" && st !== "주일1부예배") return;
+      if (!map[a.date]) map[a.date] = {};
+      if (!map[a.date]["주일예배"]) map[a.date]["주일예배"] = [];
+      map[a.date]["주일예배"].push(a);
     });
     return map;
   }, [attendanceList]);
 
-  /** 주 단위 집계 (일요일이 아닌 날 저장된 출석도 같은 주로 합침) */
   const byWeekService = useMemo(() => {
     const map: Record<string, Record<string, Attendance[]>> = {};
     attendanceList.forEach((a) => {
       if (!a.date) return;
+      const st = a.service_type || "주일예배";
+      if (st !== "주일예배" && st !== "주일1부예배") return;
       const weekKey = getSundayOfWeek(a.date);
       if (!map[weekKey]) map[weekKey] = {};
-      const st = a.service_type || "주일예배";
-      if (!map[weekKey][st]) map[weekKey][st] = [];
-      map[weekKey][st].push(a);
+      if (!map[weekKey]["주일예배"]) map[weekKey]["주일예배"] = [];
+      map[weekKey]["주일예배"].push(a);
     });
     return map;
   }, [attendanceList]);
 
-  /** 이번 주 출석 인원 (주일1부/주일예배, 주 단위 집계, 동일인 중복 제거) */
   const thisWeekPresent = useMemo(() => {
-    const st1 = "주일1부예배";
-    const st2 = "주일예배";
-    const list = byWeekService[thisWeek]?.[st1] || byWeekService[thisWeek]?.[st2] || [];
+    const list = byWeekService[thisWeek]?.["주일예배"] || [];
     const presentIds = new Set<string>();
     list.forEach((a) => {
       if (a.status === "출석" || a.status === "온라인") presentIds.add(a.member_id);
@@ -115,9 +110,7 @@ export function AttendanceDashboard({
   }, [byWeekService, thisWeek]);
 
   const lastWeekPresent = useMemo(() => {
-    const st1 = "주일1부예배";
-    const st2 = "주일예배";
-    const list = byWeekService[lastWeek]?.[st1] || byWeekService[lastWeek]?.[st2] || [];
+    const list = byWeekService[lastWeek]?.["주일예배"] || [];
     const presentIds = new Set<string>();
     list.forEach((a) => {
       if (a.status === "출석" || a.status === "온라인") presentIds.add(a.member_id);
@@ -139,7 +132,7 @@ export function AttendanceDashboard({
     let totalPresent = 0;
     let totalPossible = 0;
     monthSundays.forEach((weekKey) => {
-      const list = byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"] || [];
+      const list = byWeekService[weekKey]?.["주일예배"] || [];
       const presentIds = new Set<string>();
       list.forEach((a) => {
         if (a.status === "출석" || a.status === "온라인") presentIds.add(a.member_id);
@@ -156,7 +149,7 @@ export function AttendanceDashboard({
     const absentIds: string[] = [];
     activeMembers.forEach((m) => {
       const hadAttendance = lastNWeeks.some((weekKey) => {
-        const list = byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"] || [];
+        const list = byWeekService[weekKey]?.["주일예배"] || [];
         return list.some((a) => a.member_id === m.id && (a.status === "출석" || a.status === "온라인"));
       });
       if (!hadAttendance) absentIds.push(m.id);
@@ -166,23 +159,17 @@ export function AttendanceDashboard({
 
   const weeklyTrendData = useMemo(() => {
     return recentSundays.map((weekKey) => {
-      const st1 = byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"] || [];
-      const st2 = byWeekService[weekKey]?.["수요예배"] || [];
-      const st3 = byWeekService[weekKey]?.["금요기도회"] || [];
+      const list = byWeekService[weekKey]?.["주일예배"] || [];
       const sunSet = new Set<string>();
-      const wedSet = new Set<string>();
-      const friSet = new Set<string>();
-      st1.forEach((a) => { if (a.status === "출석" || a.status === "온라인") sunSet.add(a.member_id); });
-      st2.forEach((a) => { if (a.status === "출석" || a.status === "온라인") wedSet.add(a.member_id); });
-      st3.forEach((a) => { if (a.status === "출석" || a.status === "온라인") friSet.add(a.member_id); });
+      list.forEach((a) => { if (a.status === "출석" || a.status === "온라인") sunSet.add(a.member_id); });
       const label = weekKey.slice(5).replace("-", "/");
-      return { week: label, 주일: sunSet.size, 수요: wedSet.size, 금요: friSet.size };
+      return { week: label, 주일예배: sunSet.size };
     });
   }, [byWeekService, recentSundays]);
 
   const deptRates = useMemo(() => {
     const deptMap: Record<string, { present: number; total: number }> = {};
-    const list = byWeekService[thisWeek]?.["주일1부예배"] || byWeekService[thisWeek]?.["주일예배"] || [];
+    const list = byWeekService[thisWeek]?.["주일예배"] || [];
     const presentIds = new Set(list.filter((a) => a.status === "출석" || a.status === "온라인").map((a) => a.member_id));
     activeMembers.forEach((m) => {
       const dept = m.dept || "기타";
@@ -201,7 +188,7 @@ export function AttendanceDashboard({
   const heatmapData = useMemo(() => {
     const weeks = recentSundays.slice(-8);
     return weeks.map((weekKey) => {
-      const list = byWeekService[weekKey]?.["주일1부예배"] || byWeekService[weekKey]?.["주일예배"] || [];
+      const list = byWeekService[weekKey]?.["주일예배"] || [];
       const presentIds = new Set(list.filter((a) => a.status === "출석" || a.status === "온라인").map((a) => a.member_id));
       const rate = totalActive > 0 ? (presentIds.size / totalActive) * 100 : 0;
       return { date: weekKey.slice(5), rate: Math.round(rate), present: presentIds.size, total: totalActive };
@@ -253,10 +240,7 @@ export function AttendanceDashboard({
               <XAxis dataKey="week" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip formatter={(v: any) => [`${v ?? 0}명`, ""]} />
-              <Legend />
-              <Line type="monotone" dataKey="주일" stroke={NAVY} strokeWidth={2} name="주일" dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="수요" stroke={GOLD} strokeWidth={2} name="수요" dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="금요" stroke={GRAY} strokeWidth={2} name="금요" dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="주일예배" stroke={NAVY} strokeWidth={2} name="주일예배" dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
