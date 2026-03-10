@@ -118,28 +118,18 @@ export function AttendanceStatistics({
     let list = activeMembers.map((m) => {
       const byWeek = byMemberWeek[m.id] || {};
       let 출석 = 0,
-        온라인 = 0,
-        결석 = 0,
-        병결 = 0,
-        기타 = 0;
+        결석 = 0;
       sundays.forEach((d) => {
         const s = byWeek[d];
         if (s === "출석") 출석++;
-        else if (s === "온라인") 온라인++;
-        else if (s === "결석") 결석++;
-        else if (s === "병결") 병결++;
-        else 기타++;
+        else 결석++;
       });
-      const totalPresent = 출석 + 온라인;
-      const rate = totalSundays > 0 ? Math.round((totalPresent / totalSundays) * 100) : 0;
+      const rate = totalSundays > 0 ? Math.round((출석 / totalSundays) * 100) : 0;
       return {
         member: m,
         총주일: totalSundays,
         출석,
-        온라인,
         결석,
-        병결,
-        기타,
         출석률: rate,
       };
     });
@@ -188,9 +178,9 @@ export function AttendanceStatistics({
   const depts = useMemo(() => Array.from(new Set(activeMembers.map((m) => m.dept).filter(Boolean))) as string[], [activeMembers]);
 
   const handleExport = () => {
-    const headers = ["이름", "부서", "총 주일수", "출석", "온라인", "결석", "병결", "기타", "출석률"];
+    const headers = ["이름", "부서", "총 주일수", "출석", "결석", "출석률"];
     const rows = tableRows.map((r) =>
-      [r.member.name, r.member.dept || "", r.총주일, r.출석, r.온라인, r.결석, r.병결, r.기타, `${r.출석률}%`].join(",")
+      [r.member.name, r.member.dept || "", r.총주일, r.출석, r.결석, `${r.출석률}%`].join(",")
     );
     const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
     onExportExcel?.(csv, `출석통계_${startDate}_${endDate}.csv`);
@@ -270,17 +260,14 @@ export function AttendanceStatistics({
               <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">부서</th>
               <th className="text-right py-3 px-4 font-semibold text-[#1e3a5f]">총 주일수</th>
               <th className="text-right py-3 px-4 font-semibold text-[#1e3a5f]">출석</th>
-              <th className="text-right py-3 px-4 font-semibold text-[#1e3a5f]">온라인</th>
               <th className="text-right py-3 px-4 font-semibold text-[#1e3a5f]">결석</th>
-              <th className="text-right py-3 px-4 font-semibold text-[#1e3a5f]">병결</th>
-              <th className="text-right py-3 px-4 font-semibold text-[#1e3a5f]">기타</th>
               <th className="text-right py-3 px-4 font-semibold text-[#1e3a5f]">출석률</th>
             </tr>
           </thead>
           <tbody>
             {tableRows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-12 text-center text-gray-500">
+                <td colSpan={6} className="py-12 text-center text-gray-500">
                   {useSupabase ? "기간 내 성도·출석 데이터가 없습니다. 성도 관리와 출석 체크에서 데이터를 등록해 주세요." : "표시할 데이터가 없습니다."}
                 </td>
               </tr>
@@ -290,11 +277,8 @@ export function AttendanceStatistics({
                 <td className="py-3 px-4 font-medium">{r.member.name}</td>
                 <td className="py-3 px-4 text-gray-600">{r.member.dept || "-"}</td>
                 <td className="py-3 px-4 text-right">{fmt(r.총주일)}</td>
-                <td className="py-3 px-4 text-right text-green-600">{fmt(r.출석)}</td>
-                <td className="py-3 px-4 text-right text-blue-600">{fmt(r.온라인)}</td>
+                <td className="py-3 px-4 text-right text-slate-800">{fmt(r.출석)}</td>
                 <td className="py-3 px-4 text-right text-gray-500">{fmt(r.결석)}</td>
-                <td className="py-3 px-4 text-right text-amber-600">{fmt(r.병결)}</td>
-                <td className="py-3 px-4 text-right text-gray-400">{fmt(r.기타)}</td>
                 <td className="py-3 px-4 text-right font-medium">{r.출석률}%</td>
               </tr>
             ))

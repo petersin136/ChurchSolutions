@@ -5,7 +5,7 @@ import type { DB, Member, Note } from "@/types/db";
 import { getDepts } from "@/lib/store";
 import { CATS_INCOME, CATS_EXPENSE } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
-import { supabase } from "@/lib/supabase";
+import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId, withChurchId } from "@/lib/tenant";
 
 const STATUS_MAP: Record<string, string> = {
@@ -383,9 +383,12 @@ export function Modals({
     setEditMemberId(null);
   }
 
-  function deleteMember(id: string) {
+  async function deleteMember(id: string) {
     if (typeof window !== "undefined" && !window.confirm("삭제하시겠습니까?"))
       return;
+    const member = db.members.find((m) => m.id === id);
+    const imageUrl = member?.photo;
+    await deleteMemberPhotoFromStorage(imageUrl);
     setDb((prev) => {
       const { [id]: _, ...att } = prev.attendance;
       const { [id]: _r, ...attReasons } = prev.attendanceReasons || {};

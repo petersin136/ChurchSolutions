@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSPrope
 import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
-import { supabase } from "@/lib/supabase";
+import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
@@ -3112,8 +3112,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const openDetail = useCallback((id: string) => { setDetailId(id); setShowDetailModal(true); }, []);
   const openPrayerModal = useCallback((id: string) => { setPrayerModalMemberId(id); }, []);
 
-  const deleteMember = (id: string) => {
+  const deleteMember = async (id: string) => {
     if (typeof window !== "undefined" && !window.confirm("삭제하시겠습니까?")) return;
+    const member = db.members.find(m => m.id === id);
+    await deleteMemberPhotoFromStorage(member?.photo);
     setDb(prev => {
       const { [id]: _a, ...att } = prev.attendance;
       const { [id]: _ar, ...attReasons } = prev.attendanceReasons || {};
@@ -3128,9 +3130,13 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     toast("삭제 완료", "warn");
   };
 
-  const deleteMembers = (ids: string[]) => {
+  const deleteMembers = async (ids: string[]) => {
     if (ids.length === 0) return;
     if (typeof window !== "undefined" && !window.confirm(`선택한 ${ids.length}명을 삭제하시겠습니까?`)) return;
+    for (const id of ids) {
+      const member = db.members.find(m => m.id === id);
+      await deleteMemberPhotoFromStorage(member?.photo);
+    }
     const idSet = new Set(ids);
     setDb(prev => {
       const attendance = { ...prev.attendance }; ids.forEach(id => delete attendance[id]);

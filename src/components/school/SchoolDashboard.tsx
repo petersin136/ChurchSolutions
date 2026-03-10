@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
+import { getChurchId } from "@/lib/tenant";
 import { C, STAT_CARD_COLORS } from "@/styles/designTokens";
 
 const DEPT_BAR_COLORS: Record<string, string> = {
@@ -49,6 +50,23 @@ export function SchoolDashboard({ db, toast }: SchoolDashboardProps) {
         const activeList = list.filter((d) => d.is_active !== false);
         setDepartments(activeList);
 
+        const { data: enrollmentsData } = await supabase
+          .from("school_enrollments")
+          .select("member_id, department_id, role")
+          .eq("is_active", true)
+          .in("role", ["학생", "교사", "부교사"]);
+        const enrollments = (enrollmentsData ?? []) as { member_id: string; department_id: string; role: string }[];
+        console.log("[Dashboard] enrollments 전체:", enrollments);
+        console.log("[Dashboard] enrollments 개수:", enrollments?.length);
+        enrollments?.forEach((e) => {
+          console.log("[Dashboard] enrollment:", e.member_id, "dept:", e.department_id, "role:", e.role);
+        });
+        console.log("[Dashboard] departments:", activeList);
+        activeList?.forEach((d) => {
+          const deptEnrollments = enrollments?.filter((e) => e.department_id === d.id);
+          console.log("[Dashboard] 부서:", d.name, "id:", d.id, "등록수:", deptEnrollments?.length);
+        });
+
         const totalTeachersFromDepts = activeList.reduce((sum, d) => sum + (d.teacher_count ?? 0), 0);
         setTotalTeachers(totalTeachersFromDepts);
 
@@ -69,13 +87,24 @@ export function SchoolDashboard({ db, toast }: SchoolDashboardProps) {
         const weekStart = new Date();
         weekStart.setDate(weekStart.getDate() - weekStart.getDay());
         const weekStartStr = weekStart.toISOString().slice(0, 10);
-        const { data: att } = await supabase
-          .from("school_attendance")
-          .select("status")
-          .gte("date", weekStartStr);
-        if (att && att.length > 0) {
-          const present = att.filter((a) => a.status === "출석").length;
-          setWeekRate(Math.round((present / att.length) * 100));
+        const { data: schoolMemberIds } = await supabase
+          .from("school_enrollments")
+          .select("member_id")
+          .eq("is_active", true)
+          .in("role", ["학생", "교사", "부교사"]);
+        const memberIds = [...new Set((schoolMemberIds ?? []).map((r: { member_id: string }) => r.member_id))];
+        if (memberIds.length > 0) {
+          const { data: att } = await supabase
+            .from("attendance")
+            .select("status")
+            .in("member_id", memberIds)
+            .eq("service_type", "주일예배")
+            .eq("church_id", getChurchId())
+            .gte("date", weekStartStr);
+          if (att && att.length > 0) {
+            const present = att.filter((a: { status: string }) => a.status === "p").length;
+            setWeekRate(Math.round((present / att.length) * 100));
+          }
         }
       } catch (e) {
         console.error(e);

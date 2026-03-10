@@ -30,3 +30,27 @@ export function getServiceSupabase(): SupabaseClient {
   if (!serviceKey || !supabaseUrl) throw new Error("Supabase env not set");
   return createClient(supabaseUrl, serviceKey);
 }
+
+/**
+ * Supabase Storage에 저장된 성도 프로필 이미지 URL에서 파일 경로를 추출해 삭제.
+ * URL 예: .../storage/v1/object/public/member-photos/member-id.jpg 또는 .../object/sign/...
+ */
+export async function deleteMemberPhotoFromStorage(imageUrl: string | undefined): Promise<void> {
+  const client = getSupabase();
+  if (!client || !imageUrl || typeof imageUrl !== "string") return;
+  const part =
+    imageUrl.split("/storage/v1/object/public/")[1] ||
+    imageUrl.split("/storage/v1/object/sign/")[1];
+  if (!part) return;
+  const pathPart = part.split("?")[0];
+  const segments = pathPart.split("/");
+  const bucket = segments[0];
+  const filePath = segments.slice(1).join("/");
+  if (bucket && filePath) {
+    try {
+      await client.storage.from(bucket).remove([filePath]);
+    } catch (e) {
+      console.warn("[deleteMemberPhotoFromStorage]", e);
+    }
+  }
+}

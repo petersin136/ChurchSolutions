@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolEnrollment, SchoolTransferHistory } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -28,10 +28,13 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
     setLoading(true);
     try {
       const [depts, enrolls, hist] = await Promise.all([
-        filterByChurch(supabase.from("school_departments").select("*")).order("sort_order"),
-        filterByChurch(supabase.from("school_enrollments").select("*")).eq("is_active", true),
-        filterByChurch(supabase.from("school_transfer_history").select("*")).order("created_at", { ascending: false }).limit(50),
+        supabase.from("school_departments").select("*").order("sort_order"),
+        supabase.from("school_enrollments").select("*").eq("is_active", true),
+        supabase.from("school_transfer_history").select("*").order("created_at", { ascending: false }).limit(50),
       ]);
+      console.log("[DepartmentTransfer] departments query result:", depts.data, depts.error);
+      console.log("[DepartmentTransfer] enrollments query result:", enrolls.data, enrolls.error);
+      console.log("[DepartmentTransfer] transfer_history query result:", hist.data, hist.error);
       if (depts.error) {
         toast("부서 로드 실패: " + depts.error.message, "err");
         return;
@@ -80,7 +83,14 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
       for (const enrollId of selectedIds) {
         const en = enrollments.find((e) => e.id === enrollId);
         if (!en) continue;
-        const { error: updErr } = await supabase.from("school_enrollments").update({ department_id: toDeptId, class_id: null }).eq("church_id", getChurchId()).eq("id", enrollId);
+        let churchId: string;
+        try {
+          churchId = getChurchId();
+        } catch (err) {
+          toast("church_id를 확인할 수 없습니다. 로그인 상태를 확인하세요.", "err");
+          return;
+        }
+        const { error: updErr } = await supabase.from("school_enrollments").update({ department_id: toDeptId, class_id: null }).eq("church_id", churchId).eq("id", enrollId);
         if (updErr) {
           toast("이동 실패: " + updErr.message, "err");
           return;

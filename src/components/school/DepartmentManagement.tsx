@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
+import { getChurchId, withChurchId } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 export interface DepartmentManagementProps {
@@ -34,20 +34,41 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
       setLoading(false);
       return;
     }
+    let churchId: string | null = null;
+    try {
+      churchId = getChurchId();
+    } catch (e) {
+      console.warn("[DeptMgmt] churchId not available yet:", e);
+    }
+    console.log("[DeptMgmt] churchId:", churchId);
+
     setLoading(true);
     try {
-      const { data: depts, error: deptsError } = await filterByChurch(supabase.from("school_departments").select("*")).order("sort_order");
+      // 부서 목록: 대시보드와 동일하게 RLS에 의존 (church_id 필터 없이 조회). getChurchId()가 마운트 시 아직 없을 수 있음.
+      const { data: depts, error: deptsError } = await supabase
+        .from("school_departments")
+        .select("*")
+        .order("sort_order");
+      console.log("[DeptMgmt] departments query result:", depts, deptsError);
       if (deptsError) {
         toast("부서 목록 로드 실패: " + deptsError.message, "err");
         return;
       }
-      setDepartments((depts as SchoolDepartment[]) ?? []);
-      const { data: cls, error: clsError } = await filterByChurch(supabase.from("school_classes").select("*")).order("sort_order");
+      const deptList = (depts as SchoolDepartment[]) ?? [];
+      setDepartments(deptList.filter((d) => d.is_active !== false));
+
+      // 반 목록: RLS만 사용 (부서 관리와 동일 패턴)
+      const { data: cls, error: clsError } = await supabase
+        .from("school_classes")
+        .select("*")
+        .order("sort_order");
+      console.log("[DeptMgmt] classes query result:", cls, clsError);
       if (clsError) {
         toast("반 목록 로드 실패: " + clsError.message, "err");
         return;
       }
-      setClasses((cls as SchoolClass[]) ?? []);
+      const clsList = (cls as SchoolClass[]) ?? [];
+      setClasses(clsList.filter((c) => c.is_active !== false));
     } finally {
       setLoading(false);
     }

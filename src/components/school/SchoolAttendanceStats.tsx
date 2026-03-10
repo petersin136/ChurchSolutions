@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment } from "@/types/db";
-import type { SchoolAttendance } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { filterByChurch } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -32,7 +31,11 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
     const load = async () => {
       setLoading(true);
       try {
-        const { data: depts, error: deptsErr } = await filterByChurch(client.from("school_departments").select("*")).order("sort_order");
+        const { data: depts, error: deptsErr } = await client
+          .from("school_departments")
+          .select("*")
+          .order("sort_order");
+        console.log("[SchoolAttendanceStats] departments query result:", depts, deptsErr);
         if (deptsErr) {
           toast("부서 로드 실패: " + deptsErr.message, "err");
           setLoading(false);
@@ -52,21 +55,55 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
         const startStr = toLocalDateString(start);
         const endStr = toLocalDateString(end);
 
-        const { data: att, error: attErr } = await filterByChurch(
-          client.from("school_attendance").select("department_id, status")
-        )
+        const { data: enrolls, error: enrollsErr } = await client
+          .from("school_enrollments")
+          .select("member_id, department_id")
+          .eq("is_active", true)
+          .in("role", ["학생", "교사", "부교사"]);
+        if (enrollsErr || !enrolls?.length) {
+          const activeDepts = list.filter((d) => d.is_active !== false);
+          setStats(
+            activeDepts.map((d) => ({
+              department_id: d.id,
+              name: d.name,
+              출석: 0,
+              결석: 0,
+              병결: 0,
+              기타: 0,
+              total: 0,
+              rate: 0,
+            }))
+          );
+          setLoading(false);
+          return;
+        }
+        const memberIds = [...new Set((enrolls as { member_id: string }[]).map((e) => e.member_id))];
+        const memberToDept: Record<string, string> = {};
+        (enrolls as { member_id: string; department_id: string }[]).forEach((e) => {
+          memberToDept[e.member_id] = e.department_id;
+        });
+
+        const { data: att, error: attErr } = await client
+          .from("attendance")
+          .select("member_id, status")
+          .in("member_id", memberIds)
+          .eq("service_type", "주일예배")
+          .eq("church_id", getChurchId())
           .gte("date", startStr)
           .lte("date", endStr);
+        console.log("[SchoolAttendanceStats] attendance query result:", att, attErr);
         if (attErr) {
           toast("출석 데이터 로드 실패: " + attErr.message, "err");
           setLoading(false);
           return;
         }
-        const rows = (att as Pick<SchoolAttendance, "department_id" | "status">[]) ?? [];
         const byDept: Record<string, { 출석: number; 결석: number; 병결: number; 기타: number }> = {};
-        rows.forEach((r) => {
-          if (!byDept[r.department_id]) byDept[r.department_id] = { 출석: 0, 결석: 0, 병결: 0, 기타: 0 };
-          if (r.status in byDept[r.department_id]) (byDept[r.department_id] as Record<string, number>)[r.status]++;
+        (att ?? []).forEach((r: { member_id: string; status: string }) => {
+          const deptId = memberToDept[r.member_id];
+          if (!deptId) return;
+          if (!byDept[deptId]) byDept[deptId] = { 출석: 0, 결석: 0, 병결: 0, 기타: 0 };
+          if (r.status === "p") byDept[deptId].출석++;
+          else byDept[deptId].결석++;
         });
         const deptList = list.filter((d) => d.is_active !== false);
         setStats(
