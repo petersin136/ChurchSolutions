@@ -23,8 +23,11 @@ export interface SchoolDashboardProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
+type DeptCounts = Record<string, { teachers: number; students: number }>;
+
 export function SchoolDashboard({ db, toast }: SchoolDashboardProps) {
   const [departments, setDepartments] = useState<SchoolDepartment[]>([]);
+  const [deptCounts, setDeptCounts] = useState<DeptCounts>({});
   const [loading, setLoading] = useState(true);
   const [totalStudents, setTotalStudents] = useState(0);
   const [totalTeachers, setTotalTeachers] = useState(0);
@@ -62,13 +65,19 @@ export function SchoolDashboard({ db, toast }: SchoolDashboardProps) {
           console.log("[Dashboard] enrollment:", e.member_id, "dept:", e.department_id, "role:", e.role);
         });
         console.log("[Dashboard] departments:", activeList);
+        const counts: DeptCounts = {};
         activeList?.forEach((d) => {
-          const deptEnrollments = enrollments?.filter((e) => e.department_id === d.id);
+          const deptEnrollments = enrollments?.filter((e) => e.department_id === d.id) ?? [];
           console.log("[Dashboard] 부서:", d.name, "id:", d.id, "등록수:", deptEnrollments?.length);
+          counts[d.id] = {
+            teachers: deptEnrollments.filter((e) => e.role === "교사" || e.role === "부교사").length,
+            students: deptEnrollments.filter((e) => e.role === "학생").length,
+          };
         });
+        setDeptCounts(counts);
 
-        const totalTeachersFromDepts = activeList.reduce((sum, d) => sum + (d.teacher_count ?? 0), 0);
-        setTotalTeachers(totalTeachersFromDepts);
+        const totalTeachersFromEnrollments = enrollments.filter((e) => e.role === "교사" || e.role === "부교사").length;
+        setTotalTeachers(totalTeachersFromEnrollments);
 
         const { count: studentCount } = await supabase
           .from("school_enrollments")
@@ -165,7 +174,7 @@ export function SchoolDashboard({ db, toast }: SchoolDashboardProps) {
                 onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
               >
                 <div style={{ fontSize: 15, fontWeight: 600, color: C.navy }}>{d.name}</div>
-                <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>교사 {d.teacher_count} · 학생 {d.student_count}</div>
+                <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>교사 {deptCounts[d.id]?.teachers ?? 0} · 학생 {deptCounts[d.id]?.students ?? 0}</div>
                 <div style={{ fontSize: 12, color: C.textFaint, marginTop: 2 }}>이번 주 출석률 —</div>
               </div>
             ))

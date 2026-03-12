@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { getChurchId, withChurchId } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
+type DeptCounts = Record<string, { teachers: number; students: number }>;
+
 export interface DepartmentManagementProps {
   db: DB;
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
@@ -14,6 +16,7 @@ export interface DepartmentManagementProps {
 
 export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
   const [departments, setDepartments] = useState<SchoolDepartment[]>([]);
+  const [deptCounts, setDeptCounts] = useState<DeptCounts>({});
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +58,24 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
         return;
       }
       const deptList = (depts as SchoolDepartment[]) ?? [];
-      setDepartments(deptList.filter((d) => d.is_active !== false));
+      const activeDepts = deptList.filter((d) => d.is_active !== false);
+      setDepartments(activeDepts);
+
+      const { data: enrollmentsData } = await supabase
+        .from("school_enrollments")
+        .select("member_id, department_id, role")
+        .eq("is_active", true)
+        .in("role", ["학생", "교사", "부교사"]);
+      const enrollments = (enrollmentsData ?? []) as { member_id: string; department_id: string; role: string }[];
+      const counts: DeptCounts = {};
+      activeDepts.forEach((d) => {
+        const deptEnrollments = enrollments.filter((e) => e.department_id === d.id);
+        counts[d.id] = {
+          teachers: deptEnrollments.filter((e) => e.role === "교사" || e.role === "부교사").length,
+          students: deptEnrollments.filter((e) => e.role === "학생").length,
+        };
+      });
+      setDeptCounts(counts);
 
       // 반 목록: RLS만 사용 (부서 관리와 동일 패턴)
       const { data: cls, error: clsError } = await supabase
@@ -237,7 +257,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
                   <td className="py-3 px-4 font-medium">{d.name}</td>
                   <td className="py-3 px-4">{d.age_range ?? "-"}</td>
                   <td className="py-3 px-4">{d.leader_name ?? "-"}</td>
-                  <td className="py-3 px-4">{d.teacher_count} / {d.student_count}</td>
+                  <td className="py-3 px-4">{deptCounts[d.id]?.teachers ?? 0} / {deptCounts[d.id]?.students ?? 0}</td>
                   <td className="py-3 px-4">{d.meeting_time ?? "-"}</td>
                   <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                     <button type="button" onClick={() => openEditDept(d)} className="mr-2 text-sm text-blue-600 hover:underline">수정</button>
