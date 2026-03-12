@@ -3,13 +3,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import type { DB } from "@/types/db";
 import { DEFAULT_DB, CATS_INCOME, CATS_EXPENSE } from "@/types/db";
-import { loadDB, loadDBFromSupabase, saveDBToSupabase, getWeekNum, getThisMonth } from "@/lib/store";
+import { loadDBFromSupabase, saveDBToSupabase, getWeekNum, getThisMonth } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
 import { SuperPlannerUI } from "./SuperPlannerUI";
 
 export type PageId = "pastoral" | "planner" | "finance" | "visit" | "bulletin" | "statistics" | "messaging" | "school" | "settings";
 
 const PAGE_IDS: PageId[] = ["pastoral", "planner", "finance", "visit", "bulletin", "statistics", "messaging", "school", "settings"];
-const STORAGE_KEY_PAGE = "superplanner_page";
+const STORAGE_KEY_PAGE = "currentPage";
 
 export interface ToastItem {
   id: number;
@@ -19,32 +20,45 @@ export interface ToastItem {
 
 function getInitialPage(): PageId {
   if (typeof window === "undefined") return "pastoral";
-  const saved = window.localStorage.getItem(STORAGE_KEY_PAGE);
+  const saved = window.sessionStorage.getItem(STORAGE_KEY_PAGE);
   if (saved && PAGE_IDS.includes(saved as PageId)) return saved as PageId;
   return "pastoral";
 }
 
 export default function SuperPlanner() {
+  const { churchId } = useAuth();
   const [db, setDb] = useState<DB>(() => DEFAULT_DB);
   const [dbLoaded, setDbLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [currentPage, setCurrentPage] = useState<PageId>(getInitialPage);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   useEffect(() => {
-    loadDBFromSupabase()
-      .then((d) => {
-        setDb(d);
+    console.log("[SuperPlanner] useEffect 실행 - churchId:", churchId);
+    if (!churchId) {
+      console.log("[SuperPlanner] churchId 없음, 대기 중");
+      return;
+    }
+    console.log("[SuperPlanner] churchId 확인됨, 데이터 로드 시작:", churchId);
+    setLoadError(false);
+    const loadData = async () => {
+      try {
+        console.log("[SuperPlanner] loadDBFromSupabase 호출 시작");
+        const data = await loadDBFromSupabase(churchId);
+        console.log("[SuperPlanner] 로드 성공, members 수:", data?.members?.length ?? 0);
+        setDb(data);
         setDbLoaded(true);
-      })
-      .catch(() => {
-        setDb(loadDB());
-        setDbLoaded(true);
-      });
-  }, []);
+      } catch (error) {
+        console.error("[SuperPlanner] 로드 실패:", error);
+        setLoadError(true);
+      }
+    };
+    loadData();
+  }, [churchId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY_PAGE, currentPage);
+    window.sessionStorage.setItem(STORAGE_KEY_PAGE, currentPage);
   }, [currentPage]);
 
   /* 페이지 로드 시 자동 save 제거: saveDBToSupabase가 attendance를 member+year 기준 delete 후 week_num만 insert해
@@ -83,6 +97,22 @@ export default function SuperPlanner() {
     (type: string) => exportReport(db, type, toast),
     [db, toast]
   );
+
+  if (!churchId) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font)" }}>
+        <p style={{ fontSize: 15, color: "var(--text2)" }}>교회 정보를 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font)" }}>
+        <p style={{ fontSize: 15, color: "var(--danger, #dc2626)" }}>데이터 로드에 실패했습니다. 새로고침 해 주세요.</p>
+      </div>
+    );
+  }
 
   if (!dbLoaded) {
     return (

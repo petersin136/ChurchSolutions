@@ -65,6 +65,7 @@ export function AttendanceCheck({
   const [searchName, setSearchName] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statusMap, setStatusMap] = useState<Record<string, AttStatusUI>>({});
   const [noteMap, setNoteMap] = useState<Record<string, string>>({});
@@ -72,6 +73,11 @@ export function AttendanceCheck({
   const loadingRef = useRef(false);
   const toastRef = useRef(toast);
   toastRef.current = toast;
+  const statusMapRef = useRef(statusMap);
+  statusMapRef.current = statusMap;
+  const noteMapRef = useRef(noteMap);
+  noteMapRef.current = noteMap;
+  const noteTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const activeMembers = useMemo(() => getActiveMembers(members), [members]);
   const depts = useMemo(() => Array.from(new Set(activeMembers.map((m) => m.dept).filter(Boolean))) as string[], [activeMembers]);
@@ -146,6 +152,54 @@ export function AttendanceCheck({
 
   const setNote = useCallback((memberId: string, value: string) => {
     setNoteMap((prev) => ({ ...prev, [memberId]: value }));
+  }, []);
+
+  const saveOneAttendance = useCallback(async (memberId: string, newStatus: AttStatusUI, noteOverride?: string) => {
+    if (!supabase) return;
+    setSaving(true);
+    setSaved(false);
+    setSaveError(false);
+    const year = new Date(selectedDate + "T12:00:00").getFullYear();
+    const week_num = getWeekNumForDate(selectedDate);
+    const note = newStatus === "결석" ? ((noteOverride ?? noteMapRef.current[memberId])?.trim() || null) : null;
+    const { error } = await supabase.from("attendance").upsert(withChurchId([{
+      member_id: memberId,
+      week_num: Number(week_num),
+      year: Number(year),
+      date: selectedDate,
+      service_type: SERVICE_TYPE,
+      status: UI_TO_DB_STATUS[newStatus] ?? "a",
+      check_in_time: new Date().toISOString(),
+      check_in_method: "수동" as const,
+      note: note as string | null,
+      checked_by: getCurrentUserId?.() ?? null,
+    }]), { onConflict: "member_id,date,service_type" });
+    if (error) {
+      setSaveError(true);
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    onAttendanceSaved?.();
+  }, [selectedDate, getCurrentUserId, onAttendanceSaved]);
+
+  const toggleAttendance = useCallback((memberId: string, newStatus: AttStatusUI) => {
+    setStatusMap((prev) => ({ ...prev, [memberId]: newStatus }));
+    saveOneAttendance(memberId, newStatus);
+  }, [saveOneAttendance]);
+
+  const handleNoteChange = useCallback((memberId: string, value: string) => {
+    setNoteMap((prev) => ({ ...prev, [memberId]: value }));
+    if (noteTimersRef.current[memberId]) clearTimeout(noteTimersRef.current[memberId]);
+    noteTimersRef.current[memberId] = setTimeout(() => {
+      saveOneAttendance(memberId, statusMapRef.current[memberId] ?? "출석", value);
+    }, 800);
+  }, [saveOneAttendance]);
+
+  useEffect(() => {
+    return () => { Object.values(noteTimersRef.current).forEach(clearTimeout); };
   }, []);
 
   const count출석 = useMemo(
@@ -294,14 +348,14 @@ export function AttendanceCheck({
                         <div className="flex flex-wrap gap-2 justify-center">
                           <button
                             type="button"
-                            onClick={() => setStatus(m.id, "출석")}
+                            onClick={() => toggleAttendance(m.id, "출석")}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${status === "출석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
                           >
                             출석
                           </button>
                           <button
                             type="button"
-                            onClick={() => setStatus(m.id, "결석")}
+                            onClick={() => toggleAttendance(m.id, "결석")}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${status === "결석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
                           >
                             결석
@@ -313,7 +367,7 @@ export function AttendanceCheck({
                           type="text"
                           placeholder="사유 (선택)"
                           value={noteMap[m.id] ?? ""}
-                          onChange={(e) => setNote(m.id, e.target.value)}
+                          onChange={(e) => handleNoteChange(m.id, e.target.value)}
                           disabled={!isAbsent}
                           className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg w-40 ${isAbsent ? "bg-white" : "bg-gray-50 text-gray-400"}`}
                         />
@@ -333,14 +387,18 @@ export function AttendanceCheck({
           <span>결석 <strong className="text-slate-800">{count결석}명</strong></span>
           <span className="text-gray-400">/ 전체 {filteredMembers.length}명</span>
         </div>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="px-6 py-2.5 rounded-xl bg-[#1e3a5f] text-white font-semibold text-sm hover:opacity-90 disabled:opacity-60 flex items-center gap-2"
-        >
-          {saved ? <>✓ 저장됨</> : saving ? (<><span className="inline-block w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />저장 중...</>) : "저장"}
-        </button>
+        <div className="text-sm">
+          {saving ? (
+            <span className="flex items-center gap-1 text-gray-500">
+              <span className="inline-block w-3 h-3 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+              저장 중...
+            </span>
+          ) : saved ? (
+            <span className="text-green-600 font-medium">✓ 자동 저장됨</span>
+          ) : saveError ? (
+            <span className="text-red-500">저장 실패 - 다시 시도해주세요</span>
+          ) : null}
+        </div>
       </div>
     </div>
   );

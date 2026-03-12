@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await fetchChurchForUser(userId);
     if (result && result.churchId) {
       console.log("[AuthContext] church_users 조회 결과:", result);
-      console.log("[AuthContext] 설정된 churchId:", result.churchId);
+      console.log("[AuthContext] churchId 설정됨:", result.churchId);
       setChurchId(result.churchId);
       setChurchName(result.churchName);
       if (typeof window !== "undefined") {
@@ -123,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       const envId = process.env.NEXT_PUBLIC_CHURCH_ID;
       if (envId && envId !== "undefined" && envId !== "null") {
+        console.log("[AuthContext] churchId 설정됨 (env):", envId);
         setChurchId(envId);
         if (typeof window !== "undefined") {
           localStorage.setItem(CHURCH_ID_KEY, envId);
@@ -153,7 +154,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setChurchId(null);
         setChurchName(null);
         const cached = localStorage.getItem(CHURCH_ID_KEY);
-        if (cached && cached !== "null" && cached !== "undefined") setChurchId(cached);
+        if (cached && cached !== "null" && cached !== "undefined") {
+          console.log("[AuthContext] churchId 설정됨 (cached):", cached);
+          setChurchId(cached);
+        }
         const cachedName = localStorage.getItem(CHURCH_NAME_KEY);
         if (cachedName) setChurchName(cachedName);
       }
@@ -235,6 +239,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.location.replace("/login");
   }, []);
+
+  useEffect(() => {
+    console.log("[AuthContext] Provider value - churchId:", churchId);
+  }, [churchId]);
 
   return (
     <AuthContext.Provider value={{ user, session, churchId, churchName, loading, signOut, setRegistering: setIsRegistering }}>

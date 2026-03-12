@@ -8,29 +8,46 @@ const CURRENT_YEAR = new Date().getFullYear();
 /** 전체 삭제용 조건 (PostgREST는 조건 없이 delete 불가일 수 있음) */
 const MATCH_ALL_ID = "00000000-0000-0000-0000-000000000000";
 
-/** Supabase에서 전체 DB 로드 */
-export async function loadDBFromSupabase(): Promise<DB> {
+/** Supabase에서 전체 DB 로드. churchId가 없으면 쿼리하지 않고 DEFAULT_DB 반환 (목양 대시보드 0명 버그 방지). */
+export async function loadDBFromSupabase(optionalChurchId?: string | null): Promise<DB> {
   if (!supabase) return { ...DEFAULT_DB };
   const empty = { ...DEFAULT_DB };
 
-  const churchId = getChurchId();
+  let cid: string | null = optionalChurchId ?? null;
+  if (!cid) {
+    try {
+      cid = getChurchId();
+    } catch {
+      return { ...DEFAULT_DB };
+    }
+  }
+  if (!cid) return { ...DEFAULT_DB };
+
+  console.log("[loadDB] churchId:", cid);
+
   const [settingsRes, membersRes, attendanceRes, notesRes, plansRes, sermonsRes, visitsRes, newFamilyProgramsRes, incomeRes, expenseRes, budgetRes, checklistRes] = await Promise.all([
-    filterByChurch(supabase.from("settings").select("*")).limit(1),
-    filterByChurch(supabase.from("members").select("*")).order("created_at", { ascending: true }),
-    filterByChurch(supabase.from("attendance").select("*")),
-    filterByChurch(supabase.from("notes").select("*")),
-    filterByChurch(supabase.from("plans").select("*")).order("date", { ascending: true }),
-    filterByChurch(supabase.from("sermons").select("*")).order("date", { ascending: false }),
-    filterByChurch(supabase.from("visits").select("*")).order("date", { ascending: false }),
-    filterByChurch(supabase.from("new_family_program").select("*")),
-    filterByChurch(supabase.from("income").select("*")).order("date", { ascending: false }),
-    filterByChurch(supabase.from("expense").select("*")).order("date", { ascending: false }),
-    filterByChurch(supabase.from("budget").select("*")).eq("fiscal_year", String(CURRENT_YEAR)),
-    filterByChurch(supabase.from("checklist").select("*")).order("sort_order", { ascending: true }),
+    supabase.from("settings").select("*").eq("church_id", cid).limit(1),
+    supabase.from("members").select("*").eq("church_id", cid).order("created_at", { ascending: true }),
+    supabase.from("attendance").select("*").eq("church_id", cid),
+    supabase.from("notes").select("*").eq("church_id", cid),
+    supabase.from("plans").select("*").eq("church_id", cid).order("date", { ascending: true }),
+    supabase.from("sermons").select("*").eq("church_id", cid).order("date", { ascending: false }),
+    supabase.from("visits").select("*").eq("church_id", cid).order("date", { ascending: false }),
+    supabase.from("new_family_program").select("*").eq("church_id", cid),
+    supabase.from("income").select("*").eq("church_id", cid).order("date", { ascending: false }),
+    supabase.from("expense").select("*").eq("church_id", cid).order("date", { ascending: false }),
+    supabase.from("budget").select("*").eq("church_id", cid).eq("fiscal_year", String(CURRENT_YEAR)),
+    supabase.from("checklist").select("*").eq("church_id", cid).order("sort_order", { ascending: true }),
   ]);
 
   if (settingsRes.error) console.warn("settings load error:", settingsRes.error);
   if (membersRes.error) console.warn("members load error:", membersRes.error);
+
+  console.log("[loadDB] members 쿼리 결과:", {
+    count: membersRes.data?.length ?? 0,
+    error: membersRes.error?.message ?? null,
+    firstMember: (membersRes.data?.[0] as Record<string, unknown> | undefined)?.name ?? "none",
+  });
 
   const settingsRow = settingsRes.data?.[0];
   const db: DB = {

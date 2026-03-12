@@ -5,7 +5,7 @@ import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance } from "
 import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
-import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
+import { useAuth } from "@/contexts/AuthContext";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Heart, Home, Gift } from "lucide-react";
@@ -600,6 +600,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 
   const m = db.members.filter(x => x.status !== "졸업/전출");
   const total = m.length;
+  console.log("[목양대시보드] 전체 성도 수:", total, "db.members.length:", db.members?.length ?? 0);
   const attInPerson = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "p").length;
   const attOnline = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "o").length;
   const attTotal = attInPerson + attOnline;
@@ -820,11 +821,12 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 /* ====== Members ====== */
 const ROLE_PRIORITY: Record<string, number> = { "장로": 0, "안수집사": 1, "권사": 2, "집사": 3, "청년": 4, "성도": 5, "학생": 6, "새가족": 7, "영아": 8 };
 
-function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, detailId, deleteMembers }: {
+function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, detailId, deleteMembers, churchId }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
   toast: (m: string, t?: string) => void; currentWeek: number;
   openMemberModal: (id?: string) => void; openDetail: (id: string) => void; openNoteModal: (id: string) => void;
   detailId: string | null; deleteMembers: (ids: string[]) => void;
+  churchId: string | null;
 }) {
   const mob = useIsMobile();
   const listRef = useRef<HTMLDivElement>(null);
@@ -846,19 +848,29 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const PAGE_SIZE_MEM = 10;
   const depts = getDepts(db);
 
-  /* 성도 목록: 대시보드와 동일하게 Supabase에서 직접 로드 */
+  /* 성도 목록: churchId 없으면 쿼리하지 않음. churchId가 준비되면 그때 로드. */
   useEffect(() => {
+    console.log("[PastoralPage/MembersSub] useEffect 실행 - churchId:", churchId);
+    if (!churchId) {
+      console.log("[PastoralPage/MembersSub] churchId 없음, 리턴");
+      return;
+    }
     if (!supabase) return;
-    filterByChurch(supabase.from("members").select("*")).order("created_at", { ascending: true }).then(({ data, error }: { data: unknown[] | null; error: { message: string; details?: unknown } | null }) => {
-      console.log("[MembersSub] members load:", { count: data?.length ?? 0, data: data ?? null, error: error ?? null });
-      if (error) {
-        console.error("[MembersSub] members load error:", error.message, error.details);
-        return;
-      }
-      const members = (data ?? []).map((r) => toMember(r as Record<string, unknown>));
-      setDb(prev => ({ ...prev, members }));
-    });
-  }, [setDb]);
+    console.log("[PastoralPage/MembersSub] 성도 데이터 fetch 시작");
+    supabase
+      .from("members")
+      .select("*")
+      .eq("church_id", churchId)
+      .order("created_at", { ascending: true })
+      .then(({ data, error }: { data: unknown[] | null; error: { message: string; details?: unknown } | null }) => {
+        if (error) {
+          console.error("[MembersSub] members load error:", error.message, error.details);
+          return;
+        }
+        const members = (data ?? []).map((r) => toMember(r as Record<string, unknown>));
+        setDb((prev) => ({ ...prev, members }));
+      });
+  }, [churchId, setDb]);
 
   useEffect(() => {
     if (!printOpen) return;
@@ -2117,8 +2129,9 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
   );
 }
 
-function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, saveDb, toast, mob }: {
+function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, saveDb, toast, mob, churchId }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; memberId: string; onClose: () => void; onSaved?: () => void; saveDb?: (d: DB) => Promise<void>; toast: (m: string, t?: string) => void; mob: boolean;
+  churchId: string | null;
 }) {
   const [saving, setSaving] = useState(false);
   const member = db.members.find(m => m.id === memberId);
@@ -2137,11 +2150,11 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
   const mentor = program?.mentor_id ? db.members.find(m => m.id === program.mentor_id) : null;
   const [mentorCandidates, setMentorCandidates] = useState<{ id: string; name: string; dept?: string; role?: string }[]>([]);
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase || !churchId) return;
     supabase
       .from("servant_school_graduates")
       .select("member_id, name")
-      .eq("church_id", getChurchId())
+      .eq("church_id", churchId)
       .eq("is_active", true)
       .then(({ data, error }: any) => {
         if (error || !data) {
@@ -2154,7 +2167,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
           .map(m => ({ id: m.id, name: m.name || "", dept: m.dept, role: m.role }));
         setMentorCandidates(candidates);
       });
-  }, [db.members, memberId]);
+  }, [churchId, db.members, memberId]);
   const currentWeekNum = program ? getProgramWeekFromStart(program.program_start_date) : 1;
   const allFourDone = program?.week1_completed && program?.week2_completed && program?.week3_completed && program?.week4_completed;
 
@@ -2790,15 +2803,16 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
 const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "reports", "settings"];
 
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
+  const { churchId } = useAuth();
   const mob = useIsMobile();
   const [activeSub, setActiveSubState] = useState<SubPage>(() => {
     if (typeof window === "undefined") return "dashboard";
-    const v = localStorage.getItem("pastoral_active_sub");
+    const v = sessionStorage.getItem("pastoralSubTab");
     return (SUB_PAGE_IDS.includes(v as SubPage) ? v : "dashboard") as SubPage;
   });
   const setActiveSub = useCallback((id: SubPage) => setActiveSubState(id), []);
   useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("pastoral_active_sub", activeSub);
+    if (typeof window !== "undefined") sessionStorage.setItem("pastoralSubTab", activeSub);
   }, [activeSub]);
   const [currentWeek, setCurrentWeek] = useState(getWeekNum);
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: string }[]>([]);
@@ -2846,7 +2860,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const DB_STATUS_TO_UI: Record<string, Attendance["status"]> = { p: "출석", o: "온라인", a: "결석", l: "병결", n: "기타" };
 
   const fetchDateBasedAttendance = useCallback(() => {
-    if (!supabase) return;
+    if (!supabase || !churchId) return;
     const end = new Date();
     const start = new Date(end);
     start.setDate(start.getDate() - 16 * 7);
@@ -2855,7 +2869,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     supabase
       .from("attendance")
       .select("id, member_id, date, status, service_type")
-      .eq("church_id", getChurchId())
+      .eq("church_id", churchId)
       .eq("service_type", "주일예배")
       .gte("date", startStr)
       .lte("date", endStr)
@@ -2873,40 +2887,45 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         }));
         setDateBasedAttendance(list);
       });
-  }, []);
+  }, [churchId]);
 
   useEffect(() => {
+    if (!churchId) return;
     fetchDateBasedAttendance();
-  }, [activeSub, attendanceSubTab, fetchDateBasedAttendance]);
+  }, [churchId, activeSub, attendanceSubTab, fetchDateBasedAttendance]);
 
   /** 출석 체크 저장 후 호출: db.attendance(주차별)와 dateBasedAttendance를 재조회해 성도 관리 등에 즉시 반영 */
   const refetchAttendanceAfterSave = useCallback(() => {
-    if (!supabase) return;
-    filterByChurch(supabase.from("attendance").select("id, member_id, week_num, date, status, reason")).then(({ data, error }: { data: unknown[] | null; error: { message: string; details?: unknown } | null }) => {
-      if (error) {
-        console.warn("[PastoralPage] refetchAttendance error:", error.message);
-        return;
-      }
-      const attendance: DB["attendance"] = {};
-      const attendanceReasons: Record<string, Record<number, string>> = {};
-      (data ?? []).forEach((r) => {
-        const row = r as Record<string, unknown>;
-        const mid = row.member_id as string;
-        const week = row.week_num as number;
-        if (!mid) return;
-        if (!attendance[mid]) attendance[mid] = {};
-        const status = row.status as string;
-        attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as AttStatus;
-        const reason = row.reason as string | undefined;
-        if (reason?.trim()) {
-          if (!attendanceReasons[mid]) attendanceReasons[mid] = {};
-          attendanceReasons[mid][week] = reason;
+    if (!supabase || !churchId) return;
+    supabase
+      .from("attendance")
+      .select("id, member_id, week_num, date, status, reason")
+      .eq("church_id", churchId)
+      .then(({ data, error }: { data: unknown[] | null; error: { message: string; details?: unknown } | null }) => {
+        if (error) {
+          console.warn("[PastoralPage] refetchAttendance error:", error.message);
+          return;
         }
+        const attendance: DB["attendance"] = {};
+        const attendanceReasons: Record<string, Record<number, string>> = {};
+        (data ?? []).forEach((r) => {
+          const row = r as Record<string, unknown>;
+          const mid = row.member_id as string;
+          const week = row.week_num as number;
+          if (!mid) return;
+          if (!attendance[mid]) attendance[mid] = {};
+          const status = row.status as string;
+          attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as AttStatus;
+          const reason = row.reason as string | undefined;
+          if (reason?.trim()) {
+            if (!attendanceReasons[mid]) attendanceReasons[mid] = {};
+            attendanceReasons[mid][week] = reason;
+          }
+        });
+        setDb((prev) => ({ ...prev, attendance, attendanceReasons }));
+        fetchDateBasedAttendance();
       });
-      setDb(prev => ({ ...prev, attendance, attendanceReasons }));
-      fetchDateBasedAttendance();
-    });
-  }, [setDb, fetchDateBasedAttendance]);
+  }, [churchId, setDb, fetchDateBasedAttendance]);
 
   // Supabase 데이터가 없을 때 메인 대시보드와 동일한 db.attendance(주차별)를 날짜 기준으로 변환해 사용
   const attendanceListForDashboard = useMemo(() => {
@@ -3014,15 +3033,12 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       member_status: "활동",
     };
     try {
-      const currentChurchId = getChurchId();
-      console.log("=== [PastoralPage] church_id 확인 ===", currentChurchId, "| localStorage:", localStorage.getItem("church_solution_church_id"));
-      if (!currentChurchId) {
+      if (!churchId) {
         alert("church_id가 없습니다. 로그인 상태를 확인해주세요.");
         return;
       }
       if (editMbrId) {
-        console.log("=== [PastoralPage] DB UPDATE 시도 ===", { id: editMbrId, church_id: currentChurchId, ...insertData });
-        const { data, error } = await supabase.from("members").update(insertData).eq("church_id", currentChurchId).eq("id", editMbrId).select();
+        const { data, error } = await supabase.from("members").update(insertData).eq("church_id", churchId).eq("id", editMbrId).select();
         console.log("=== [PastoralPage] DB UPDATE 결과 ===", { data, error });
         if (error) {
           console.error("=== [PastoralPage] DB ERROR ===", error.message, error.details, error.hint);
@@ -3039,8 +3055,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === editMbrId ? { ...m, ...dataMerged } : m) }));
         toast("수정 완료", "ok");
       } else {
-        const insertPayload = withChurchId(insertData);
-        console.log("=== [PastoralPage] DB INSERT 시도 ===", "church_id:", insertPayload.church_id, "| name:", insertPayload.name);
+        const insertPayload = { ...insertData, church_id: churchId };
         const { data, error } = await supabase.from("members").insert(insertPayload).select();
         console.log("=== [PastoralPage] DB INSERT 결과 ===", { data, error });
         if (error) {
@@ -3243,7 +3258,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       SidebarIcon={Church}
     >
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} />}
-          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} detailId={detailId} deleteMembers={deleteMembers} />}
+          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} detailId={detailId} deleteMembers={deleteMembers} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
@@ -3417,7 +3432,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       </Modal>
 
       {/* New Family Program Detail Modal */}
-      {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} onSaved={() => setDb(prev => { void saveDb?.(prev); return prev; })} saveDb={saveDb} toast={toast} mob={mob} />}
+      {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} onSaved={() => setDb(prev => { void saveDb?.(prev); return prev; })} saveDb={saveDb} toast={toast} mob={mob} churchId={churchId} />}
 
       {/* Prayer Modal — 기도/메모 페이지에서 이름 클릭 시 */}
       {prayerModalMemberId && (() => {

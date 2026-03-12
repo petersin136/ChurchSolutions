@@ -1,25 +1,32 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId, withChurchId } from "@/lib/tenant";
+import { CalendarDropdown } from "@/components/CalendarDropdown";
 
+function getLastSunday(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  if (day !== 0) d.setDate(d.getDate() - day);
+  return d;
+}
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function getWeekNumForDate(dateStr: string): number {
+  const d = new Date(dateStr + "T12:00:00");
+  const s = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil(((d.getTime() - s.getTime()) / 864e5 + s.getDay() + 1) / 7);
+}
 
 type AttStatus = "출석" | "결석";
 
 type EnrollmentWithMember = SchoolEnrollment & { members?: { id: string; name: string }; member?: { id: string; name: string } };
-
-type DeptSummary = {
-  department_id: string;
-  name: string;
-  studentCount: number;
-  checked: boolean;
-  출석: number;
-  결석: number;
-};
 
 /** overflow에 가리지 않도록 포털로 옵션을 띄우는 드롭다운 (부서/반 select 대체) */
 function PortalSelect({
@@ -142,18 +149,32 @@ export interface SchoolAttendanceCheckProps {
 }
 
 export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps) {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const todaySunday = useMemo(() => toDateStr(getLastSunday(new Date())), []);
+  const [date, setDate] = useState(todaySunday);
+  const handleDateChange = useCallback((dateStr: string) => {
+    const d = new Date(dateStr + "T12:00:00");
+    const sunday = getLastSunday(d);
+    setDate(toDateStr(sunday));
+  }, []);
+
   const [departments, setDepartments] = useState<SchoolDepartment[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [enrollments, setEnrollments] = useState<EnrollmentWithMember[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [searchName, setSearchName] = useState("");
   const [statusMap, setStatusMap] = useState<Record<string, AttStatus>>({});
   const [noteMap, setNoteMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deptSummaries, setDeptSummaries] = useState<DeptSummary[]>([]);
-  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const [streakMap, setStreakMap] = useState<Record<string, number>>({});
+  const statusMapRef = useRef(statusMap);
+  statusMapRef.current = statusMap;
+  const noteMapRef = useRef(noteMap);
+  noteMapRef.current = noteMap;
+  const noteTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const loadDeptsAndClasses = async () => {
     if (!supabase) return;
@@ -191,7 +212,6 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
     if (selectedDeptId) q = q.eq("department_id", selectedDeptId);
     if (selectedClassId) q = q.eq("class_id", selectedClassId);
     const { data, error } = await q;
-    console.log("[SchoolAttendanceCheck] enrollments query result:", data, error);
     if (error) {
       toast("등록 목록 로드 실패: " + error.message, "err");
       return;
@@ -200,11 +220,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
   };
 
   const loadAttendance = async () => {
-    if (!supabase || !selectedDeptId || enrollments.length === 0) return;
+    if (!supabase || enrollments.length === 0) return;
     const memberIds = enrollments.map((e) => e.member_id);
-    console.log("[SchoolAtt] 선택 부서:", selectedDeptId);
-    console.log("[SchoolAtt] enrollments:", enrollments);
-    console.log("[SchoolAtt] memberIds:", memberIds);
     const { data, error } = await supabase
       .from("attendance")
       .select("member_id, status, note")
@@ -212,7 +229,6 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
       .eq("date", date)
       .eq("service_type", "주일예배")
       .eq("church_id", getChurchId());
-    console.log("[SchoolAtt] attendance 쿼리 결과:", data, error);
     if (error) {
       toast("출석 로드 실패: " + error.message, "err");
       return;
@@ -227,6 +243,51 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
     setNoteMap(notes);
   };
 
+  /** 연속출석 계산용: 최근 16주 일요일 날짜 */
+  const recentSundays = useMemo(() => {
+    const out: string[] = [];
+    let d = new Date(date + "T12:00:00");
+    for (let i = 0; i < 16; i++) {
+      const sun = getLastSunday(d);
+      out.push(toDateStr(sun));
+      d.setDate(d.getDate() - 7);
+    }
+    return out;
+  }, [date]);
+
+  const loadStreaks = useCallback(async () => {
+    if (!supabase || enrollments.length === 0) return;
+    const memberIds = [...new Set(enrollments.map((e) => e.member_id))];
+    const { data, error } = await supabase
+      .from("attendance")
+      .select("member_id, date, status")
+      .in("member_id", memberIds)
+      .in("date", recentSundays)
+      .eq("service_type", "주일예배")
+      .eq("church_id", getChurchId());
+    if (error) return;
+    const byMember: Record<string, Record<string, string>> = {};
+    memberIds.forEach((id) => { byMember[id] = {}; });
+    (data ?? []).forEach((r: { member_id: string; date: string; status: string }) => {
+      if (byMember[r.member_id]) byMember[r.member_id][r.date] = r.status;
+    });
+    const streaks: Record<string, number> = {};
+    memberIds.forEach((id) => {
+      let count = 0;
+      for (const d of recentSundays) {
+        if (byMember[id]?.[d] === "p") count++;
+        else break;
+      }
+      streaks[id] = count;
+    });
+    setStreakMap(streaks);
+  }, [enrollments, date, recentSundays]);
+
+  useEffect(() => {
+    if (enrollments.length > 0) loadStreaks();
+    else setStreakMap({});
+  }, [enrollments.length, date, loadStreaks]);
+
   useEffect(() => {
     setLoading(true);
     loadDeptsAndClasses().finally(() => setLoading(false));
@@ -237,106 +298,12 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
   }, [selectedDeptId, selectedClassId]);
 
   useEffect(() => {
-    if (selectedDeptId && enrollments.length > 0) loadAttendance();
+    if (enrollments.length > 0) loadAttendance();
     else {
       setStatusMap({});
       setNoteMap({});
     }
-  }, [selectedDeptId, date, enrollments]);
-
-  const loadAllDeptSummaries = async () => {
-    if (!supabase || departments.length === 0) {
-      setDeptSummaries([]);
-      return;
-    }
-    setSummaryLoading(true);
-    try {
-      const { data: enrolls, error: enrollsErr } = await supabase
-        .from("school_enrollments")
-        .select("department_id, member_id")
-        .eq("is_active", true)
-        .in("role", ["학생", "교사", "부교사"]);
-      if (enrollsErr) {
-        setDeptSummaries([]);
-        return;
-      }
-      const countByDept: Record<string, number> = {};
-      const memberToDept: Record<string, string> = {};
-      (enrolls ?? []).forEach((r: { department_id: string; member_id: string }) => {
-        countByDept[r.department_id] = (countByDept[r.department_id] ?? 0) + 1;
-        memberToDept[r.member_id] = r.department_id;
-      });
-      const memberIds = Object.keys(memberToDept);
-      if (memberIds.length === 0) {
-        setDeptSummaries(
-          departments.map((d) => ({
-            department_id: d.id,
-            name: d.name,
-            studentCount: countByDept[d.id] ?? 0,
-            checked: false,
-            출석: 0,
-            결석: 0,
-          }))
-        );
-        return;
-      }
-
-      const { data: att, error: attErr } = await supabase
-        .from("attendance")
-        .select("member_id, status")
-        .in("member_id", memberIds)
-        .eq("date", date)
-        .eq("service_type", "주일예배")
-        .eq("church_id", getChurchId());
-      if (attErr) {
-        setDeptSummaries(
-          departments.map((d) => ({
-            department_id: d.id,
-            name: d.name,
-            studentCount: countByDept[d.id] ?? 0,
-            checked: false,
-            출석: 0,
-            결석: 0,
-          }))
-        );
-        return;
-      }
-      const attByDept: Record<string, { 출석: number; 결석: number }> = {};
-      (att ?? []).forEach((r: { member_id: string; status: string }) => {
-        const deptId = memberToDept[r.member_id];
-        if (!deptId) return;
-        if (!attByDept[deptId]) attByDept[deptId] = { 출석: 0, 결석: 0 };
-        if (r.status === "p") attByDept[deptId].출석++;
-        else attByDept[deptId].결석++;
-      });
-
-      setDeptSummaries(
-        departments.map((d) => {
-          const studentCount = countByDept[d.id] ?? 0;
-          const rec = attByDept[d.id];
-          const 출석 = rec?.출석 ?? 0;
-          const 결석 = rec?.결석 ?? 0;
-          const totalChecked = 출석 + 결석;
-          const checked = studentCount > 0 && totalChecked >= studentCount;
-          return {
-            department_id: d.id,
-            name: d.name,
-            studentCount,
-            checked,
-            출석,
-            결석,
-          };
-        })
-      );
-    } finally {
-      setSummaryLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!selectedDeptId && departments.length > 0) loadAllDeptSummaries();
-    else setDeptSummaries([]);
-  }, [selectedDeptId, date, departments]);
+  }, [date, enrollments]);
 
   const setStatus = (memberId: string, status: AttStatus) => {
     setStatusMap((prev) => ({ ...prev, [memberId]: status }));
@@ -346,12 +313,55 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
     setNoteMap((prev) => ({ ...prev, [memberId]: value }));
   };
 
+  const saveOneAttendance = useCallback(async (memberId: string, newStatus: AttStatus, noteOverride?: string) => {
+    if (!supabase) return;
+    setSaving(true);
+    setSaved(false);
+    setSaveError(false);
+    const now = new Date(date + "T12:00:00");
+    const yearVal = now.getFullYear();
+    const startOfYear = new Date(yearVal, 0, 1);
+    const wn = Math.ceil(((now.getTime() - startOfYear.getTime()) / 864e5 + startOfYear.getDay() + 1) / 7);
+    const note = newStatus === "결석" ? ((noteOverride ?? noteMapRef.current[memberId])?.trim() || null) : null;
+    const { error } = await supabase.from("attendance").upsert(withChurchId([{
+      member_id: memberId,
+      week_num: wn,
+      year: yearVal,
+      date,
+      service_type: "주일예배",
+      status: newStatus === "출석" ? "p" : "a",
+      check_in_time: new Date().toISOString(),
+      check_in_method: "수동" as const,
+      note: note as string | null,
+    }]), { onConflict: "member_id,date,service_type" });
+    if (error) {
+      setSaveError(true);
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }, [date]);
+
+  const handleNoteChange = useCallback((memberId: string, value: string) => {
+    setNoteMap((prev) => ({ ...prev, [memberId]: value }));
+    if (noteTimersRef.current[memberId]) clearTimeout(noteTimersRef.current[memberId]);
+    noteTimersRef.current[memberId] = setTimeout(() => {
+      saveOneAttendance(memberId, statusMapRef.current[memberId] ?? "출석", value);
+    }, 800);
+  }, [saveOneAttendance]);
+
+  useEffect(() => {
+    return () => { Object.values(noteTimersRef.current).forEach(clearTimeout); };
+  }, []);
+
   const getMemberName = (e: EnrollmentWithMember) =>
     e.members?.name ?? e.member?.name ?? db.members?.find((m) => m.id === e.member_id)?.name ?? e.member_id;
 
   const handleSave = async () => {
-    if (!supabase || !selectedDeptId) {
-      toast("부서를 선택하세요", "warn");
+    if (!supabase || enrollments.length === 0) {
+      toast("저장할 대상이 없습니다", "warn");
       return;
     }
     setSaving(true);
@@ -375,7 +385,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
           note: note as string | null,
         };
       }));
-      const { error } = await supabase.from("attendance").upsert(rows, {
+      const uniqueRows = Array.from(new Map(rows.map((r) => [r.member_id, r])).values());
+      const { error } = await supabase.from("attendance").upsert(uniqueRows, {
         onConflict: "member_id,date,service_type",
       });
       if (error) {
@@ -384,6 +395,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
       }
 
       toast("출석이 저장되었습니다", "ok");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
       await loadAttendance();
     } catch (err) {
       console.error(err);
@@ -393,29 +406,64 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
     }
   };
 
-  const count출석 = enrollments.filter((e) => (statusMap[e.member_id] ?? "출석") === "출석").length;
-  const count결석 = enrollments.length - count출석;
+  const filteredEnrollments = useMemo(() => {
+    if (!searchName.trim()) return enrollments;
+    const q = searchName.trim().toLowerCase();
+    return enrollments.filter((e) => {
+      const name = e.members?.name ?? e.member?.name ?? db.members?.find((m) => m.id === e.member_id)?.name ?? e.member_id ?? "";
+      return (name || "").toLowerCase().includes(q);
+    });
+  }, [enrollments, searchName, db.members]);
 
-  if (loading) return <div className="p-6 text-gray-500">로딩 중...</div>;
+  const count출석 = filteredEnrollments.filter((e) => (statusMap[e.member_id] ?? "출석") === "출석").length;
+  const count결석 = filteredEnrollments.length - count출석;
+
+  const getMemberPhoto = (e: EnrollmentWithMember) => db.members?.find((m) => m.id === e.member_id)?.photo;
+  const getClassName = (e: EnrollmentWithMember) => (e.class_id ? classes.find((c) => c.id === e.class_id)?.name : null) ?? "-";
+
+  const toggleAttendance = useCallback((memberId: string, newStatus: AttStatus) => {
+    setStatusMap((prev) => ({ ...prev, [memberId]: newStatus }));
+    saveOneAttendance(memberId, newStatus);
+  }, [saveOneAttendance]);
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3 bg-white rounded-xl border border-gray-100 p-4">
-        <div className="flex flex-wrap gap-4 items-center">
-          <label className="flex items-center gap-2">
-            <span className="text-sm font-medium">날짜</span>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+      <div className="space-y-3 bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4">
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4">
+          <label className="flex items-center gap-2 shrink-0">
+            <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">날짜</span>
+            <div className="min-w-[160px] md:min-w-[180px]">
+              <CalendarDropdown
+                value={date}
+                onChange={handleDateChange}
+                compact
+                style={{ marginBottom: 0 }}
+              />
+            </div>
           </label>
-          <PortalSelect
-            id="school-attendance-class"
-            label="반"
-            placeholder="전체"
-            value={selectedClassId ?? ""}
-            onChange={(v) => setSelectedClassId(v || null)}
-            options={classes.filter((c) => c.department_id === selectedDeptId).map((c) => ({ value: c.id, label: c.name }))}
-          />
+          <span className="text-xs md:text-sm text-[#1e3a5f] font-semibold px-3 py-2 bg-blue-50 rounded-lg">주일예배</span>
+          {selectedDeptId && (
+            <PortalSelect
+              id="school-attendance-class"
+              label="반"
+              placeholder="전체"
+              value={selectedClassId ?? ""}
+              onChange={(v) => setSelectedClassId(v || null)}
+              options={classes.filter((c) => c.department_id === selectedDeptId).map((c) => ({ value: c.id, label: c.name }))}
+            />
+          )}
+          <label className="flex items-center gap-2 shrink-0">
+            <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">이름 검색</span>
+            <input
+              type="search"
+              placeholder="이름 검색"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              className="rounded-lg border border-gray-200 px-3 py-2 text-sm w-28 md:w-40 min-h-[36px] md:min-h-0"
+            />
+          </label>
         </div>
-        {/* 부서 탭 - 드롭다운 제거하고 pill 탭으로 교체 */}
+        {/* 부서 탭 - 목양과 동일한 스타일 */}
         <div
           className="flex overflow-x-auto gap-2 pb-2 [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -424,10 +472,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
             <button
               key={dept.id ?? "전체"}
               type="button"
-              onClick={() => {
-                setSelectedDeptId(dept.id);
-                setSelectedClassId(null);
-              }}
+              onClick={() => { setSelectedDeptId(dept.id); setSelectedClassId(null); }}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 (!dept.id && !selectedDeptId) || selectedDeptId === dept.id
                   ? "bg-slate-800 text-white"
@@ -440,97 +485,103 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
         </div>
       </div>
 
-      {selectedDeptId && (
-        <>
-          <div className="flex gap-4 text-sm text-gray-600">
-            <span>출석 <strong className="text-slate-800">{count출석}명</strong></span>
-            <span>결석 <strong className="text-slate-800">{count결석}명</strong></span>
-            <span className="text-gray-400">/ 전체 {enrollments.length}명</span>
-          </div>
-
-          <div className="space-y-2">
-            {enrollments.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">등록된 학생이 없습니다.</p>
-            ) : (
-              enrollments.map((e) => {
-                const current = statusMap[e.member_id] ?? "출석";
-                const isAbsent = current === "결석";
-                return (
-                  <div key={e.id} className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3">
-                    <span className="font-medium shrink-0">{getMemberName(e)}</span>
-                    <div className="flex gap-2 shrink-0 ml-auto">
-                      <button
-                        type="button"
-                        onClick={() => setStatus(e.member_id, "출석")}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${current === "출석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-                      >
-                        출석
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setStatus(e.member_id, "결석")}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${current === "결석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-                      >
-                        결석
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="사유 (선택)"
-                      value={noteMap[e.member_id] ?? ""}
-                      onChange={(ev) => setNote(e.member_id, ev.target.value)}
-                      disabled={!isAbsent}
-                      className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg w-40 shrink-0 ${isAbsent ? "bg-white" : "bg-gray-50 text-gray-400"}`}
-                    />
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <div className="sticky bottom-4 flex items-center justify-between bg-white rounded-xl border border-gray-200 p-4 shadow-lg">
-            <div className="flex gap-4 text-sm text-gray-600">
-              <span>출석 <strong className="text-slate-800">{count출석}명</strong></span>
-              <span>결석 <strong className="text-slate-800">{count결석}명</strong></span>
-              <span className="text-gray-400">/ 전체 {enrollments.length}명</span>
-            </div>
-            <button type="button" onClick={handleSave} disabled={saving} className="px-6 py-2 rounded-xl text-white font-semibold disabled:opacity-50 bg-slate-800 hover:bg-slate-700">
-              {saving ? "저장 중…" : "저장"}
-            </button>
-          </div>
-        </>
+      {loading ? (
+        <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-100">
+          <span className="inline-block w-6 h-6 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
+          <span className="ml-2 text-gray-500">출석 데이터 로딩 중...</span>
+        </div>
+      ) : (
+        <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 bg-white rounded-xl shadow-sm border border-gray-100">
+          <table className="w-full text-sm min-w-[320px]">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">교인</th>
+                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">역할</th>
+                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">반</th>
+                <th className="text-center py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">출석 상태</th>
+                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">사유</th>
+                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">연속출석</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEnrollments.length === 0 ? (
+                <tr><td colSpan={6} className="py-8 text-center text-gray-500">등록된 학생이 없거나 검색 결과가 없습니다.</td></tr>
+              ) : (
+                filteredEnrollments.map((e) => {
+                  const status = statusMap[e.member_id] ?? "출석";
+                  const isAbsent = status === "결석";
+                  const photo = getMemberPhoto(e);
+                  const streak = streakMap[e.member_id] ?? 0;
+                  return (
+                    <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50/50 min-h-[48px]">
+                      <td className="py-3 px-3 md:px-4 flex items-center gap-2 md:gap-3 min-h-[48px]">
+                        <div
+                          className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-200 flex-shrink-0 bg-cover bg-center"
+                          style={{ backgroundImage: photo ? `url(${photo})` : undefined }}
+                        />
+                        <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] md:max-w-none">{getMemberName(e)}</span>
+                      </td>
+                      <td className="py-3 px-3 md:px-4 text-gray-600 text-xs md:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[60px] md:max-w-none">{e.role ?? "-"}</td>
+                      <td className="py-3 px-3 md:px-4 text-gray-600 text-xs md:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[60px] md:max-w-none">{getClassName(e)}</td>
+                      <td className="py-3 px-3 md:px-4">
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          <button
+                            type="button"
+                            onClick={() => toggleAttendance(e.member_id, "출석")}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${status === "출석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                          >
+                            출석
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleAttendance(e.member_id, "결석")}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${status === "결석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                          >
+                            결석
+                          </button>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 md:px-4">
+                        <input
+                          type="text"
+                          placeholder="사유 (선택)"
+                          value={noteMap[e.member_id] ?? ""}
+                          onChange={(ev) => handleNoteChange(e.member_id, ev.target.value)}
+                          disabled={!isAbsent}
+                          className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg w-40 ${isAbsent ? "bg-white" : "bg-gray-50 text-gray-400"}`}
+                        />
+                      </td>
+                      <td className="py-3 px-3 md:px-4 text-gray-600 text-xs md:text-sm">
+                        {streak > 0 ? <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">{streak}주 연속</span> : "-"}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      {!selectedDeptId && (
-        <>
-          {summaryLoading ? (
-            <p className="text-gray-500 text-center py-8">부서별 현황 로딩 중...</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {deptSummaries.map((dept) => (
-                <button
-                  key={dept.department_id}
-                  type="button"
-                  onClick={() => setSelectedDeptId(dept.department_id)}
-                  className="p-5 bg-white border border-gray-200 rounded-xl text-left hover:border-slate-400 hover:shadow-sm transition-all"
-                >
-                  <h3 className="font-semibold text-slate-800 text-lg">{dept.name}</h3>
-                  <div className="mt-2 text-sm text-gray-500">
-                    등록 학생: {dept.studentCount}명
-                  </div>
-                  <div className="mt-1 text-sm">
-                    {dept.checked ? (
-                      <span className="text-slate-700">출석 {dept.출석}명 / 결석 {dept.결석}명</span>
-                    ) : (
-                      <span className="text-orange-500">미체크</span>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 shadow-lg rounded-t-xl p-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex gap-4 text-sm text-gray-600">
+          <span>출석 <strong className="text-slate-800">{count출석}명</strong></span>
+          <span>결석 <strong className="text-slate-800">{count결석}명</strong></span>
+          <span className="text-gray-400">/ 전체 {filteredEnrollments.length}명</span>
+        </div>
+        <div className="text-sm">
+          {saving ? (
+            <span className="flex items-center gap-1 text-gray-500">
+              <span className="inline-block w-3 h-3 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+              저장 중...
+            </span>
+          ) : saved ? (
+            <span className="text-green-600 font-medium">✓ 자동 저장됨</span>
+          ) : saveError ? (
+            <span className="text-red-500">저장 실패 - 다시 시도해주세요</span>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
