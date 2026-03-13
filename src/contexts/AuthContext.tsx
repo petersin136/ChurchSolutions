@@ -38,9 +38,9 @@ async function fetchChurchForUser(userId: string): Promise<{ churchId: string; c
     return null;
   }
 
-  const MAX_RETRIES = 3;
-  const TIMEOUT_MS = 15000;
-  const RETRY_DELAY_MS = 2000;
+  const MAX_RETRIES = 2;
+  const TIMEOUT_MS = 5000;
+  const RETRY_DELAY_MS = 1000;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {

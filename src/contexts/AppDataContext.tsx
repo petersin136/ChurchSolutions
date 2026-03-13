@@ -1,11 +1,28 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { DB, SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadDBFromSupabase, saveDBToSupabase, toMember, toVisit, toIncome, toExpense, toNewFamilyProgram, toPlan, toSermon } from "@/lib/supabase-db";
+
+const REFRESH_TIMEOUT_MS = 10000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+}
+
+function debounceByKey<T extends string>(fn: (key: T) => void, ms: number): (key: T) => void {
+  const timers: Record<string, ReturnType<typeof setTimeout>> = {};
+  return (key: T) => {
+    clearTimeout(timers[key]);
+    timers[key] = setTimeout(() => fn(key), ms);
+  };
+}
 
 export interface RawAttendanceRow {
   member_id: string;
@@ -61,7 +78,8 @@ const CURRENT_YEAR = new Date().getFullYear();
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const { churchId } = useAuth();
   const [db, setDb] = useState<DB>(() => DEFAULT_DB);
-  const [loading, setLoading] = useState(true);
+  const [coreLoading, setCoreLoading] = useState(true);
+  const [bgLoading, setBgLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [rawAttendance, setRawAttendance] = useState<RawAttendanceRow[]>([]);
   const [schoolDepartments, setSchoolDepartments] = useState<SchoolDepartment[]>([]);
@@ -71,18 +89,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const churchIdRef = useRef(churchId);
   churchIdRef.current = churchId;
 
-  const refreshAll = useCallback(async () => {
-    const cid = churchIdRef.current;
-    if (!cid) return;
-    try {
-      const data = await loadDBFromSupabase(cid);
-      setDb(data);
-      setLoadError(false);
-    } catch (e) {
-      console.error("[AppData] refreshAll failed:", e);
-      setLoadError(true);
-    }
-  }, []);
+  const loading = coreLoading;
 
   const partialRefresh = useCallback(async (table: string) => {
     const cid = churchIdRef.current;
@@ -205,64 +212,180 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       } else if (table === "school_enrollments") {
         const { data } = await supabase.from("school_enrollments").select("*").eq("church_id", cid).eq("is_active", true);
         if (data) setSchoolEnrollments(data as SchoolEnrollment[]);
-      } else {
-        await refreshAll();
       }
     } catch (e) {
       console.error(`[AppData] partial refresh ${table} failed:`, e);
     }
-  }, [refreshAll]);
+  }, []);
 
-  const refreshMembers = useCallback(() => partialRefresh("members"), [partialRefresh]);
-  const refreshAttendance = useCallback(() => partialRefresh("attendance"), [partialRefresh]);
-  const refreshNotes = useCallback(() => partialRefresh("notes"), [partialRefresh]);
-  const refreshVisits = useCallback(() => partialRefresh("visits"), [partialRefresh]);
-  const refreshIncome = useCallback(() => partialRefresh("income"), [partialRefresh]);
-  const refreshExpense = useCallback(() => partialRefresh("expense"), [partialRefresh]);
-  const refreshNewFamilyPrograms = useCallback(() => partialRefresh("new_family_program"), [partialRefresh]);
-  const refreshPlans = useCallback(() => partialRefresh("plans"), [partialRefresh]);
-  const refreshSermons = useCallback(() => partialRefresh("sermons"), [partialRefresh]);
-  const refreshSettings = useCallback(() => partialRefresh("settings"), [partialRefresh]);
-  const refreshBudget = useCallback(() => partialRefresh("budget"), [partialRefresh]);
-  const refreshSchoolDepartments = useCallback(() => partialRefresh("school_departments"), [partialRefresh]);
-  const refreshSchoolClasses = useCallback(() => partialRefresh("school_classes"), [partialRefresh]);
-  const refreshSchoolEnrollments = useCallback(() => partialRefresh("school_enrollments"), [partialRefresh]);
+  const refreshMembers = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("members"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] members timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshAttendance = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("attendance"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] attendance timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshNotes = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("notes"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] notes timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshVisits = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("visits"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] visits timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshIncome = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("income"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] income timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshExpense = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("expense"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] expense timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshNewFamilyPrograms = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("new_family_program"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] new_family_program timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshPlans = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("plans"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] plans timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshSermons = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("sermons"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] sermons timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshSettings = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("settings"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] settings timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshBudget = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("budget"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] budget timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshSchoolDepartments = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("school_departments"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] school_departments timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshSchoolClasses = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("school_classes"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] school_classes timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshSchoolEnrollments = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("school_enrollments"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] school_enrollments timeout or error:", e);
+    }
+  }, [partialRefresh]);
+
+  const refreshCore = useCallback(async () => {
+    const cid = churchIdRef.current;
+    if (!cid) return;
+    setCoreLoading(true);
+    setLoadError(false);
+    try {
+      await Promise.all([refreshMembers(), refreshSettings()]);
+      setLoadError(false);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "데이터 로딩 실패";
+      console.error("[AppData] core load error:", e);
+      setLoadError(true);
+    } finally {
+      setCoreLoading(false);
+    }
+  }, [refreshMembers, refreshSettings]);
+
+  const refreshBackground = useCallback(async () => {
+    const cid = churchIdRef.current;
+    if (!cid) return;
+    setBgLoading(true);
+    try {
+      await Promise.all([refreshAttendance(), refreshNotes()]);
+      await Promise.all([refreshVisits(), refreshPlans()]);
+      await Promise.all([refreshSermons(), refreshNewFamilyPrograms()]);
+      await Promise.all([refreshIncome(), refreshExpense()]);
+      await refreshBudget();
+      await Promise.all([refreshSchoolDepartments(), refreshSchoolClasses(), refreshSchoolEnrollments()]);
+    } catch (e) {
+      console.error("[AppData] background load error:", e);
+    } finally {
+      setBgLoading(false);
+    }
+  }, [
+    refreshAttendance,
+    refreshNotes,
+    refreshVisits,
+    refreshPlans,
+    refreshSermons,
+    refreshNewFamilyPrograms,
+    refreshIncome,
+    refreshExpense,
+    refreshBudget,
+    refreshSchoolDepartments,
+    refreshSchoolClasses,
+    refreshSchoolEnrollments,
+  ]);
+
+  const refreshAll = useCallback(async () => {
+    await refreshCore();
+    refreshBackground();
+  }, [refreshCore, refreshBackground]);
+
+  const debouncedPartialRefresh = useMemo(
+    () => debounceByKey((table: string) => partialRefresh(table), 500),
+    [partialRefresh],
+  );
 
   useEffect(() => {
     if (!churchId) {
-      setLoading(false);
+      setCoreLoading(false);
+      setBgLoading(false);
       return;
     }
-    setLoading(true);
     setLoadError(false);
-
-    const loadAll = async () => {
-      try {
-        const data = await loadDBFromSupabase(churchId);
-        setDb(data);
-        setLoadError(false);
-
-        if (supabase) {
-          const [attRes, sdRes, scRes, seRes] = await Promise.all([
-            supabase.from("attendance").select("*").eq("church_id", churchId),
-            supabase.from("school_departments").select("*").eq("church_id", churchId).order("sort_order"),
-            supabase.from("school_classes").select("*").eq("church_id", churchId).order("sort_order"),
-            supabase.from("school_enrollments").select("*").eq("church_id", churchId).eq("is_active", true),
-          ]);
-          if (attRes.data) setRawAttendance(attRes.data as RawAttendanceRow[]);
-          if (sdRes.data) setSchoolDepartments(sdRes.data as SchoolDepartment[]);
-          if (scRes.data) setSchoolClasses(scRes.data as SchoolClass[]);
-          if (seRes.data) setSchoolEnrollments(seRes.data as SchoolEnrollment[]);
-        }
-      } catch (e) {
-        console.error("[AppData] initial load failed:", e);
-        setLoadError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadAll();
-  }, [churchId]);
+    refreshCore().then(() => {
+      refreshBackground();
+    });
+  }, [churchId, refreshCore, refreshBackground]);
 
   useEffect(() => {
     if (!churchId || !supabase) return;
@@ -285,8 +408,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         "postgres_changes" as any,
         { event: "*", schema: "public", table, filter: `church_id=eq.${churchId}` },
         () => {
-          console.log(`[Realtime] ${table} changed`);
-          partialRefresh(table);
+          debouncedPartialRefresh(table);
         }
       );
     });
@@ -303,7 +425,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         channelRef.current = null;
       }
     };
-  }, [churchId, partialRefresh]);
+  }, [churchId, debouncedPartialRefresh]);
 
   const saveDb = useCallback(async (d: DB) => {
     await saveDBToSupabase(d);
