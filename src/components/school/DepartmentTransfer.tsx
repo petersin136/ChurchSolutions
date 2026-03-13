@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolEnrollment, SchoolTransferHistory } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
+import { useAppData } from "@/contexts/AppDataContext";
 
 const INDIGO = "#4F46E5";
 
@@ -13,9 +14,8 @@ export interface DepartmentTransferProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
-  const [departments, setDepartments] = useState<SchoolDepartment[]>([]);
-  const [enrollments, setEnrollments] = useState<SchoolEnrollment[]>([]);
+export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
+  const { db, schoolDepartments, schoolEnrollments, refreshSchoolEnrollments } = useAppData();
   const [history, setHistory] = useState<SchoolTransferHistory[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [fromDeptId, setFromDeptId] = useState<string | null>(null);
@@ -23,41 +23,26 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const departments = useMemo(() => schoolDepartments.filter((d) => d.is_active !== false), [schoolDepartments]);
+  const enrollments = schoolEnrollments;
+
+  const loadHistory = async () => {
     if (!supabase) return;
     setLoading(true);
     try {
-      const [depts, enrolls, hist] = await Promise.all([
-        supabase.from("school_departments").select("*").order("sort_order"),
-        supabase.from("school_enrollments").select("*").eq("is_active", true),
-        supabase.from("school_transfer_history").select("*").order("created_at", { ascending: false }).limit(50),
-      ]);
-      console.log("[DepartmentTransfer] departments query result:", depts.data, depts.error);
-      console.log("[DepartmentTransfer] enrollments query result:", enrolls.data, enrolls.error);
-      console.log("[DepartmentTransfer] transfer_history query result:", hist.data, hist.error);
-      if (depts.error) {
-        toast("부서 로드 실패: " + depts.error.message, "err");
+      const { data, error } = await supabase.from("school_transfer_history").select("*").order("created_at", { ascending: false }).limit(50);
+      if (error) {
+        toast("이력 로드 실패: " + error.message, "err");
         return;
       }
-      if (enrolls.error) {
-        toast("등록 목록 로드 실패: " + enrolls.error.message, "err");
-        return;
-      }
-      if (hist.error) {
-        toast("이력 로드 실패: " + hist.error.message, "err");
-        return;
-      }
-      const deptList = (depts.data as SchoolDepartment[]) ?? [];
-      setDepartments(deptList.filter((d) => d.is_active !== false));
-      setEnrollments((enrolls.data as SchoolEnrollment[]) ?? []);
-      setHistory((hist.data as SchoolTransferHistory[]) ?? []);
+      setHistory((data as SchoolTransferHistory[]) ?? []);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    loadHistory();
   }, []);
 
   const filtered = fromDeptId ? enrollments.filter((e) => e.department_id === fromDeptId) : [];
@@ -113,7 +98,7 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
       toast("부서 이동이 완료되었습니다", "ok");
       setSelectedIds(new Set());
       setReason("");
-      await load();
+      await Promise.all([refreshSchoolEnrollments(), loadHistory()]);
     } catch (err) {
       console.error(err);
       toast("이동 처리 실패", "err");

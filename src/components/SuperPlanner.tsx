@@ -8,9 +8,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAppData } from "@/contexts/AppDataContext";
 import { SuperPlannerUI } from "./SuperPlannerUI";
 
-export type PageId = "pastoral" | "planner" | "finance" | "visit" | "bulletin" | "statistics" | "messaging" | "school" | "settings";
+export type PageId = "pastoral" | "visit" | "school" | "finance" | "bulletin" | "reports";
 
-const PAGE_IDS: PageId[] = ["pastoral", "planner", "finance", "visit", "bulletin", "statistics", "messaging", "school", "settings"];
+const PAGE_IDS: PageId[] = ["pastoral", "visit", "school", "finance", "bulletin", "reports"];
 const STORAGE_KEY_PAGE = "currentPage";
 
 export interface ToastItem {
@@ -52,7 +52,6 @@ export default function SuperPlanner() {
   const handleExportCurrent = useCallback(() => {
     if (currentPage === "pastoral") exportReport(db, "attendance", toast);
     else if (currentPage === "finance") exportReport(db, "monthly", toast);
-    else if (currentPage === "planner") exportReport(db, "planner", toast);
   }, [currentPage, db, toast]);
 
   const [openIncomeModal, setOpenIncomeModal] = useState(false);

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import type { Member } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, filterByChurch } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
+import { useAppData } from "@/contexts/AppDataContext";
 
 const SMS_MAX = 90;
 const LMS_MAX = 2000;
@@ -26,13 +27,12 @@ export interface SendMessageProps {
 }
 
 export function SendMessage({ members, onSend, toast }: SendMessageProps) {
+  const { db } = useAppData();
   const [content, setContent] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("");
-  const [searchMembers, setSearchMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
   const byteLength = useMemo(() => {
@@ -43,38 +43,21 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
   const maxByte = messageType === "SMS" ? SMS_MAX : LMS_MAX;
   const isOver = byteLength > maxByte;
 
-  useEffect(() => {
-    if (!supabase) return;
-    const hasFilter = search.trim() || deptFilter || groupFilter;
-    if (!hasFilter) {
-      setSearchMembers([]);
-      return;
-    }
-    setLoading(true);
-    let q = filterByChurch(supabase.from("members").select("id, name, phone, dept, mokjang, member_status, status")).not("phone", "is", null);
-    if (search.trim()) q = q.ilike("name", `%${search.trim()}%`);
-    if (deptFilter) q = q.eq("dept", deptFilter);
-    if (groupFilter) q = q.eq("mokjang", groupFilter);
-    (async () => {
-      try {
-        const { data, error } = await q;
-        if (error && toast) toast("수신자 검색 실패: " + error.message, "err");
-        setSearchMembers((data as Member[]) ?? []);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [search, deptFilter, groupFilter, toast]);
+  const allMembers = db.members.length > 0 ? db.members : members;
 
   const sourceList = useMemo(() => {
-    const fromSearch = search.trim() || deptFilter || groupFilter ? searchMembers : members;
-    return fromSearch.filter((m) => m.phone && (m.member_status ?? m.status) !== "졸업/전출");
-  }, [members, search, deptFilter, groupFilter, searchMembers]);
+    let list = allMembers.filter((m) => m.phone && (m.member_status ?? m.status) !== "졸업/전출");
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((m) => m.name.toLowerCase().includes(q));
+    }
+    if (deptFilter) list = list.filter((m) => m.dept === deptFilter);
+    if (groupFilter) list = list.filter((m) => (m.mokjang ?? m.group) === groupFilter);
+    return list;
+  }, [allMembers, search, deptFilter, groupFilter]);
 
-  const depts = useMemo(() => Array.from(new Set([...members, ...searchMembers].map((m) => m.dept).filter(Boolean))) as string[], [members, searchMembers]);
-  const groups = useMemo(() => Array.from(new Set([...members, ...searchMembers].map((m) => m.mokjang ?? m.group).filter(Boolean))) as string[], [members, searchMembers]);
+  const depts = useMemo(() => Array.from(new Set(allMembers.map((m) => m.dept).filter(Boolean))) as string[], [allMembers]);
+  const groups = useMemo(() => Array.from(new Set(allMembers.map((m) => m.mokjang ?? m.group).filter(Boolean))) as string[], [allMembers]);
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -151,7 +134,7 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
             <button type="button" onClick={clearAll} className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm">해제</button>
           </div>
           <div style={{ maxHeight: 256, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 12 }}>
-            {loading ? <p style={{ padding: 12, color: C.textMuted, fontSize: 13 }}>검색 중...</p> : sourceList.map((m) => (
+            {sourceList.map((m) => (
               <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", cursor: "pointer", borderBottom: `1px solid ${C.borderLight}` }} className="hover:bg-opacity-80" onMouseEnter={(e) => { e.currentTarget.style.background = C.bg; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                 <input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => toggle(m.id)} className="rounded" />
                 <span className="text-sm">{m.name}</span>

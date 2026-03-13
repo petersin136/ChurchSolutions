@@ -2,16 +2,13 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { supabase } from "@/lib/supabase";
-import { filterByChurch } from "@/lib/tenant";
+import { useAppData } from "@/contexts/AppDataContext";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 interface OfferingLike { donorId?: string; donorName?: string; amount: number; date: string; categoryId?: string; }
 interface DonorLike { id: string; name: string; group?: string; }
 interface CategoryLike { id: string; name: string; }
-
-type IncomeRow = { id: string; date: string; amount: number; donor?: string; member_id?: string; type?: string; };
 
 /** 교회 정보는 영수증 발행 시 사용 (선택) */
 export interface ReceiptSettings {
@@ -34,11 +31,25 @@ export interface DonorStatisticsProps {
 type PrintDonor = { id: string; name: string; total: number; byCat: Record<string, number> };
 
 export function DonorStatistics({ year, offerings, donors, categories, toast, receiptSettings }: DonorStatisticsProps) {
+  const { db } = useAppData();
   const [search, setSearch] = useState("");
-  const [incomeRows, setIncomeRows] = useState<IncomeRow[]>([]);
-  const [prevYearKeys, setPrevYearKeys] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
   const [printDonor, setPrintDonor] = useState<PrintDonor | null>(null);
+
+  const incomeRows = useMemo(() => {
+    const start = `${year}-01-01`;
+    const end = `${year}-12-31`;
+    return db.income.filter(i => i.date >= start && i.date <= end);
+  }, [db.income, year]);
+
+  const prevYearKeys = useMemo(() => {
+    const prevYear = String(Number(year) - 1);
+    const keys = new Set<string>();
+    db.income.filter(i => i.date?.startsWith(prevYear)).forEach(r => {
+      const k = r.member_id || r.donor || "";
+      if (k) keys.add(k);
+    });
+    return keys;
+  }, [db.income, year]);
 
   useEffect(() => {
     if (!printDonor) return;
@@ -50,31 +61,6 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
       clearTimeout(t);
     };
   }, [printDonor]);
-
-  useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const start = `${year}-01-01`;
-    const end = `${year}-12-31`;
-    const prevStart = `${Number(year) - 1}-01-01`;
-    const prevEnd = `${Number(year) - 1}-12-31`;
-    Promise.all([
-      filterByChurch(supabase.from("income").select("id, date, amount, donor, member_id, type")).gte("date", start).lte("date", end),
-      filterByChurch(supabase.from("income").select("donor, member_id")).gte("date", prevStart).lte("date", prevEnd),
-    ]).then(([curr, prev]) => {
-      if (curr.error && toast) toast("헌금 데이터 로드 실패: " + curr.error.message, "err");
-      setIncomeRows((curr.data ?? []) as IncomeRow[]);
-      const keys = new Set<string>();
-      (prev.data ?? []).forEach((r: { donor?: string; member_id?: string }) => {
-        const k = r.member_id || r.donor || "";
-        if (k) keys.add(k);
-      });
-      setPrevYearKeys(keys);
-    }).finally(() => setLoading(false));
-  }, [year, toast]);
 
   const byDonor = useMemo(() => {
     const map: Record<string, { total: number; byCat: Record<string, number>; count: number }> = {};
@@ -147,8 +133,6 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
     });
     return bracketLabels.map((label, i) => ({ name: label, 인원: counts[i] }));
   }, [donorList]);
-
-  if (loading) return <div className="p-6 text-gray-500">로딩 중...</div>;
 
   return (
     <div className="relative">

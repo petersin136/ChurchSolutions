@@ -356,7 +356,7 @@ function getAllFollowups(db: VCDB): FollowUp[] {
    ============================================================ */
 
 /* ----- Dashboard ----- */
-function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db: VCDB; goPage: (p: SubPage) => void; openVisitModal: (id?: string) => void; openCounselModal: (id?: string) => void; loading?: boolean }) {
+function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, mergedPrayers }: { db: VCDB; goPage: (p: SubPage) => void; openVisitModal: (id?: string) => void; openCounselModal: (id?: string) => void; loading?: boolean; mergedPrayers?: Prayer[] }) {
   const mob = useIsMobile();
   const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
@@ -380,7 +380,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
   const urgentFU = allFU.filter(f => daysFromNow(f.date) <= 3).slice(0, 5);
   const recentV = [...(db.visits ?? [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
   const recentC = [...(db.counsels ?? [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
-  const activePrayers = (db.prayers || []).filter(p => p.status === "active");
+  const activePrayers = (mergedPrayers ?? db.prayers ?? []).filter(p => p.status === "active");
 
   if (loading) {
     return (
@@ -398,7 +398,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
         <StatCard label="이번 달 상담" value={String(mc.length)} sub={`${cDiff > 0 ? "↑" : cDiff < 0 ? "↓" : "—"} 전월 대비 ${Math.abs(cDiff)}건`} subVariant={cDiff > 0 ? "up" : cDiff < 0 ? "down" : "same"} />
         <StatCard label="완료 심방" value={String(completed)} sub={`예정 ${scheduled}건`} />
         <StatCard label="기한 초과 조치" value={String(overdueFU.length)} sub={`${allFU.length}건 대기`} />
-        <div onClick={() => goPage("prayers")} style={{ cursor: "pointer" }}><StatCard label="활성 기도제목" value={String(activePrayers.length)} sub={`${activePrayers.length}건`} /></div>
+        <StatCard label="활성 기도제목" value={String(activePrayers.length)} sub={`${activePrayers.length}건`} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "2fr 1fr", gap: 20 }}>
@@ -524,6 +524,26 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading }: { db
           </div>
         </Card>
       </div>
+
+      {/* 최근 기도제목 요약 */}
+      <Card style={{ padding: mob ? 14 : 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontWeight: 700, fontSize: 15, margin: 0, color: "#111" }}>최근 기도제목</p>
+          <span style={{ fontSize: 12, color: "#9ca3af" }}>목양 탭에서 관리</span>
+        </div>
+        {(mergedPrayers || []).filter(p => p.status === "active").slice(0, 5).map((p, i) => {
+          const memberName = (db.members || []).find(m => m.id === p.memberId)?.name || "?";
+          return (
+            <div key={p.id || i} style={{ padding: "8px 0", borderTop: i > 0 ? "1px solid #f3f4f6" : "none" }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{memberName}</span>
+              <p style={{ fontSize: 12, color: "#6b7280", margin: "4px 0 0" }}>{p.text?.slice(0, 60)}{(p.text?.length || 0) > 60 ? "..." : ""}</p>
+            </div>
+          );
+        })}
+        {(!mergedPrayers || mergedPrayers.filter(p => p.status === "active").length === 0) && (
+          <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>활성 기도제목이 없습니다</p>
+        )}
+      </Card>
     </div>
   );
 }
@@ -889,6 +909,7 @@ function PrayersSub({
   toast,
   openMemberDetail,
   openPrayerModal,
+  mergedPrayers,
 }: {
   db: VCDB;
   setDb: React.Dispatch<React.SetStateAction<VCDB>>;
@@ -896,6 +917,7 @@ function PrayersSub({
   toast: (m: string) => void;
   openMemberDetail: (id: string) => void;
   openPrayerModal: () => void;
+  mergedPrayers?: Prayer[];
 }) {
   const mob = useIsMobile();
   const [filter, setFilter] = useState<"all" | "active" | "answered">("all");
@@ -903,7 +925,7 @@ function PrayersSub({
   const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
   const list = useMemo(() => {
-    let r = [...(db.prayers || [])];
+    let r = [...(mergedPrayers ?? db.prayers ?? [])];
     if (filter === "active") r = r.filter(p => p.status === "active");
     if (filter === "answered") r = r.filter(p => p.status === "answered");
     if (search) {
@@ -914,7 +936,7 @@ function PrayersSub({
       });
     }
     return r.sort((a, b) => b.date.localeCompare(a.date));
-  }, [db.prayers, filter, search]);
+  }, [mergedPrayers, db.prayers, filter, search]);
 
   const togglePrayerStatus = (id: string) => {
     setDb(prev => ({
@@ -1348,19 +1370,13 @@ function SettingsSub({ db, setDb, persist, toast }: { db: VCDB; setDb: React.Dis
 /* ============================================================
    MAIN COMPONENT
    ============================================================ */
-type SubPage = "dash" | "visits" | "counsels" | "followup" | "prayers" | "members" | "timeline" | "report" | "handover" | "settings";
+type SubPage = "dash" | "visits" | "counsels" | "followup";
 
 const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dash", Icon: LayoutDashboard, label: "대시보드" },
   { id: "visits", Icon: Home, label: "심방 기록" },
   { id: "counsels", Icon: MessageCircle, label: "상담 기록" },
   { id: "followup", Icon: Bell, label: "후속 조치" },
-  { id: "prayers", Icon: Heart, label: "기도제목" },
-  { id: "members", Icon: User, label: "성도별 이력" },
-  { id: "timeline", Icon: ScrollText, label: "전체 타임라인" },
-  { id: "report", Icon: TrendingUp, label: "월간 보고서" },
-  { id: "handover", Icon: ClipboardList, label: "인수인계 보고서" },
-  { id: "settings", Icon: Settings, label: "설정" },
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
@@ -1368,12 +1384,6 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
   visits: { title: "심방 기록", desc: "심방 일정과 기록을 관리합니다" },
   counsels: { title: "상담 기록", desc: "상담 내역을 기록하고 관리합니다" },
   followup: { title: "후속 조치", desc: "후속 조치가 필요한 항목을 확인합니다" },
-  prayers: { title: "기도제목", desc: "성도별 기도제목을 관리합니다" },
-  members: { title: "성도별 이력", desc: "성도별 심방/상담 이력을 조회합니다" },
-  timeline: { title: "전체 타임라인", desc: "모든 기록을 시간순으로 봅니다" },
-  report: { title: "월간 보고서", desc: "심방/상담 보고서를 생성합니다" },
-  handover: { title: "인수인계 보고서", desc: "교역자 인수인계용 성도별 정리" },
-  settings: { title: "설정", desc: "시스템 설정을 관리합니다" },
 };
 
 export interface VisitCounselPageProps {
@@ -1384,7 +1394,7 @@ export interface VisitCounselPageProps {
 
 export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPageProps = {}) {
   const mob = useIsMobile();
-  const { refreshVisits: contextRefreshVisits } = useAppData();
+  const { refreshVisits: contextRefreshVisits, rawAttendance, db: appDb } = useAppData();
   const [db, setDb] = useState<VCDB>(() => loadVC());
   const [activeSub, setActiveSub] = useState<SubPage>("dash");
   const [sideOpen, setSideOpen] = useState(false);
@@ -1480,6 +1490,30 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
     setToasts(prev => [...prev, { id, msg }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2500);
   }, []);
+
+  const mergedPrayers: Prayer[] = useMemo(() => {
+    const local = db.prayers || [];
+    const fromNotes: Prayer[] = [];
+    if (appDb?.notes) {
+      const answeredKeys = new Set(appDb.answeredPrayerKeys || []);
+      Object.entries(appDb.notes).forEach(([memberId, memberNotes]) => {
+        memberNotes.filter(n => n.type === "prayer").forEach(n => {
+          const key = `note\t${memberId}\t${n.date || ""}\t${n.createdAt}\t${n.content || ""}`;
+          fromNotes.push({
+            id: `appnote-${memberId}-${n.createdAt || n.date}`,
+            memberId,
+            text: n.content,
+            date: n.date,
+            category: "other" as PrayerCategory,
+            status: answeredKeys.has(key) ? "answered" as PrayerStatus : "active" as PrayerStatus,
+          });
+        });
+      });
+    }
+    const localKeys = new Set(local.map(p => `${p.memberId}::${p.text.trim()}`));
+    const unique = fromNotes.filter(p => !localKeys.has(`${p.memberId}::${p.text.trim()}`));
+    return [...local, ...unique];
+  }, [db.prayers, appDb?.notes, appDb?.answeredPrayerKeys]);
 
   const handleNav = (id: SubPage) => { setActiveSub(id); if (mob) setSideOpen(false); };
 
@@ -1683,7 +1717,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         </div>
         <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>심방/상담</div>
-          {NAV_ITEMS.slice(0, 5).map(n => {
+          {NAV_ITEMS.map(n => {
             const isActive = activeSub === n.id;
             const Icon = n.Icon;
             return (
@@ -1697,45 +1731,6 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
                 {n.id === "dash" && overdueCnt > 0 && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{overdueCnt}</span>}
                 {n.id === "followup" && allFU.length > 0 && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{allFU.length}</span>}
               </button>
-            );
-          })}
-          <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>성도 관리</div>
-          {NAV_ITEMS.slice(5, 7).map(n => {
-            const isActive = activeSub === n.id;
-            const Icon = n.Icon;
-            return (
-              <button key={n.id} onClick={() => handleNav(n.id)} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
-                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap",
-              }}><Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span></button>
-            );
-          })}
-          <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>보고</div>
-          {NAV_ITEMS.slice(7, 9).map(n => {
-            const isActive = activeSub === n.id;
-            const Icon = n.Icon;
-            return (
-              <button key={n.id} onClick={() => handleNav(n.id)} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
-                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap",
-              }}><Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span></button>
-            );
-          })}
-          <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>설정</div>
-          {NAV_ITEMS.slice(9).map(n => {
-            const isActive = activeSub === n.id;
-            const Icon = n.Icon;
-            return (
-              <button key={n.id} onClick={() => handleNav(n.id)} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
-                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap",
-              }}><Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span></button>
             );
           })}
         </nav>
@@ -1757,25 +1752,18 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
             <Btn variant="primary" size="sm" onClick={() => {
               if (activeSub === "visits" || activeSub === "dash") openVisitModal();
               else if (activeSub === "counsels") openCounselModal();
-              else if (activeSub === "prayers") { setShowPrayerModal(true); setEditPrayerId(null); setPMember(""); setPText(""); setPDate(todayStr()); setPCategory("other"); }
               else openVisitModal();
             }}>{mob ? "＋" : "＋ 빠른 등록"}</Btn>
           </div>
         </header>
 
         <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 24 }}>
-          {activeSub === "dash" && <DashSub db={db} goPage={handleNav} openVisitModal={openVisitModal} openCounselModal={openCounselModal} loading={visitsLoading} />}
+          {activeSub === "dash" && <DashSub db={db} goPage={handleNav} openVisitModal={openVisitModal} openCounselModal={openCounselModal} loading={visitsLoading} mergedPrayers={mergedPrayers} />}
           {activeSub === "visits" && mainDb != null && setMainDb && saveMain
             ? <MainDBVisitList mainDb={mainDb} setMainDb={setMainDb} saveMain={saveMain} toast={toast} />
             : activeSub === "visits" && <VisitListSub db={db} openVisitModal={openVisitModal} loading={visitsLoading} />}
           {activeSub === "counsels" && <CounselListSub db={db} openCounselModal={openCounselModal} />}
           {activeSub === "followup" && <FollowUpSub db={db} setDb={setDb} persist={persist} toast={toast} openVisitModal={openVisitModal} openCounselModal={openCounselModal} />}
-          {activeSub === "prayers" && <PrayersSub db={db} setDb={setDb} persist={persist} toast={toast} openMemberDetail={openMemberDetail} openPrayerModal={() => { setShowPrayerModal(true); setEditPrayerId(null); setPMember(""); setPText(""); setPDate(todayStr()); setPCategory("other"); }} />}
-          {activeSub === "members" && <MembersSub db={db} openMemberDetail={openMemberDetail} />}
-          {activeSub === "timeline" && <TimelineSub db={db} openVisitModal={openVisitModal} openCounselModal={openCounselModal} />}
-          {activeSub === "report" && <ReportSub db={db} toast={toast} loading={visitsLoading} />}
-          {activeSub === "handover" && <HandoverSub db={db} toast={toast} getMember={getMember} />}
-          {activeSub === "settings" && <SettingsSub db={db} setDb={setDb} persist={persist} toast={toast} />}
         </div>
       </main>
 

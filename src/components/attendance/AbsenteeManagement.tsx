@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
-import { getChurchId, filterByChurch } from "@/lib/tenant";
+import { useMemo, useState } from "react";
+import { useAppData } from "@/contexts/AppDataContext";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
 
@@ -51,62 +50,24 @@ export function AbsenteeManagement({
   onAddVisit,
   toast,
 }: AbsenteeManagementProps) {
+  const { db, rawAttendance } = useAppData();
   const [nWeeks, setNWeeks] = useState(consecutiveWeeks);
-  const [membersFetched, setMembersFetched] = useState<Member[]>([]);
-  const [attendanceFetched, setAttendanceFetched] = useState<Attendance[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  const propsProvided = !!(attendanceListProp && attendanceListProp.length > 0);
-  const useSupabase = !!supabase && !propsProvided;
-  const members = propsProvided ? (membersProp ?? []) : (useSupabase ? membersFetched : (membersProp ?? []));
-  const attendanceList = propsProvided ? attendanceListProp : (useSupabase ? attendanceFetched : (attendanceListProp ?? []));
-
-  const loadFromSupabase = useCallback(async () => {
-    if (!supabase) return;
-    setLoading(true);
+  const members = membersProp?.length ? membersProp : (db.members ?? []);
+  const attendanceList = useMemo(() => {
+    if (attendanceListProp?.length) return attendanceListProp;
     const nWeeksAgo = new Date();
     nWeeksAgo.setDate(nWeeksAgo.getDate() - 7 * Math.max(nWeeks, 1));
-    const fromDate = nWeeksAgo.toISOString().split("T")[0];
-
-    const [memRes, attRes] = await Promise.all([
-      filterByChurch(supabase.from("members").select("id, name, dept, mokjang, phone, member_status, status")).order("name"),
-      filterByChurch(supabase.from("attendance").select("member_id, date, status"))
-        .gte("date", fromDate)
-        .eq("service_type", "주일예배"),
-    ]);
-    if (memRes.error) {
-      console.error(memRes.error);
-      toast?.("데이터 로드 실패: " + memRes.error.message, "err");
-    } else {
-      const rows = (memRes.data ?? []) as Record<string, unknown>[];
-      setMembersFetched(
-        rows.map((r) => ({
-          ...r,
-          id: String(r.id ?? ""),
-          name: String(r.name ?? ""),
-          dept: r.dept as string | undefined,
-          mokjang: r.mokjang as string | undefined,
-          group: (r.mokjang ?? r.group) as string | undefined,
-          phone: r.phone as string | undefined,
-          member_status: r.member_status as string | undefined,
-          status: r.status as string | undefined,
-        })) as Member[]
-      );
-    }
-    if (attRes.error) {
-      const fallback = await filterByChurch(supabase.from("attendance").select("member_id, date, status")).gte("date", fromDate);
-      if (fallback.error) {
-        console.error(fallback.error);
-        toast?.("출석 데이터 로드 실패: " + fallback.error.message, "err");
-        setAttendanceFetched([]);
-      } else setAttendanceFetched((fallback.data ?? []) as Attendance[]);
-    } else setAttendanceFetched((attRes.data ?? []) as Attendance[]);
-    setLoading(false);
-  }, [nWeeks, toast]);
-
-  useEffect(() => {
-    if (useSupabase) loadFromSupabase();
-  }, [useSupabase, loadFromSupabase]);
+    const fromDate = fmtLocalDate(nWeeksAgo);
+    return rawAttendance
+      .filter(a => a.date >= fromDate)
+      .map(a => ({
+        member_id: a.member_id,
+        date: a.date,
+        service_type: a.service_type ?? "주일예배",
+        status: a.status === "p" ? "출석" : a.status === "o" ? "온라인" : a.status === "a" ? "결석" : a.status,
+      }));
+  }, [attendanceListProp, rawAttendance, nWeeks]);
 
   const activeMembers = useMemo(() => getActiveMembers(members), [members]);
   const recentSundays = useMemo(() => getRecentSundays(nWeeks), [nWeeks]);
@@ -145,15 +106,6 @@ export function AbsenteeManagement({
     });
     return result.sort((a, b) => b.consecutiveWeeks - a.consecutiveWeeks);
   }, [activeMembers, byWeekService, recentSundays, nWeeks]);
-
-  if (useSupabase && loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
-        <span className="ml-3 text-gray-600">결석자 데이터 로딩 중...</span>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4">

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
+import { useAppData } from "@/contexts/AppDataContext";
 
 const INDIGO = "#4F46E5";
 
@@ -17,12 +18,9 @@ export interface StudentManagementProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function StudentManagement({ db, toast }: StudentManagementProps) {
-  const [departments, setDepartments] = useState<SchoolDepartment[]>([]);
-  const [classes, setClasses] = useState<SchoolClass[]>([]);
-  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
+export function StudentManagement({ toast }: StudentManagementProps) {
+  const { db, schoolDepartments, schoolClasses, schoolEnrollments, refreshSchoolEnrollments } = useAppData();
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState<EnrollmentRow | null>(null);
   const [addMemberId, setAddMemberId] = useState("");
@@ -32,42 +30,15 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
   const [editClassId, setEditClassId] = useState("");
   const [editRole, setEditRole] = useState<"학생" | "교사" | "부교사" | "부장" | "총무">("학생");
 
-  const load = async () => {
-    if (!supabase) return;
-    setLoading(true);
-    try {
-      const [depts, cls, enrolls] = await Promise.all([
-        supabase.from("school_departments").select("*").order("sort_order"),
-        supabase.from("school_classes").select("*").order("sort_order"),
-        supabase.from("school_enrollments").select("*, members(id, name, phone)").eq("is_active", true),
-      ]);
-      console.log("[StudentManagement] departments query result:", depts.data, depts.error);
-      console.log("[StudentManagement] classes query result:", cls.data, cls.error);
-      console.log("[StudentManagement] enrollments query result:", enrolls.data, enrolls.error);
-      if (depts.error) {
-        toast("부서 목록 로드 실패: " + depts.error.message, "err");
-        return;
-      }
-      if (cls.error) {
-        toast("반 목록 로드 실패: " + cls.error.message, "err");
-        return;
-      }
-      if (enrolls.error) {
-        toast("등록 목록 로드 실패: " + enrolls.error.message, "err");
-        return;
-      }
-      const deptList = (depts.data as SchoolDepartment[]) ?? [];
-      setDepartments(deptList.filter((d) => d.is_active !== false));
-      setClasses((cls.data as SchoolClass[]) ?? []);
-      setEnrollments((enrolls.data as EnrollmentRow[]) ?? []);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
+  const departments = useMemo(() => schoolDepartments.filter((d) => d.is_active !== false), [schoolDepartments]);
+  const classes = schoolClasses;
+  const enrollments: EnrollmentRow[] = useMemo(() =>
+    schoolEnrollments.map((e) => {
+      const m = db.members?.find((mem) => mem.id === e.member_id);
+      return { ...e, members: m ? { id: m.id, name: m.name, phone: m.phone } : null };
+    }),
+    [schoolEnrollments, db.members]
+  );
 
   const filtered = selectedDeptId
     ? enrollments.filter((e) => e.department_id === selectedDeptId)
@@ -99,7 +70,7 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
     setAddMemberId("");
     setAddDeptId("");
     setAddClassId("");
-    await load();
+    await refreshSchoolEnrollments();
   };
 
   const handleUpdate = async () => {
@@ -121,7 +92,7 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
     }
     toast("수정되었습니다", "ok");
     setEditOpen(null);
-    await load();
+    await refreshSchoolEnrollments();
   };
 
   const handleDelete = async (e: EnrollmentRow) => {
@@ -143,10 +114,8 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
     }
     toast("등록 해제되었습니다", "ok");
     setEditOpen(null);
-    await load();
+    await refreshSchoolEnrollments();
   };
-
-  if (loading) return <div className="p-6 text-gray-500">로딩 중...</div>;
 
   return (
     <div className="space-y-4">

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
-import { supabase } from "@/lib/supabase";
+import { useAppData } from "@/contexts/AppDataContext";
 
 const INDIGO = "#4F46E5";
 
@@ -12,36 +12,17 @@ export interface SchoolReportProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function SchoolReport({ db, toast }: SchoolReportProps) {
-  const [departments, setDepartments] = useState<SchoolDepartment[]>([]);
-  const [classes, setClasses] = useState<SchoolClass[]>([]);
+export function SchoolReport({ toast }: SchoolReportProps) {
+  const { schoolDepartments, schoolClasses } = useAppData();
   const [deptId, setDeptId] = useState<string | null>(null);
   const [classId, setClassId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState(() => new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    Promise.all([
-      supabase.from("school_departments").select("*").order("sort_order"),
-      supabase.from("school_classes").select("*").order("sort_order"),
-    ]).then(([d, c]) => {
-      console.log("[SchoolReport] departments query result:", d.data, d.error);
-      console.log("[SchoolReport] classes query result:", c.data, c.error);
-      const deptList = (d.data as SchoolDepartment[]) ?? [];
-      setDepartments(deptList.filter((x) => x.is_active !== false));
-      setClasses((c.data as SchoolClass[]) ?? []);
-      setLoading(false);
-    });
-  }, []);
+  const departments = useMemo(() => schoolDepartments.filter((x) => x.is_active !== false), [schoolDepartments]);
+  const classes = schoolClasses;
 
   const deptClasses = deptId ? classes.filter((c) => c.department_id === deptId) : [];
-
-  if (loading) return <div className="p-6 text-gray-500">로딩 중...</div>;
 
   return (
     <div className="space-y-6">

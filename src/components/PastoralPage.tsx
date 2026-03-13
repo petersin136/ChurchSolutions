@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAppData } from "@/contexts/AppDataContext";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
-import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Heart, Home, Gift } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Heart, Home, Gift, MessageSquare } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -19,6 +19,11 @@ import { ReportModal } from "@/components/report/ReportModal";
 import { REPORT_DEFS, ReportPreviewModal, type ReportId } from "@/components/report/A4Reports";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { ServantSchoolManager } from "@/components/settling/ServantSchoolManager";
+import { MessageSender } from "@/components/pastoral/MessageSender";
+
+function MessageSenderLazy({ db, toast }: { db: DB; toast: (m: string, t?: string) => void }) {
+  return <MessageSender db={db} toast={toast} />;
+}
 import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNoteModal";
 
 /* ---------- useIsMobile ---------- */
@@ -606,6 +611,85 @@ function compressPhoto(src: string, cb: (r: string) => void) {
    SUB-PAGES
    ============================================================ */
 
+/* ====== Planner Cards for Dashboard ====== */
+function PlannerWeekCard({ plans, mob }: { plans: DB["plans"]; mob: boolean }) {
+  const today = new Date();
+  const day = today.getDay();
+  const sun = new Date(today); sun.setDate(today.getDate() - day);
+  const sat = new Date(sun); sat.setDate(sun.getDate() + 6);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const weekPlans = plans.filter(p => p.date >= fmt(sun) && p.date <= fmt(sat)).sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || ""));
+  return (
+    <Card style={{ padding: mob ? 14 : 20 }}>
+      <h4 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700, color: C.navy }}>이번 주 일정</h4>
+      {weekPlans.length === 0 && <p style={{ margin: 0, fontSize: 13, color: C.textMuted }}>등록된 일정이 없습니다</p>}
+      {weekPlans.slice(0, 5).map(p => (
+        <div key={p.id} style={{ padding: "6px 0", borderBottom: `1px solid ${C.borderLight}` }}>
+          <span style={{ fontSize: 11, color: C.textMuted }}>{p.date.slice(5)} {p.time || ""}</span>
+          <p style={{ margin: "2px 0 0", fontSize: 13, fontWeight: 600, color: C.text }}>{p.title}</p>
+        </div>
+      ))}
+      {weekPlans.length > 5 && <p style={{ margin: "8px 0 0", fontSize: 12, color: C.textMuted }}>외 {weekPlans.length - 5}건</p>}
+    </Card>
+  );
+}
+
+function SermonCard({ sermons, mob }: { sermons: DB["sermons"]; mob: boolean }) {
+  const today = new Date();
+  const day = today.getDay();
+  const sun = new Date(today); sun.setDate(today.getDate() - day);
+  const sat = new Date(sun); sat.setDate(sun.getDate() + 6);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const weekSermons = sermons.filter(s => s.date >= fmt(sun) && s.date <= fmt(sat));
+  const next = weekSermons[0] || sermons.filter(s => s.date >= fmt(today)).sort((a, b) => a.date.localeCompare(b.date))[0];
+  return (
+    <Card style={{ padding: mob ? 14 : 20 }}>
+      <h4 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700, color: C.navy }}>설교 준비</h4>
+      {next ? (
+        <>
+          <p style={{ margin: 0, fontSize: 11, color: C.textMuted }}>{next.date} · {next.service}</p>
+          <p style={{ margin: "4px 0", fontSize: 14, fontWeight: 600, color: C.text }}>{next.title || "(제목 미정)"}</p>
+          {next.text && <p style={{ margin: 0, fontSize: 12, color: C.textMuted }}>{next.text}</p>}
+          <span style={{ display: "inline-block", marginTop: 6, padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: next.status === "완료" ? C.successBg : C.warningBg, color: next.status === "완료" ? C.success : C.warning }}>{next.status || "준비중"}</span>
+        </>
+      ) : (
+        <p style={{ margin: 0, fontSize: 13, color: C.textMuted }}>예정된 설교가 없습니다</p>
+      )}
+    </Card>
+  );
+}
+
+function ChecklistCard({ mob }: { mob: boolean }) {
+  const storageKey = "pastoral-checklist";
+  const defaultItems = ["설교 준비", "심방 계획 확인", "새가족 연락", "기도제목 업데이트", "주보 확인"];
+  const [items, setItems] = useState<{ text: string; done: boolean }[]>(() => {
+    if (typeof window === "undefined") return defaultItems.map(t => ({ text: t, done: false }));
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return defaultItems.map(t => ({ text: t, done: false }));
+  });
+  const toggle = (i: number) => {
+    setItems(prev => {
+      const next = prev.map((it, idx) => idx === i ? { ...it, done: !it.done } : it);
+      localStorage.setItem(storageKey, JSON.stringify(next));
+      return next;
+    });
+  };
+  return (
+    <Card style={{ padding: mob ? 14 : 20 }}>
+      <h4 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700, color: C.navy }}>주간 체크리스트</h4>
+      {items.map((it, i) => (
+        <label key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", cursor: "pointer", fontSize: 13, color: it.done ? C.textMuted : C.text, textDecoration: it.done ? "line-through" : "none" }}>
+          <input type="checkbox" checked={it.done} onChange={() => toggle(i)} style={{ accentColor: C.accent }} />
+          {it.text}
+        </label>
+      ))}
+    </Card>
+  );
+}
+
 /* ====== Dashboard ====== */
 type AttChartView = "year" | "month" | "week";
 
@@ -831,6 +915,13 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
             {recentNotes.length ? recentNotes.map((n, i) => <NoteCard key={i} n={n} mbrName={n.mbrName} />) : <div style={{ textAlign: "center", color: C.textMuted, padding: 20 }}>기록이 없습니다</div>}
           </div>
         </Card>
+      </div>
+
+      {/* Planner cards */}
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr 1fr", gap: 16 }}>
+        <PlannerWeekCard plans={db.plans} mob={mob} />
+        <SermonCard sermons={db.sermons} mob={mob} />
+        <ChecklistCard mob={mob} />
       </div>
     </div>
   );
@@ -2605,7 +2696,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
 /* ============================================================
    MAIN COMPONENT
    ============================================================ */
-type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "reports" | "settings";
+type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "settings" | "message";
 
 const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dashboard", Icon: LayoutDashboard, label: "대시보드" },
@@ -2613,8 +2704,8 @@ const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[
   { id: "attendance", Icon: CalendarCheck, label: "출석부" },
   { id: "notes", Icon: StickyNote, label: "기도/메모" },
   { id: "newfamily", Icon: Sprout, label: "새가족 관리" },
-  { id: "reports", Icon: FileText, label: "보고서" },
   { id: "settings", Icon: Settings, label: "목장그룹관리" },
+  { id: "message", Icon: MessageSquare, label: "메시지 보내기" },
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: string }> = {
@@ -2623,15 +2714,15 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   attendance: { title: "출석부", desc: "52주 출석 기록을 관리합니다" },
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기도" },
   newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
-  reports: { title: "보고서", desc: "엑셀 보고서를 즉시 다운로드합니다" },
   settings: { title: "목장그룹관리", desc: "목장·소그룹 생성 및 그룹원 관리" },
+  message: { title: "메시지 보내기", desc: "성도에게 메시지를 보냅니다" },
 };
 
-const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "reports", "settings"];
+const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "settings", "message"];
 
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const { churchId } = useAuth();
-  const { refreshMembers, refreshNotes, refreshAttendance, refreshVisits, refreshNewFamilyPrograms } = useAppData();
+  const { refreshMembers, refreshNotes, refreshAttendance, refreshVisits, refreshNewFamilyPrograms, schoolDepartments, schoolEnrollments } = useAppData();
   const mob = useIsMobile();
   const [activeSub, setActiveSubState] = useState<SubPage>(() => {
     if (typeof window === "undefined") return "dashboard";
@@ -2675,7 +2766,15 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [noteSelectedMemberId, setNoteSelectedMemberId] = useState("");
   const [noteMemberSearchText, setNoteMemberSearchText] = useState("");
   const [noteMemberDropdownOpen, setNoteMemberDropdownOpen] = useState(false);
-  const [memberDeptMap, setMemberDeptMap] = useState<Record<string, string>>({});
+  const memberDeptMap = useMemo(() => {
+    const deptById: Record<string, string> = {};
+    schoolDepartments.forEach((d) => { deptById[d.id] = d.name; });
+    const map: Record<string, string> = {};
+    schoolEnrollments.forEach((e) => {
+      if (e.department_id && deptById[e.department_id]) map[e.member_id] = deptById[e.department_id];
+    });
+    return map;
+  }, [schoolDepartments, schoolEnrollments]);
   const noteMemberDropdownRef = useRef<HTMLDivElement>(null);
 
   // 출결 Phase 3: 예배별 출결
@@ -3041,26 +3140,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   }, []);
 
   useEffect(() => {
-    if (!showNoteModal || !churchId || !supabase) return;
-    (async () => {
-      const { data: enrollments } = await supabase.from("school_enrollments").select("member_id, department_id").eq("church_id", churchId).eq("is_active", true);
-      const deptIds = Array.from(new Set((enrollments ?? []).map((e: { department_id?: string }) => e.department_id).filter(Boolean))) as string[];
-      if (deptIds.length === 0) {
-        setMemberDeptMap({});
-        return;
-      }
-      const { data: depts } = await supabase.from("school_departments").select("id, name").in("id", deptIds);
-      const deptById: Record<string, string> = {};
-      (depts ?? []).forEach((d: { id: string; name: string }) => { deptById[d.id] = d.name; });
-      const map: Record<string, string> = {};
-      (enrollments ?? []).forEach((e: { member_id: string; department_id?: string }) => {
-        if (e.department_id && deptById[e.department_id]) map[e.member_id] = deptById[e.department_id];
-      });
-      setMemberDeptMap(map);
-    })();
-  }, [showNoteModal, churchId]);
-
-  useEffect(() => {
     if (!noteMemberDropdownOpen) return;
     const onDocClick = (e: MouseEvent) => {
       if (noteMemberDropdownRef.current && !noteMemberDropdownRef.current.contains(e.target as Node)) setNoteMemberDropdownOpen(false);
@@ -3221,8 +3300,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           )}
           {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openPrayerModal={openPrayerModal} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
-          {activeSub === "reports" && <ReportsSub db={db} currentWeek={currentWeek} toast={toast} churchId={churchId} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} mokjangOnly />}
+          {activeSub === "message" && <MessageSenderLazy db={db} toast={toast} />}
     </UnifiedPageLayout>
 
       {/* ===== MODALS ===== */}

@@ -7,11 +7,10 @@ import { DepartmentManagement } from "./DepartmentManagement";
 import { StudentManagement } from "./StudentManagement";
 import { SchoolAttendanceSub } from "./SchoolAttendanceSub";
 import { DepartmentTransfer } from "./DepartmentTransfer";
-import { SchoolReport } from "./SchoolReport";
-import { LayoutDashboard, Building2, Users, CalendarCheck, ArrowRightLeft, FileText } from "lucide-react";
+import { LayoutDashboard, Building2, Users, CalendarCheck, ArrowRightLeft } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 
-type SchoolSubTab = "dashboard" | "departments" | "students" | "attendance" | "transfer" | "report";
+type SchoolSubTab = "dashboard" | "departments" | "students" | "attendance" | "transfer";
 
 const PAGE_INFO: Record<SchoolSubTab, { title: string; desc: string }> = {
   dashboard: { title: "대시보드", desc: "교회학교 현황을 한눈에 확인하세요" },
@@ -19,7 +18,6 @@ const PAGE_INFO: Record<SchoolSubTab, { title: string; desc: string }> = {
   students: { title: "학생 관리", desc: "학생 등록과 정보를 관리합니다" },
   attendance: { title: "출석부", desc: "52주 출석 기록을 관리합니다" },
   transfer: { title: "부서 이동", desc: "학생 부서 이동을 처리합니다" },
-  report: { title: "보고서", desc: "교회학교 보고서를 작성합니다" },
 };
 
 const NAV_SECTIONS = [
@@ -31,7 +29,6 @@ const NAV_SECTIONS = [
       { id: "students" as const, label: "학생 관리", Icon: Users },
       { id: "attendance" as const, label: "출석부", Icon: CalendarCheck },
       { id: "transfer" as const, label: "부서 이동", Icon: ArrowRightLeft },
-      { id: "report" as const, label: "보고서", Icon: FileText },
     ],
   },
 ];
@@ -41,7 +38,7 @@ export interface SchoolPageProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-const SCHOOL_SUB_TAB_IDS: SchoolSubTab[] = ["dashboard", "departments", "students", "attendance", "transfer", "report"];
+const SCHOOL_SUB_TAB_IDS: SchoolSubTab[] = ["dashboard", "departments", "students", "attendance", "transfer"];
 
 function getInitialSchoolSubTab(): SchoolSubTab {
   if (typeof window === "undefined") return "dashboard";
@@ -74,7 +71,6 @@ export function SchoolPage({ db, toast }: SchoolPageProps) {
       {subTab === "students" && <StudentManagement db={db} toast={toast} />}
       {subTab === "attendance" && <SchoolAttendanceSub db={db} toast={toast} />}
       {subTab === "transfer" && <DepartmentTransfer db={db} toast={toast} />}
-      {subTab === "report" && <SchoolReport db={db} toast={toast} />}
     </UnifiedPageLayout>
   );
 }

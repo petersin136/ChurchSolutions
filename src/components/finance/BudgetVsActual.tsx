@@ -5,8 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { filterByChurch } from "@/lib/tenant";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import type { Budget } from "@/types/db";
-import type { Income } from "@/types/db";
-import type { Expense } from "@/types/db";
+import { useAppData } from "@/contexts/AppDataContext";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 const NAVY = "#1e3a5f";
@@ -25,44 +24,43 @@ export function BudgetVsActual({
   toast,
   viewMode: viewModeProp = "monthly",
 }: BudgetVsActualProps) {
+  const { db } = useAppData();
   const [viewMode, setViewMode] = useState<"monthly" | "annual">(viewModeProp);
   const [selectedMonth, setSelectedMonth] = useState(month ?? new Date().getMonth() + 1);
   const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [incomes, setIncomes] = useState<Income[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
+  const incomes = useMemo(() => {
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year}-12-31`;
+    return db.income.filter(i => i.date >= yearStart && i.date <= yearEnd);
+  }, [db.income, year]);
+
+  const expenses = useMemo(() => {
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year}-12-31`;
+    return db.expense.filter(e => e.date >= yearStart && e.date <= yearEnd);
+  }, [db.expense, year]);
+
+  const loadBudget = useCallback(async () => {
     if (!supabase) {
       setLoading(false);
       return;
     }
     setLoading(true);
-    const yearStart = `${year}-01-01`;
-    const yearEnd = `${year}-12-31`;
-    const [budgetRes, incomeRes, expenseRes] = await Promise.all([
-      filterByChurch(supabase.from("budget").select("*")).eq("fiscal_year", year),
-      filterByChurch(supabase.from("income").select("*")).gte("date", yearStart).lte("date", yearEnd),
-      filterByChurch(supabase.from("expense").select("*")).gte("date", yearStart).lte("date", yearEnd),
-    ]);
-    if (budgetRes.error) {
-      console.error(budgetRes.error);
-      toast("예산 로드 실패: " + budgetRes.error.message, "err");
-    } else setBudgets((budgetRes.data ?? []) as Budget[]);
-    if (incomeRes.error) {
-      console.error(incomeRes.error);
-      toast("수입 실적 로드 실패: " + incomeRes.error.message, "err");
-    } else setIncomes((incomeRes.data ?? []) as Income[]);
-    if (expenseRes.error) {
-      console.error(expenseRes.error);
-      toast("지출 실적 로드 실패: " + expenseRes.error.message, "err");
-    } else setExpenses((expenseRes.data ?? []) as Expense[]);
+    const { data, error } = await filterByChurch(supabase.from("budget").select("*")).eq("fiscal_year", year);
+    if (error) {
+      console.error(error);
+      toast("예산 로드 실패: " + error.message, "err");
+    } else {
+      setBudgets((data ?? []) as Budget[]);
+    }
     setLoading(false);
   }, [year, toast]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadBudget();
+  }, [loadBudget]);
 
   const mStr = String(selectedMonth).padStart(2, "0");
   const incomeActual = useMemo(() => {

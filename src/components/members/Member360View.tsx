@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useAppData } from "@/contexts/AppDataContext";
 import type { DB, Member, Note, Visit, Income, MemberStatusHistory, NewFamilyProgram } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId, filterByChurch } from "@/lib/tenant";
@@ -29,7 +30,7 @@ export interface Member360ViewProps {
 export function Member360View({ member, db, statusHistory = [], newFamilyProgram, onEdit, onClose, toast }: Member360ViewProps) {
   const [activeTab, setActiveTab] = useState<"info" | "attendance" | "giving" | "visits" | "newfamily" | "history">("info");
   const [dbStatusHistory, setDbStatusHistory] = useState<MemberStatusHistory[]>([]);
-  const [attendanceHistory, setAttendanceHistory] = useState<{ date: string; service_type: string; status: string }[]>([]);
+  const { rawAttendance } = useAppData();
 
   useEffect(() => {
     if (!supabase || !member.id) {
@@ -42,27 +43,18 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
     });
   }, [member.id]);
 
-  useEffect(() => {
-    if (!supabase || !member.id) {
-      setAttendanceHistory([]);
-      return;
-    }
-    filterByChurch(supabase.from("attendance").select("date, service_type, status"))
-      .eq("member_id", member.id)
-      .eq("service_type", "주일예배")
-      .order("date", { ascending: false })
-      .limit(20)
-      .then(({ data, error }: { data: unknown[] | null; error: { message: string } | null }) => {
-        if (error) return;
-        setAttendanceHistory(
-          (data ?? []).map((r: any) => ({
-            date: String(r.date ?? ""),
-            service_type: String(r.service_type ?? "-"),
-            status: String(r.status ?? ""),
-          }))
-        );
-      });
-  }, [member.id]);
+  const attendanceHistory = useMemo(() => {
+    if (!member.id) return [];
+    return rawAttendance
+      .filter(a => a.member_id === member.id && a.service_type === "주일예배")
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 20)
+      .map(a => ({
+        date: a.date,
+        service_type: a.service_type ?? "-",
+        status: a.status,
+      }));
+  }, [rawAttendance, member.id]);
 
   const displayStatusHistory = dbStatusHistory.length > 0 ? dbStatusHistory : statusHistory;
 
