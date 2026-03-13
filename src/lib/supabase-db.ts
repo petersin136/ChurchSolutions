@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
+import { getChurchId, filterByChurch } from "@/lib/tenant";
 import type { DB, Member, Note, NewFamilyProgram, Plan, Sermon, Visit, Income, Expense, AttStatus, WeekChecks } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 
@@ -179,7 +179,7 @@ export function toMember(r: Record<string, unknown>): Member {
   };
 }
 
-function toPlan(r: Record<string, unknown>): Plan {
+export function toPlan(r: Record<string, unknown>): Plan {
   return {
     id: String(r.id ?? ""),
     title: String(r.title ?? ""),
@@ -190,7 +190,7 @@ function toPlan(r: Record<string, unknown>): Plan {
   };
 }
 
-function toSermon(r: Record<string, unknown>): Sermon {
+export function toSermon(r: Record<string, unknown>): Sermon {
   return {
     id: String(r.id ?? ""),
     date: String(r.date ?? ""),
@@ -203,7 +203,7 @@ function toSermon(r: Record<string, unknown>): Sermon {
   };
 }
 
-function toVisit(r: Record<string, unknown>): Visit {
+export function toVisit(r: Record<string, unknown>): Visit {
   return {
     id: String(r.id ?? ""),
     date: String(r.date ?? ""),
@@ -219,7 +219,7 @@ function parseWeekChecks(v: unknown): WeekChecks | undefined {
   return undefined;
 }
 
-function toNewFamilyProgram(r: Record<string, unknown>): NewFamilyProgram {
+export function toNewFamilyProgram(r: Record<string, unknown>): NewFamilyProgram {
   const w1c = Boolean(r.week1_completed);
   const w2c = Boolean(r.week2_completed);
   const w3c = Boolean(r.week3_completed);
@@ -251,7 +251,7 @@ function toNewFamilyProgram(r: Record<string, unknown>): NewFamilyProgram {
   };
 }
 
-function toIncome(r: Record<string, unknown>): Income {
+export function toIncome(r: Record<string, unknown>): Income {
   return {
     id: String(r.id ?? ""),
     date: String(r.date ?? ""),
@@ -263,7 +263,7 @@ function toIncome(r: Record<string, unknown>): Income {
   };
 }
 
-function toExpense(r: Record<string, unknown>): Expense {
+export function toExpense(r: Record<string, unknown>): Expense {
   return {
     id: String(r.id ?? ""),
     date: String(r.date ?? ""),
@@ -372,7 +372,7 @@ export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<
   if (!supabase) return;
   const churchId = getChurchId();
   const { data: existing } = await supabase.from("settings").select("id").eq("church_id", churchId).limit(1).maybeSingle();
-  const payload = withChurchId({
+  const payload = {
     church_name: settings.churchName,
     depts: settings.depts,
     fiscal_start: settings.fiscalStart,
@@ -380,7 +380,8 @@ export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<
     ...(settings.address !== undefined && { address: settings.address }),
     ...(settings.pastor !== undefined && { pastor: settings.pastor }),
     ...(settings.businessNumber !== undefined && { business_number: settings.businessNumber }),
-  });
+    church_id: churchId,
+  };
   if (existing?.id) {
     const { error } = await supabase.from("settings").update(payload).eq("id", existing.id).eq("church_id", churchId);
     if (error) throw new Error(error.message);
@@ -447,21 +448,21 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       is_prospect: m.is_prospect ?? null,
     };
     if (isUuid) {
-      await supabase.from("members").upsert(withChurchId({ id: m.id, ...payload }), { onConflict: "id" });
+      await supabase.from("members").upsert({ id: m.id, ...payload, church_id: churchId }, { onConflict: "id" });
     } else {
-      await supabase.from("members").insert(withChurchId(payload));
+      await supabase.from("members").insert({ ...payload, church_id: churchId });
     }
   }
 
   for (const p of db.plans) {
     if (/^[0-9a-f-]{36}$/i.test(p.id)) {
       await supabase.from("plans").upsert(
-        withChurchId({ id: p.id, title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null }),
+        { id: p.id, title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null, church_id: churchId },
         { onConflict: "id" }
       );
     } else {
       await supabase.from("plans").insert(
-        withChurchId({ title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null })
+        { title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null, church_id: churchId }
       );
     }
   }
@@ -469,18 +470,20 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const s of db.sermons) {
     if (/^[0-9a-f-]{36}$/i.test(s.id)) {
       await supabase.from("sermons").upsert(
-        withChurchId({
+        {
           id: s.id, date: s.date, service: s.service ?? null, bible_text: s.text ?? null,
           title: s.title ?? null, core: s.core ?? null, status: s.status ?? null, notes: s.notes ?? null,
-        }),
+          church_id: churchId,
+        },
         { onConflict: "id" }
       );
     } else {
       await supabase.from("sermons").insert(
-        withChurchId({
+        {
           date: s.date, service: s.service ?? null, bible_text: s.text ?? null,
           title: s.title ?? null, core: s.core ?? null, status: s.status ?? null, notes: s.notes ?? null,
-        })
+          church_id: churchId,
+        }
       );
     }
   }
@@ -488,12 +491,12 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const v of db.visits) {
     if (/^[0-9a-f-]{36}$/i.test(v.id)) {
       await supabase.from("visits").upsert(
-        withChurchId({ id: v.id, date: v.date, member_id: v.memberId || null, type: v.type ?? null, content: v.content }),
+        { id: v.id, date: v.date, member_id: v.memberId || null, type: v.type ?? null, content: v.content, church_id: churchId },
         { onConflict: "id" }
       );
     } else {
       await supabase.from("visits").insert(
-        withChurchId({ date: v.date, member_id: v.memberId || null, type: v.type ?? null, content: v.content })
+        { date: v.date, member_id: v.memberId || null, type: v.type ?? null, content: v.content, church_id: churchId }
       );
     }
   }
@@ -513,18 +516,19 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       const arr = (p as unknown as Record<string, unknown>)[key] as WeekChecks | undefined;
       if (arr && Array.isArray(arr) && arr.length >= 4) row[key] = JSON.stringify(arr.slice(0, 4));
     });
-    await supabase.from("new_family_program").upsert(withChurchId(row) as any, { onConflict: "id" });
+    const rowWithChurch = { ...row, church_id: churchId };
+    await supabase.from("new_family_program").upsert(rowWithChurch as any, { onConflict: "id" });
   }
 
   for (const i of db.income) {
     if (/^[0-9a-f-]{36}$/i.test(i.id)) {
       await supabase.from("income").upsert(
-        withChurchId({ id: i.id, date: i.date, type: i.type, amount: i.amount, donor: i.donor ?? null, method: i.method ?? null, memo: i.memo ?? null }),
+        { id: i.id, date: i.date, type: i.type, amount: i.amount, donor: i.donor ?? null, method: i.method ?? null, memo: i.memo ?? null, church_id: churchId },
         { onConflict: "id" }
       );
     } else {
       await supabase.from("income").insert(
-        withChurchId({ date: i.date, type: i.type, amount: i.amount, donor: i.donor ?? null, method: i.method ?? null, memo: i.memo ?? null })
+        { date: i.date, type: i.type, amount: i.amount, donor: i.donor ?? null, method: i.method ?? null, memo: i.memo ?? null, church_id: churchId }
       );
     }
   }
@@ -532,12 +536,12 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   for (const e of db.expense) {
     if (/^[0-9a-f-]{36}$/i.test(e.id)) {
       await supabase.from("expense").upsert(
-        withChurchId({ id: e.id, date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null }),
+        { id: e.id, date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null, church_id: churchId },
         { onConflict: "id" }
       );
     } else {
       await supabase.from("expense").insert(
-        withChurchId({ date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null })
+        { date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null, church_id: churchId }
       );
     }
   }

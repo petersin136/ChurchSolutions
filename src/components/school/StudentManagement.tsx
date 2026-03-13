@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -82,12 +82,14 @@ export function StudentManagement({ db, toast }: StudentManagementProps) {
       toast("성도와 부서를 선택하세요", "warn");
       return;
     }
-    const { error } = await supabase.from("school_enrollments").insert(withChurchId({
+    const churchId = getChurchId();
+    const { error } = await supabase.from("school_enrollments").insert({
       member_id: addMemberId,
       department_id: addDeptId,
       class_id: addClassId || null,
       role: addRole,
-    }));
+      church_id: churchId,
+    });
     if (error) {
       toast("등록 실패: " + error.message, "err");
       return;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 
 const SURNAMES = "김,이,박,최,정,강,조,윤,장,임,한,오,서,신,권,황,안,송,류,홍".split(",");
 const MALE_NAMES = "민준,서준,도윤,예준,시우,하준,주원,지호,지환,준서,건우,현우,성민,재현,승현,태현,동현,정우,진우,영호,상훈,재석,용식,기태,병철,상수,영철,태식,종대,만수".split(",");
@@ -174,7 +174,8 @@ export async function POST() {
     }
 
     const members = buildDemoMembers();
-    const { error } = await supabase.from("members").insert(withChurchId(members as unknown as Record<string, unknown>[]));
+    const rows = (members as unknown as Record<string, unknown>[]).map((row) => ({ ...row, church_id: churchId }));
+    const { error } = await supabase.from("members").insert(rows);
     if (error) throw error;
 
     return NextResponse.json({ ok: true, count: members.length });

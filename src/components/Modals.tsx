@@ -6,7 +6,8 @@ import { getDepts } from "@/lib/store";
 import { CATS_INCOME, CATS_EXPENSE } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
+import { useAppData } from "@/contexts/AppDataContext";
 
 const STATUS_MAP: Record<string, string> = {
   새가족: "badge-blue",
@@ -131,6 +132,7 @@ export function Modals({
   setEditIncId,
   setEditExpId,
 }: ModalsProps) {
+  const { refreshIncome, refreshExpense } = useAppData();
   const depts = getDepts(db);
 
   const [mName, setMName] = useState("");
@@ -575,9 +577,11 @@ export function Modals({
           ),
         }));
         toast("수정 완료", "ok");
+        refreshIncome();
       } else {
         console.log("=== INCOME INSERT 시도 ===", data);
-        const { data: inserted, error } = await supabase.from("income").insert(withChurchId(data)).select();
+        const churchId = getChurchId();
+        const { data: inserted, error } = await supabase.from("income").insert({ ...data, church_id: churchId }).select();
         console.log("=== INCOME INSERT 결과 ===", { data: inserted, error });
         if (error) {
           console.error("=== INCOME DB ERROR ===", error.message, error.details, error.hint);
@@ -591,6 +595,7 @@ export function Modals({
           income: [...prev.income, { ...data, id: newId, donor: data.donor ?? undefined, memo: data.memo ?? undefined }],
         }));
         toast("수입 등록 완료", "ok");
+        refreshIncome();
       }
       setOpenIncomeModal(false);
       setEditIncId(null);
@@ -635,9 +640,11 @@ export function Modals({
           ),
         }));
         toast("수정 완료", "ok");
+        refreshExpense();
       } else {
         console.log("=== EXPENSE INSERT 시도 ===", data);
-        const { data: inserted, error } = await supabase.from("expense").insert(withChurchId(data)).select();
+        const churchId = getChurchId();
+        const { data: inserted, error } = await supabase.from("expense").insert({ ...data, church_id: churchId }).select();
         console.log("=== EXPENSE INSERT 결과 ===", { data: inserted, error });
         if (error) {
           console.error("=== EXPENSE DB ERROR ===", error.message, error.details, error.hint);
@@ -651,6 +658,7 @@ export function Modals({
           expense: [...prev.expense, { ...data, id: newId, item: data.item ?? undefined, resolution: data.resolution ?? undefined, memo: data.memo ?? undefined }],
         }));
         toast("지출 등록 완료", "ok");
+        refreshExpense();
       }
       setOpenExpenseModal(false);
       setEditExpId(null);

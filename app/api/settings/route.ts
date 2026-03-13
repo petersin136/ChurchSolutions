@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 
 /** 서버에서 Service Role로 설정 저장 (PATCH 400/RLS 회피) */
 export async function POST(request: Request) {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const sb = getServiceSupabase();
     const churchId = getChurchId();
 
-    const payload = withChurchId({
+    const payload = {
       church_name: churchName,
       depts,
       fiscal_start: fiscalStart,
@@ -25,7 +25,8 @@ export async function POST(request: Request) {
       address: address || null,
       pastor: pastor || null,
       business_number: businessNumber || null,
-    });
+      church_id: churchId,
+    };
 
     const { data: existing } = await sb.from("settings").select("id").eq("church_id", churchId).limit(1).maybeSingle();
 

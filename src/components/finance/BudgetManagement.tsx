@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 import type { Budget } from "@/types/db";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -160,8 +160,9 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
         setSaving(false);
         return;
       }
+      const churchId = getChurchId();
       const { error: insErr } = await supabase.from("budget").insert(
-        withChurchId(budgetRows.map((row) => ({
+        budgetRows.map((row) => ({
           fiscal_year: row.fiscal_year,
           category_type: row.category_type,
           category: row.category,
@@ -169,7 +170,8 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
           monthly_amounts: row.monthly_amounts,
           annual_total: row.annual_total,
           notes: row.notes,
-        })))
+          church_id: churchId,
+        }))
       );
       if (insErr) {
         toast("저장 실패: " + insErr.message, "err");

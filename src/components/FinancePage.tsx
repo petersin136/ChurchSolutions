@@ -16,7 +16,8 @@ import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import type { DB, Member, Income as DBIncome, Expense as DBExpense } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
+import { useAppData } from "@/contexts/AppDataContext";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -1972,7 +1973,8 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 else acc.push({ category: name, amount: o.amount });
                 return acc;
               }, []);
-            await supabase.from("donation_receipts").insert(withChurchId({
+            const churchId = getChurchId();
+            await supabase.from("donation_receipts").insert({
               member_id: receiptDonor.id,
               member_name: receiptDonor.name,
               receipt_number: receiptNumber ?? `DR-${year}-00001`,
@@ -1983,7 +1985,8 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               church_name: cfg.churchName,
               church_address: cfg.churchAddress || null,
               church_representative: cfg.representativeName || null,
-            }));
+              church_id: churchId,
+            });
           }
         } catch (_) { /* RLS or table 없으면 무시 */ }
       }
@@ -2953,6 +2956,7 @@ const VALID_FINANCE_TABS = new Set(["dashboard", "offering", "givingStatus", "do
 
 /** 설정(교회이름, 소재지, 담임목사, 사업자등록번호)은 재정 영수증에 사용. db.members와 연동해 목양 교인 = 헌금자로 통일 */
 export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (fn: (prev: DB) => DB) => void; settings?: { churchName?: string; address?: string; pastor?: string; businessNumber?: string }; toast?: (msg: string, type?: "ok" | "err" | "warn") => void }) {
+  const { refreshIncome, refreshExpense } = useAppData();
   const mob = useIsMobile();
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window === "undefined") return "dashboard";
@@ -2991,9 +2995,9 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
 
   const onAddIncome = useCallback(async (o: Omit<Offering, "id">) => {
     if (!supabase || !setDb || !db) return null;
-    const row = { date: o.date, type: o.categoryId, amount: o.amount, donor: o.donorName || null, method: o.method || null, memo: o.note || null };
-    const incomePayload = withChurchId(row);
-    console.log("=== [FinancePage] INCOME INSERT 시도 ===", "church_id:", incomePayload.church_id);
+    const churchId = getChurchId();
+    const incomePayload = { date: o.date, type: o.categoryId, amount: o.amount, donor: o.donorName || null, method: o.method || null, memo: o.note || null, church_id: churchId };
+    console.log("=== [FinancePage] INCOME INSERT 시도 ===", "church_id:", churchId);
     const { data, error } = await supabase.from("income").insert(incomePayload).select("id").single();
     console.log("=== [FinancePage] INCOME INSERT 결과 ===", { data, error });
     if (error) {
@@ -3003,8 +3007,9 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     }
     const id = (data as { id: string }).id;
     setOfferings(prev => [...prev, { ...o, id }]);
+    refreshIncome();
     return id;
-  }, [setOfferings]);
+  }, [setOfferings, refreshIncome]);
   const onDeleteIncome = useCallback(async (id: string) => {
     if (!supabase || !setDb) return;
     console.log("=== INCOME DELETE 시도 ===", id);
@@ -3016,12 +3021,13 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
       return;
     }
     setOfferings(prev => prev.filter(o => o.id !== id));
-  }, [setOfferings]);
+    refreshIncome();
+  }, [setOfferings, refreshIncome]);
   const onAddExpense = useCallback(async (e: Omit<Expense, "id">) => {
     if (!supabase || !setDb || !db) return null;
-    const row = { date: e.date, category: e.categoryId, item: e.description || null, amount: e.amount, resolution: e.departmentId || null, memo: e.note || null };
-    const expensePayload = withChurchId(row);
-    console.log("=== [FinancePage] EXPENSE INSERT 시도 ===", "church_id:", expensePayload.church_id);
+    const churchId = getChurchId();
+    const expensePayload = { date: e.date, category: e.categoryId, item: e.description || null, amount: e.amount, resolution: e.departmentId || null, memo: e.note || null, church_id: churchId };
+    console.log("=== [FinancePage] EXPENSE INSERT 시도 ===", "church_id:", churchId);
     const { data, error } = await supabase.from("expense").insert(expensePayload).select("id").single();
     console.log("=== [FinancePage] EXPENSE INSERT 결과 ===", { data, error });
     if (error) {
@@ -3031,8 +3037,9 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     }
     const id = (data as { id: string }).id;
     setExpenses(prev => [...prev, { ...e, id }]);
+    refreshExpense();
     return id;
-  }, [setExpenses]);
+  }, [setExpenses, refreshExpense]);
   const onDeleteExpense = useCallback(async (id: string) => {
     if (!supabase || !setDb) return;
     console.log("=== EXPENSE DELETE 시도 ===", id);
@@ -3044,7 +3051,8 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
       return;
     }
     setExpenses(prev => prev.filter(x => x.id !== id));
-  }, [setExpenses]);
+    refreshExpense();
+  }, [setExpenses, refreshExpense]);
 
   const donors = useMemo(() => {
     if (db?.members != null) {

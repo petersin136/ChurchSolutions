@@ -6,6 +6,7 @@ import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppData } from "@/contexts/AppDataContext";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Heart, Home, Gift } from "lucide-react";
@@ -15,8 +16,10 @@ import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics } from "@/components/attendance";
 import { ReportModal } from "@/components/report/ReportModal";
+import { REPORT_DEFS, ReportPreviewModal, type ReportId } from "@/components/report/A4Reports";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { ServantSchoolManager } from "@/components/settling/ServantSchoolManager";
+import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNoteModal";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -54,8 +57,15 @@ const MEMBER_STATUS_LIST: (string | null)[] = ["활동", "휴적", "은퇴", "�
 const ROLES_LIST = ["담임목사", "부목사", "전도사", "장로", "안수집사", "권사", "집사", "성도", "청년", "학생"];
 const BAPTISM_LIST = ["유아세례", "세례", "입교", "미세례"];
 const NOTE_ICON_SIZE = 12;
-const NOTE_ICONS: Record<string, ReactNode> = { memo: <FileText size={NOTE_ICON_SIZE} />, prayer: <Heart size={NOTE_ICON_SIZE} />, visit: <Home size={NOTE_ICON_SIZE} />, event: <Gift size={NOTE_ICON_SIZE} /> };
+const NOTE_ICONS: Record<string, ReactNode> = {
+  memo: <FileText size={NOTE_ICON_SIZE} strokeWidth={1.5} className="text-gray-400" />,
+  prayer: <Heart size={NOTE_ICON_SIZE} strokeWidth={1.5} className="text-gray-400" />,
+  visit: <Home size={NOTE_ICON_SIZE} strokeWidth={1.5} className="text-gray-400" />,
+  event: <Gift size={NOTE_ICON_SIZE} strokeWidth={1.5} className="text-gray-400" />,
+};
 const NOTE_LABELS: Record<string, string> = { memo: "메모", prayer: "기도", visit: "심방", event: "경조사" };
+/** 기도 추가 모달에서 "전체" 대상일 때 저장하는 notes 키 */
+const NOTE_TARGET_CHURCH = "__church__";
 
 /* ---------- Colors (same as FinancePage) ---------- */
 const C = {
@@ -438,7 +448,14 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: 
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: "#1F2937" }}>{mbrName ?? "?"}</span>
+          {mbrName != null && mbrName !== "" ? (
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#1F2937" }}>{mbrName}</span>
+          ) : (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, color: "#9CA3AF" }}>
+              {n.type === "prayer" ? <Heart size={16} strokeWidth={1.5} style={{ flexShrink: 0, color: "#9CA3AF" }} /> : <FileText size={16} strokeWidth={1.5} style={{ flexShrink: 0, color: "#9CA3AF" }} />}
+              {NOTE_LABELS[n.type] || "메모"}
+            </span>
+          )}
           {mbrDept && (
             <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#EEF2FF", color: "#4F46E5" }}>
               {mbrDept}
@@ -654,7 +671,8 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
     const all: (Note & { mbrName: string; mbrId: string; mbrDept: string })[] = [];
     Object.keys(db.notes).forEach(mid => {
       const mbr = db.members.find(x => x.id === mid);
-      (db.notes[mid] || []).forEach(n => all.push({ ...n, mbrName: mbr?.name || "?", mbrId: mid, mbrDept: mbr?.dept || "" }));
+      const mbrName = mid === NOTE_TARGET_CHURCH ? "교회 전체" : (mbr?.name || "?");
+      (db.notes[mid] || []).forEach(n => all.push({ ...n, mbrName, mbrId: mid, mbrDept: mbr?.dept || "" }));
     });
     return all.sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 6);
   }, [db]);
@@ -821,10 +839,11 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 /* ====== Members ====== */
 const ROLE_PRIORITY: Record<string, number> = { "장로": 0, "안수집사": 1, "권사": 2, "집사": 3, "청년": 4, "성도": 5, "학생": 6, "새가족": 7, "영아": 8 };
 
-function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, detailId, deleteMembers, churchId }: {
+function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, openQuickNote, detailId, deleteMembers, churchId }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
   toast: (m: string, t?: string) => void; currentWeek: number;
   openMemberModal: (id?: string) => void; openDetail: (id: string) => void; openNoteModal: (id: string) => void;
+  openQuickNote: (memberId: string, memberName: string, type: "note" | "prayer") => void;
   detailId: string | null; deleteMembers: (ids: string[]) => void;
   churchId: string | null;
 }) {
@@ -848,15 +867,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const PAGE_SIZE_MEM = 10;
   const depts = getDepts(db);
 
-  /* 성도 목록: churchId 없으면 쿼리하지 않음. churchId가 준비되면 그때 로드. */
+  /* 성도 목록: churchId 없으면 쿼리하지 않음. churchId가 준비되면 그때 로드. (setDb는 ref로 넣어 의존성에서 제외해 불필요한 재실행 방지) */
+  const setDbRef = useRef(setDb);
+  setDbRef.current = setDb;
   useEffect(() => {
-    console.log("[PastoralPage/MembersSub] useEffect 실행 - churchId:", churchId);
-    if (!churchId) {
-      console.log("[PastoralPage/MembersSub] churchId 없음, 리턴");
-      return;
-    }
-    if (!supabase) return;
-    console.log("[PastoralPage/MembersSub] 성도 데이터 fetch 시작");
+    if (!churchId || !supabase) return;
     supabase
       .from("members")
       .select("*")
@@ -868,9 +883,9 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
           return;
         }
         const members = (data ?? []).map((r) => toMember(r as Record<string, unknown>));
-        setDb((prev) => ({ ...prev, members }));
+        setDbRef.current((prev) => ({ ...prev, members }));
       });
-  }, [churchId, setDb]);
+  }, [churchId]);
 
   useEffect(() => {
     if (!printOpen) return;
@@ -1141,9 +1156,12 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                   ) : pageListMembers.map(m => {
                     const ws = (db.attendance[m.id] || {})[currentWeek] || "n";
                     const notes = (db.notes[m.id] || []).slice().reverse();
-                    const lastNote = notes[0];
+                    const lastMemo = notes.find(n => n.type === "memo");
+                    const lastPrayerNote = notes.find(n => n.type === "prayer");
                     const lastVisit = notes.find(n => n.type === "visit");
-                    const prayerSnip = m.prayer ? (m.prayer.length > 24 ? m.prayer.substring(0, 24) + "…" : m.prayer) : "-";
+                    const prayerPreview = m.prayer || lastPrayerNote?.content || "";
+                    const prayerSnip = prayerPreview ? (prayerPreview.length > 15 ? prayerPreview.substring(0, 15) + "…" : prayerPreview) : "";
+                    const memoSnip = lastMemo?.content ? (lastMemo.content.length > 15 ? lastMemo.content.substring(0, 15) + "…" : lastMemo.content) : "";
                     return (
                       <tr key={m.id} onClick={() => openDetail(m.id)} style={{ cursor: "pointer", borderBottom: `1px solid ${C.borderLight}`, transition: "background 0.1s" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.bg; }}
@@ -1162,10 +1180,10 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                         <td style={{ padding: "12px 16px" }}><SBadge variant="gray">{m.dept || "-"}</SBadge></td>
                         <td style={{ padding: "12px 16px", whiteSpace: "nowrap", fontSize: 13 }}>{(m.mokjang ?? m.group) || "-"}</td>
                         <td style={{ padding: "12px 16px" }}><AttDot status={ws} onClick={() => cycleAtt(m.id)} /></td>
-                        <td style={{ padding: "12px 16px", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, color: C.purple }}>{prayerSnip}</td>
+                        <td style={{ padding: "12px 16px", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, color: C.purple, cursor: "pointer" }} onClick={e => { e.stopPropagation(); openQuickNote(m.id, m.name || "?", "prayer"); }}>{prayerSnip || <span style={{ color: C.textFaint, fontSize: 12 }}>+ 추가</span>}</td>
                         <td style={{ padding: "12px 16px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 12)}…` : "-"}</td>
-                        <td style={{ padding: "12px 16px" }}>
-                          {lastNote ? <SBadge variant={lastNote.type === "prayer" ? "purple" : "gray"}><span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>{NOTE_ICONS[lastNote.type] ?? <FileText size={NOTE_ICON_SIZE} />} {lastNote.content.substring(0, 12)}…</span></SBadge> : <span style={{ color: C.textFaint, fontSize: 12 }}>-</span>}
+                        <td style={{ padding: "12px 16px" }} onClick={e => e.stopPropagation()}>
+                          {memoSnip ? <button type="button" onClick={() => openQuickNote(m.id, m.name || "?", "note")} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, color: C.text, textAlign: "left", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{NOTE_ICONS.memo} {memoSnip}</button> : <button type="button" onClick={() => openQuickNote(m.id, m.name || "?", "note")} style={{ color: C.textFaint, fontSize: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}>+ 추가</button>}
                         </td>
                         <td style={{ padding: "12px 16px" }}><Btn variant="soft" size="sm" icon={<FileText size={14} />} onClick={(e) => { e?.stopPropagation(); openNoteModal(m.id); }} /></td>
                       </tr>
@@ -1511,11 +1529,12 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
     // 타임라인 기록 (db.notes)
     Object.keys(db.notes).forEach(mid => {
       const mbr = db.members.find(x => x.id === mid);
+      const mbrName = mid === NOTE_TARGET_CHURCH ? "교회 전체" : (mbr?.name || "?");
       (db.notes[mid] || []).forEach(n => {
         const key = `${mid}|${n.date}|${n.type}|${n.content}`;
         if (seen.has(key)) return;
         seen.add(key);
-        a.push({ ...n, mbrName: mbr?.name || "?", mbrId: mid, mbrDept: mbr?.dept || "" });
+        a.push({ ...n, mbrName, mbrId: mid, mbrDept: mbr?.dept || "" });
       });
     });
     // 성도 프로필 기도제목(m.prayer) — 기록으로 추가한 적 없어도 기도/메모 탭에 표시
@@ -2343,256 +2362,64 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
 }
 
 /* ====== Reports ====== */
-function ReportsSub({ db, currentWeek, toast }: { db: DB; currentWeek: number; toast: (m: string, t?: string) => void }) {
+function ReportsSub({ db, currentWeek, toast, churchId }: { db: DB; currentWeek: number; toast: (m: string, t?: string) => void; churchId: string | null }) {
   const mob = useIsMobile();
-  const [activeReport, setActiveReport] = useState<string | null>(null);
-
-  const answeredSet = useMemo(() => new Set(db.answeredPrayerKeys || []), [db.answeredPrayerKeys]);
-
-  /* ── 1. 성도 명단 ── */
-  const membersCols: RCol[] = useMemo(() => [
-    { key: "name", label: "이름", width: 80, excelWidth: 12 },
-    { key: "dept", label: "구역", width: 60, align: "center", excelWidth: 8 },
-    { key: "role", label: "직분", width: 60, align: "center", excelWidth: 8 },
-    { key: "gender", label: "성별", width: 50, align: "center", excelWidth: 6 },
-    { key: "birth", label: "생년월일", width: 100, align: "center", excelWidth: 14 },
-    { key: "phone", label: "연락처", width: 120, excelWidth: 16 },
-    { key: "address", label: "주소", excelWidth: 30 },
-    { key: "family", label: "가족관계", width: 80, excelWidth: 12 },
-    { key: "mokjang", label: "목장/소속", width: 80, align: "center", excelWidth: 10 },
-    { key: "prayer", label: "기도제목", width: 120, excelWidth: 40 },
-    { key: "memo", label: "비고", width: 80, excelWidth: 15 },
-  ], []);
-  const membersData = useMemo(() => db.members.map(m => ({
-    name: m.name, dept: m.dept || "", role: m.role || "", gender: m.gender || "",
-    birth: m.birth || "", phone: m.phone || "", address: m.address || "",
-    family: m.family || "", mokjang: (m.mokjang ?? m.group) || "", prayer: m.prayer || "", memo: m.memo || "",
-  })), [db.members]);
-
-  /* ── 2. 출석 현황 ── */
-  const recentSundays = useMemo(() => {
-    const out: string[] = [];
-    const d = new Date();
-    for (let i = 0; i < 8; i++) {
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? 0 : -7);
-      const sun = new Date(d); sun.setDate(diff - i * 7);
-      out.unshift(sun.toISOString().slice(0, 10));
-    }
-    return out;
-  }, []);
-  const attCols: RCol[] = useMemo(() => [
-    { key: "name", label: "이름", width: 80, excelWidth: 12 },
-    { key: "mokjang", label: "목장/소속", width: 80, align: "center", excelWidth: 10 },
-    ...recentSundays.map(d => ({
-      key: `w_${d}`, label: d.slice(5), width: 60, align: "center" as const, excelWidth: 6,
-      render: (v: unknown) => {
-        if (v === "✓") return <span style={{ color: "#10B981", fontWeight: 600 }}>✓</span>;
-        if (v === "✗") return <span style={{ color: "#EF4444", fontWeight: 600 }}>✗</span>;
-        return <span style={{ color: "#D1D5DB" }}>—</span>;
-      },
-    })),
-    { key: "rate", label: "출석률", width: 70, align: "right", excelWidth: 10 },
-    { key: "status", label: "상태", width: 60, align: "center", excelWidth: 8 },
-  ], [recentSundays]);
-  const attData = useMemo(() => {
-    const active = db.members.filter(m => (m.member_status || m.status) !== "졸업/전출");
-    return active.map(m => {
-      const att = db.attendance[m.id] || {};
-      const weekEntries: Record<string, string> = {};
-      let present = 0;
-      recentSundays.forEach(d => {
-        const wn = getWeekFromDate(d);
-        const s = att[wn] as string | undefined;
-        weekEntries[`w_${d}`] = s === "p" || s === "o" ? "✓" : s === "a" ? "✗" : "";
-        if (s === "p" || s === "o") present++;
-      });
-      const rate = recentSundays.length > 0 ? `${Math.round(present / recentSundays.length * 100)}%` : "—";
-      return { name: m.name, mokjang: (m.mokjang ?? m.group) || "", ...weekEntries, rate, status: m.member_status || m.status || "" };
-    });
-  }, [db, recentSundays]);
-
-  /* ── 3. 기도제목 목록 ── */
-  const prayerCols: RCol[] = useMemo(() => [
-    { key: "name", label: "이름", width: 80, excelWidth: 12 },
-    { key: "dept", label: "구역", width: 60, align: "center", excelWidth: 8 },
-    { key: "content", label: "기도제목", excelWidth: 40 },
-    { key: "date", label: "등록일", width: 100, align: "center", excelWidth: 14 },
-    { key: "answered", label: "응답상태", width: 80, align: "center", excelWidth: 10,
-      render: (v: unknown) => {
-        if (v === "응답완료") return <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#ECFDF5", color: "#059669" }}>응답완료</span>;
-        return <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#EFF6FF", color: "#2563EB" }}>기도중</span>;
-      }
-    },
-  ], []);
-  const prayerData = useMemo(() => {
-    const rows: Record<string, unknown>[] = [];
-    Object.keys(db.notes).forEach(mid => {
-      const mbr = db.members.find(x => x.id === mid);
-      (db.notes[mid] || []).filter(n => n.type === "prayer").forEach(n => {
-        const key = `note\t${mid}\t${n.date}\t${n.createdAt || n.date}\t${n.content}`;
-        rows.push({
-          name: mbr?.name || "", dept: mbr?.dept || "", content: n.content,
-          date: n.date, answered: answeredSet.has(key) ? "응답완료" : "기도중",
-        });
-      });
-    });
-    db.members.forEach(m => {
-      if (!m.prayer?.trim()) return;
-      const already = (db.notes[m.id] || []).some(n => n.type === "prayer" && n.content === m.prayer);
-      if (already) return;
-      rows.push({ name: m.name, dept: m.dept || "", content: m.prayer, date: m.createdAt?.slice(0, 10) || "", answered: "기도중" });
-    });
-    return rows.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
-  }, [db, answeredSet]);
-
-  /* ── 4. 메모/기록 전체 ── */
-  const notesCols: RCol[] = useMemo(() => [
-    { key: "date", label: "날짜", width: 100, align: "center", excelWidth: 14 },
-    { key: "name", label: "이름", width: 80, excelWidth: 12 },
-    { key: "type", label: "유형", width: 60, align: "center", excelWidth: 8 },
-    { key: "dept", label: "부서", width: 60, align: "center", excelWidth: 8 },
-    { key: "content", label: "내용", excelWidth: 40 },
-  ], []);
-  const notesData = useMemo(() => {
-    const rows: Record<string, unknown>[] = [];
-    Object.keys(db.notes).forEach(mid => {
-      const mbr = db.members.find(x => x.id === mid);
-      (db.notes[mid] || []).forEach(n => {
-        rows.push({ date: n.date, name: mbr?.name || "", type: NOTE_LABELS[n.type] || "메모", dept: mbr?.dept || "", content: n.content });
-      });
-    });
-    return rows.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
-  }, [db]);
-
-  /* ── 5. 새가족 현황 ── */
-  const nfCols: RCol[] = useMemo(() => [
-    { key: "name", label: "이름", width: 80, excelWidth: 12 },
-    { key: "date", label: "등록일", width: 100, align: "center", excelWidth: 14 },
-    { key: "source", label: "구분", width: 60, align: "center", excelWidth: 10 },
-    { key: "w1", label: "1주", width: 50, align: "center", excelWidth: 6, render: renderCheck },
-    { key: "w2", label: "2주", width: 50, align: "center", excelWidth: 6, render: renderCheck },
-    { key: "w3", label: "3주", width: 50, align: "center", excelWidth: 6, render: renderCheck },
-    { key: "w4", label: "4주", width: 50, align: "center", excelWidth: 6, render: renderCheck },
-    { key: "graduated", label: "수료", width: 60, align: "center", excelWidth: 10,
-      render: (v: unknown) => v === "수료"
-        ? <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: "#ECFDF5", color: "#059669" }}>수료</span>
-        : <span style={{ color: "#D1D5DB" }}>—</span>,
-    },
-    { key: "status", label: "상태", width: 70, align: "center", excelWidth: 10 },
-  ], []);
-  const nfData = useMemo(() => {
-    return db.members.filter(m => m.is_new_family === true).map(m => {
-      const prg = (db.newFamilyPrograms || []).find(p => p.member_id === m.id);
-      return {
-        name: m.name,
-        date: m.first_visit_date || m.firstVisitDate || m.createdAt?.slice(0, 10) || "",
-        source: m.visit_path || m.visitPath || m.source || "",
-        w1: prg?.week1_completed ? "✓" : "",
-        w2: prg?.week2_completed ? "✓" : "",
-        w3: prg?.week3_completed ? "✓" : "",
-        w4: prg?.week4_completed ? "✓" : "",
-        graduated: prg?.week1_completed && prg?.week2_completed && prg?.week3_completed && prg?.week4_completed ? "수료" : "",
-        status: prg?.status || "",
-      };
-    });
-  }, [db]);
-
-  /* ── 6. 목양 종합 보고서 ── */
-  const fullCols: RCol[] = useMemo(() => [
-    { key: "item", label: "항목", width: 150, excelWidth: 20 },
-    { key: "value", label: "수치", width: 100, align: "right", excelWidth: 10 },
-    { key: "diff", label: "전주 대비", width: 80, align: "center", excelWidth: 10,
-      render: (v: unknown) => {
-        const s = String(v || "");
-        if (s.startsWith("▲")) return <span style={{ color: "#10B981", fontWeight: 600 }}>{s}</span>;
-        if (s.startsWith("▼")) return <span style={{ color: "#EF4444", fontWeight: 600 }}>{s}</span>;
-        return <span style={{ color: "#6B7280" }}>{s || "—"}</span>;
-      },
-    },
-    { key: "note", label: "비고", excelWidth: 30 },
-  ], []);
-  const fullData = useMemo(() => {
-    const m = db.members.filter(x => (x.member_status || x.status) !== "졸업/전출");
-    const attNow = m.filter(s => { const st = (db.attendance[s.id] || {})[currentWeek]; return st === "p" || st === "o"; }).length;
-    const attPrev = m.filter(s => { const st = (db.attendance[s.id] || {})[currentWeek - 1]; return st === "p" || st === "o"; }).length;
-    const diff = attNow - attPrev;
-    const nf = m.filter(s => s.is_new_family === true).length;
-    const dc: Record<string, number> = {};
-    m.forEach(s => { dc[s.dept || "미분류"] = (dc[s.dept || "미분류"] || 0) + 1; });
-    const prayerCount = Object.values(db.notes).flat().filter(n => n.type === "prayer").length;
-    const rows: Record<string, unknown>[] = [
-      { item: "전체 성도", value: `${m.length}명`, diff: "", note: "" },
-      { item: "금주 출석", value: `${attNow}명`, diff: diff > 0 ? `▲ ${diff}명` : diff < 0 ? `▼ ${Math.abs(diff)}명` : "— 동일", note: `${m.length > 0 ? Math.round(attNow / m.length * 100) : 0}%` },
-      { item: "새가족", value: `${nf}명`, diff: "", note: "" },
-      { item: "기도제목", value: `${prayerCount}건`, diff: "", note: "" },
-    ];
-    Object.entries(dc).forEach(([d, c]) => rows.push({ item: `부서: ${d}`, value: `${c}명`, diff: "", note: "" }));
-    return rows;
-  }, [db, currentWeek]);
-
-  type RCol = { key: string; label: string; width?: number; align?: "left" | "center" | "right"; excelWidth?: number; render?: (v: unknown, row: Record<string, unknown>, i: number) => React.ReactNode };
-
-  const reportDefs = useMemo(() => [
-    { id: "members", Icon: Users, title: "성도 명단", desc: "전체 성도 정보", columns: membersCols, data: membersData, filename: `성도명단_${todayStr()}.xlsx` },
-    { id: "attendance", Icon: CalendarCheck, title: "출석 현황", desc: "최근 8주 출석 기록", columns: attCols, data: attData, filename: `출석현황_${todayStr()}.xlsx` },
-    { id: "prayers", Icon: Heart, title: "기도제목 목록", desc: "전 성도 기도제목", columns: prayerCols, data: prayerData, filename: `기도제목_${todayStr()}.xlsx` },
-    { id: "notes", Icon: FileText, title: "메모/기록 전체", desc: "메모, 심방, 경조사 기록", columns: notesCols, data: notesData, filename: `기록전체_${todayStr()}.xlsx` },
-    { id: "newfamily", Icon: Sprout, title: "새가족 현황", desc: "새가족 4주 트래킹", columns: nfCols, data: nfData, filename: `새가족현황_${todayStr()}.xlsx` },
-    { id: "full", Icon: BarChart3, title: "목양 종합 보고서", desc: "당회 제출용 종합 보고서", columns: fullCols, data: fullData, filename: `목양종합보고서_${todayStr()}.xlsx` },
-  ], [membersCols, membersData, attCols, attData, prayerCols, prayerData, notesCols, notesData, nfCols, nfData, fullCols, fullData]);
-
-  const active = activeReport ? reportDefs.find(r => r.id === activeReport) : null;
-
-  const handleDownload = async () => {
-    if (!active) return;
-    const { downloadExcel } = await import("@/components/report/excelExport");
-    await downloadExcel(active.title, active.columns, active.data, active.filename);
-    toast("엑셀 다운로드 완료", "ok");
-  };
+  const [selectedReport, setSelectedReport] = useState<ReportId | null>(null);
+  const churchName = db.settings?.churchName || "교회";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <Card><p style={{ margin: 0, color: C.textMuted, fontSize: mob ? 13 : 14 }}>보고서를 클릭하면 미리보기가 열립니다. 엑셀 다운로드는 뷰어에서 받을 수 있습니다.</p></Card>
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fit, minmax(280px, 1fr))", gap: mob ? 10 : 16 }}>
-        {reportDefs.map((r) => (
-          <Card key={r.id} onClick={() => setActiveReport(r.id)} style={{ cursor: "pointer", transition: "all 0.2s" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: mob ? 12 : 16 }}>
-              <div style={{ width: mob ? 42 : 52, height: mob ? 42 : 52, borderRadius: 12, background: "rgba(27,42,74,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <r.Icon size={24} strokeWidth={1.8} style={{ color: C.navy }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 700, color: C.navy, fontSize: mob ? 14 : 16, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</div><div style={{ fontSize: mob ? 12 : 13, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</div></div>
-              <div style={{ color: C.textMuted, flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 500 }}>
-                <span>{r.data.length}건</span>
-                <Icons.Export />
-              </div>
-            </div>
-          </Card>
+      {/* Header */}
+      <div style={{ marginBottom: mob ? 4 : 8 }}>
+        <h2 style={{ fontSize: mob ? 18 : 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>보고서</h2>
+        <p style={{ fontSize: mob ? 12 : 13, color: C.textMuted, margin: 0 }}>
+          보고서를 선택하면 A4 미리보기가 표시됩니다. PDF로 다운로드하거나 인쇄할 수 있습니다.
+        </p>
+      </div>
+
+      {/* Report Card Grid */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill, minmax(220px, 1fr))",
+        gap: mob ? 10 : 16,
+      }}>
+        {REPORT_DEFS.map(report => (
+          <button
+            key={report.id}
+            onClick={() => setSelectedReport(report.id)}
+            style={{
+              display: "flex", flexDirection: "column", alignItems: "flex-start",
+              padding: mob ? 16 : 20,
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              borderRadius: 12,
+              cursor: "pointer",
+              textAlign: "left",
+              minHeight: mob ? 100 : 120,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "#9ca3af"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.08)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
+          >
+            <report.Icon size={22} strokeWidth={1.5} color="#9ca3af" style={{ marginBottom: 12 }} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 4 }}>{report.title}</span>
+            <span style={{ fontSize: 12, color: "#6b7280" }}>{report.description}</span>
+          </button>
         ))}
       </div>
 
-      {active && (
-        <ReportModal
-          title={active.title}
-          columns={active.columns}
-          data={active.data}
-          onClose={() => setActiveReport(null)}
-          onDownloadExcel={handleDownload}
+      {/* A4 Preview Modal */}
+      {selectedReport && (
+        <ReportPreviewModal
+          reportId={selectedReport}
+          db={db}
+          churchName={churchName}
+          churchId={churchId || ""}
+          onClose={() => setSelectedReport(null)}
         />
       )}
     </div>
   );
-}
-
-function renderCheck(v: unknown) {
-  if (v === "✓") return <span style={{ color: "#10B981", fontWeight: 600 }}>✓</span>;
-  return <span style={{ color: "#D1D5DB" }}>—</span>;
-}
-
-function getWeekFromDate(dateStr: string): number {
-  const d = new Date(dateStr);
-  const jan1 = new Date(d.getFullYear(), 0, 1);
-  return Math.ceil(((d.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7);
 }
 
 /* ====== Settings (목장그룹관리: 목양 탭 전용, 교회 전체 설정 제외) ====== */
@@ -2804,6 +2631,7 @@ const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", 
 
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const { churchId } = useAuth();
+  const { refreshMembers, refreshNotes, refreshAttendance, refreshVisits, refreshNewFamilyPrograms } = useAppData();
   const mob = useIsMobile();
   const [activeSub, setActiveSubState] = useState<SubPage>(() => {
     if (typeof window === "undefined") return "dashboard";
@@ -2826,6 +2654,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
   const [prayerModalMemberId, setPrayerModalMemberId] = useState<string | null>(null);
+  const [quickNoteOpen, setQuickNoteOpen] = useState(false);
+  const [quickNoteMemberId, setQuickNoteMemberId] = useState("");
+  const [quickNoteMemberName, setQuickNoteMemberName] = useState("");
+  const [quickNoteType, setQuickNoteType] = useState<"note" | "prayer">("note");
 
   // Member form
   const [fName, setFName] = useState(""); const [fDept, setFDept] = useState(""); const [fRole, setFRole] = useState("");
@@ -2838,9 +2670,13 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const photoRef = useRef<HTMLInputElement>(null);
 
   // Note form
-  const [nDate, setNDate] = useState(todayStr()); const [nType, setNType] = useState<Note["type"]>("prayer"); const [nContent, setNContent] = useState(""); const [nMbrSelect, setNMbrSelect] = useState("");
-  const [noteFilterBy, setNoteFilterBy] = useState<"all" | "group" | "dept">("all");
-  const [noteFilterValue, setNoteFilterValue] = useState("");
+  const [nDate, setNDate] = useState(todayStr()); const [nType, setNType] = useState<Note["type"]>("prayer"); const [nContent, setNContent] = useState("");
+  const [noteTargetType, setNoteTargetType] = useState<"all" | "individual">("all");
+  const [noteSelectedMemberId, setNoteSelectedMemberId] = useState("");
+  const [noteMemberSearchText, setNoteMemberSearchText] = useState("");
+  const [noteMemberDropdownOpen, setNoteMemberDropdownOpen] = useState(false);
+  const [memberDeptMap, setMemberDeptMap] = useState<Record<string, string>>({});
+  const noteMemberDropdownRef = useRef<HTMLDivElement>(null);
 
   // 출결 Phase 3: 예배별 출결
   type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "weekly";
@@ -3053,6 +2889,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           job: insertData.job ?? undefined, first_visit_date: insertData.first_visit_date ?? undefined,
         };
         setDb(prev => ({ ...prev, members: prev.members.map(m => m.id === editMbrId ? { ...m, ...dataMerged } : m) }));
+        refreshMembers();
         toast("수정 완료", "ok");
       } else {
         const insertPayload = { ...insertData, church_id: churchId };
@@ -3109,6 +2946,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           }
           return next;
         });
+        refreshMembers();
         toast("등록 완료", "ok");
       }
       setShowMemberModal(false);
@@ -3140,6 +2978,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       saveDb?.(next).catch(() => toast("저장 실패", "err"));
       return next;
     });
+    refreshMembers();
     setShowDetailModal(false);
     setProgramDetailMemberId(null);
     toast("삭제 완료", "warn");
@@ -3162,35 +3001,84 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       saveDb?.(next).catch(() => toast("저장 실패", "err"));
       return next;
     });
+    refreshMembers();
     setShowDetailModal(false);
     setDetailId(null);
     setProgramDetailMemberId(null);
     toast(`선택한 ${ids.length}명이 삭제되었습니다`, "warn");
   };
 
+  const openQuickNote = useCallback((memberId: string, memberName: string, type: "note" | "prayer") => {
+    setQuickNoteMemberId(memberId);
+    setQuickNoteMemberName(memberName);
+    setQuickNoteType(type);
+    setQuickNoteOpen(true);
+  }, []);
+
+  const handleQuickNoteSaved = useCallback((memberId: string, type: "memo" | "prayer", items: QuickNoteItem[], latestPrayerContent?: string) => {
+    setDb(prev => {
+      const notes = { ...prev.notes };
+      const current = notes[memberId] || [];
+      const others = current.filter(n => n.type !== type);
+      const merged = [...others, ...items.map(it => ({ date: it.date, type, content: it.content, createdAt: it.created_at }))];
+      notes[memberId] = merged;
+      let members = prev.members;
+      if (type === "prayer" && latestPrayerContent !== undefined) {
+        members = members.map(m => m.id === memberId ? { ...m, prayer: latestPrayerContent } : m);
+      }
+      return { ...prev, notes, members };
+    });
+  }, [setDb]);
+
   const openNoteModal = useCallback((id?: string) => {
     setNoteTargetId(id || null);
-    setNMbrSelect(id || db.members[0]?.id || "");
     setNDate(todayStr()); setNType("prayer"); setNContent("");
-    if (id) {
-      const m = db.members.find(x => x.id === id);
-      if ((m?.mokjang ?? m?.group)) { setNoteFilterBy("group"); setNoteFilterValue((m.mokjang ?? m.group) || ""); }
-      else if (m?.dept) { setNoteFilterBy("dept"); setNoteFilterValue(m.dept); }
-      else { setNoteFilterBy("all"); setNoteFilterValue(""); }
-    } else { setNoteFilterBy("all"); setNoteFilterValue(""); }
+    setNoteTargetType(id ? "individual" : "all");
+    setNoteSelectedMemberId(id || "");
+    setNoteMemberSearchText("");
+    setNoteMemberDropdownOpen(false);
     setShowNoteModal(true);
-  }, [db.members]);
+  }, []);
+
+  useEffect(() => {
+    if (!showNoteModal || !churchId || !supabase) return;
+    (async () => {
+      const { data: enrollments } = await supabase.from("school_enrollments").select("member_id, department_id").eq("church_id", churchId).eq("is_active", true);
+      const deptIds = Array.from(new Set((enrollments ?? []).map((e: { department_id?: string }) => e.department_id).filter(Boolean))) as string[];
+      if (deptIds.length === 0) {
+        setMemberDeptMap({});
+        return;
+      }
+      const { data: depts } = await supabase.from("school_departments").select("id, name").in("id", deptIds);
+      const deptById: Record<string, string> = {};
+      (depts ?? []).forEach((d: { id: string; name: string }) => { deptById[d.id] = d.name; });
+      const map: Record<string, string> = {};
+      (enrollments ?? []).forEach((e: { member_id: string; department_id?: string }) => {
+        if (e.department_id && deptById[e.department_id]) map[e.member_id] = deptById[e.department_id];
+      });
+      setMemberDeptMap(map);
+    })();
+  }, [showNoteModal, churchId]);
+
+  useEffect(() => {
+    if (!noteMemberDropdownOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (noteMemberDropdownRef.current && !noteMemberDropdownRef.current.contains(e.target as Node)) setNoteMemberDropdownOpen(false);
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [noteMemberDropdownOpen]);
 
   const saveNote = () => {
-    const mid = nMbrSelect || noteTargetId;
+    const mid: string = noteTargetType === "all" ? NOTE_TARGET_CHURCH : (noteSelectedMemberId || noteTargetId || "");
     if (!nContent.trim()) { toast("내용을 입력하세요", "err"); return; }
-    if (!mid) { toast("성도를 선택하세요", "err"); return; }
+    if (noteTargetType === "individual" && !mid) { toast("성도를 선택하세요", "err"); return; }
     setDb(prev => {
       const notes = { ...prev.notes };
       if (!notes[mid]) notes[mid] = [];
       notes[mid] = [...notes[mid], { date: nDate, type: nType, content: nContent.trim(), createdAt: new Date().toISOString() }];
       let members = prev.members;
-      if (nType === "prayer") { members = members.map(m => m.id === mid ? { ...m, prayer: nContent.trim() } : m); }
+      if (nType === "prayer" && mid !== NOTE_TARGET_CHURCH) { members = members.map(m => m.id === mid ? { ...m, prayer: nContent.trim() } : m); }
       return { ...prev, notes, members };
     });
     setShowNoteModal(false); toast("기록 저장 완료", "ok");
@@ -3258,7 +3146,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       SidebarIcon={Church}
     >
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} />}
-          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} detailId={detailId} deleteMembers={deleteMembers} churchId={churchId} />}
+          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} detailId={detailId} deleteMembers={deleteMembers} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
@@ -3333,7 +3221,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           )}
           {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openPrayerModal={openPrayerModal} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
-          {activeSub === "reports" && <ReportsSub db={db} currentWeek={currentWeek} toast={toast} />}
+          {activeSub === "reports" && <ReportsSub db={db} currentWeek={currentWeek} toast={toast} churchId={churchId} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} mokjangOnly />}
     </UnifiedPageLayout>
 
@@ -3419,12 +3307,17 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
             ]} />
           </div>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
-          {(fStatus === "새가족" || fStatus === "정착중") && <CalendarDropdown label="첫 방문일" value={fFirstVisitDate} onChange={setFFirstVisitDate} />}
-          <div style={!mob && (fStatus !== "새가족" && fStatus !== "정착중") ? { gridColumn: "1 / -1" } : undefined}>
-            <FormTextarea label="특이사항 메모" value={fMemo} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFMemo(e.target.value)} placeholder="직업, 사업장 개업, 병원치료, 가정문제, 진학·취업 등 특이사항" />
+        {(fStatus === "새가족" || fStatus === "정착중") && (
+          <div style={{ marginBottom: 12 }}>
+            <CalendarDropdown label="첫 방문일" value={fFirstVisitDate} onChange={setFFirstVisitDate} />
           </div>
-        </div>
+        )}
+        {editMbrId && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <Btn variant="soft" size="sm" onClick={() => { const m = db.members.find(x => x.id === editMbrId); if (m) openQuickNote(m.id, m.name || "?", "note"); }}>메모 보기</Btn>
+            <Btn variant="soft" size="sm" onClick={() => { const m = db.members.find(x => x.id === editMbrId); if (m) openQuickNote(m.id, m.name || "?", "prayer"); }}>기도 제목 보기</Btn>
+          </div>
+        )}
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
           <Btn variant="ghost" onClick={closeMemberModal}>취소</Btn>
           <Btn onClick={saveMember}>저장</Btn>
@@ -3466,6 +3359,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
             />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
               <Btn variant="danger" size="sm" onClick={() => detailMember && deleteMember(detailMember.id)}>삭제</Btn>
+              <Btn variant="soft" size="sm" onClick={() => detailMember && openQuickNote(detailMember.id, detailMember.name || "?", "note")}>메모</Btn>
+              <Btn variant="soft" size="sm" onClick={() => detailMember && openQuickNote(detailMember.id, detailMember.name || "?", "prayer")}>기도 제목</Btn>
               <Btn variant="accent" size="sm" onClick={() => { detailMember && openNoteModal(detailMember.id); setShowDetailModal(false); }}>기도 추가</Btn>
             </div>
           </div>
@@ -3474,50 +3369,35 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
       {/* Note Modal */}
       <Modal open={showNoteModal} onClose={() => setShowNoteModal(false)} title={noteTargetId ? (db.members.find(x => x.id === noteTargetId)?.name || "") + " — 기도 추가" : "기도 추가"} width={500}>
-        {(() => {
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>대상</label>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => setNoteTargetType("all")} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${noteTargetType === "all" ? C.navy : C.border}`, background: noteTargetType === "all" ? C.navy : "#fff", color: noteTargetType === "all" ? "#fff" : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>전체</button>
+            <button type="button" onClick={() => setNoteTargetType("individual")} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${noteTargetType === "individual" ? C.navy : C.border}`, background: noteTargetType === "individual" ? C.navy : "#fff", color: noteTargetType === "individual" ? "#fff" : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>개인</button>
+          </div>
+        </div>
+        {noteTargetType === "individual" && (() => {
           const activeMembers = db.members.filter(x => x.status !== "졸업/전출");
-          const groups = Array.from(new Set(activeMembers.map(m => m.mokjang ?? m.group).filter(Boolean))) as string[];
-          groups.sort();
-          const deptList = getDepts(db);
-          let filteredMembers = activeMembers;
-          if (noteFilterBy === "group" && noteFilterValue) filteredMembers = activeMembers.filter(m => (m.mokjang ?? m.group) === noteFilterValue);
-          else if (noteFilterBy === "dept" && noteFilterValue) filteredMembers = activeMembers.filter(m => m.dept === noteFilterValue);
-          const memberOptions = filteredMembers.length
-            ? filteredMembers.map(x => ({ value: x.id, label: `${x.name} (${x.dept || ""})` }))
-            : [{ value: "", label: "(해당 없음)" }];
+          const membersWithDept = activeMembers.map(m => ({ id: m.id, name: m.name, departmentName: memberDeptMap[m.id] ?? m.dept ?? "" }));
+          const filteredMembers = noteMemberSearchText.trim()
+            ? membersWithDept.filter(m => m.name.includes(noteMemberSearchText.trim()))
+            : membersWithDept;
+          const selected = membersWithDept.find(m => m.id === (noteSelectedMemberId || noteTargetId || ""));
           return (
-            <>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-                <div style={{ flex: "1 1 140px" }}>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>범위</label>
-                  <select value={noteFilterBy} onChange={e => { const v = e.target.value as "all" | "group" | "dept"; setNoteFilterBy(v); setNoteFilterValue(""); setNMbrSelect(""); }} className="select-modern">
-                    <option value="all">전체</option>
-                    <option value="group">목장별</option>
-                    <option value="dept">부서별</option>
-                  </select>
+            <div ref={noteMemberDropdownRef} style={{ marginBottom: 16, position: "relative" }}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>성도 선택</label>
+              <button type="button" onClick={() => setNoteMemberDropdownOpen(v => !v)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", fontSize: 14, textAlign: "left", cursor: "pointer", color: selected ? C.text : C.textFaint }}>{selected ? (selected.departmentName ? `${selected.name} (${selected.departmentName})` : selected.name) : "선택하세요"}</button>
+              {noteMemberDropdownOpen && (
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10 }}>
+                  <input type="text" placeholder="이름 검색" value={noteMemberSearchText} onChange={e => setNoteMemberSearchText(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "none", borderBottom: `1px solid ${C.border}`, borderRadius: "8px 8px 0 0", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                  <div style={{ maxHeight: 200, overflowY: "auto" }}>
+                    {filteredMembers.length === 0 ? <div style={{ padding: 12, color: C.textFaint, fontSize: 13 }}>검색 결과 없음</div> : filteredMembers.map(m => (
+                      <button key={m.id} type="button" onClick={() => { setNoteSelectedMemberId(m.id); setNoteMemberDropdownOpen(false); }} style={{ display: "block", width: "100%", padding: "10px 12px", border: "none", background: (noteSelectedMemberId || noteTargetId) === m.id ? C.accentBg : "transparent", color: (noteSelectedMemberId || noteTargetId) === m.id ? C.blue : C.text, fontSize: 14, textAlign: "left", cursor: "pointer" }} onMouseOver={e => { e.currentTarget.style.background = C.blueBg; }} onMouseOut={e => { e.currentTarget.style.background = (noteSelectedMemberId || noteTargetId) === m.id ? C.accentBg : "transparent"; }}>{m.departmentName ? `${m.name} (${m.departmentName})` : m.name}</button>
+                    ))}
+                  </div>
                 </div>
-                {noteFilterBy === "group" && (
-                  <div style={{ flex: "1 1 160px" }}>
-                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>목장</label>
-                    <select value={noteFilterValue} onChange={e => { setNoteFilterValue(e.target.value); setNMbrSelect(""); }} className="select-modern">
-                      <option value="">선택</option>
-                      {groups.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                  </div>
-                )}
-                {noteFilterBy === "dept" && (
-                  <div style={{ flex: "1 1 160px" }}>
-                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 6 }}>부서</label>
-                    <select value={noteFilterValue} onChange={e => { setNoteFilterValue(e.target.value); setNMbrSelect(""); }} className="select-modern">
-                      <option value="">선택</option>
-                      {deptList.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
-              <FormSelect label="대상 성도" value={nMbrSelect} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNMbrSelect(e.target.value)}
-                options={memberOptions} />
-            </>
+              )}
+            </div>
           );
         })()}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -3529,9 +3409,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         <div style={{ marginTop: 16 }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: C.navy, display: "block", marginBottom: 8 }}>이전 기록</label>
           {(() => {
-            const mid = nMbrSelect || noteTargetId;
+            const mid = noteTargetType === "all" ? NOTE_TARGET_CHURCH : (noteSelectedMemberId || noteTargetId);
             const hist = mid ? (db.notes[mid] || []).slice().reverse().slice(0, 5) : [];
-            return hist.length ? hist.map((n, i) => <NoteCard key={i} n={n} />) : <div style={{ textAlign: "center", color: C.textFaint, padding: 16, fontSize: 13 }}>기록 없음</div>;
+            const mbrName = mid === NOTE_TARGET_CHURCH ? "교회 전체" : (mid ? db.members.find(m => m.id === mid)?.name : undefined);
+            const mbrDept = mid && mid !== NOTE_TARGET_CHURCH ? db.members.find(m => m.id === mid)?.dept : undefined;
+            return hist.length ? hist.map((n, i) => <NoteCard key={i} n={n} mbrName={mbrName} mbrDept={mbrDept} />) : <div style={{ textAlign: "center", color: C.textFaint, padding: 16, fontSize: 13 }}>기록 없음</div>;
           })()}
         </div>
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 16 }}>
@@ -3539,6 +3421,20 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           <Btn variant="accent" onClick={saveNote}>저장</Btn>
         </div>
       </Modal>
+
+      {/* Quick Note/Prayer Modal — 성도별 메모·기도 제목 빠른 추가 */}
+      {churchId && (
+        <QuickNoteModal
+          isOpen={quickNoteOpen}
+          onClose={() => setQuickNoteOpen(false)}
+          title={quickNoteType === "prayer" ? "기도 제목" : "메모"}
+          memberName={quickNoteMemberName}
+          memberId={quickNoteMemberId}
+          churchId={churchId}
+          type={quickNoteType}
+          onSaved={handleQuickNoteSaved}
+        />
+      )}
 
       {/* Toasts */}
       <div style={{ position: "fixed", top: mob ? 8 : 20, right: mob ? 8 : 32, left: mob ? 8 : "auto", zIndex: 2000, display: "flex", flexDirection: "column", gap: 8 }}>

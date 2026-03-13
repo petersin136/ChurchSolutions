@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 import type { Member } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 
@@ -162,7 +162,8 @@ export function AttendanceCheck({
     const year = new Date(selectedDate + "T12:00:00").getFullYear();
     const week_num = getWeekNumForDate(selectedDate);
     const note = newStatus === "결석" ? ((noteOverride ?? noteMapRef.current[memberId])?.trim() || null) : null;
-    const { error } = await supabase.from("attendance").upsert(withChurchId([{
+    const churchId = getChurchId();
+    const { error } = await supabase.from("attendance").upsert([{
       member_id: memberId,
       week_num: Number(week_num),
       year: Number(year),
@@ -173,7 +174,8 @@ export function AttendanceCheck({
       check_in_method: "수동" as const,
       note: note as string | null,
       checked_by: getCurrentUserId?.() ?? null,
-    }]), { onConflict: "member_id,date,service_type" });
+      church_id: churchId,
+    }], { onConflict: "member_id,date,service_type" });
     if (error) {
       setSaveError(true);
       setSaving(false);
@@ -236,8 +238,10 @@ export function AttendanceCheck({
         checked_by: getCurrentUserId?.() ?? null,
       };
     });
+    const churchId = getChurchId();
+    const recordsWithChurch = records.map((r) => ({ ...r, church_id: churchId }));
     console.log("[출석 저장 요청]", { count: records.length, sample: records[0], year, week_num });
-    const { data, error } = await supabase.from("attendance").upsert(withChurchId(records), {
+    const { data, error } = await supabase.from("attendance").upsert(recordsWithChurch, {
       onConflict: "member_id,date,service_type",
     });
     console.log("=== 출석 저장 디버깅 ===");

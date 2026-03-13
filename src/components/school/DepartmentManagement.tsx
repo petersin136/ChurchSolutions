@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 type DeptCounts = Record<string, { teachers: number; students: number }>;
@@ -103,11 +103,13 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
 
   const handleAddDepartment = async () => {
     if (!newName.trim() || !supabase) return;
-    const { error } = await supabase.from("school_departments").insert(withChurchId({
+    const churchId = getChurchId();
+    const { error } = await supabase.from("school_departments").insert({
       name: newName.trim(),
       age_range: newAgeRange.trim() || null,
       sort_order: departments.length + 1,
-    }));
+      church_id: churchId,
+    });
     if (error) {
       toast("부서 추가 실패: " + error.message, "err");
       return;
@@ -161,11 +163,13 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
   const handleAddClass = async () => {
     if (!selectedDeptId || !newClassName.trim() || !supabase) return;
     const deptClassesCount = deptClasses.length;
-    const { error } = await supabase.from("school_classes").insert(withChurchId({
+    const churchId = getChurchId();
+    const { error } = await supabase.from("school_classes").insert({
       department_id: selectedDeptId,
       name: newClassName.trim(),
       sort_order: deptClassesCount + 1,
-    }));
+      church_id: churchId,
+    });
     if (error) {
       toast("반 추가 실패: " + error.message, "err");
       return;

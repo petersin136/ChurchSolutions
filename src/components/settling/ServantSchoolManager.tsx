@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 interface Graduate {
@@ -78,15 +78,15 @@ export function ServantSchoolManager({ members, toast }: Props) {
   const handleRegister = async () => {
     if (!supabase || !selectedMember) return;
     setSaving(true);
-    const { error } = await supabase.from("servant_school_graduates").insert(
-      withChurchId({
-        member_id: selectedMember.id,
-        name: selectedMember.name,
-        graduated_at: graduatedAt,
-        is_active: true,
-        notes: notes.trim() || null,
-      }) as any
-    );
+    const churchId = getChurchId();
+    const { error } = await supabase.from("servant_school_graduates").insert({
+      member_id: selectedMember.id,
+      name: selectedMember.name,
+      graduated_at: graduatedAt,
+      is_active: true,
+      notes: notes.trim() || null,
+      church_id: churchId,
+    });
     if (error) {
       if (error.code === "23505") {
         toast("이미 등록된 수료자입니다", "warn");

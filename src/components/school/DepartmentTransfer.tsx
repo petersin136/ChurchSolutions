@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolEnrollment, SchoolTransferHistory } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 
 const INDIGO = "#4F46E5";
 
@@ -95,7 +95,7 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
           toast("이동 실패: " + updErr.message, "err");
           return;
         }
-        const { error: insErr } = await supabase.from("school_transfer_history").insert(withChurchId({
+        const { error: insErr } = await supabase.from("school_transfer_history").insert({
           member_id: en.member_id,
           from_department_id: fromDeptId ?? null,
           from_department_name: fromDept?.name ?? null,
@@ -103,7 +103,8 @@ export function DepartmentTransfer({ db, toast }: DepartmentTransferProps) {
           to_department_name: toDept?.name ?? null,
           transfer_date: transferDate,
           reason: reason.trim() || null,
-        }));
+          church_id: churchId,
+        });
         if (insErr) {
           toast("이력 저장 실패: " + insErr.message, "err");
           return;

@@ -5,7 +5,8 @@ import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
+import { useAppData } from "@/contexts/AppDataContext";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 function getLastSunday(date: Date): Date {
@@ -149,6 +150,7 @@ export interface SchoolAttendanceCheckProps {
 }
 
 export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps) {
+  const { refreshAttendance } = useAppData();
   const todaySunday = useMemo(() => toDateStr(getLastSunday(new Date())), []);
   const [date, setDate] = useState(todaySunday);
   const handleDateChange = useCallback((dateStr: string) => {
@@ -323,7 +325,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
     const startOfYear = new Date(yearVal, 0, 1);
     const wn = Math.ceil(((now.getTime() - startOfYear.getTime()) / 864e5 + startOfYear.getDay() + 1) / 7);
     const note = newStatus === "결석" ? ((noteOverride ?? noteMapRef.current[memberId])?.trim() || null) : null;
-    const { error } = await supabase.from("attendance").upsert(withChurchId([{
+    const churchId = getChurchId();
+    const { error } = await supabase.from("attendance").upsert([{
       member_id: memberId,
       week_num: wn,
       year: yearVal,
@@ -333,16 +336,18 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
       check_in_time: new Date().toISOString(),
       check_in_method: "수동" as const,
       note: note as string | null,
-    }]), { onConflict: "member_id,date,service_type" });
+      church_id: churchId,
+    }], { onConflict: "member_id,date,service_type" });
     if (error) {
       setSaveError(true);
       setSaving(false);
       return;
     }
+    refreshAttendance();
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  }, [date]);
+  }, [date, refreshAttendance]);
 
   const handleNoteChange = useCallback((memberId: string, value: string) => {
     setNoteMap((prev) => ({ ...prev, [memberId]: value }));
@@ -370,7 +375,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
       const yearVal = now.getFullYear();
       const startOfYear = new Date(yearVal, 0, 1);
       const weekNum = Math.ceil(((now.getTime() - startOfYear.getTime()) / 864e5 + startOfYear.getDay() + 1) / 7);
-      const rows = withChurchId(enrollments.map((e) => {
+      const churchId = getChurchId();
+      const rows = enrollments.map((e) => {
         const st = statusMap[e.member_id] ?? "출석";
         const note = st === "결석" ? (noteMap[e.member_id]?.trim() || null) : null;
         return {
@@ -383,8 +389,9 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
           check_in_time: new Date().toISOString(),
           check_in_method: "수동" as const,
           note: note as string | null,
+          church_id: churchId,
         };
-      }));
+      });
       const uniqueRows = Array.from(new Map(rows.map((r) => [r.member_id, r])).values());
       const { error } = await supabase.from("attendance").upsert(uniqueRows, {
         onConflict: "member_id,date,service_type",
@@ -394,6 +401,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
         return;
       }
 
+      refreshAttendance();
       toast("출석이 저장되었습니다", "ok");
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

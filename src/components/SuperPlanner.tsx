@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import type { DB } from "@/types/db";
-import { DEFAULT_DB, CATS_INCOME, CATS_EXPENSE } from "@/types/db";
-import { loadDBFromSupabase, saveDBToSupabase, getWeekNum, getThisMonth } from "@/lib/store";
+import { CATS_INCOME, CATS_EXPENSE } from "@/types/db";
+import { saveDBToSupabase, getWeekNum, getThisMonth } from "@/lib/store";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppData } from "@/contexts/AppDataContext";
 import { SuperPlannerUI } from "./SuperPlannerUI";
 
 export type PageId = "pastoral" | "planner" | "finance" | "visit" | "bulletin" | "statistics" | "messaging" | "school" | "settings";
@@ -27,42 +28,14 @@ function getInitialPage(): PageId {
 
 export default function SuperPlanner() {
   const { churchId } = useAuth();
-  const [db, setDb] = useState<DB>(() => DEFAULT_DB);
-  const [dbLoaded, setDbLoaded] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  const { db, setDb, saveDb, loading, loadError } = useAppData();
   const [currentPage, setCurrentPage] = useState<PageId>(getInitialPage);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-
-  useEffect(() => {
-    console.log("[SuperPlanner] useEffect 실행 - churchId:", churchId);
-    if (!churchId) {
-      console.log("[SuperPlanner] churchId 없음, 대기 중");
-      return;
-    }
-    console.log("[SuperPlanner] churchId 확인됨, 데이터 로드 시작:", churchId);
-    setLoadError(false);
-    const loadData = async () => {
-      try {
-        console.log("[SuperPlanner] loadDBFromSupabase 호출 시작");
-        const data = await loadDBFromSupabase(churchId);
-        console.log("[SuperPlanner] 로드 성공, members 수:", data?.members?.length ?? 0);
-        setDb(data);
-        setDbLoaded(true);
-      } catch (error) {
-        console.error("[SuperPlanner] 로드 실패:", error);
-        setLoadError(true);
-      }
-    };
-    loadData();
-  }, [churchId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.sessionStorage.setItem(STORAGE_KEY_PAGE, currentPage);
   }, [currentPage]);
-
-  /* 페이지 로드 시 자동 save 제거: saveDBToSupabase가 attendance를 member+year 기준 delete 후 week_num만 insert해
-     date/service_type 기반 출석 데이터가 삭제되는 문제 방지. 저장은 사용자가 저장 버튼으로만 수행. */
 
   const save = useCallback(() => {
     saveDBToSupabase(db).catch(() => {});
@@ -80,7 +53,6 @@ export default function SuperPlanner() {
     if (currentPage === "pastoral") exportReport(db, "attendance", toast);
     else if (currentPage === "finance") exportReport(db, "monthly", toast);
     else if (currentPage === "planner") exportReport(db, "planner", toast);
-    // visit, bulletin pages handle their own export internally
   }, [currentPage, db, toast]);
 
   const [openIncomeModal, setOpenIncomeModal] = useState(false);
@@ -89,9 +61,7 @@ export default function SuperPlanner() {
   const [editIncId, setEditIncId] = useState<string | null>(null);
   const [editExpId, setEditExpId] = useState<string | null>(null);
 
-  const handleHeaderAdd = useCallback(() => {
-    // pastoral and finance now have their own internal add buttons
-  }, []);
+  const handleHeaderAdd = useCallback(() => {}, []);
 
   const doExportReport = useCallback(
     (type: string) => exportReport(db, type, toast),
@@ -114,7 +84,7 @@ export default function SuperPlanner() {
     );
   }
 
-  if (!dbLoaded) {
+  if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font)" }}>
         <p style={{ fontSize: 15, color: "var(--text2)" }}>데이터 불러오는 중...</p>
@@ -128,7 +98,7 @@ export default function SuperPlanner() {
     db,
     setDb,
     save,
-    saveDb: (d: DB) => saveDBToSupabase(d),
+    saveDb,
     toast,
     handleExportCurrent,
     handleHeaderAdd,

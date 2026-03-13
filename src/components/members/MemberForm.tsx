@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import type { DB, Member, Family } from "@/types/db";
 import { getDepts } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
+import { useAppData } from "@/contexts/AppDataContext";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 
 const ROLES = ["담임목사", "부목사", "전도사", "장로", "안수집사", "권사", "집사", "성도", "청년", "학생"];
@@ -41,6 +42,7 @@ function isBaptistDenomination(denomination?: string | null): boolean {
 }
 
 export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormProps) {
+  const { refreshMembers } = useAppData();
   const depts = getDepts(db);
   const mokjangList = (db.settings.mokjangList || "").split(",").map((s) => s.trim()).filter(Boolean);
   const useChimrye = isBaptistDenomination(db.settings.denomination);
@@ -285,7 +287,8 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
           throw error;
         }
       } else {
-        const insertPayload = withChurchId(payload);
+        const churchId = getChurchId();
+        const insertPayload: Record<string, unknown> & { church_id: string } = { ...payload, church_id: churchId };
         console.log("=== [MemberForm] DB INSERT 시도 ===", "church_id:", insertPayload.church_id, "| name:", insertPayload.name);
         const { data: inserted, error } = await supabase.from("members").insert(insertPayload).select("id").single();
         console.log("=== [MemberForm] DB INSERT 결과 ===", { data: inserted, error });
@@ -353,16 +356,17 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         is_prospect: isProspect,
       } as Member;
       if (memberStatus !== member?.member_status && member?.id && supabase) {
-        await supabase.from("member_status_history").insert(
-          withChurchId({
-            member_id: member.id,
-            previous_status: member.member_status ?? null,
-            new_status: memberStatus,
-            reason: statusReason || null,
-          })
-        );
+        const churchId = getChurchId();
+        await supabase.from("member_status_history").insert({
+          member_id: member.id,
+          previous_status: member.member_status ?? null,
+          new_status: memberStatus,
+          reason: statusReason || null,
+          church_id: churchId,
+        });
       }
       toast("저장되었습니다", "ok");
+      refreshMembers();
       onSaved(saved);
     } catch (e) {
       console.error(e);

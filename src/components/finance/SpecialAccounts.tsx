@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
+import { getChurchId, filterByChurch } from "@/lib/tenant";
 import type { SpecialAccount, SpecialAccountTransaction } from "@/types/db";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
@@ -128,7 +128,8 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       end_date: accountForm.end_date || null,
       status: accountForm.status || "진행중",
     };
-    const { error } = await supabase.from("special_accounts").upsert(withChurchId(payload as any), { onConflict: "id" });
+    const churchId = getChurchId();
+    const { error } = await supabase.from("special_accounts").upsert({ ...payload, church_id: churchId } as any, { onConflict: "id" });
     if (error) {
       toast("저장 실패: " + error.message, "err");
       setSaving(false);
@@ -175,14 +176,16 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       return;
     }
     setSaving(true);
-    const { error: insErr } = await supabase.from("special_account_transactions").insert(withChurchId({
+    const churchId = getChurchId();
+    const { error: insErr } = await supabase.from("special_account_transactions").insert({
       account_id: selectedId,
       date: txForm.date,
       type: txForm.type,
       amount: txForm.amount,
       description: txForm.description || null,
       member_name: txForm.member_name || null,
-    } as any));
+      church_id: churchId,
+    } as any);
     if (insErr) {
       toast("저장 실패: " + insErr.message, "err");
       setSaving(false);

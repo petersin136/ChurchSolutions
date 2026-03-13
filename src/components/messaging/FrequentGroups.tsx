@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
+import { getChurchId, filterByChurch } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 export interface FrequentGroup {
@@ -56,7 +56,8 @@ export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
   const handleAdd = async () => {
     if (!addName.trim()) return;
     if (supabase) {
-      const { data, error } = await supabase.from("frequent_groups").insert(withChurchId({ name: addName.trim(), member_ids: [] })).select("id, name, member_ids").single();
+      const churchId = getChurchId();
+      const { data, error } = await supabase.from("frequent_groups").insert({ name: addName.trim(), member_ids: [], church_id: churchId }).select("id, name, member_ids").single();
       if (error) {
         if (toast) toast("추가 실패: " + error.message, "err");
         return;

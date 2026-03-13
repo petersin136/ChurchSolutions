@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import type { AuditLog } from "@/types/db";
-import { withChurchId } from "@/lib/tenant";
+import { getChurchId } from "@/lib/tenant";
 
 export type AuditAction = "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | "EXPORT" | "PRINT";
 
@@ -16,8 +16,9 @@ export interface LogActionParams {
 export async function logAction(params: LogActionParams): Promise<void> {
   if (!supabase) return;
   try {
+    const churchId = getChurchId();
     const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("audit_logs").insert(withChurchId({
+    await supabase.from("audit_logs").insert({
       user_id: user?.id ?? null,
       user_name: user?.email ?? user?.user_metadata?.name ?? "알 수 없음",
       action: params.action,
@@ -25,7 +26,8 @@ export async function logAction(params: LogActionParams): Promise<void> {
       target_id: params.targetId ?? null,
       target_name: params.targetName ?? null,
       details: params.details ?? null,
-    } as Partial<AuditLog>));
+      church_id: churchId,
+    } as Partial<AuditLog>);
   } catch (e) {
     console.warn("audit log insert failed:", e);
   }

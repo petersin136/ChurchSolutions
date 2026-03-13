@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Member } from "@/types/db";
 import { supabase } from "@/lib/supabase";
-import { getChurchId, withChurchId, filterByChurch } from "@/lib/tenant";
+import { getChurchId, filterByChurch } from "@/lib/tenant";
 import { C } from "@/styles/designTokens";
 
 const SMS_MAX = 90;
@@ -100,15 +100,15 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
     };
     if (supabase) {
       setSending(true);
-      const { error } = await supabase.from("message_logs").insert(
-        withChurchId({
-          recipient_ids: payload.recipient_ids,
-          recipient_names: payload.recipient_names,
-          content: payload.content,
-          message_type: payload.message_type,
-          status: "저장됨",
-        })
-      );
+      const churchId = getChurchId();
+      const { error } = await supabase.from("message_logs").insert({
+        recipient_ids: payload.recipient_ids,
+        recipient_names: payload.recipient_names,
+        content: payload.content,
+        message_type: payload.message_type,
+        status: "저장됨",
+        church_id: churchId,
+      });
       if (error) {
         if (toast) toast("저장 실패: " + error.message, "err");
         setSending(false);
