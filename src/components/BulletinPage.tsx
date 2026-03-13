@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef, type CSSProperties, type Reac
 import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown, type LucideIcon } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
+import KakaoShareCard from "@/components/bulletin/KakaoShareCard";
+import { initKakao, shareTextToKakao } from "@/lib/kakao";
+import { downloadElementAsImage } from "@/utils/captureElement";
 
 function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
@@ -124,7 +127,7 @@ const SECTIONS: Record<SectionKey, { name: string; icon: string }> = {
   general: { name: "총무/행정", icon: "📋" },
 };
 
-type OutputMode = "print" | "online";
+type OutputMode = "print" | "online" | "kakao";
 type PrintFormat = "fold2" | "fold3";
 
 const TEMPLATES = [
@@ -422,6 +425,7 @@ export function BulletinPage() {
   const [previewScale, setPreviewScale] = useState(mob ? 0.45 : 0.75);
   const [outputMode, setOutputMode] = useState<OutputMode>("print");
   const [printFormat, setPrintFormat] = useState<PrintFormat>("fold3");
+  const kakaoCardRef = useRef<HTMLDivElement>(null);
   const zoomIn = () => setPreviewScale(s => Math.min(s + 0.1, 1.5));
   const zoomOut = () => setPreviewScale(s => Math.max(s - 0.1, 0.25));
   const zoomReset = () => setPreviewScale(mob ? 0.45 : 0.75);
@@ -436,6 +440,46 @@ export function BulletinPage() {
     setToasts(prev => [...prev, { id, msg }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2500);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.Kakao && !window.Kakao.isInitialized()) {
+      window.Kakao.init("f4699f7c23c13caf0f5de8ec220151a7");
+    }
+  }, []);
+
+  const getCaptureTarget = useCallback((): HTMLElement | null => {
+    if (outputMode === "kakao" && kakaoCardRef.current) return kakaoCardRef.current;
+    const el = document.querySelector("[data-bulletin-preview]") as HTMLElement;
+    return el || previewRef.current;
+  }, [outputMode]);
+
+  const handleDownloadCard = useCallback(async () => {
+    const el = getCaptureTarget();
+    if (!el) { showToast("미리보기를 먼저 확인해주세요"); return; }
+    try {
+      await downloadElementAsImage(el, `주보_카카오_${fds(TODAY)}.png`);
+      showToast("이미지가 다운로드되었습니다");
+    } catch { showToast("이미지 저장에 실패했습니다"); }
+  }, [getCaptureTarget, showToast]);
+
+  const handleKakaoShare = useCallback(async () => {
+    const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad/i.test(navigator.userAgent);
+    initKakao();
+    if (isMobile && typeof window !== "undefined" && window.Kakao?.isInitialized()) {
+      window.Kakao.Share.sendDefault({
+        objectType: "feed",
+        content: {
+          title: `${db.settings.church || "교회"} 주일예배`,
+          description: `${db.current.date}\n설교: ${db.current.pastor?.sermonTitle || ""}\n본문: ${db.current.pastor?.sermonPassage || ""}`,
+          imageUrl: window.location.origin + "/icons/icon-192x192.png",
+          link: { mobileWebUrl: window.location.href, webUrl: window.location.href },
+        },
+      });
+    } else {
+      await handleDownloadCard();
+      showToast("이미지가 다운로드되었습니다. 카카오톡에서 공유해주세요!");
+    }
+  }, [db, handleDownloadCard, showToast]);
 
   const handleNav = (id: SubPage) => {
     setActiveSub(id);
@@ -631,13 +675,13 @@ export function BulletinPage() {
                 <Card>
                   <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}`, fontWeight: 700 }}>📐 출력 형식</div>
                   <div style={{ padding: 18 }}>
-                    <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                      {(["print", "online"] as OutputMode[]).map(m => (
-                        <button key={m} onClick={() => { setOutputMode(m); if (m === "online") setPreviewView("all"); }} style={{
-                          flex: 1, padding: "10px 8px", border: `2px solid ${outputMode === m ? C.accent : C.border}`, borderRadius: 10,
-                          background: outputMode === m ? C.accentLight : C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
-                          color: outputMode === m ? C.accent : C.textMuted, textAlign: "center",
-                        }}>{m === "print" ? "🖨️ 인쇄용" : "📱 온라인/PDF"}</button>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                      {(["print", "online", "kakao"] as OutputMode[]).map(m => (
+                        <button key={m} onClick={() => { setOutputMode(m); if (m !== "print") setPreviewView("all"); }} style={{
+                          flex: 1, minWidth: 90, padding: "10px 8px", border: `2px solid ${outputMode === m ? (m === "kakao" ? "#FEE500" : C.accent) : C.border}`, borderRadius: 10,
+                          background: outputMode === m ? (m === "kakao" ? "#FFFDE7" : C.accentLight) : C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+                          color: outputMode === m ? (m === "kakao" ? "#3C1E1E" : C.accent) : C.textMuted, textAlign: "center",
+                        }}>{m === "print" ? "🖨️ 인쇄용" : m === "online" ? "📱 온라인/PDF" : "💬 카카오톡"}</button>
                       ))}
                     </div>
                     {outputMode === "print" && (
@@ -716,20 +760,61 @@ export function BulletinPage() {
                   ))}
                 </div>}
                 <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: C.textMuted }}>{outputMode === "print" ? (printFormat === "fold3" ? "3면 접지" : "2면 접지") : "온라인"}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: C.textMuted }}>
+                    {outputMode === "kakao" ? "카카오톡 공유용" : outputMode === "print" ? (printFormat === "fold3" ? "3면 접지" : "2면 접지") : "온라인"}
+                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexWrap: "wrap", justifyContent: "center" }}>
-                  <Btn size="sm" style={{ background: C.green, color: "#fff" }} onClick={printBulletin}>🖨 인쇄</Btn>
-                  <Btn size="sm" variant="accent" onClick={downloadPDF}>📄 PDF</Btn>
-                  <div style={{ display: "flex", alignItems: "center", gap: 2, background: C.borderLight, borderRadius: 8, padding: "2px 4px", marginLeft: 4 }}>
-                    <button onClick={zoomOut} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-                    <button onClick={zoomReset} style={{ minWidth: 44, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.text, fontFamily: "inherit" }}>{Math.round(previewScale * 100)}%</button>
-                    <button onClick={zoomIn} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                  {outputMode !== "kakao" && (
+                    <>
+                      <Btn size="sm" style={{ background: C.green, color: "#fff" }} onClick={printBulletin}>🖨 인쇄</Btn>
+                      <Btn size="sm" variant="accent" onClick={downloadPDF}>📄 PDF</Btn>
+                    </>
+                  )}
+                  <button onClick={handleDownloadCard} style={{
+                    display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px",
+                    backgroundColor: "#ffffff", border: `1px solid ${C.border}`, borderRadius: 8,
+                    fontSize: 12, fontWeight: 500, color: C.text, cursor: "pointer", fontFamily: "inherit",
+                  }}>📥 카카오용 이미지 저장</button>
+                  <button onClick={handleKakaoShare} style={{
+                    display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px",
+                    backgroundColor: "#FEE500", border: "none", borderRadius: 8,
+                    fontSize: 12, fontWeight: 600, color: "#3C1E1E", cursor: "pointer", fontFamily: "inherit",
+                  }}>💬 카카오톡 공유</button>
+                  {outputMode !== "kakao" && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 2, background: C.borderLight, borderRadius: 8, padding: "2px 4px" }}>
+                      <button onClick={zoomOut} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                      <button onClick={zoomReset} style={{ minWidth: 44, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.text, fontFamily: "inherit" }}>{Math.round(previewScale * 100)}%</button>
+                      <button onClick={zoomIn} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                    </div>
+                  )}
+                </div>
+
+                {outputMode === "kakao" ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%" }}>
+                    <KakaoShareCard
+                      ref={kakaoCardRef}
+                      churchName={db.settings.church || "교회"}
+                      worshipName="주일예배"
+                      date={db.current.date || BULLETIN_DATE_STR}
+                      time={db.settings.worshipTime || ""}
+                      leader=""
+                      preacher={db.settings.pastor || ""}
+                      bibleVerse={db.current.pastor?.sermonPassage || ""}
+                      sermonTitle={db.current.pastor?.sermonTitle || ""}
+                      location={db.settings.address || ""}
+                      message={db.current.pastor?.pastorNotice || ""}
+                      designTheme={db.current.template === "elegant-wine" ? "burgundy" : db.current.template === "nature-olive" ? "olive" : "navy"}
+                    />
+                    <p style={{ fontSize: 12, color: C.textFaint, textAlign: "center", margin: 0 }}>
+                      이미지를 다운로드한 후 카카오톡 단체방에 공유하세요
+                    </p>
                   </div>
-                </div>
-                <div className="bulletin-preview-scale" style={{ transform: `scale(${previewScale})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
-                  <div ref={previewRef} data-bview={previewView} className="bulletin bulletin-preview-inner bulletin-page-content" />
-                </div>
+                ) : (
+                  <div className="bulletin-preview-scale" style={{ transform: `scale(${previewScale})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
+                    <div ref={previewRef} data-bview={previewView} data-bulletin-preview className="bulletin bulletin-preview-inner bulletin-page-content" />
+                  </div>
+                )}
               </div>
             </div>
           )}

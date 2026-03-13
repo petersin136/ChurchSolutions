@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAppData } from "@/contexts/AppDataContext";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
-import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Heart, Home, Gift, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, BarChart3, UserX, ListOrdered, Heart, Home, Gift } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -19,11 +19,6 @@ import { ReportModal } from "@/components/report/ReportModal";
 import { REPORT_DEFS, ReportPreviewModal, type ReportId } from "@/components/report/A4Reports";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { ServantSchoolManager } from "@/components/settling/ServantSchoolManager";
-import { MessageSender } from "@/components/pastoral/MessageSender";
-
-function MessageSenderLazy({ db, toast }: { db: DB; toast: (m: string, t?: string) => void }) {
-  return <MessageSender db={db} toast={toast} />;
-}
 import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNoteModal";
 
 /* ---------- useIsMobile ---------- */
@@ -2696,7 +2691,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
 /* ============================================================
    MAIN COMPONENT
    ============================================================ */
-type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "settings" | "message";
+type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "settings";
 
 const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dashboard", Icon: LayoutDashboard, label: "대시보드" },
@@ -2705,7 +2700,6 @@ const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[
   { id: "notes", Icon: StickyNote, label: "기도/메모" },
   { id: "newfamily", Icon: Sprout, label: "새가족 관리" },
   { id: "settings", Icon: Settings, label: "목장그룹관리" },
-  { id: "message", Icon: MessageSquare, label: "메시지 보내기" },
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: string }> = {
@@ -2715,10 +2709,9 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기도" },
   newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
   settings: { title: "목장그룹관리", desc: "목장·소그룹 생성 및 그룹원 관리" },
-  message: { title: "메시지 보내기", desc: "성도에게 메시지를 보냅니다" },
 };
 
-const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "settings", "message"];
+const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "settings"];
 
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const { churchId } = useAuth();
@@ -3301,7 +3294,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openPrayerModal={openPrayerModal} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} mokjangOnly />}
-          {activeSub === "message" && <MessageSenderLazy db={db} toast={toast} />}
     </UnifiedPageLayout>
 
       {/* ===== MODALS ===== */}
