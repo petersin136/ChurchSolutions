@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
-import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown, type LucideIcon } from "lucide-react";
+import { createPortal } from "react-dom";
+import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown, Eye, FileText, Save, Archive, Edit3, type LucideIcon } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 import KakaoShareCard from "@/components/bulletin/KakaoShareCard";
@@ -290,10 +291,12 @@ function prepData(db: BulletinDB) {
   return { c, s, tpl, esc, nl, orderRows, ads, bdays };
 }
 
-/* 3면 접지 (Tri-fold) - 겉면 3패널 + 속면 3패널 */
-function buildTriFold(db: BulletinDB): string {
+/* 6면: section index 0=cover(면1), 1=flap(면2), 2=worship(면3), 3=sermon(면4), 4=news(면5), 5=back(면6) */
+function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
   const { c, s, tpl, esc, nl, orderRows, ads, bdays } = prepData(db);
-  const coverPanel = `<div class="tp tp-cover"><div class="tp-bg" style="background:${tpl.headerBg}"></div><div class="tp-cover-inner">
+  switch (index) {
+    case 0:
+      return `<div class="tp tp-cover" style="background:${tpl.headerBg}; height:100%; width:100%; min-height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;"><div class="tp-bg" style="background:${tpl.headerBg}"></div><div class="tp-cover-inner">
     <div class="tp-cross">&#10013;</div><div class="tp-cname">${esc(s.church)}</div><div class="tp-csub">${esc(s.churchSub || "")}</div>
     <div class="tp-cdiv" style="background:${tpl.gold}"></div>
     ${c.pastor?.sermonTitle ? `<div class="tp-stitle">${esc(c.pastor.sermonTitle)}</div>` : ""}
@@ -301,53 +304,83 @@ function buildTriFold(db: BulletinDB): string {
     <div class="tp-cdiv" style="background:${tpl.gold}"></div>
     <div class="tp-date">${esc(c.date || BULLETIN_DATE_STR)} 주일예배</div><div class="tp-time">${esc(s.worshipTime)}</div>
     <div class="tp-pastor">담임목사 ${esc(s.pastor)}</div></div></div>`;
-  const backPanel = `<div class="tp tp-back"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">교회 안내</div><div class="tp-bd">
-    <div class="tp-label" style="color:${tpl.accent}">&#127974; 헌금 계좌</div><div class="tp-val">${esc(s.account || "")}</div>
-    <div class="tp-label" style="color:${tpl.accent}">&#128205; 주소</div><div class="tp-val">${esc(s.address || "")}</div>
-    <div class="tp-label" style="color:${tpl.accent}">&#9742; 전화</div><div class="tp-val">${esc(s.phone || "")}</div>
-    <div class="tp-church-badge" style="background:${tpl.accent}">${esc(s.church)}</div></div></div>`;
-  const flapPanel = `<div class="tp tp-flap"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">주간 안내</div><div class="tp-bd">
+    case 1:
+      return `<div class="tp tp-flap"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">주간 안내</div><div class="tp-bd">
     ${c.general?.servants ? `<div class="tp-label" style="color:${tpl.accent}">&#128101; 금주 봉사자</div><div class="tp-val">${nl(c.general.servants)}</div>` : ""}
     ${c.general?.schedule ? `<div class="tp-label" style="color:${tpl.accent}">&#128197; 금주 일정</div><div class="tp-val">${nl(c.general.schedule)}</div>` : ""}
     ${c.general?.offering ? `<div class="tp-label" style="color:${tpl.accent}">&#128176; 헌금 보고</div><div class="tp-val">${nl(c.general.offering)}</div>` : ""}
   </div></div>`;
-  const worshipPanel = `<div class="tp tp-worship"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">&#128214; 예배 순서</div><div class="tp-bd">
+    case 2:
+      return `<div class="tp tp-worship"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">&#128214; 예배 순서</div><div class="tp-bd">
     ${orderRows ? `<table class="tp-otbl">${orderRows}</table>` : '<div class="tp-empty">예배 순서를 입력하세요</div>'}
     ${c.worship?.praise ? `<div class="tp-note">&#127925; 찬양: ${esc(c.worship.praise)}</div>` : ""}
     ${c.worship?.special ? `<div class="tp-note">&#127908; ${esc(c.worship.special)}</div>` : ""}
   </div></div>`;
-  const sermonPanel = `<div class="tp tp-sermon"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">&#9997;&#65039; 말씀 / 칼럼</div><div class="tp-bd">
+    case 3:
+      return `<div class="tp tp-sermon"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">&#9997;&#65039; 말씀 / 칼럼</div><div class="tp-bd">
     ${c.pastor?.sermonTitle ? `<div class="tp-sermon-box" style="border-color:${tpl.gold}"><div class="tp-sermon-t" style="color:${tpl.accent}">${esc(c.pastor.sermonTitle)}</div>${c.pastor.sermonPassage ? `<div class="tp-sermon-p">${esc(c.pastor.sermonPassage)}</div>` : ""}${c.pastor.sermonTheme ? `<div class="tp-sermon-th">${esc(c.pastor.sermonTheme)}</div>` : ""}</div>` : ""}
     ${c.pastor?.column ? `<div class="tp-column" style="border-left-color:${tpl.gold}"><div class="tp-col-txt">${nl(c.pastor.column)}</div></div>` : ""}
   </div></div>`;
-  const newsPanel = `<div class="tp tp-news"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">&#128226; 광고 및 소식</div><div class="tp-bd">
+    case 4:
+      return `<div class="tp tp-news"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">&#128226; 광고 및 소식</div><div class="tp-bd">
     ${ads.length ? ads.map(a => `<div class="tp-ad" style="border-left-color:${tpl.accent}"><div class="tp-ad-dept" style="color:${tpl.accent}">${esc(a.dept)}</div><div class="tp-ad-txt">${nl(a.text)}</div></div>`).join("") : '<div class="tp-empty">광고를 입력하세요</div>'}
     ${bdays.length ? `<div class="tp-bday"><div class="tp-label" style="color:${tpl.accent}">&#127874; 금주 생일</div><div class="tp-bday-list">${bdays.map(b => `<span class="tp-bday-tag" style="background:${tpl.accentLight};color:${tpl.accent}">${esc(b)}</span>`).join("")}</div></div>` : ""}
   </div></div>`;
-  return `<div class="bp-tri"><div class="bp-tri-face bp-tri-out">${flapPanel}${coverPanel}${backPanel}</div><div class="bp-tri-face bp-tri-in">${worshipPanel}${sermonPanel}${newsPanel}</div></div>`;
+    case 5:
+      return `<div class="tp tp-back"><div class="tp-hd" style="border-color:${tpl.accent};color:${tpl.accent}">교회 안내</div><div class="tp-bd">
+    <div class="tp-label" style="color:${tpl.accent}">&#127974; 헌금 계좌</div><div class="tp-val">${esc(s.account || "")}</div>
+    <div class="tp-label" style="color:${tpl.accent}">&#128205; 주소</div><div class="tp-val">${esc(s.address || "")}</div>
+    <div class="tp-label" style="color:${tpl.accent}">&#9742; 전화</div><div class="tp-val">${esc(s.phone || "")}</div>
+    <div class="tp-church-badge" style="background:${tpl.accent}">${esc(s.church)}</div></div></div>`;
+    default:
+      return "";
+  }
 }
 
-/* 2면 접지 (Half-fold) - 표지/내지좌/내지우/뒷면 */
-function buildHalfFold(db: BulletinDB): string {
+/* 3면 접지 (Tri-fold) - 겉면 3패널 + 속면 3패널 */
+function buildTriFold(db: BulletinDB): string {
+  const back = getTriFoldSectionHTML(db, 5), cover = getTriFoldSectionHTML(db, 0), flap = getTriFoldSectionHTML(db, 1);
+  const worship = getTriFoldSectionHTML(db, 2), sermon = getTriFoldSectionHTML(db, 3), news = getTriFoldSectionHTML(db, 4);
+  return `<div class="bp-tri">
+    <div class="bp-spread bp-tri-out" style="display:grid;grid-template-columns:1fr 1fr 1fr;width:100%;height:100%;">
+      <div class="bp-cell">${back}</div>
+      <div class="bp-cell">${cover}</div>
+      <div class="bp-cell">${flap}</div>
+    </div>
+    <div class="bp-spread bp-tri-in" style="display:grid;grid-template-columns:1fr 1fr 1fr;width:100%;height:100%;">
+      <div class="bp-cell">${worship}</div>
+      <div class="bp-cell">${sermon}</div>
+      <div class="bp-cell">${news}</div>
+    </div>
+  </div>`;
+}
+
+/* 4면: section index 0=표지(p1), 1=예배순서(p2), 2=광고(p3), 3=교회안내(p4) */
+function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
   const { c, s, tpl, esc, nl, orderRows, ads, bdays } = prepData(db);
-  const p1 = `<div class="bp bp-1"><div class="bp-cover-bg" style="background:${tpl.headerBg}"></div><div class="bp-cover-content">
+  switch (index) {
+    case 0:
+      return `<div class="bp bp-1" style="background:${tpl.headerBg}; height:100%; width:100%; min-height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;"><div class="bp-cover-bg" style="background:${tpl.headerBg}"></div><div class="bp-cover-content">
     <div class="bp-cross">&#10013;</div><div class="bp-church-name">${esc(s.church)}</div><div class="bp-church-sub">${esc(s.churchSub || "")}</div>
     <div class="bp-cdiv" style="background:${tpl.gold}"></div>
     ${c.pastor?.sermonTitle ? `<div class="bp-sermon-box"><div class="bp-sermon-title">${esc(c.pastor.sermonTitle)}</div>${c.pastor.sermonPassage ? `<div class="bp-sermon-passage">${esc(c.pastor.sermonPassage)}</div>` : ""}${c.pastor.sermonTheme ? `<div class="bp-sermon-theme">${esc(c.pastor.sermonTheme)}</div>` : ""}</div>` : ""}
     <div class="bp-cdiv" style="background:${tpl.gold}"></div>
     <div class="bp-date-line">${esc(c.date || BULLETIN_DATE_STR)} 주일예배</div><div class="bp-time-line">${esc(s.worshipTime)}</div>
     <div class="bp-pastor-line">담임목사 ${esc(s.pastor)}</div></div></div>`;
-  const p2 = `<div class="bp bp-2"><div class="bp-page-hd" style="border-bottom-color:${tpl.accent}">&#128214; 예배 순서</div><div class="bp-page-bd">
+    case 1:
+      return `<div class="bp bp-2"><div class="bp-page-hd" style="border-bottom-color:${tpl.accent}">&#128214; 예배 순서</div><div class="bp-page-bd">
     ${orderRows ? `<table class="bp-otbl">${orderRows}</table>` : '<div class="bp-empty">예배 순서를 입력하세요</div>'}
     ${c.worship?.praise ? `<div class="bp-note">&#127925; 찬양: ${esc(c.worship.praise)}</div>` : ""}
     ${c.worship?.special ? `<div class="bp-note">&#127908; ${esc(c.worship.special)}</div>` : ""}
     ${c.pastor?.column ? `<div class="bp-colbox" style="border-left-color:${tpl.gold}"><div class="bp-col-hd" style="color:${tpl.accent}">&#9997;&#65039; 목사님 칼럼</div><div class="bp-col-txt">${nl(c.pastor.column)}</div></div>` : ""}
   </div></div>`;
-  const p3 = `<div class="bp bp-3"><div class="bp-page-hd" style="border-bottom-color:${tpl.accent}">&#128226; 광고 및 소식</div><div class="bp-page-bd">
+    case 2:
+      return `<div class="bp bp-3"><div class="bp-page-hd" style="border-bottom-color:${tpl.accent}">&#128226; 광고 및 소식</div><div class="bp-page-bd">
     ${ads.length ? `<div class="bp-adlist">${ads.map(a => `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">${esc(a.dept)}</div><div class="bp-ad-txt">${nl(a.text)}</div></div>`).join("")}</div>` : '<div class="bp-empty">광고를 입력하세요</div>'}
     ${bdays.length ? `<div class="bp-bday-sec"><div class="bp-sub-hd" style="color:${tpl.accent}">&#127874; 금주 생일</div><div class="bp-bday-list">${bdays.map(b => `<span class="bp-bday-tag" style="background:${tpl.accentLight};color:${tpl.accent}">${esc(b)}</span>`).join("")}</div></div>` : ""}
   </div></div>`;
-  const p4 = `<div class="bp bp-4"><div class="bp-page-hd" style="border-bottom-color:${tpl.accent}">&#128203; 교회 안내</div><div class="bp-page-bd">
+    case 3:
+      return `<div class="bp bp-4"><div class="bp-page-hd" style="border-bottom-color:${tpl.accent}">&#128203; 교회 안내</div><div class="bp-page-bd">
     <div class="bp-igrid">
       ${c.general?.servants ? `<div class="bp-icell"><div class="bp-ititle" style="color:${tpl.accent}">&#128101; 금주 봉사자</div><div class="bp-itxt">${nl(c.general.servants)}</div></div>` : ""}
       ${c.general?.schedule ? `<div class="bp-icell"><div class="bp-ititle" style="color:${tpl.accent}">&#128197; 금주 일정</div><div class="bp-itxt">${nl(c.general.schedule)}</div></div>` : ""}
@@ -356,7 +389,24 @@ function buildHalfFold(db: BulletinDB): string {
     <div class="bp-acct"><div class="bp-ititle" style="color:${tpl.accent}">&#127974; 헌금 계좌</div><div class="bp-itxt">${esc(s.account || "")}</div></div>
     <div class="bp-cfooter" style="background:${tpl.headerBg}"><div class="bp-cf-name">${esc(s.church)}</div><div class="bp-cf-det">&#128205; ${esc(s.address || "")}</div><div class="bp-cf-det">&#9742; ${esc(s.phone || "")}</div></div>
   </div></div>`;
-  return `<div class="bp-wrap">${p1}<div class="bp-spread">${p2}${p3}</div>${p4}</div>`;
+    default:
+      return "";
+  }
+}
+
+/* 2면 접지 (Half-fold) - 표지/내지좌/내지우/뒷면 */
+function buildHalfFold(db: BulletinDB): string {
+  const p1 = getHalfFoldSectionHTML(db, 0), p2 = getHalfFoldSectionHTML(db, 1), p3 = getHalfFoldSectionHTML(db, 2), p4 = getHalfFoldSectionHTML(db, 3);
+  return `<div class="bp-four-face">
+    <div class="bp-spread" style="display:grid;grid-template-columns:1fr 1fr;width:100%;height:100%;">
+      <div class="bp-cell">${p4}</div>
+      <div class="bp-cell">${p1}</div>
+    </div>
+    <div class="bp-spread" style="display:grid;grid-template-columns:1fr 1fr;width:100%;height:100%;">
+      <div class="bp-cell">${p2}</div>
+      <div class="bp-cell">${p3}</div>
+    </div>
+  </div>`;
 }
 
 /* 온라인/PDF용 (모바일 친화적 카드형) */
@@ -395,6 +445,7 @@ function buildPreviewHTML(db: BulletinDB, mode: OutputMode, fmt: PrintFormat): s
 }
 
 type SubPage = "dash" | "edit" | "history" | "settings";
+type BulletinFormat = "6면" | "4면" | "온라인";
 type BulletinView = "all" | "cover" | "inner" | "back" | "outside" | "inside";
 const VIEW_FOLD2: BulletinView[] = ["all", "cover", "inner", "back"];
 const VIEW_FOLD3: BulletinView[] = ["all", "outside", "inside"];
@@ -408,8 +459,8 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
 
 const NAV_ITEMS: { id: SubPage; Icon: LucideIcon; label: string }[] = [
   { id: "dash", Icon: LayoutDashboard, label: "대시보드" },
-  { id: "edit", Icon: Pencil, label: "주보 편집" },
-  { id: "history", Icon: FolderOpen, label: "지난 주보" },
+  { id: "edit", Icon: Edit3, label: "주보 편집" },
+  { id: "history", Icon: Archive, label: "지난 주보" },
   { id: "settings", Icon: Settings, label: "설정" },
 ];
 
@@ -426,7 +477,112 @@ export function BulletinPage() {
   const [outputMode, setOutputMode] = useState<OutputMode>("print");
   const [printFormat, setPrintFormat] = useState<PrintFormat>("fold3");
   const kakaoCardRef = useRef<HTMLDivElement>(null);
-  const zoomIn = () => setPreviewScale(s => Math.min(s + 0.1, 1.5));
+  const [dashPreviewScale, setDashPreviewScale] = useState(0.6);
+  const [showFullPreview, setShowFullPreview] = useState(false);
+  const [fullPreviewHtml, setFullPreviewHtml] = useState("");
+  const [showDashPanelMobile, setShowDashPanelMobile] = useState(false);
+
+  const bulletinFormatDisplay: BulletinFormat = outputMode === "online" ? "온라인" : printFormat === "fold3" ? "6면" : "4면";
+  const setBulletinFormat = useCallback((f: BulletinFormat) => {
+    if (f === "온라인") setOutputMode("online");
+    else {
+      setOutputMode("print");
+      setPrintFormat(f === "6면" ? "fold3" : "fold2");
+    }
+    if (typeof sessionStorage !== "undefined") sessionStorage.setItem("bulletin-format", f);
+  }, []);
+
+  useEffect(() => {
+    const s = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("bulletin-format") : null;
+    if (s === "온라인") setOutputMode("online");
+    else if (s === "4면") { setOutputMode("print"); setPrintFormat("fold2"); }
+    else if (s === "6면") { setOutputMode("print"); setPrintFormat("fold3"); }
+  }, []);
+
+  useEffect(() => {
+    const styleId = "bulletin-print-media-style";
+    const existing = document.getElementById(styleId);
+    if (existing) existing.remove();
+
+    const bulletinFormat = bulletinFormatDisplay;
+    let pageSize: string;
+    if (bulletinFormat === "6면") {
+      pageSize = "size: 378mm 212mm; margin: 0;";
+    } else if (bulletinFormat === "4면") {
+      pageSize = "size: 254mm 212mm; margin: 0;";
+    } else {
+      pageSize = "size: A4 portrait; margin: 10mm;";
+    }
+
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      @media print {
+        @page { ${pageSize} }
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
+        }
+        html, body { margin: 0 !important; padding: 0 !important; }
+        body > *:not(#bulletin-print-only) { display: none !important; }
+        #bulletin-print-only {
+          display: block !important;
+          visibility: visible !important;
+          position: static !important;
+          left: auto !important;
+          width: 100% !important;
+          height: auto !important;
+          background: white !important;
+        }
+        .bulletin-preview-display { display: none !important; }
+        .print-spread {
+          display: grid !important;
+          width: 100% !important;
+          height: 100vh !important;
+          page-break-after: always !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          overflow: hidden !important;
+          box-sizing: border-box !important;
+        }
+        .print-spread:last-child {
+          page-break-after: auto !important;
+        }
+        .print-cell {
+          height: 100% !important;
+          overflow: hidden !important;
+          padding: 6mm !important;
+          border-right: 0.3pt solid #ccc !important;
+          box-sizing: border-box !important;
+          position: relative !important;
+        }
+        .print-cell:last-child {
+          border-right: none !important;
+        }
+        .print-cell > * {
+          height: 100% !important;
+          min-height: 100% !important;
+          box-sizing: border-box !important;
+        }
+        .print-cell .tp-cover {
+          height: 100% !important;
+          min-height: 100% !important;
+          width: 100% !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: center !important;
+          align-items: center !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      const el = document.getElementById(styleId);
+      if (el) el.remove();
+    };
+  }, [bulletinFormatDisplay]);
+  const zoomIn = () => setPreviewScale(s => Math.min(s + 0.1, 2.0));
   const zoomOut = () => setPreviewScale(s => Math.max(s - 0.1, 0.25));
   const zoomReset = () => setPreviewScale(mob ? 0.45 : 0.75);
 
@@ -449,6 +605,8 @@ export function BulletinPage() {
 
   const getCaptureTarget = useCallback((): HTMLElement | null => {
     if (outputMode === "kakao" && kakaoCardRef.current) return kakaoCardRef.current;
+    const byId = document.getElementById("bulletin-print-area");
+    if (byId) return byId;
     const el = document.querySelector("[data-bulletin-preview]") as HTMLElement;
     return el || previewRef.current;
   }, [outputMode]);
@@ -555,16 +713,6 @@ export function BulletinPage() {
     setDb(prev => ({ ...prev, current: updater(prev.current) }));
   }, []);
 
-  const printBulletin = () => {
-    saveFields();
-    setTimeout(() => window.print(), 300);
-  };
-
-  const downloadPDF = () => {
-    showToast("인쇄 대화상자에서 'PDF로 저장'을 선택하세요");
-    setTimeout(() => window.print(), 500);
-  };
-
   const saveToHistory = () => {
     saveFields();
     setDb(prev => {
@@ -592,6 +740,35 @@ export function BulletinPage() {
   const secEntries = Object.entries(SECTIONS) as [SectionKey, { name: string; icon: string }][];
   const submittedCount = secEntries.filter(([k]) => db.current[k]?.submitted).length;
   const info = PAGE_INFO[activeSub];
+  const dbRef = useRef(db);
+  useEffect(() => { dbRef.current = db; }, [db]);
+
+  const getBulletinStyles = () => {
+    const el = document.getElementById("bulletin-print-styles");
+    return el ? (el.textContent || el.innerHTML || "") : "";
+  };
+
+  const handlePreview = useCallback(() => {
+    saveFields();
+    setTimeout(() => {
+      const el = document.getElementById("bulletin-print-area");
+      setFullPreviewHtml(el?.innerHTML ?? "");
+      setShowFullPreview(true);
+    }, 300);
+  }, [saveFields]);
+
+  const handlePDF = useCallback(() => {
+    if (typeof saveFields === "function") saveFields();
+    setTimeout(() => {
+      window.print();
+      showToast("인쇄 대화상자에서 'PDF로 저장'을 선택하세요");
+    }, 300);
+  }, [showToast]);
+
+  const handlePrint = useCallback(() => {
+    if (typeof saveFields === "function") saveFields();
+    setTimeout(() => window.print(), 300);
+  }, []);
 
   const navSections = [{ sectionLabel: "주보", items: NAV_ITEMS.map((n) => ({ id: n.id, label: n.label, Icon: n.Icon })) }];
 
@@ -606,96 +783,190 @@ export function BulletinPage() {
       headerTitle={info.title}
       headerDesc={info.desc}
       headerActions={
-        <>
-          <Btn variant="secondary" size="sm" onClick={() => { const html = buildPreviewHTML(db, outputMode, printFormat); if (previewRef.current) previewRef.current.innerHTML = html; if (dashPreviewRef.current) dashPreviewRef.current.innerHTML = html; }}>👁 미리보기</Btn>
-          <Btn variant="accent" size="sm" onClick={downloadPDF}>📄 PDF</Btn>
-          <Btn variant="primary" size="sm" onClick={printBulletin}>🖨 인쇄</Btn>
-          {activeSub !== "edit" && <Btn variant="primary" size="sm" onClick={() => handleNav("edit")}>✏️ 편집</Btn>}
-          {activeSub === "edit" && <Btn size="sm" style={{ background: C.green, color: "#fff" }} onClick={saveToHistory}>💾 저장</Btn>}
-        </>
+        activeSub === "edit" ? (
+          <button type="button" onClick={saveToHistory} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#111827", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ffffff", cursor: "pointer" }}>
+            <Save size={14} /> 저장
+          </button>
+        ) : null
       }
       SidebarIcon={Newspaper}
     >
         <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 20 }} className="bulletin-page-content">
-          {activeSub === "dash" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12 }}>
-                <Card><div style={{ padding: 16 }}><div style={{ fontSize: 24, fontWeight: 800 }}>{BULLETIN_DATE_STR}</div><div style={{ fontSize: 12, color: C.textMuted }}>다음 주일</div></div></Card>
-                <Card><div style={{ padding: 16 }}><div style={{ fontSize: 24, fontWeight: 800, color: submittedCount === 6 ? C.green : C.yellow }}>{submittedCount}/6</div><div style={{ fontSize: 12, color: C.textMuted }}>제출 완료</div></div></Card>
-                <Card><div style={{ padding: 16 }}><div style={{ fontSize: 24, fontWeight: 800 }}>{db.settings.deadline}</div><div style={{ fontSize: 12, color: C.textMuted }}>마감일</div></div></Card>
-                <Card><div style={{ padding: 16 }}><div style={{ fontSize: 24, fontWeight: 800 }}>{db.history.length}</div><div style={{ fontSize: 12, color: C.textMuted }}>누적 주보</div></div></Card>
-              </div>
-              <Card>
-                <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 700 }}>📋 부서별 제출 현황</span>
-                  <Btn size="sm" variant="secondary" onClick={() => showToast("마감 알림 (데모)")}>⏰ 마감 알림</Btn>
-                </div>
-                <div style={{ padding: 18 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12 }}>
-                    {secEntries.map(([k, v]) => {
-                      const s = db.current[k];
-                      const done = s?.submitted;
-                      return (
-                        <div key={k} style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, border: `1px solid ${C.border}`, background: done ? C.greenBg : C.redBg }}>
-                          <div style={{ width: 12, height: 12, borderRadius: "50%", background: done ? C.green : C.red, flexShrink: 0 }} />
-                          <div style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{v.icon} {v.name}</div>
-                          <div style={{ fontSize: 11, color: C.textMuted }}>{done ? "✅ " + (s?.submittedAt || "") : "❌ 미제출"}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </Card>
-              <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
-                <Card>
-                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 700 }}>📰 이번 주 주보 미리보기</span></div>
-                  <div style={{ padding: 18, display: "flex", justifyContent: "center", background: C.borderLight, minHeight: 180, overflow: "hidden" }}>
-                    <div ref={dashPreviewRef} data-bview="inner" className="bulletin-preview-wrap bulletin-page-content" style={{ transformOrigin: "top center", transform: "scale(0.32)" }} />
-                  </div>
-                </Card>
-                <Card>
-                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 700 }}>📅 최근 주보</span></div>
-                  <div style={{ padding: 18 }}>
-                    {db.history.length === 0 ? <div style={{ color: C.textFaint, textAlign: "center", padding: 20 }}>저장된 주보가 없습니다</div> : db.history.slice(-5).reverse().map(h => (
-                      <div key={h.key} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: `1px solid ${C.borderLight}` }}>
-                        <span style={{ fontSize: 20 }}>📰</span>
-                        <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{h.date}</div><div style={{ fontSize: 12, color: C.textMuted }}>{h.sermonTitle || "제목 없음"}</div></div>
-                        <Btn size="sm" variant="secondary" onClick={() => loadHistory(h.key)}>불러오기</Btn>
+          {activeSub === "dash" && (() => {
+            const getPreviewStyle = (): { width: number; minHeight: number; padding: number } => {
+              switch (bulletinFormatDisplay) {
+                case "6면": return { width: 1134, minHeight: 637, padding: 30 };
+                case "4면": return { width: 756, minHeight: 1274, padding: 0 };
+                case "온라인": return { width: 595, minHeight: 842, padding: 24 };
+              }
+            };
+            const ps = getPreviewStyle();
+            return (
+            <div className="flex" style={{ height: "calc(100vh - 120px)", minHeight: 0 }}>
+              <div className={`${mob && !showDashPanelMobile ? "hidden" : ""} md:block w-[420px] flex-shrink-0 border-r border-gray-100 bg-white overflow-y-auto`}>
+                <div className="p-6 space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { label: "이번 주 주보", value: BULLETIN_DATE_STR },
+                      { label: "제출 현황", value: `${submittedCount}/6` },
+                      { label: "작성률", value: "—" },
+                      { label: "누적 주보", value: String(db.history.length) },
+                    ].map((card, i) => (
+                      <div key={i} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p className="text-[11px] text-gray-400 mb-1">{card.label}</p>
+                        <p className="text-lg font-semibold text-gray-900">{card.value}</p>
                       </div>
                     ))}
                   </div>
-                </Card>
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-[13px] font-medium text-gray-900">부서별 제출 현황</h3>
+                      <button type="button" onClick={() => showToast("마감 알림 (데모)")} className="text-[11px] text-blue-500 hover:text-blue-600">마감 알림</button>
+                    </div>
+                    <div className="space-y-2">
+                      {secEntries.map(([k, v]) => {
+                        const s = db.current[k];
+                        const done = !!s?.submitted;
+                        return (
+                          <div key={k} className="flex items-center justify-between py-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${done ? "bg-green-500" : "bg-red-400"}`} />
+                              <span className="text-sm text-gray-700">{v.name}</span>
+                            </div>
+                            <span className={`text-[11px] px-2 py-0.5 rounded-full ${done ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"}`}>
+                              {done ? "제출완료" : "미제출"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <h3 className="text-[13px] font-medium text-gray-900 mb-3">최근 주보</h3>
+                    {db.history.length === 0 ? (
+                      <p className="text-[13px] text-gray-400">저장된 주보가 없습니다</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {db.history.slice(-5).reverse().map(h => (
+                          <div key={h.key} className="flex items-center justify-between py-2">
+                            <div><span className="text-sm text-gray-700">{h.date}</span><span className="text-[11px] text-gray-400 ml-1">{h.sermonTitle || "제목 없음"}</span></div>
+                            <button type="button" onClick={() => loadHistory(h.key)} className="text-[11px] text-blue-500 hover:text-blue-600">불러오기</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
+                {mob && (
+                  <button type="button" onClick={() => setShowDashPanelMobile(v => !v)} className="md:hidden w-full px-4 py-2 text-sm text-gray-600 bg-white border-b border-gray-100 flex-shrink-0">
+                    대시보드 정보 보기
+                  </button>
+                )}
+                <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-gray-100 bg-white flex-shrink-0 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setDashPreviewScale(s => Math.max(0.3, s - 0.1))} className="w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 text-sm">
+                      −
+                    </button>
+                    <span className="text-xs text-gray-500 w-12 text-center">{Math.round(dashPreviewScale * 100)}%</span>
+                    <button type="button" onClick={() => setDashPreviewScale(s => Math.min(2.0, s + 0.1))} className="w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 text-sm">
+                      +
+                    </button>
+                  </div>
+                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                    {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
+                      <button
+                        key={format}
+                        type="button"
+                        onClick={() => setBulletinFormat(format)}
+                        className={`px-3 py-1.5 text-xs rounded-md transition-all ${bulletinFormatDisplay === format ? "bg-white text-gray-900 shadow-sm font-medium" : "text-gray-500 hover:text-gray-700"}`}
+                      >
+                        {format}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    <button type="button" onClick={handlePreview} className="px-3 py-1.5 text-[12px] text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 inline-flex items-center gap-1.5">
+                      <Eye size={13} /> 미리보기
+                    </button>
+                    <button type="button" onClick={handlePDF} className="px-3 py-1.5 text-[12px] text-white bg-gray-900 rounded-lg hover:bg-gray-800 inline-flex items-center gap-1.5">
+                      <FileText size={13} /> PDF
+                    </button>
+                    <button type="button" onClick={handlePrint} className="px-3 py-1.5 text-[12px] text-white bg-gray-900 rounded-lg hover:bg-gray-800 inline-flex items-center gap-1.5">
+                      <Printer size={13} /> 인쇄
+                    </button>
+                    <button type="button" onClick={handleDownloadCard} className="px-3 py-1.5 text-[12px] text-gray-900 bg-[#FEE500] rounded-lg hover:bg-[#FDD800] inline-flex items-center gap-1.5">
+                      카카오로 공유
+                    </button>
+                    <button type="button" onClick={() => handleNav("edit")} className="px-3 py-1.5 text-[12px] text-white bg-blue-600 rounded-lg hover:bg-blue-700 inline-flex items-center gap-1.5">
+                      <Edit3 size={13} /> 편집
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-auto bg-white" style={{ minHeight: 0 }}>
+                  <div
+                    className="bulletin-preview-display"
+                    id="bulletin-print-container"
+                    style={{
+                      minHeight: "calc(100vh - 170px)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      padding: "24px 16px",
+                      backgroundColor: "#ffffff",
+                    }}
+                  >
+                    <div
+                      id="bulletin-print-area"
+                      ref={dashPreviewRef}
+                      className="bulletin-page-content"
+                      style={{
+                        width: ps.width,
+                        minHeight: ps.minHeight,
+                        padding: ps.padding,
+                        transform: `scale(${dashPreviewScale})`,
+                        transformOrigin: "top center",
+                        backgroundColor: "#ffffff",
+                        borderRadius: 4,
+                        border: "1px solid #e5e7eb",
+                        flexShrink: 0,
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {activeSub === "edit" && (
-            <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 20, minHeight: "calc(100vh - 140px)" }}>
-              <div style={{ overflowY: "auto", paddingRight: mob ? 0 : 10 }}>
+            <div className="flex" style={{ height: "calc(100vh - 120px)", minHeight: 0, gap: 20, flexDirection: mob ? "column" : "row" }}>
+              <div style={{ overflowY: "auto", paddingRight: mob ? 0 : 10, flex: mob ? "none" : "0 0 auto", width: mob ? "100%" : 400, minWidth: 0 }}>
                 <Card>
-                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}`, fontWeight: 700 }}>📐 출력 형식</div>
+                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}`, fontWeight: 600, fontSize: 14, color: "#111827" }}>출력 형식</div>
                   <div style={{ padding: 18 }}>
                     <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
                       {(["print", "online", "kakao"] as OutputMode[]).map(m => (
                         <button key={m} onClick={() => { setOutputMode(m); if (m !== "print") setPreviewView("all"); }} style={{
-                          flex: 1, minWidth: 90, padding: "10px 8px", border: `2px solid ${outputMode === m ? (m === "kakao" ? "#FEE500" : C.accent) : C.border}`, borderRadius: 10,
-                          background: outputMode === m ? (m === "kakao" ? "#FFFDE7" : C.accentLight) : C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
-                          color: outputMode === m ? (m === "kakao" ? "#3C1E1E" : C.accent) : C.textMuted, textAlign: "center",
-                        }}>{m === "print" ? "🖨️ 인쇄용" : m === "online" ? "📱 온라인/PDF" : "💬 카카오톡"}</button>
+                          flex: 1, minWidth: 90, padding: "10px 8px", border: `1px solid ${outputMode === m ? (m === "kakao" ? "#FEE500" : "#111827") : "#e5e7eb"}`, borderRadius: 8,
+                          background: outputMode === m ? (m === "kakao" ? "#FFFDE7" : "#111827") : "#ffffff", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500,
+                          color: outputMode === m ? (m === "kakao" ? "#3C1E1E" : "#ffffff") : "#6b7280", textAlign: "center",
+                        }}>{m === "print" ? "인쇄용" : m === "online" ? "온라인/PDF" : "카카오톡"}</button>
                       ))}
                     </div>
                     {outputMode === "print" && (
                       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                         {(["fold3", "fold2"] as PrintFormat[]).map(f => (
                           <button key={f} onClick={() => { setPrintFormat(f); setPreviewView("all"); }} style={{
-                            flex: 1, padding: "10px 8px", border: `2px solid ${printFormat === f ? C.accent : C.border}`, borderRadius: 10,
-                            background: printFormat === f ? C.accentLight : C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
-                            color: printFormat === f ? C.accent : C.textMuted, textAlign: "center",
-                          }}>{f === "fold3" ? "📄 3면 접지 (삼접지)" : "📄 2면 접지 (반접지)"}</button>
+                            flex: 1, padding: "10px 8px", border: `1px solid ${printFormat === f ? "#111827" : "#e5e7eb"}`, borderRadius: 8,
+                            background: printFormat === f ? "#111827" : "#ffffff", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 500,
+                            color: printFormat === f ? "#ffffff" : "#6b7280", textAlign: "center",
+                          }}>{f === "fold3" ? "3면 접지 (삼접지)" : "2면 접지 (반접지)"}</button>
                         ))}
                       </div>
                     )}
-                    <div style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, marginBottom: 8 }}>🎨 디자인</div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "#9ca3af", marginBottom: 8 }}>디자인</div>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       {TEMPLATES.map(t => (
                         <div key={t.id} onClick={() => setCurrent(c => ({ ...c, template: t.id }))} style={{ width: mob ? 90 : 110, cursor: "pointer", borderRadius: 10, border: `2px solid ${db.current.template === t.id ? C.accent : C.border}`, overflow: "hidden", transition: "border .15s" }}>
@@ -709,8 +980,8 @@ export function BulletinPage() {
 
                 <Card id="sec-pastor">
                   <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontWeight: 700 }}>⛪ 담임목사</span>
-                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: db.current.pastor?.submitted ? C.greenBg : C.redBg, color: db.current.pastor?.submitted ? C.green : C.red }}>{db.current.pastor?.submitted ? "✓" : "✗"}</span>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>담임목사</span>
+                    <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 6, background: db.current.pastor?.submitted ? "#f3f4f6" : "#fef2f2", color: db.current.pastor?.submitted ? "#6b7280" : "#ef4444" }}>{db.current.pastor?.submitted ? "제출" : "미제출"}</span>
                   </div>
                   <div style={{ padding: 18 }}>
                     <FormField label="설교 제목"><FInput value={db.current.pastor?.sermonTitle || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonTitle: v } }))} placeholder="이번 주 설교 제목" /></FormField>
@@ -724,7 +995,7 @@ export function BulletinPage() {
                 </Card>
 
                 <Card id="sec-worship">
-                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 700 }}>🎵 예배 / 찬양</span></div>
+                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>예배 / 찬양</span></div>
                   <div style={{ padding: 18 }}>
                     <FormField label="예배 순서"><FTextarea value={db.current.worship?.worshipOrder || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, worshipOrder: v } }))} placeholder="묵도&#10;찬송 ………… 00장" style={{ minHeight: 150 }} /></FormField>
                     <FormField label="찬양곡"><FInput value={db.current.worship?.praise || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, praise: v } }))} placeholder="찬양곡 목록" /></FormField>
@@ -732,12 +1003,12 @@ export function BulletinPage() {
                   </div>
                 </Card>
 
-                <Card id="sec-youth"><div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}>🧑‍🤝‍🧑 청년부</div><div style={{ padding: 18 }}><FormField label="청년부 광고"><FTextarea value={db.current.youth?.content || ""} onChange={v => setCurrent(c => ({ ...c, youth: { ...c.youth, content: v } }))} placeholder="청년부 행사, 모임 안내" /></FormField></div></Card>
-                <Card id="sec-education"><div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}>📚 교육부</div><div style={{ padding: 18 }}><FormField label="교육부 광고"><FTextarea value={db.current.education?.content || ""} onChange={v => setCurrent(c => ({ ...c, education: { ...c.education, content: v } }))} placeholder="주일학교, 교사 모임" /></FormField></div></Card>
-                <Card id="sec-mission"><div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}>🌍 선교부</div><div style={{ padding: 18 }}><FormField label="선교부 광고"><FTextarea value={db.current.mission?.content || ""} onChange={v => setCurrent(c => ({ ...c, mission: { ...c.mission, content: v } }))} placeholder="선교 소식, 단기선교" /></FormField></div></Card>
+                <Card id="sec-youth"><div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>청년부</span></div><div style={{ padding: 18 }}><FormField label="청년부 광고"><FTextarea value={db.current.youth?.content || ""} onChange={v => setCurrent(c => ({ ...c, youth: { ...c.youth, content: v } }))} placeholder="청년부 행사, 모임 안내" /></FormField></div></Card>
+                <Card id="sec-education"><div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>교육부</span></div><div style={{ padding: 18 }}><FormField label="교육부 광고"><FTextarea value={db.current.education?.content || ""} onChange={v => setCurrent(c => ({ ...c, education: { ...c.education, content: v } }))} placeholder="주일학교, 교사 모임" /></FormField></div></Card>
+                <Card id="sec-mission"><div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>선교부</span></div><div style={{ padding: 18 }}><FormField label="선교부 광고"><FTextarea value={db.current.mission?.content || ""} onChange={v => setCurrent(c => ({ ...c, mission: { ...c.mission, content: v } }))} placeholder="선교 소식, 단기선교" /></FormField></div></Card>
 
                 <Card id="sec-general">
-                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}>📋 총무/행정</div>
+                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>총무/행정</span></div>
                   <div style={{ padding: 18 }}>
                     <FormField label="교회 소식/일반 광고"><FTextarea value={db.current.general?.content || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, content: v } }))} placeholder="교회 전체 소식" /></FormField>
                     <FormField label="이번 주 생일자"><FInput value={db.current.general?.birthday || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, birthday: v } }))} placeholder="김OO 집사, 이OO 권사" /></FormField>
@@ -748,48 +1019,67 @@ export function BulletinPage() {
                 </Card>
               </div>
 
-              <div style={{ position: mob ? "relative" : "sticky", top: 0, alignSelf: "flex-start", display: "flex", flexDirection: "column", alignItems: "center", marginTop: mob ? 20 : 0, width: "100%" }}>
-                {outputMode === "print" && <div style={{ display: "flex", gap: 4, marginBottom: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                  {(printFormat === "fold3" ? VIEW_FOLD3 : VIEW_FOLD2).map(v => (
-                    <button key={v} onClick={() => setPreviewView(v)} style={{
-                      padding: "5px 12px", fontSize: 11, fontWeight: 600, border: "none", borderRadius: 6,
-                      background: previewView === v ? C.accent : C.borderLight,
-                      color: previewView === v ? "#fff" : C.textMuted,
-                      cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
-                    }}>{VIEW_LABEL[v]}</button>
-                  ))}
-                </div>}
-                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: C.textMuted }}>
-                    {outputMode === "kakao" ? "카카오톡 공유용" : outputMode === "print" ? (printFormat === "fold3" ? "3면 접지" : "2면 접지") : "온라인"}
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexWrap: "wrap", justifyContent: "center" }}>
-                  {outputMode !== "kakao" && (
-                    <>
-                      <Btn size="sm" style={{ background: C.green, color: "#fff" }} onClick={printBulletin}>🖨 인쇄</Btn>
-                      <Btn size="sm" variant="accent" onClick={downloadPDF}>📄 PDF</Btn>
-                    </>
-                  )}
-                  <button onClick={handleDownloadCard} style={{
-                    display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px",
-                    backgroundColor: "#ffffff", border: `1px solid ${C.border}`, borderRadius: 8,
-                    fontSize: 12, fontWeight: 500, color: C.text, cursor: "pointer", fontFamily: "inherit",
-                  }}>📥 카카오용 이미지 저장</button>
-                  <button onClick={handleKakaoShare} style={{
-                    display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px",
-                    backgroundColor: "#FEE500", border: "none", borderRadius: 8,
-                    fontSize: 12, fontWeight: 600, color: "#3C1E1E", cursor: "pointer", fontFamily: "inherit",
-                  }}>💬 카카오톡 공유</button>
-                  {outputMode !== "kakao" && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 2, background: C.borderLight, borderRadius: 8, padding: "2px 4px" }}>
-                      <button onClick={zoomOut} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-                      <button onClick={zoomReset} style={{ minWidth: 44, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.text, fontFamily: "inherit" }}>{Math.round(previewScale * 100)}%</button>
-                      <button onClick={zoomIn} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
-                    </div>
-                  )}
+              <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ marginTop: mob ? 20 : 0 }}>
+                <div className="flex-shrink-0 flex flex-col items-center pb-2">
+                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5 mb-2">
+                    {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
+                      <button
+                        key={format}
+                        type="button"
+                        onClick={() => setBulletinFormat(format)}
+                        className={`px-3 py-1.5 text-xs rounded-md transition-all ${bulletinFormatDisplay === format ? "bg-white text-gray-900 shadow-sm font-medium" : "text-gray-500 hover:text-gray-700"}`}
+                      >
+                        {format}
+                      </button>
+                    ))}
+                  </div>
+                  {outputMode === "print" && <div style={{ display: "flex", gap: 4, marginBottom: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                    {(printFormat === "fold3" ? VIEW_FOLD3 : VIEW_FOLD2).map(v => (
+                      <button key={v} onClick={() => setPreviewView(v)} style={{
+                        padding: "5px 12px", fontSize: 11, fontWeight: 600, border: "none", borderRadius: 6,
+                        background: previewView === v ? C.accent : C.borderLight,
+                        color: previewView === v ? "#fff" : C.textMuted,
+                        cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
+                      }}>{VIEW_LABEL[v]}</button>
+                    ))}
+                  </div>}
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: C.textMuted }}>
+                      {outputMode === "kakao" ? "카카오톡 공유용" : outputMode === "print" ? (printFormat === "fold3" ? "3면 접지" : "2면 접지") : "온라인"}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                    {outputMode !== "kakao" && (
+                      <>
+                        <button type="button" onClick={handlePrint} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#111827", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ffffff", cursor: "pointer" }}>
+                          <Printer size={14} /> 인쇄
+                        </button>
+                        <button type="button" onClick={handlePDF} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#111827", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ffffff", cursor: "pointer" }}>
+                          <FileText size={14} /> PDF
+                        </button>
+                      </>
+                    )}
+                    <button type="button" onClick={handleDownloadCard} style={{
+                      display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px",
+                      backgroundColor: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 8,
+                      fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer", fontFamily: "inherit",
+                    }}>카카오용 이미지 저장</button>
+                    <button type="button" onClick={handleKakaoShare} style={{
+                      display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px",
+                      backgroundColor: "#FEE500", border: "none", borderRadius: 8,
+                      fontSize: 13, fontWeight: 600, color: "#3C1E1E", cursor: "pointer", fontFamily: "inherit",
+                    }}>카카오로 공유</button>
+                    {outputMode !== "kakao" && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 2, background: C.borderLight, borderRadius: 8, padding: "2px 4px" }}>
+                        <button onClick={zoomOut} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                        <button onClick={zoomReset} style={{ minWidth: 44, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.text, fontFamily: "inherit" }}>{Math.round(previewScale * 100)}%</button>
+                        <button onClick={zoomIn} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
+                <div className="flex-1 overflow-auto min-h-0">
                 {outputMode === "kakao" ? (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%" }}>
                     <KakaoShareCard
@@ -811,23 +1101,37 @@ export function BulletinPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="bulletin-preview-scale" style={{ transform: `scale(${previewScale})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
-                    <div ref={previewRef} data-bview={previewView} data-bulletin-preview className="bulletin bulletin-preview-inner bulletin-page-content" />
+                  <div
+                    className="bulletin-preview-display"
+                    id="bulletin-print-container"
+                    style={{
+                      width: "100%",
+                      minHeight: "calc(100vh - 140px)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      padding: "24px 16px",
+                      backgroundColor: "#ffffff",
+                    }}
+                  >
+                    <div className="bulletin-preview-scale flex-shrink-0" style={{ transform: `scale(${previewScale})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
+                      <div id="bulletin-print-area" ref={previewRef} data-bview={previewView} data-bulletin-preview className="bulletin bulletin-preview-inner bulletin-page-content" style={{ flexShrink: 0 }} />
+                    </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           )}
 
           {activeSub === "history" && (
             <div ref={listRefHistory}><Card>
-              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}>📁 지난 주보 목록</div>
+              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>지난 주보 목록</span></div>
               <div style={{ padding: 18 }}>
-                {db.history.length === 0 ? <div style={{ color: C.textFaint, textAlign: "center", padding: 40 }}>저장된 주보가 없습니다. 편집에서 저장하면 여기에 표시됩니다.</div> : db.history.slice().reverse().slice((currentPageHistory - 1) * 10, currentPageHistory * 10).map(h => (
-                  <div key={h.key} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 0", borderBottom: `1px solid ${C.borderLight}` }}>
-                    <span style={{ fontSize: 24 }}>📰</span>
-                    <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 700 }}>{h.date || h.key}</div><div style={{ fontSize: 13, color: C.textMuted }}>{h.sermonTitle || "제목 없음"} · 저장: {h.savedAt || ""}</div></div>
-                    <Btn size="sm" variant="primary" onClick={() => loadHistory(h.key)}>불러오기</Btn>
+                {db.history.length === 0 ? <div style={{ color: "#9ca3af", textAlign: "center", padding: 40, fontSize: 14 }}>저장된 주보가 없습니다. 편집에서 저장하면 여기에 표시됩니다.</div> : db.history.slice().reverse().slice((currentPageHistory - 1) * 10, currentPageHistory * 10).map(h => (
+                  <div key={h.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "12px 0", borderBottom: `1px solid #f3f4f6` }}>
+                    <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>{h.date || h.key}</div><div style={{ fontSize: 12, color: "#9ca3af" }}>{h.sermonTitle || "제목 없음"} · 저장: {h.savedAt || ""}</div></div>
+                    <button type="button" onClick={() => loadHistory(h.key)} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 500, backgroundColor: "#111827", border: "none", borderRadius: 8, color: "#ffffff", cursor: "pointer" }}>불러오기</button>
                   </div>
                 ))}
               </div>
@@ -838,7 +1142,7 @@ export function BulletinPage() {
           {activeSub === "settings" && (
             <div style={{ maxWidth: 600 }}>
               <Card>
-                <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}>⚙️ 교회 기본 정보</div>
+                <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>교회 기본 정보</span></div>
                 <div style={{ padding: 18 }}>
                   <FormField label="교회명"><FInput value={db.settings.church} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, church: v } }))} /></FormField>
                   <FormField label="교회 영문명/부제"><FInput value={db.settings.churchSub} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, churchSub: v } }))} /></FormField>
@@ -852,12 +1156,12 @@ export function BulletinPage() {
                     <FormField label="헌금 계좌"><FInput value={db.settings.account} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, account: v } }))} /></FormField>
                   </div>
                   <FormField label="마감 요일"><FSelect value={db.settings.deadline} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, deadline: v } }))}><option>수요일</option><option>목요일</option><option>금요일</option></FSelect></FormField>
-                  <hr style={{ margin: "20px 0", border: "none", borderTop: `1px solid ${C.borderLight}` }} />
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <Btn variant="secondary" onClick={() => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(db, null, 2)], { type: "application/json" })); a.download = `주보시스템_백업_${fds(TODAY)}.json`; a.click(); showToast("백업 완료"); }}>📦 백업</Btn>
-                    <Btn variant="secondary" onClick={() => document.getElementById("bulletin-restore")?.click()}>📂 복원</Btn>
+                  <hr style={{ margin: "20px 0", border: "none", borderTop: `1px solid #f3f4f6` }} />
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button type="button" onClick={() => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(db, null, 2)], { type: "application/json" })); a.download = `주보시스템_백업_${fds(TODAY)}.json`; a.click(); showToast("백업 완료"); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>백업</button>
+                    <button type="button" onClick={() => document.getElementById("bulletin-restore")?.click()} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>복원</button>
                     <input id="bulletin-restore" type="file" accept=".json" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = ev => { try { const d = JSON.parse(ev.target?.result as string); if (d.settings && d.current) { setDb(d); showToast("복원 완료"); } else showToast("올바른 파일이 아닙니다"); } catch { showToast("파일 오류"); } }; r.readAsText(f); e.target.value = ""; }} />
-                    <Btn variant="danger" size="sm" onClick={() => { if (!confirm("초기화하시겠습니까?")) return; localStorage.removeItem(BULLETIN_STORAGE_KEY); setDb(loadBulletin()); setActiveSub("dash"); showToast("초기화 완료"); }}>🗑 초기화</Btn>
+                    <button type="button" onClick={() => { if (!confirm("초기화하시겠습니까?")) return; localStorage.removeItem(BULLETIN_STORAGE_KEY); setDb(loadBulletin()); setActiveSub("dash"); showToast("초기화 완료"); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#ffffff", border: "1px solid #ef4444", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ef4444", cursor: "pointer" }}>초기화</button>
                   </div>
                 </div>
               </Card>
@@ -865,11 +1169,161 @@ export function BulletinPage() {
           )}
         </div>
 
+      {showFullPreview && (
+        <div className="fixed inset-0 z-[9999]" style={{ backgroundColor: "#ffffff" }}>
+          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200" style={{ backgroundColor: "#ffffff" }}>
+            <span className="text-sm font-medium text-gray-800">주보 미리보기</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="px-3 py-1.5 text-xs font-medium rounded bg-gray-800 text-white hover:bg-gray-700"
+                onClick={() => { setShowFullPreview(false); setTimeout(() => handlePDF(), 100); }}
+              >
+                PDF 저장
+              </button>
+              <button
+                type="button"
+                className="px-3 py-1.5 text-xs font-medium rounded bg-gray-800 text-white hover:bg-gray-700"
+                onClick={() => { setShowFullPreview(false); setTimeout(() => handlePrint(), 100); }}
+              >
+                인쇄
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFullPreview(false)}
+                className="px-3 py-1.5 text-xs font-medium rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+          <div
+            className="overflow-auto"
+            style={{
+              height: "calc(100vh - 52px)",
+              backgroundColor: "#f9fafb",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "flex-start",
+              paddingTop: 32,
+              paddingBottom: 32,
+            }}
+          >
+            <div
+              className="bulletin-page-content"
+              style={{
+                width: bulletinFormatDisplay === "6면" ? 1134
+                  : bulletinFormatDisplay === "4면" ? 756
+                  : 595,
+                minHeight: bulletinFormatDisplay === "6면" ? 1274
+                  : bulletinFormatDisplay === "4면" ? 1274
+                  : 842,
+                backgroundColor: "#ffffff",
+                padding: bulletinFormatDisplay === "온라인" ? 40 : 0,
+                border: "1px solid #e5e7eb",
+                borderRadius: 4,
+                flexShrink: 0,
+                alignSelf: "flex-start",
+                transformOrigin: "top center",
+                transform: bulletinFormatDisplay === "6면" ? "scale(0.7)" : "none",
+              }}
+              dangerouslySetInnerHTML={{ __html: fullPreviewHtml || "" }}
+            />
+          </div>
+        </div>
+      )}
+
       <div style={{ position: "fixed", top: mob ? 8 : 20, right: mob ? 8 : 20, left: mob ? 8 : "auto", zIndex: 2000, display: "flex", flexDirection: "column", gap: 8 }}>
-        {toasts.map(t => <div key={t.id} style={{ background: C.green, color: "#fff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}>✓ {t.msg}</div>)}
+        {toasts.map(t => <div key={t.id} style={{ background: "#111827", color: "#fff", padding: "12px 20px", borderRadius: 8, fontSize: 13, fontWeight: 500 }}>{t.msg}</div>)}
       </div>
 
-      <style>{`
+      {typeof document !== "undefined" &&
+        createPortal(
+          <div
+            id="bulletin-print-only"
+            className="bulletin-page-content"
+            style={{
+              position: "fixed",
+              left: "-9999px",
+              top: 0,
+              visibility: "hidden",
+              width: bulletinFormatDisplay === "6면" ? "378mm" : bulletinFormatDisplay === "4면" ? "254mm" : "210mm",
+              height: bulletinFormatDisplay === "온라인" ? "297mm" : "212mm",
+              background: "white",
+            }}
+          >
+            {bulletinFormatDisplay === "6면" && (
+              <>
+                <div
+                  className="print-spread"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    width: "378mm",
+                    height: "212mm",
+                    pageBreakAfter: "always",
+                  }}
+                >
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getTriFoldSectionHTML(db, 5) }} />
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getTriFoldSectionHTML(db, 0) }} />
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getTriFoldSectionHTML(db, 1) }} />
+                </div>
+                <div
+                  className="print-spread"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    width: "378mm",
+                    height: "212mm",
+                  }}
+                >
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getTriFoldSectionHTML(db, 2) }} />
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getTriFoldSectionHTML(db, 3) }} />
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getTriFoldSectionHTML(db, 4) }} />
+                </div>
+              </>
+            )}
+            {bulletinFormatDisplay === "4면" && (
+              <>
+                <div
+                  className="print-spread"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    width: "254mm",
+                    height: "212mm",
+                    pageBreakAfter: "always",
+                  }}
+                >
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getHalfFoldSectionHTML(db, 3) }} />
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getHalfFoldSectionHTML(db, 0) }} />
+                </div>
+                <div
+                  className="print-spread"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    width: "254mm",
+                    height: "212mm",
+                  }}
+                >
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getHalfFoldSectionHTML(db, 1) }} />
+                  <div className="print-cell" dangerouslySetInnerHTML={{ __html: getHalfFoldSectionHTML(db, 2) }} />
+                </div>
+              </>
+            )}
+            {bulletinFormatDisplay === "온라인" && (
+              <div
+                className="bulletin-page-content"
+                style={{ width: "210mm", minHeight: "297mm", padding: "15mm" }}
+                dangerouslySetInnerHTML={{ __html: buildOnlineHTML(db) }}
+              />
+            )}
+          </div>,
+          document.body
+        )}
+
+      <style id="bulletin-print-styles">{`
         /* ==================== SHARED ==================== */
         .bulletin-page-content .bp-otbl { width:100%; border-collapse:collapse; }
         .bulletin-page-content .bp-otbl tr { border-bottom:1px dotted #ccc; }
@@ -882,7 +1336,7 @@ export function BulletinPage() {
 
         /* ==================== TRI-FOLD (3면 접지) ==================== */
         .bulletin-page-content .bp-tri { display:flex; flex-direction:column; align-items:center; gap:20px; padding:4px; font-family:'Noto Serif KR','Batang',Georgia,serif; }
-        .bulletin-page-content .bp-tri-face { display:flex; box-shadow:0 3px 20px rgba(0,0,0,.1); border-radius:2px; overflow:hidden; }
+        .bulletin-page-content .bp-tri .bp-spread { box-shadow:0 3px 20px rgba(0,0,0,.1); border-radius:2px; overflow:hidden; }
         .bulletin-page-content .tp { width:240px; min-height:530px; background:#fff; border-right:1px dashed #d0d0d0; box-sizing:border-box; position:relative; overflow:hidden; }
         .bulletin-page-content .tp:last-child { border-right:none; }
         .bulletin-page-content .tp-cover { display:flex; align-items:center; justify-content:center; }
@@ -917,16 +1371,19 @@ export function BulletinPage() {
         .bulletin-page-content .tp-bday-list { display:flex; flex-wrap:wrap; gap:3px; margin-top:5px; }
         .bulletin-page-content .tp-bday-tag { padding:2px 6px; border-radius:8px; font-size:8.5px; font-weight:500; }
 
-        /* --- TRI-FOLD VIEW TOGGLE --- */
+        /* --- TRI-FOLD VIEW TOGGLE (outside=겉면, inside=속면) --- */
         [data-bview="outside"] .bp-tri-in { display:none !important; }
         [data-bview="inside"] .bp-tri-out { display:none !important; }
+        .bulletin-page-content .bp-cell { padding:16px; overflow:auto; box-sizing:border-box; border-right:1px dashed #e5e7eb; }
+        .bulletin-page-content .bp-cell:last-child { border-right:none; }
 
         /* ==================== HALF-FOLD (2면 접지) ==================== */
         .bulletin-page-content .bp-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; padding:4px; font-family:'Noto Serif KR','Batang',Georgia,serif; }
-        .bulletin-page-content .bp { width:300px; min-height:424px; background:#fff; border:1px solid #ddd; box-shadow:0 2px 12px rgba(0,0,0,.06); overflow:hidden; position:relative; box-sizing:border-box; }
-        .bulletin-page-content .bp-spread { display:flex; box-shadow:0 3px 16px rgba(0,0,0,.08); border-radius:2px; overflow:hidden; }
-        .bulletin-page-content .bp-spread .bp { box-shadow:none; border-radius:0; border-left:none; border-right:none; }
-        .bulletin-page-content .bp-spread .bp-2 { border-right:1px dashed #ccc; }
+        .bulletin-page-content .bp { width:100%; min-height:280px; background:#fff; border:1px solid #ddd; box-shadow:0 2px 12px rgba(0,0,0,.06); overflow:hidden; position:relative; box-sizing:border-box; }
+        .bulletin-page-content .bp-four-face { width:100%; height:100%; display:flex; flex-direction:column; font-family:'Noto Serif KR','Batang',Georgia,serif; }
+        .bulletin-page-content .bp-four-face .bp-spread { display:grid; grid-template-columns:1fr 1fr; width:100%; height:50%; min-height:600px; box-shadow:0 1px 3px rgba(0,0,0,0.1); border-radius:4px; overflow:hidden; box-sizing:border-box; }
+        .bulletin-page-content .bp-four-face .bp-cell .bp { box-shadow:none; border:none; }
+        .bulletin-page-content .bp-four-face .bp-cell .bp-2 { border-right:none; }
         .bulletin-page-content .bp-1 { display:flex; align-items:center; justify-content:center; }
         .bulletin-page-content .bp-cover-bg { position:absolute; inset:0; opacity:.96; }
         .bulletin-page-content .bp-cover-content { position:relative; z-index:1; text-align:center; color:#fff; padding:36px 24px; width:100%; }
@@ -965,10 +1422,12 @@ export function BulletinPage() {
         .bulletin-page-content .bp-cf-name { font-size:11px; font-weight:700; letter-spacing:2px; margin-bottom:4px; }
         .bulletin-page-content .bp-cf-det { font-size:8.5px; opacity:.8; margin-top:1px; }
 
-        /* --- HALF-FOLD VIEW TOGGLE --- */
-        [data-bview="cover"] .bp-spread, [data-bview="cover"] .bp-4 { display:none !important; }
-        [data-bview="inner"] .bp-1, [data-bview="inner"] .bp-4 { display:none !important; }
-        [data-bview="back"] .bp-1, [data-bview="back"] .bp-spread { display:none !important; }
+        /* --- HALF-FOLD VIEW TOGGLE (cover=표지, inner=내지, back=뒷면) --- */
+        [data-bview="cover"] .bp-four-face .bp-spread:last-child { display:none !important; }
+        [data-bview="cover"] .bp-four-face .bp-spread:first-child .bp-cell:first-child { display:none !important; }
+        [data-bview="inner"] .bp-four-face .bp-spread:first-child { display:none !important; }
+        [data-bview="back"] .bp-four-face .bp-spread:last-child { display:none !important; }
+        [data-bview="back"] .bp-four-face .bp-spread:first-child .bp-cell:last-child { display:none !important; }
 
         /* ==================== ONLINE/PDF ==================== */
         .bulletin-page-content .bp-online { width:380px; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.08); font-family:'Inter','Noto Sans KR',sans-serif; }
@@ -996,17 +1455,12 @@ export function BulletinPage() {
         .bulletin-page-content .ol-info-item strong { display:block; margin-bottom:4px; color:var(--ac,#1e3a5f); font-size:10px; }
         .bulletin-page-content .ol-footer { padding:16px 20px; color:#fff; font-size:10px; text-align:center; line-height:1.8; opacity:.9; }
 
-        /* ==================== PRINT ==================== */
-        @media print {
-          .superplanner-root header, .superplanner-root .tab-bar, .superplanner-root aside, .bulletin-page-content button { display:none !important; }
-          .bulletin-page-content, .bulletin-preview-scale { transform:none !important; }
-          .bp-wrap, .bp-tri { gap:0 !important; }
-          .bp, .tp { width:100% !important; min-height:0 !important; box-shadow:none !important; border:none !important; page-break-after:always; }
-          .bp:last-child, .tp:last-child { page-break-after:auto; }
-          .bp-spread, .bp-tri-face { flex-direction:column !important; box-shadow:none !important; }
-          .bp-spread .bp, .bp-tri-face .tp { border-right:none !important; }
-          [data-bview] .bp, [data-bview] .bp-spread, [data-bview] .tp, [data-bview] .bp-tri-face { display:flex !important; }
-        }
+        /* 미리보기: 스프레드/표지 높이 채우기 */
+        .bulletin-page-content .bp-spread > div { height: 100%; }
+        .bulletin-page-content .bp-spread .tp-cover { height: 100%; min-height: 100%; }
+        .bulletin-page-content .bp-four-face .bp-spread > div { height: 100%; overflow: hidden; box-sizing: border-box; }
+        .bulletin-page-content .bp-four-face .bp-spread .tp-cover { height: 100%; min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .bulletin-page-content .bp-four-face .bp-spread .bp-1 { height: 100%; min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
       `}</style>
     </UnifiedPageLayout>
   );
