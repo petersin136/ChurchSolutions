@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useAppData } from "@/contexts/AppDataContext";
+import LazyChart from "../common/LazyChart";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
@@ -161,7 +162,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h4 className="font-semibold text-[#1e3a5f] mb-4">월별 헌금자 수</h4>
-          <div className="h-48">
+          <LazyChart height={280}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyDonorCount}>
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
@@ -170,11 +171,11 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
                 <Bar dataKey="인원" fill="#1e3a5f" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </LazyChart>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h4 className="font-semibold text-[#1e3a5f] mb-4">헌금 구간별 분포</h4>
-          <div className="h-48">
+          <LazyChart height={280}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={bracketDist}>
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
@@ -183,7 +184,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
                 <Bar dataKey="인원" fill="#d4a574" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </LazyChart>
         </div>
       </div>
 

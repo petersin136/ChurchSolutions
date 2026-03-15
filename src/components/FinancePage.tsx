@@ -13,6 +13,7 @@ import { BudgetVsActual } from "@/components/finance/BudgetVsActual";
 import { DonorStatistics } from "@/components/finance/DonorStatistics";
 import { SpecialAccounts } from "@/components/finance/SpecialAccounts";
 import { Pagination } from "@/components/common/Pagination";
+import LazyChart from "@/components/common/LazyChart";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import type { DB, Member, Income as DBIncome, Expense as DBExpense } from "@/types/db";
 import { supabase } from "@/lib/supabase";
@@ -1427,7 +1428,7 @@ function BudgetActualTab({
             </div>
             <Pagination totalItems={compareRows.length} itemsPerPage={10} currentPage={currentPageCompare} onPageChange={(p) => { setCurrentPageCompare(p); listRefCompare.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
             {chartData.length > 0 && (
-              <div style={{ height: mob ? 280 : 320 }}>
+              <LazyChart height={mob ? 280 : 320}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
@@ -1443,7 +1444,7 @@ function BudgetActualTab({
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
+              </LazyChart>
             )}
           </div></div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

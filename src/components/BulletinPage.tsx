@@ -467,7 +467,17 @@ const NAV_ITEMS: { id: SubPage; Icon: LucideIcon; label: string }[] = [
 export function BulletinPage() {
   const mob = useIsMobile();
   const [db, setDb] = useState<BulletinDB>(() => loadBulletin());
-  const [activeSub, setActiveSub] = useState<SubPage>("dash");
+  const [activeSub, setActiveSub] = useState<SubPage>(() => {
+    if (typeof window !== "undefined") {
+      const v = sessionStorage.getItem("bulletin-activeSub");
+      if (v === "edit" || v === "history" || v === "settings" || v === "dash") return v;
+      return "dash";
+    }
+    return "dash";
+  });
+  useEffect(() => {
+    sessionStorage.setItem("bulletin-activeSub", activeSub);
+  }, [activeSub]);
   const [currentPageHistory, setCurrentPageHistory] = useState(1);
   const listRefHistory = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -653,45 +663,9 @@ export function BulletinPage() {
   };
 
   const saveFields = useCallback(() => {
-    const gv = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement)?.value ?? "";
-    setDb(prev => {
-      const cur = prev.current;
-      return {
-        ...prev,
-        current: {
-          ...cur,
-          pastor: {
-            sermonTitle: gv("f-sermonTitle"),
-            sermonPassage: gv("f-sermonPassage"),
-            sermonTheme: gv("f-sermonTheme"),
-            column: gv("f-column"),
-            pastorNotice: gv("f-pastorNotice"),
-            submitted: !!(gv("f-sermonTitle") && gv("f-sermonPassage")),
-            submittedAt: fds(TODAY),
-          },
-          worship: {
-            worshipOrder: gv("f-worshipOrder"),
-            praise: gv("f-praise"),
-            special: gv("f-special"),
-            submitted: !!gv("f-worshipOrder"),
-            submittedAt: fds(TODAY),
-          },
-          youth: { content: gv("f-youth"), submitted: !!gv("f-youth"), submittedAt: gv("f-youth") ? fds(TODAY) : "" },
-          education: { content: gv("f-education"), submitted: !!gv("f-education"), submittedAt: gv("f-education") ? fds(TODAY) : "" },
-          mission: { content: gv("f-mission"), submitted: !!gv("f-mission"), submittedAt: gv("f-mission") ? fds(TODAY) : "" },
-          general: {
-            content: gv("f-general"),
-            birthday: gv("f-birthday"),
-            servants: gv("f-servants"),
-            offering: gv("f-offering"),
-            schedule: gv("f-schedule"),
-            submitted: !!(gv("f-general") || gv("f-birthday")),
-            submittedAt: fds(TODAY),
-          },
-        },
-      };
-    });
-  }, []);
+    // db.current에 이미 controlled input의 최신 값이 들어있으므로 DOM에서 읽을 필요 없음 — 단순히 localStorage에 저장
+    saveBulletin(db);
+  }, [db]);
 
   const updatePreview = useCallback(() => {
     saveFields();
@@ -714,14 +688,27 @@ export function BulletinPage() {
   }, []);
 
   const saveToHistory = () => {
-    saveFields();
-    setDb(prev => {
-      const cur = { ...prev.current, savedAt: fds(TODAY), sermonTitle: prev.current.pastor?.sermonTitle || "" };
-      const idx = prev.history.findIndex(h => h.key === prev.current.key);
-      const history = [...prev.history];
-      if (idx >= 0) history[idx] = cur;
-      else history.push(cur);
-      return { ...prev, history };
+    setDb((prev) => {
+      // prev.current에 이미 최신 데이터가 있으므로 DOM에서 읽지 않음
+      const cur = {
+        ...prev.current,
+        savedAt: fds(TODAY),
+      };
+      const sermonTitle = cur.pastor?.sermonTitle || "제목없음";
+      const key = cur.savedAt;
+      const historyEntry = { ...cur, sermonTitle, key };
+
+      const idx = prev.history.findIndex((h) => h.key === key);
+      const newHistory = [...prev.history];
+      if (idx >= 0) {
+        newHistory[idx] = historyEntry;
+      } else {
+        newHistory.unshift(historyEntry);
+      }
+
+      const newDb = { ...prev, current: cur, history: newHistory };
+      saveBulletin(newDb);
+      return newDb;
     });
     showToast("주보가 저장되었습니다");
   };
@@ -864,44 +851,94 @@ export function BulletinPage() {
                     대시보드 정보 보기
                   </button>
                 )}
-                <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-gray-100 bg-white flex-shrink-0 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setDashPreviewScale(s => Math.max(0.3, s - 0.1))} className="w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 text-sm">
-                      −
-                    </button>
-                    <span className="text-xs text-gray-500 w-12 text-center">{Math.round(dashPreviewScale * 100)}%</span>
-                    <button type="button" onClick={() => setDashPreviewScale(s => Math.min(2.0, s + 0.1))} className="w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 text-sm">
-                      +
-                    </button>
+                {/* ── 대시보드 툴바 ── */}
+                <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50">
+                  {/* 상단: 포맷 선택 */}
+                  <div className="flex items-center justify-center gap-2 px-4 pt-3 pb-2">
+                    <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
+                      {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
+                        <button
+                          key={format}
+                          type="button"
+                          onClick={() => setBulletinFormat(format)}
+                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                            bulletinFormatDisplay === format
+                              ? "bg-gray-900 text-white shadow-sm"
+                              : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {format}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-                    {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
+
+                  {/* 하단: 액션 버튼 + 줌 */}
+                  <div className="flex items-center justify-between px-4 pb-3">
+                    {/* 왼쪽: 액션 버튼들 */}
+                    <div className="flex items-center gap-1.5">
                       <button
-                        key={format}
                         type="button"
-                        onClick={() => setBulletinFormat(format)}
-                        className={`px-3 py-1.5 text-xs rounded-md transition-all ${bulletinFormatDisplay === format ? "bg-white text-gray-900 shadow-sm font-medium" : "text-gray-500 hover:text-gray-700"}`}
+                        onClick={handlePrint}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                       >
-                        {format}
+                        <Printer size={13} /> 인쇄
                       </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap justify-end">
-                    <button type="button" onClick={handlePreview} className="px-3 py-1.5 text-[12px] text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 inline-flex items-center gap-1.5">
-                      <Eye size={13} /> 미리보기
-                    </button>
-                    <button type="button" onClick={handlePDF} className="px-3 py-1.5 text-[12px] text-white bg-gray-900 rounded-lg hover:bg-gray-800 inline-flex items-center gap-1.5">
-                      <FileText size={13} /> PDF
-                    </button>
-                    <button type="button" onClick={handlePrint} className="px-3 py-1.5 text-[12px] text-white bg-gray-900 rounded-lg hover:bg-gray-800 inline-flex items-center gap-1.5">
-                      <Printer size={13} /> 인쇄
-                    </button>
-                    <button type="button" onClick={handleDownloadCard} className="px-3 py-1.5 text-[12px] text-gray-900 bg-[#FEE500] rounded-lg hover:bg-[#FDD800] inline-flex items-center gap-1.5">
-                      카카오로 공유
-                    </button>
-                    <button type="button" onClick={() => handleNav("edit")} className="px-3 py-1.5 text-[12px] text-white bg-blue-600 rounded-lg hover:bg-blue-700 inline-flex items-center gap-1.5">
-                      <Edit3 size={13} /> 편집
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handlePDF}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                      >
+                        <FileText size={13} /> PDF
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDownloadCard}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors shadow-sm"
+                      >
+                        카카오 공유
+                      </button>
+                    </div>
+
+                    {/* 오른쪽: 줌 + 편집/미리보기 */}
+                    <div className="flex items-center gap-3">
+                      {/* 줌 컨트롤 */}
+                      <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => setDashPreviewScale(s => Math.max(0.3, s - 0.1))}
+                          className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-l-lg transition-colors text-sm"
+                        >
+                          −
+                        </button>
+                        <span className="w-10 text-center text-xs text-gray-600 font-medium border-x border-gray-200">
+                          {Math.round(dashPreviewScale * 100)}%
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setDashPreviewScale(s => Math.min(2.0, s + 0.1))}
+                          className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-r-lg transition-colors text-sm"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* 미리보기 & 편집 */}
+                      <button
+                        type="button"
+                        onClick={handlePreview}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                      >
+                        <Eye size={13} /> 미리보기
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleNav("edit")}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                      >
+                        <Edit3 size={13} /> 편집
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="flex-1 overflow-auto bg-white" style={{ minHeight: 0 }}>
@@ -1020,62 +1057,63 @@ export function BulletinPage() {
               </div>
 
               <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ marginTop: mob ? 20 : 0 }}>
-                <div className="flex-shrink-0 flex flex-col items-center pb-2">
-                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5 mb-2">
-                    {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
-                      <button
-                        key={format}
-                        type="button"
-                        onClick={() => setBulletinFormat(format)}
-                        className={`px-3 py-1.5 text-xs rounded-md transition-all ${bulletinFormatDisplay === format ? "bg-white text-gray-900 shadow-sm font-medium" : "text-gray-500 hover:text-gray-700"}`}
-                      >
-                        {format}
-                      </button>
-                    ))}
-                  </div>
-                  {outputMode === "print" && <div style={{ display: "flex", gap: 4, marginBottom: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                    {(printFormat === "fold3" ? VIEW_FOLD3 : VIEW_FOLD2).map(v => (
-                      <button key={v} onClick={() => setPreviewView(v)} style={{
-                        padding: "5px 12px", fontSize: 11, fontWeight: 600, border: "none", borderRadius: 6,
-                        background: previewView === v ? C.accent : C.borderLight,
-                        color: previewView === v ? "#fff" : C.textMuted,
-                        cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
-                      }}>{VIEW_LABEL[v]}</button>
-                    ))}
-                  </div>}
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: C.textMuted }}>
-                      {outputMode === "kakao" ? "카카오톡 공유용" : outputMode === "print" ? (printFormat === "fold3" ? "3면 접지" : "2면 접지") : "온라인"}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexWrap: "wrap", justifyContent: "center" }}>
-                    {outputMode !== "kakao" && (
-                      <>
-                        <button type="button" onClick={handlePrint} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#111827", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ffffff", cursor: "pointer" }}>
-                          <Printer size={14} /> 인쇄
+                <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-3 py-2 space-y-2">
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
+                      {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
+                        <button
+                          key={format}
+                          type="button"
+                          onClick={() => setBulletinFormat(format)}
+                          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                            bulletinFormatDisplay === format
+                              ? "bg-gray-900 text-white shadow-sm"
+                              : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {format}
                         </button>
-                        <button type="button" onClick={handlePDF} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#111827", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ffffff", cursor: "pointer" }}>
-                          <FileText size={14} /> PDF
-                        </button>
-                      </>
-                    )}
-                    <button type="button" onClick={handleDownloadCard} style={{
-                      display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px",
-                      backgroundColor: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 8,
-                      fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer", fontFamily: "inherit",
-                    }}>카카오용 이미지 저장</button>
-                    <button type="button" onClick={handleKakaoShare} style={{
-                      display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px",
-                      backgroundColor: "#FEE500", border: "none", borderRadius: 8,
-                      fontSize: 13, fontWeight: 600, color: "#3C1E1E", cursor: "pointer", fontFamily: "inherit",
-                    }}>카카오로 공유</button>
-                    {outputMode !== "kakao" && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 2, background: C.borderLight, borderRadius: 8, padding: "2px 4px" }}>
-                        <button onClick={zoomOut} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-                        <button onClick={zoomReset} style={{ minWidth: 44, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.text, fontFamily: "inherit" }}>{Math.round(previewScale * 100)}%</button>
-                        <button onClick={zoomIn} style={{ width: 28, height: 28, border: "none", background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 15, fontWeight: 700, color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                      ))}
+                    </div>
+                    {outputMode === "print" && (
+                      <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
+                        {(printFormat === "fold3" ? VIEW_FOLD3 : VIEW_FOLD2).map((v) => (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => setPreviewView(v)}
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                              previewView === v
+                                ? "bg-blue-600 text-white shadow-sm"
+                                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            {VIEW_LABEL[v]}
+                          </button>
+                        ))}
                       </div>
                     )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <button type="button" onClick={handlePrint} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm">
+                        <Printer size={12} /> 인쇄
+                      </button>
+                      <button type="button" onClick={handlePDF} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm">
+                        <FileText size={12} /> PDF
+                      </button>
+                      <button type="button" onClick={handleDownloadCard} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm">
+                        카카오 이미지
+                      </button>
+                      <button type="button" onClick={handleKakaoShare} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-500 shadow-sm">
+                        카카오 공유
+                      </button>
+                    </div>
+                    <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg shadow-sm">
+                      <button type="button" onClick={zoomOut} className="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700 rounded-l-lg text-xs">−</button>
+                      <span className="w-9 text-center text-xs text-gray-600 font-medium border-x border-gray-200">{Math.round(previewScale * 100)}%</span>
+                      <button type="button" onClick={zoomIn} className="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700 rounded-r-lg text-xs">+</button>
+                    </div>
                   </div>
                 </div>
 

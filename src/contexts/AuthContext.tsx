@@ -38,8 +38,8 @@ async function fetchChurchForUser(userId: string): Promise<{ churchId: string; c
     return null;
   }
 
-  const MAX_RETRIES = 2;
-  const TIMEOUT_MS = 5000;
+  const MAX_RETRIES = 3;
+  const TIMEOUT_MS = 15000;
   const RETRY_DELAY_MS = 1000;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -110,6 +110,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isRegistering]);
 
   const loadChurch = useCallback(async (userId: string) => {
+    if (typeof window !== "undefined") {
+      const cachedChurchId = localStorage.getItem(CHURCH_ID_KEY);
+      const cachedChurchName = localStorage.getItem(CHURCH_NAME_KEY);
+      if (cachedChurchId) {
+        console.log("[Auth] localStorage 캐시 사용:", cachedChurchId, cachedChurchName);
+        setChurchId(cachedChurchId);
+        setChurchName(cachedChurchName ?? "");
+        setLoading(false);
+      }
+    }
+
     const result = await fetchChurchForUser(userId);
     if (result && result.churchId) {
       console.log("[AuthContext] church_users 조회 결과:", result);

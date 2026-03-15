@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
+import LazyChart from "../common/LazyChart";
 
 const NAVY = "#1e3a5f";
 const GOLD = "#d4a853";
@@ -234,27 +235,31 @@ export function AttendanceDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <h4 className="text-sm font-semibold text-[#1e3a5f] mb-4">주간 출석 추이 (최근 12주)</h4>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={weeklyTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-              <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: any) => [`${v ?? 0}명`, ""]} />
-              <Line type="monotone" dataKey="주일예배" stroke={NAVY} strokeWidth={2} name="주일예배" dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <LazyChart height={260}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weeklyTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: any) => [`${v ?? 0}명`, ""]} />
+                <Line type="monotone" dataKey="주일예배" stroke={NAVY} strokeWidth={2} name="주일예배" dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </LazyChart>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
           <h4 className="text-sm font-semibold text-[#1e3a5f] mb-4">부서별 출석률</h4>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={deptRates} layout="vertical" margin={{ left: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-              <YAxis type="category" dataKey="dept" tick={{ fontSize: 11 }} width={55} />
-              <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
-              <Bar dataKey="rate" name="출석률" fill={NAVY} radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <LazyChart height={260}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={deptRates} layout="vertical" margin={{ left: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
+                <YAxis type="category" dataKey="dept" tick={{ fontSize: 11 }} width={55} />
+                <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
+                <Bar dataKey="rate" name="출석률" fill={NAVY} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </LazyChart>
         </div>
       </div>
 

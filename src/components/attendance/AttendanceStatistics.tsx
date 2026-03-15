@@ -7,6 +7,7 @@ import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
+import LazyChart from "../common/LazyChart";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
@@ -287,15 +288,17 @@ export function AttendanceStatistics({
           {monthlyChart.length === 0 ? (
             <div className="text-sm text-gray-500">출석 데이터가 없습니다.</div>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={monthlyChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
-                <Bar dataKey="rate" name="출석률" fill="#1e3a5f" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <LazyChart height={220}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
+                  <Bar dataKey="rate" name="출석률" fill="#1e3a5f" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </LazyChart>
           )}
         </div>
       </div>

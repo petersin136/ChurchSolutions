@@ -6,6 +6,7 @@ import { filterByChurch } from "@/lib/tenant";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import type { Budget } from "@/types/db";
 import { useAppData } from "@/contexts/AppDataContext";
+import LazyChart from "../common/LazyChart";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 const NAVY = "#1e3a5f";
@@ -228,7 +229,7 @@ export function BudgetVsActual({
       {chartData.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h4 className="font-semibold text-[#1e3a5f] mb-4">카테고리별 예산 vs 실적</h4>
-          <div className="h-64">
+          <LazyChart height={300}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 60, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
@@ -240,7 +241,7 @@ export function BudgetVsActual({
                 <Bar dataKey="실적" fill={NAVY} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </LazyChart>
         </div>
       )}
     </div>

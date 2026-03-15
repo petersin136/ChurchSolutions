@@ -3247,13 +3247,15 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                 ))}
               </div>
               {attendanceSubTab === "dashboard" && (
-                <AttendanceDashboard
-                  members={db.members}
-                  attendanceList={attendanceListForDashboard}
-                  onOpenCheck={() => setAttendanceSubTab("check")}
-                  onOpenAbsentee={() => setAttendanceSubTab("absentee")}
-                  onOpenAbsenteeList={() => setAttendanceSubTab("absentee")}
-                />
+                <div style={{ width: "100%", minHeight: 520 }}>
+                  <AttendanceDashboard
+                    members={db.members}
+                    attendanceList={attendanceListForDashboard}
+                    onOpenCheck={() => setAttendanceSubTab("check")}
+                    onOpenAbsentee={() => setAttendanceSubTab("absentee")}
+                    onOpenAbsenteeList={() => setAttendanceSubTab("absentee")}
+                  />
+                </div>
               )}
               {attendanceSubTab === "check" && (
                 <AttendanceCheck
@@ -3272,20 +3274,22 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                 />
               )}
               {attendanceSubTab === "statistics" && (
-                <AttendanceStatistics
-                  members={db.members}
-                  attendanceList={attendanceListForDashboard}
-                  toast={toast}
-                  onExportExcel={(csv, filename) => {
-                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-                    const a = document.createElement("a");
-                    a.href = URL.createObjectURL(blob);
-                    a.download = filename;
-                    a.click();
-                    URL.revokeObjectURL(a.href);
-                    toast("다운로드되었습니다", "ok");
-                  }}
-                />
+                <div style={{ width: "100%", minHeight: 520 }}>
+                  <AttendanceStatistics
+                    members={db.members}
+                    attendanceList={attendanceListForDashboard}
+                    toast={toast}
+                    onExportExcel={(csv, filename) => {
+                      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                      const a = document.createElement("a");
+                      a.href = URL.createObjectURL(blob);
+                      a.download = filename;
+                      a.click();
+                      URL.revokeObjectURL(a.href);
+                      toast("다운로드되었습니다", "ok");
+                    }}
+                  />
+                </div>
               )}
               {/* 예배 설정 탭 제거 - 주일예배 전용 */}
               {attendanceSubTab === "weekly" && <AttendanceSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} setCurrentWeek={setCurrentWeek} />}

@@ -16,6 +16,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import LazyChart from "../common/LazyChart";
 
 const NAVY = "#1e3a5f";
 const CORAL = "#e74c3c";
@@ -170,7 +171,7 @@ export function FinanceDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h4 className="text-base font-semibold text-[#1e3a5f] mb-4">월별 수입/지출 추이</h4>
-          <div className="h-64">
+          <LazyChart height={300}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
@@ -182,11 +183,11 @@ export function FinanceDashboard({
                 <Line type="monotone" dataKey="지출" stroke={CORAL} strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          </LazyChart>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h4 className="text-base font-semibold text-[#1e3a5f] mb-4">수입 카테고리별</h4>
-          <div className="h-64">
+          <LazyChart height={300}>
             {incomeByCategory.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -209,14 +210,14 @@ export function FinanceDashboard({
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400 text-sm">데이터 없음</div>
             )}
-          </div>
+          </LazyChart>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h4 className="text-base font-semibold text-[#1e3a5f] mb-4">지출 카테고리별</h4>
-          <div className="h-64">
+          <LazyChart height={300}>
             {expenseByCategory.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -239,11 +240,11 @@ export function FinanceDashboard({
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400 text-sm">데이터 없음</div>
             )}
-          </div>
+          </LazyChart>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h4 className="text-base font-semibold text-[#1e3a5f] mb-4">월별 수입/지출 막대</h4>
-          <div className="h-64">
+          <LazyChart height={300}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyTrend} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
@@ -255,7 +256,7 @@ export function FinanceDashboard({
                 <Bar dataKey="지출" fill={CORAL} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </LazyChart>
         </div>
       </div>
     </div>

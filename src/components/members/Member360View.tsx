@@ -6,6 +6,7 @@ import type { DB, Member, Note, Visit, Income, MemberStatusHistory, NewFamilyPro
 import { supabase } from "@/lib/supabase";
 import { getChurchId, filterByChurch } from "@/lib/tenant";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import LazyChart from "../common/LazyChart";
 
 const STATUS_BADGE_COLOR: Record<string, string> = {
   활동: "#10B981",
@@ -294,7 +295,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
                 ⚠️ 최근 3주 연속 결석
               </div>
             )}
-            <div className="h-48">
+            <LazyChart height={250}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={attendanceByWeek}>
                   <XAxis dataKey="week" tick={{ fontSize: 10 }} />
@@ -304,14 +305,14 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
                   <Bar dataKey="absent" fill="#e5e7eb" name="결석" stackId="a" />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            </LazyChart>
           </div>
         )}
 
         {activeTab === "giving" && (
           <div className="space-y-4">
             {monthlyGiving.length > 0 && (
-              <div className="h-48">
+              <LazyChart height={250}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyGiving}>
                     <XAxis dataKey="month" tick={{ fontSize: 10 }} />
@@ -320,10 +321,10 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
                     <Line type="monotone" dataKey="amount" stroke="#d4a574" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
-              </div>
+              </LazyChart>
             )}
             {categoryGiving.length > 0 && (
-              <div className="h-48">
+              <LazyChart height={250}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={categoryGiving} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={(e) => e.name}>
@@ -332,7 +333,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
                     <Tooltip formatter={(v: any) => [`${Number(v ?? 0).toLocaleString()}원`, ""]} />
                   </PieChart>
                 </ResponsiveContainer>
-              </div>
+              </LazyChart>
             )}
             <div>
               <div className="text-sm font-medium text-gray-700 mb-2">최근 헌금</div>
