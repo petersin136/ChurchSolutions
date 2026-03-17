@@ -1462,7 +1462,7 @@ export function BulletinPage() {
                 {/* ── 대시보드 툴바 ── */}
                 <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50">
                   {/* 상단: 포맷 선택 */}
-                  <div className="flex items-center justify-center gap-2 px-4 pt-3 pb-2">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 16px 8px" }}>
                     <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
                       {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
                         <button
@@ -1867,25 +1867,32 @@ export function BulletinPage() {
 
               <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ marginTop: mob ? 20 : 0 }}>
                 <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-3 py-2 space-y-2">
-                  <div className="flex items-center justify-center gap-3 flex-wrap">
-                    <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
-                      {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
-                        <button
-                          key={format}
-                          type="button"
-                          onClick={() => setBulletinFormat(format)}
-                          className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                            bulletinFormatDisplay === format
-                              ? "bg-gray-900 text-white shadow-sm"
-                              : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                          }`}
-                        >
-                          {format}
-                        </button>
-                      ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, width: 412, margin: "0 auto" }}>
+                    <div style={{ width: 200, minWidth: 200, display: "flex", justifyContent: "center" }}>
+                      <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
+                        {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
+                          <button
+                            key={format}
+                            type="button"
+                            onClick={() => setBulletinFormat(format)}
+                            style={{
+                              padding: "4px 12px",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              borderRadius: 6,
+                              transition: "all 0.15s",
+                              ...(bulletinFormatDisplay === format
+                                ? { background: "#111827", color: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }
+                                : { background: "transparent", color: "#6b7280", cursor: "pointer" }),
+                            }}
+                          >
+                            {format}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    {/* 뷰 전환(인쇄용) 또는 placeholder: 온라인일 때도 자리 유지해 레이아웃 고정 */}
-                    {outputMode === "print" ? (
+                    {/* 뷰 전환: 항상 표시, 온라인일 때는 비활성 */}
+                    <div style={{ width: 200, minWidth: 200, display: "flex", justifyContent: "center", ...(outputMode !== "print" ? { opacity: 0.35, pointerEvents: "none" as const } : {}) }}>
                       <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
                         {(printFormat === "fold3" ? VIEW_FOLD3 : VIEW_FOLD2).map((v) => (
                           <button
@@ -1898,18 +1905,17 @@ export function BulletinPage() {
                               fontWeight: 600,
                               borderRadius: 6,
                               transition: "all 0.15s",
-                              ...(previewView === v
+                              cursor: outputMode === "print" ? "pointer" : "default",
+                              ...(previewView === v && outputMode === "print"
                                 ? { background: "#2563eb", color: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }
-                                : { background: "transparent", color: "#6b7280", cursor: "pointer" }),
+                                : { background: "transparent", color: "#6b7280" }),
                             }}
                           >
                             {VIEW_LABEL[v]}
                           </button>
                         ))}
                       </div>
-                    ) : (
-                      <div style={{ width: 200, minWidth: 200 }} aria-hidden />
-                    )}
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
