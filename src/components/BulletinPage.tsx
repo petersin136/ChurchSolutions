@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown, Eye, FileText, Save, Archive, Edit3, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown, Eye, Save, Archive, Edit3, type LucideIcon } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination } from "@/components/common/Pagination";
 import KakaoShareCard from "@/components/bulletin/KakaoShareCard";
@@ -87,11 +87,6 @@ interface WorshipSection {
   submitted: boolean;
   submittedAt: string;
 }
-interface ContentSection {
-  content: string;
-  submitted: boolean;
-  submittedAt: string;
-}
 interface GeneralSection {
   content: string;
   birthday: string;
@@ -100,6 +95,11 @@ interface GeneralSection {
   schedule: string;
   submitted: boolean;
   submittedAt: string;
+}
+
+interface DepartmentsSection {
+  enabled: string[];
+  data: Record<string, string>;
 }
 
 interface CurrentBulletin {
@@ -111,10 +111,8 @@ interface CurrentBulletin {
   coverImageOpacity?: number;
   pastor: PastorSection;
   worship: WorshipSection;
-  youth: ContentSection;
-  education: ContentSection;
-  mission: ContentSection;
   general: GeneralSection;
+  departments: DepartmentsSection;
   savedAt?: string;
   sermonTitle?: string;
 }
@@ -125,17 +123,51 @@ interface BulletinDB {
   history: CurrentBulletin[];
 }
 
-type SectionKey = "pastor" | "worship" | "youth" | "education" | "mission" | "general";
-const SECTIONS: Record<SectionKey, { name: string; icon: string }> = {
-  pastor: { name: "담임목사", icon: "⛪" },
-  worship: { name: "예배/찬양", icon: "🎵" },
-  youth: { name: "청년부", icon: "🧑‍🤝‍🧑" },
-  education: { name: "교육부", icon: "📚" },
-  mission: { name: "선교부", icon: "🌍" },
-  general: { name: "총무/행정", icon: "📋" },
+type SectionKey = "cover" | "worship" | "sermon" | "churchNews" | "departments" | "info";
+
+const DEPARTMENTS: { key: string; name: string }[] = [
+  { key: "jangnyeon", name: "장년부" },
+  { key: "yeojeondoboe", name: "여전도회" },
+  { key: "namjeondoboe", name: "남전도회" },
+  { key: "cheongnyeon", name: "청년부" },
+  { key: "junggo", name: "중고등부" },
+  { key: "chodeung", name: "초등부 (주일학교)" },
+  { key: "yuchi", name: "유치부" },
+  { key: "youngah", name: "영아부" },
+  { key: "sungga", name: "성가대" },
+  { key: "seonkyo", name: "선교부" },
+  { key: "gyoyuk", name: "교육부" },
+  { key: "bongsa", name: "봉사부" },
+  { key: "gita", name: "기타" },
+];
+
+const SECTIONS: Record<SectionKey, { name: string; desc: string }> = {
+  cover: { name: "① 표지", desc: "표지 면에 표시됩니다" },
+  worship: { name: "② 예배 순서", desc: "예배 순서 면에 표시됩니다" },
+  sermon: { name: "③ 말씀 / 칼럼", desc: "말씀/칼럼 면에 표시됩니다" },
+  churchNews: { name: "④ 교회 소식", desc: "교회 전체 소식, 봉사자, 헌금, 일정, 생일" },
+  departments: { name: "⑤ 부서별 소식", desc: "부서를 선택하면 입력란이 표시됩니다" },
+  info: { name: "⑥ 교회 안내", desc: "교회 안내 면에 표시됩니다" },
 };
 
-type OutputMode = "print" | "online" | "kakao";
+function getSectionSubmitted(db: BulletinDB, key: SectionKey): boolean {
+  switch (key) {
+    case "cover":
+    case "sermon":
+      return !!db.current.pastor?.submitted;
+    case "worship":
+      return !!db.current.worship?.submitted;
+    case "churchNews":
+      return !!db.current.general?.submitted;
+    case "departments":
+    case "info":
+      return false;
+    default:
+      return false;
+  }
+}
+
+type OutputMode = "print" | "online";
 type PrintFormat = "fold2" | "fold3";
 
 const TEMPLATES = [
@@ -258,9 +290,14 @@ function defaultDB(): BulletinDB {
         submitted: true,
         submittedAt: fds(TODAY),
       },
-      youth: { content: "▸ 청년 예배: 주일 오후 2시 (청년부실)\n▸ 수요 성경공부: 수요일 저녁 7시 30분\n▸ 2월 MT: 2/28-3/1 양평 수련원\n▸ 새가족환영회: 3/1(주일) 예배 후", submitted: true, submittedAt: fds(TODAY) },
-      education: { content: "▸ 주일학교: 오전 9시 30분 (유초등부/중고등부)\n▸ 교사 기도회: 주일 오전 9시\n▸ 겨울 성경학교: 2/21-22 (토-주일)\n▸ 부활절 특별 프로그램 준비위원 모집", submitted: true, submittedAt: fds(TODAY) },
-      mission: { content: "▸ 필리핀 단기선교: 3/15-22 (신청마감 2/28)\n▸ 선교 기도편지: 김OO 선교사 (태국)\n▸ 다문화 한국어 교실: 매주 토 오전 10시\n▸ 지역사회 봉사: 매월 셋째 토요일", submitted: true, submittedAt: fds(TODAY) },
+      departments: {
+        enabled: ["cheongnyeon", "chodeung", "seonkyo"],
+        data: {
+          cheongnyeon: "▸ 청년 예배: 주일 오후 2시 (청년부실)\n▸ 수요 성경공부: 수요일 저녁 7시 30분\n▸ 2월 MT: 2/28-3/1 양평 수련원\n▸ 새가족환영회: 3/1(주일) 예배 후",
+          chodeung: "▸ 주일학교: 오전 9시 30분 (유초등부/중고등부)\n▸ 교사 기도회: 주일 오전 9시\n▸ 겨울 성경학교: 2/21-22 (토-주일)\n▸ 부활절 특별 프로그램 준비위원 모집",
+          seonkyo: "▸ 필리핀 단기선교: 3/15-22 (신청마감 2/28)\n▸ 선교 기도편지: 김OO 선교사 (태국)\n▸ 다문화 한국어 교실: 매주 토 오전 10시\n▸ 지역사회 봉사: 매월 셋째 토요일",
+        },
+      },
       general: {
         content: "▸ 당회 결정: 주차장 확장 공사 (3월 중)\n▸ 새가족 소개: 이정훈/김미선 가정\n▸ 교회 창립 30주년 기념 준비위원 모집\n▸ 주중 새벽기도회: 월-토 오전 5시 30분",
         birthday: "김영수 장로(2/15), 이미경 집사(2/17), 박지현 권사(2/19), 최동현 집사(2/20)",
@@ -300,9 +337,7 @@ function defaultEmptyDB(): BulletinDB {
       coverImageOpacity: 0.3,
       pastor: { sermonTitle: "", sermonPassage: "", sermonTheme: "", column: "", pastorNotice: "", submitted: false, submittedAt: "" },
       worship: { worshipOrder: "", praise: "", special: "", submitted: false, submittedAt: "" },
-      youth: { content: "", submitted: false, submittedAt: "" },
-      education: { content: "", submitted: false, submittedAt: "" },
-      mission: { content: "", submitted: false, submittedAt: "" },
+      departments: { enabled: [], data: {} },
       general: { content: "", birthday: "", servants: "", offering: "", schedule: "", submitted: false, submittedAt: "" },
     },
     history: [],
@@ -319,6 +354,33 @@ function loadBulletin(): BulletinDB {
     db.current = defCurrent;
   } else {
     db.current = { ...defCurrent, ...db.current };
+    const cur = db.current as Record<string, unknown>;
+    if (!cur.departments || !Array.isArray((cur.departments as { enabled: string[] }).enabled)) {
+      cur.departments = { enabled: [], data: {} };
+    }
+    const dept = cur.departments as { enabled: string[]; data: Record<string, string> };
+    if (!cur.youth && !cur.education && !cur.mission) {
+      // already migrated or new
+    } else {
+      if (cur.youth && (cur.youth as { content?: string }).content) {
+        if (!dept.enabled.includes("cheongnyeon")) dept.enabled.push("cheongnyeon");
+        dept.data = dept.data || {};
+        dept.data.cheongnyeon = (cur.youth as { content: string }).content;
+      }
+      if (cur.education && (cur.education as { content?: string }).content) {
+        if (!dept.enabled.includes("gyoyuk")) dept.enabled.push("gyoyuk");
+        dept.data = dept.data || {};
+        dept.data.gyoyuk = (cur.education as { content: string }).content;
+      }
+      if (cur.mission && (cur.mission as { content?: string }).content) {
+        if (!dept.enabled.includes("seonkyo")) dept.enabled.push("seonkyo");
+        dept.data = dept.data || {};
+        dept.data.seonkyo = (cur.mission as { content: string }).content;
+      }
+    }
+    delete cur.youth;
+    delete cur.education;
+    delete cur.mission;
   }
   if (!Array.isArray(db.history)) db.history = [];
   if (db.current.coverImage === undefined) db.current.coverImage = defCurrent.coverImage ?? "";
@@ -727,19 +789,24 @@ function prepData(db: BulletinDB) {
     return `<tr><td class="bp-o-item" colspan="3">${esc(l.trim())}</td></tr>`;
   }).join("");
   const ads: { dept: string; text: string }[] = [];
-  if (c.youth?.content) ads.push({ dept: "청년부", text: c.youth.content });
-  if (c.education?.content) ads.push({ dept: "교육부", text: c.education.content });
-  if (c.mission?.content) ads.push({ dept: "선교부", text: c.mission.content });
   if (c.general?.content) ads.push({ dept: "교회 소식", text: c.general.content });
   if (c.pastor?.pastorNotice) ads.push({ dept: "특별 공지", text: c.pastor.pastorNotice });
+  const departmentItems: { key: string; name: string; text: string }[] = [];
+  const enabled = c.departments?.enabled || [];
+  const data = c.departments?.data || {};
+  DEPARTMENTS.forEach(({ key, name }) => {
+    if (enabled.includes(key) && data[key]?.trim()) {
+      departmentItems.push({ key, name, text: data[key].trim() });
+    }
+  });
   const bdays = (c.general?.birthday || "").split(",").map(b => b.trim()).filter(Boolean);
   const decorStyle = (c.coverDecor ?? tpl.decorStyle) as DecorStyle | "none";
-  return { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays };
+  return { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays, departmentItems };
 }
 
-/* 6면: section index 0=cover(면1), 1=flap(면2), 2=worship(면3), 3=sermon(면4), 4=news(면5), 5=back(면6) */
+/* 6면: section index 0=cover(면1), 1=churchNews(면2), 2=worship(면3), 3=sermon(면4), 4=departments(면5), 5=back(면6) */
 function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
-  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays } = prepData(db);
+  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays, departmentItems } = prepData(db);
   switch (index) {
     case 0: {
       const decor = decorStyle === "none"
@@ -774,10 +841,12 @@ function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
     </div></div>`;
     }
     case 1:
-      return `<div class="tp tp-flap"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.weekly(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">주간 안내</span></div><div class="tp-bd">
+      return `<div class="tp tp-flap"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 소식</span></div><div class="tp-bd">
+    ${c.general?.content ? `<div class="tp-label" style="color:${tpl.accent}">${BI.news(tpl.accent)} 교회 소식</div><div class="tp-val">${nl(c.general.content)}</div>` : ""}
     ${c.general?.servants ? `<div class="tp-label" style="color:${tpl.accent}">${BI.users(tpl.accent)} 금주 봉사자</div><div class="tp-val">${nl(c.general.servants)}</div>` : ""}
-    ${c.general?.schedule ? `<div class="tp-label" style="color:${tpl.accent}">${BI.calendar(tpl.accent)} 금주 일정</div><div class="tp-val">${nl(c.general.schedule)}</div>` : ""}
     ${c.general?.offering ? `<div class="tp-label" style="color:${tpl.accent}">${BI.offering(tpl.accent)} 헌금 보고</div><div class="tp-val">${nl(c.general.offering)}</div>` : ""}
+    ${c.general?.schedule ? `<div class="tp-label" style="color:${tpl.accent}">${BI.calendar(tpl.accent)} 금주 일정</div><div class="tp-val">${nl(c.general.schedule)}</div>` : ""}
+    ${bdays.length ? `<div class="tp-label" style="color:${tpl.accent}">${BI.gift(tpl.accent)} 이번 주 생일</div><div class="tp-bday-list">${bdays.map(b => `<span class="tp-bday-tag" style="background:${tpl.accentLight};color:${tpl.accent}">${esc(b)}</span>`).join("")}</div>` : ""}
   </div></div>`;
     case 2:
       return `<div class="tp tp-worship"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.worship(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">예배 순서</span></div><div class="tp-bd">
@@ -791,9 +860,8 @@ function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
     ${c.pastor?.column ? `<div class="tp-column" style="border-left-color:${tpl.gold}"><div class="tp-col-txt">${nl(c.pastor.column)}</div></div>` : ""}
   </div></div>`;
     case 4:
-      return `<div class="tp tp-news"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">광고 및 소식</span></div><div class="tp-bd">
-    ${ads.length ? ads.map(a => `<div class="tp-ad" style="border-left-color:${tpl.accent}"><div class="tp-ad-dept" style="color:${tpl.accent}">${esc(a.dept)}</div><div class="tp-ad-txt">${nl(a.text)}</div></div>`).join("") : '<div class="tp-empty">광고를 입력하세요</div>'}
-    ${bdays.length ? `<div class="tp-bday"><div class="tp-label" style="color:${tpl.accent}">${BI.gift(tpl.accent)} 금주 생일</div><div class="tp-bday-list">${bdays.map(b => `<span class="tp-bday-tag" style="background:${tpl.accentLight};color:${tpl.accent}">${esc(b)}</span>`).join("")}</div></div>` : ""}
+      return `<div class="tp tp-news"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">부서별 소식</span></div><div class="tp-bd">
+    ${departmentItems.length ? departmentItems.map(d => `<div class="tp-ad" style="border-left-color:${tpl.accent}"><div class="tp-ad-dept" style="color:${tpl.accent}">▶ ${esc(d.name)}</div><div class="tp-ad-txt">${nl(d.text)}</div></div>`).join("") : '<div class="tp-empty">부서를 선택하고 내용을 입력하세요</div>'}
   </div></div>`;
     case 5:
       return `<div class="tp tp-back"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.church(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 안내</span></div><div class="tp-bd">
@@ -806,27 +874,27 @@ function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
   }
 }
 
-/* 3면 접지 (Tri-fold) - 겉면 3패널 + 속면 3패널 */
+/* 3면 접지 (Tri-fold) - 겉면: 교회 소식 | 교회 안내 | 표지, 속면: 예배 순서 | 말씀/칼럼 | 부서별 소식 */
 function buildTriFold(db: BulletinDB): string {
-  const back = getTriFoldSectionHTML(db, 5), cover = getTriFoldSectionHTML(db, 0), flap = getTriFoldSectionHTML(db, 1);
-  const worship = getTriFoldSectionHTML(db, 2), sermon = getTriFoldSectionHTML(db, 3), news = getTriFoldSectionHTML(db, 4);
+  const churchNews = getTriFoldSectionHTML(db, 1), back = getTriFoldSectionHTML(db, 5), cover = getTriFoldSectionHTML(db, 0);
+  const worship = getTriFoldSectionHTML(db, 2), sermon = getTriFoldSectionHTML(db, 3), deptNews = getTriFoldSectionHTML(db, 4);
   return `<div class="bp-tri">
     <div class="bp-spread bp-tri-out" style="display:grid;grid-template-columns:1fr 1fr 1fr;width:100%;height:100%;">
+      <div class="bp-cell">${churchNews}</div>
       <div class="bp-cell">${back}</div>
       <div class="bp-cell">${cover}</div>
-      <div class="bp-cell">${flap}</div>
     </div>
     <div class="bp-spread bp-tri-in" style="display:grid;grid-template-columns:1fr 1fr 1fr;width:100%;height:100%;">
       <div class="bp-cell">${worship}</div>
       <div class="bp-cell">${sermon}</div>
-      <div class="bp-cell">${news}</div>
+      <div class="bp-cell">${deptNews}</div>
     </div>
   </div>`;
 }
 
-/* 4면: section index 0=표지(p1), 1=예배순서(p2), 2=광고(p3), 3=교회안내(p4) */
+/* 4면: section index 0=표지(p1), 1=예배순서(p2), 2=교회/부서소식(p3), 3=교회안내(p4) */
 function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
-  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays } = prepData(db);
+  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays, departmentItems } = prepData(db);
   switch (index) {
     case 0: {
       const decor = decorStyle === "none"
@@ -868,9 +936,13 @@ function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
     ${c.pastor?.column ? `<div class="bp-colbox" style="border-left-color:${tpl.gold}"><div class="bp-col-hd" style="color:${tpl.accent}">${BI.sermon(tpl.accent)} 목사님 칼럼</div><div class="bp-col-txt">${nl(c.pastor.column)}</div></div>` : ""}
   </div></div>`;
     case 2:
-      return `<div class="bp bp-3"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">광고 및 소식</span></div><div class="bp-page-bd">
-    ${ads.length ? `<div class="bp-adlist">${ads.map(a => `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">${esc(a.dept)}</div><div class="bp-ad-txt">${nl(a.text)}</div></div>`).join("")}</div>` : '<div class="bp-empty">광고를 입력하세요</div>'}
-    ${bdays.length ? `<div class="bp-bday-sec"><div class="bp-sub-hd" style="color:${tpl.accent}">${BI.gift(tpl.accent)} 금주 생일</div><div class="bp-bday-list">${bdays.map(b => `<span class="bp-bday-tag" style="background:${tpl.accentLight};color:${tpl.accent}">${esc(b)}</span>`).join("")}</div></div>` : ""}
+      return `<div class="bp bp-3"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 소식 / 부서별 소식</span></div><div class="bp-page-bd">
+    ${c.general?.content ? `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">교회 소식</div><div class="bp-ad-txt">${nl(c.general.content)}</div></div>` : ""}
+    ${c.general?.servants ? `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">금주 봉사자</div><div class="bp-ad-txt">${nl(c.general.servants)}</div></div>` : ""}
+    ${c.general?.offering ? `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">헌금 보고</div><div class="bp-ad-txt">${nl(c.general.offering)}</div></div>` : ""}
+    ${c.general?.schedule ? `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">금주 일정</div><div class="bp-ad-txt">${nl(c.general.schedule)}</div></div>` : ""}
+    ${bdays.length ? `<div class="bp-bday-sec"><div class="bp-sub-hd" style="color:${tpl.accent}">${BI.gift(tpl.accent)} 이번 주 생일</div><div class="bp-bday-list">${bdays.map(b => `<span class="bp-bday-tag" style="background:${tpl.accentLight};color:${tpl.accent}">${esc(b)}</span>`).join("")}</div></div>` : ""}
+    ${departmentItems.length ? departmentItems.map(d => `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">▶ ${esc(d.name)}</div><div class="bp-ad-txt">${nl(d.text)}</div></div>`).join("") : ""}
   </div></div>`;
     case 3:
       return `<div class="bp bp-4"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.church(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 안내</span></div><div class="bp-page-bd">
@@ -904,7 +976,7 @@ function buildHalfFold(db: BulletinDB): string {
 
 /* 온라인/PDF용 (모바일 친화적 카드형) */
 function buildOnlineHTML(db: BulletinDB): string {
-  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays } = prepData(db);
+  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays, departmentItems } = prepData(db);
   const decor = decorStyle === "none"
     ? { topRight: "", bottomLeft: "" }
     : getDecorSVG(decorStyle, tpl.accent, tpl.gold);
@@ -934,9 +1006,15 @@ function buildOnlineHTML(db: BulletinDB): string {
         ${c.worship?.praise ? `<div class="ol-note">${BI.music(tpl.accent)} ${esc(c.worship.praise)}</div>` : ""}
         ${c.worship?.special ? `<div class="ol-note">${BI.mic(tpl.accent)} ${esc(c.worship.special)}</div>` : ""}</div>
       ${c.pastor?.column ? `<div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.sermon(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">목사님 칼럼</span></div><div class="ol-col-txt">${nl(c.pastor.column)}</div></div>` : ""}
-      ${ads.length ? `<div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">광고 및 소식</span></div>
-        ${ads.map(a => `<div class="ol-ad"><div class="ol-ad-dept">${esc(a.dept)}</div><div class="ol-ad-txt">${nl(a.text)}</div></div>`).join("")}</div>` : ""}
-      ${bdays.length ? `<div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.gift(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">금주 생일</span></div><div class="ol-bdays">${bdays.map(b => `<span class="ol-bday">${esc(b)}</span>`).join("")}</div></div>` : ""}
+      ${(c.general?.content || c.general?.servants || c.general?.offering || c.general?.schedule || bdays.length) ? `<div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 소식</span></div>
+        ${c.general?.content ? `<div class="ol-ad"><div class="ol-ad-dept">교회 소식</div><div class="ol-ad-txt">${nl(c.general.content)}</div></div>` : ""}
+        ${c.general?.servants ? `<div class="ol-ad"><div class="ol-ad-dept">금주 봉사자</div><div class="ol-ad-txt">${nl(c.general.servants)}</div></div>` : ""}
+        ${c.general?.offering ? `<div class="ol-ad"><div class="ol-ad-dept">헌금 보고</div><div class="ol-ad-txt">${nl(c.general.offering)}</div></div>` : ""}
+        ${c.general?.schedule ? `<div class="ol-ad"><div class="ol-ad-dept">금주 일정</div><div class="ol-ad-txt">${nl(c.general.schedule)}</div></div>` : ""}
+        ${bdays.length ? `<div class="ol-ad"><div class="ol-ad-dept">이번 주 생일</div><div class="ol-bdays">${bdays.map(b => `<span class="ol-bday">${esc(b)}</span>`).join("")}</div></div>` : ""}
+        </div>` : ""}
+      ${departmentItems.length ? `<div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">부서별 소식</span></div>
+        ${departmentItems.map(d => `<div class="ol-ad"><div class="ol-ad-dept">▶ ${esc(d.name)}</div><div class="ol-ad-txt">${nl(d.text)}</div></div>`).join("")}</div>` : ""}
       <div class="ol-sec ol-info-sec">
         ${c.general?.servants ? `<div class="ol-info-item"><strong>${BI.users(tpl.accent)} 봉사자</strong><br>${nl(c.general.servants)}</div>` : ""}
         ${c.general?.schedule ? `<div class="ol-info-item"><strong>${BI.calendar(tpl.accent)} 일정</strong><br>${nl(c.general.schedule)}</div>` : ""}
@@ -987,6 +1065,12 @@ export function BulletinPage() {
   useEffect(() => {
     sessionStorage.setItem("bulletin-activeSub", activeSub);
   }, [activeSub]);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    cover: true, worship: false, sermon: false,
+    churchNews: false, departments: false, info: false,
+  });
+  const toggleSection = (key: string) =>
+    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
   const [currentPageHistory, setCurrentPageHistory] = useState(1);
   const listRefHistory = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -1132,12 +1216,12 @@ export function BulletinPage() {
   }, []);
 
   const getCaptureTarget = useCallback((): HTMLElement | null => {
-    if (outputMode === "kakao" && kakaoCardRef.current) return kakaoCardRef.current;
+    if (kakaoCardRef.current) return kakaoCardRef.current;
     const byId = document.getElementById("bulletin-print-area");
     if (byId) return byId;
     const el = document.querySelector("[data-bulletin-preview]") as HTMLElement;
     return el || previewRef.current;
-  }, [outputMode]);
+  }, []);
 
   const handleDownloadCard = useCallback(async () => {
     const el = getCaptureTarget();
@@ -1237,16 +1321,36 @@ export function BulletinPage() {
       showToast("찾을 수 없습니다");
       return;
     }
-    const loaded = JSON.parse(JSON.stringify(h)) as CurrentBulletin;
+    const loaded = JSON.parse(JSON.stringify(h)) as CurrentBulletin & { youth?: { content?: string }; education?: { content?: string }; mission?: { content?: string } };
     if (loaded.coverImage === undefined) loaded.coverImage = "";
     if (loaded.coverImageOpacity === undefined) loaded.coverImageOpacity = 0.3;
+    if (!loaded.departments || !Array.isArray(loaded.departments.enabled)) {
+      loaded.departments = { enabled: [], data: {} };
+    }
+    const dept = loaded.departments;
+    if (loaded.youth?.content) {
+      if (!dept.enabled.includes("cheongnyeon")) dept.enabled.push("cheongnyeon");
+      dept.data = dept.data || {}; dept.data.cheongnyeon = loaded.youth.content;
+    }
+    if (loaded.education?.content) {
+      if (!dept.enabled.includes("gyoyuk")) dept.enabled.push("gyoyuk");
+      dept.data = dept.data || {}; dept.data.gyoyuk = loaded.education.content;
+    }
+    if (loaded.mission?.content) {
+      if (!dept.enabled.includes("seonkyo")) dept.enabled.push("seonkyo");
+      dept.data = dept.data || {}; dept.data.seonkyo = loaded.mission.content;
+    }
+    const o = loaded as unknown as Record<string, unknown>;
+    delete o.youth;
+    delete o.education;
+    delete o.mission;
     setDb(prev => ({ ...prev, current: loaded }));
     setActiveSub("edit");
     showToast("불러왔습니다");
   };
 
-  const secEntries = Object.entries(SECTIONS) as [SectionKey, { name: string; icon: string }][];
-  const submittedCount = secEntries.filter(([k]) => db.current[k]?.submitted).length;
+  const secEntries = Object.entries(SECTIONS) as [SectionKey, { name: string; desc: string }][];
+  const submittedCount = secEntries.filter(([k]) => getSectionSubmitted(db, k)).length;
   const info = PAGE_INFO[activeSub];
   const dbRef = useRef(db);
   useEffect(() => { dbRef.current = db; }, [db]);
@@ -1264,14 +1368,6 @@ export function BulletinPage() {
       setShowFullPreview(true);
     }, 300);
   }, [saveFields]);
-
-  const handlePDF = useCallback(() => {
-    if (typeof saveFields === "function") saveFields();
-    setTimeout(() => {
-      window.print();
-      showToast("인쇄 대화상자에서 'PDF로 저장'을 선택하세요");
-    }, 300);
-  }, [showToast]);
 
   const handlePrint = useCallback(() => {
     if (typeof saveFields === "function") saveFields();
@@ -1325,8 +1421,7 @@ export function BulletinPage() {
                     </div>
                     <div className="space-y-2">
                       {secEntries.map(([k, v]) => {
-                        const s = db.current[k];
-                        const done = !!s?.submitted;
+                        const done = getSectionSubmitted(db, k);
                         return (
                           <div key={k} className="flex items-center justify-between py-2">
                             <div className="flex items-center gap-2">
@@ -1374,11 +1469,16 @@ export function BulletinPage() {
                           key={format}
                           type="button"
                           onClick={() => setBulletinFormat(format)}
-                          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                            bulletinFormatDisplay === format
-                              ? "bg-gray-900 text-white shadow-sm"
-                              : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                          }`}
+                          style={{
+                            padding: "6px 16px",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            borderRadius: 6,
+                            transition: "all 0.15s",
+                            ...(bulletinFormatDisplay === format
+                              ? { background: "#111827", color: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }
+                              : { background: "transparent", color: "#6b7280", cursor: "pointer" }),
+                          }}
                         >
                           {format}
                         </button>
@@ -1399,14 +1499,7 @@ export function BulletinPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={handlePDF}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-                      >
-                        <FileText size={13} /> PDF
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDownloadCard}
+                        onClick={handleKakaoShare}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors shadow-sm"
                       >
                         카카오 공유
@@ -1493,34 +1586,37 @@ export function BulletinPage() {
           {activeSub === "edit" && (
             <div className="flex" style={{ height: "calc(100vh - 120px)", minHeight: 0, gap: 20, flexDirection: mob ? "column" : "row" }}>
               <div style={{ overflowY: "auto", paddingRight: mob ? 0 : 10, flex: mob ? "none" : "0 0 auto", width: mob ? "100%" : 400, minWidth: 0 }}>
-                {/* ── 출력 형식 (접히는 패널) ── */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* 출력 형식 — 아코디언 스타일 통일 */}
+                <div style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #e5e7eb", overflow: "hidden" }}>
                   <button
                     type="button"
-                    onClick={() => setShowFormatPanel(!showFormatPanel)}
-                    className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                    onClick={() => setShowFormatPanel(prev => !prev)}
+                    style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-800">출력 형식</span>
-                      <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
-                        {outputMode === "print" ? (printFormat === "fold3" ? "인쇄 · 3면접지" : "인쇄 · 2면접지") : outputMode === "online" ? "온라인/PDF" : "카카오톡"}
-                        {" · "}{TEMPLATES.find(t => t.id === db.current.template)?.name || "보태니컬"}
-                      </span>
-                    </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-gray-400 transition-transform ${showFormatPanel ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6"/></svg>
+                    <span>출력 형식</span>
+                    <span style={{ transform: showFormatPanel ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-flex" }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#999" }}><path d="m6 9 6 6 6-6"/></svg>
+                    </span>
                   </button>
-
                   {showFormatPanel && (
-                    <div className="px-4 pb-4 space-y-4 border-t border-gray-100">
+                    <div style={{ padding: "0 16px 16px" }}>
+                      <div className="space-y-4">
                       <div className="pt-3">
                         <div className="flex gap-1.5">
                           {[
                             { key: "print", label: "인쇄용" },
-                            { key: "online", label: "온라인/PDF" },
-                            { key: "kakao", label: "카카오톡" },
+                            { key: "online", label: "온라인/카카오" },
                           ].map((m) => (
                             <button key={m.key} type="button" onClick={() => { setOutputMode(m.key as OutputMode); if (m.key !== "print") setPreviewView("all"); }}
-                              className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${outputMode === m.key ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                              style={{
+                                flex: 1,
+                                padding: "6px 12px",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                borderRadius: 8,
+                                transition: "all 0.15s",
+                                ...(outputMode === m.key ? { background: "#111827", color: "#ffffff" } : { background: "#f3f4f6", color: "#4b5563", cursor: "pointer" }),
+                              }}
                             >{m.label}</button>
                           ))}
                         </div>
@@ -1529,10 +1625,26 @@ export function BulletinPage() {
                       {outputMode === "print" && (
                         <div className="flex gap-1.5">
                           <button type="button" onClick={() => { setPrintFormat("fold3"); setPreviewView("all"); }}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${printFormat === "fold3" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                            style={{
+                              flex: 1,
+                              padding: "6px 12px",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              borderRadius: 8,
+                              transition: "all 0.15s",
+                              ...(printFormat === "fold3" ? { background: "#111827", color: "#ffffff" } : { background: "#f3f4f6", color: "#4b5563", cursor: "pointer" }),
+                            }}
                           >3면 접지</button>
                           <button type="button" onClick={() => { setPrintFormat("fold2"); setPreviewView("all"); }}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${printFormat === "fold2" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                            style={{
+                              flex: 1,
+                              padding: "6px 12px",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              borderRadius: 8,
+                              transition: "all 0.15s",
+                              ...(printFormat === "fold2" ? { background: "#111827", color: "#ffffff" } : { background: "#f3f4f6", color: "#4b5563", cursor: "pointer" }),
+                            }}
                           >2면 접지</button>
                         </div>
                       )}
@@ -1667,48 +1779,90 @@ export function BulletinPage() {
                         </div>
                       </div>
                     </div>
+                    </div>
                   )}
                 </div>
 
-                <Card id="sec-pastor">
-                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>담임목사</span>
-                    <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 6, background: db.current.pastor?.submitted ? "#f3f4f6" : "#fef2f2", color: db.current.pastor?.submitted ? "#6b7280" : "#ef4444" }}>{db.current.pastor?.submitted ? "제출" : "미제출"}</span>
-                  </div>
-                  <div style={{ padding: 18 }}>
-                    <FormField label="설교 제목"><FInput value={db.current.pastor?.sermonTitle || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonTitle: v } }))} placeholder="이번 주 설교 제목" /></FormField>
-                    <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 10 }}>
-                      <FormField label="성경 본문"><FInput value={db.current.pastor?.sermonPassage || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonPassage: v } }))} placeholder="마태복음 5:1-12" /></FormField>
-                      <FormField label="설교 주제"><FInput value={db.current.pastor?.sermonTheme || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonTheme: v } }))} placeholder="설교 핵심 주제" /></FormField>
-                    </div>
-                    <FormField label="목사님 칼럼"><FTextarea value={db.current.pastor?.column || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, column: v } }))} placeholder="이번 주 칼럼" style={{ minHeight: 100 }} /></FormField>
-                    <FormField label="특별 공지"><FTextarea value={db.current.pastor?.pastorNotice || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, pastorNotice: v } }))} placeholder="특별 공지 (선택)" /></FormField>
-                  </div>
-                </Card>
+                {Object.entries(SECTIONS).map(([key, sec]) => (
+                  <div key={key} style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                    <button type="button" onClick={() => toggleSection(key)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>
+                      <span>{sec.name}</span>
+                      <span style={{ transform: openSections[key] ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-flex" }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#999" }}><path d="m6 9 6 6 6-6"/></svg>
+                      </span>
+                    </button>
+                    {openSections[key] && (
+                      <div style={{ padding: "0 16px 16px" }}>
+                        <p style={{ fontSize: 11, color: "#888", marginBottom: 12 }}>{sec.desc}</p>
 
-                <Card id="sec-worship">
-                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>예배 / 찬양</span></div>
-                  <div style={{ padding: 18 }}>
-                    <FormField label="예배 순서"><FTextarea value={db.current.worship?.worshipOrder || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, worshipOrder: v } }))} placeholder="묵도&#10;찬송 ………… 00장" style={{ minHeight: 150 }} /></FormField>
-                    <FormField label="찬양곡"><FInput value={db.current.worship?.praise || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, praise: v } }))} placeholder="찬양곡 목록" /></FormField>
-                    <FormField label="특송/특별순서"><FInput value={db.current.worship?.special || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, special: v } }))} placeholder="특송 - OOO" /></FormField>
-                  </div>
-                </Card>
+                        {key === "cover" && (<>
+                          <FormField label="설교 제목"><FInput value={db.current.pastor?.sermonTitle || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonTitle: v } }))} placeholder="이번 주 설교 제목" /></FormField>
+                          <FormField label="성경 본문"><FInput value={db.current.pastor?.sermonPassage || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonPassage: v } }))} placeholder="마태복음 5:1-12" /></FormField>
+                          <FormField label="설교 주제"><FInput value={db.current.pastor?.sermonTheme || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonTheme: v } }))} placeholder="설교 핵심 주제" /></FormField>
+                        </>)}
 
-                <Card id="sec-youth"><div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>청년부</span></div><div style={{ padding: 18 }}><FormField label="청년부 광고"><FTextarea value={db.current.youth?.content || ""} onChange={v => setCurrent(c => ({ ...c, youth: { ...c.youth, content: v } }))} placeholder="청년부 행사, 모임 안내" /></FormField></div></Card>
-                <Card id="sec-education"><div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>교육부</span></div><div style={{ padding: 18 }}><FormField label="교육부 광고"><FTextarea value={db.current.education?.content || ""} onChange={v => setCurrent(c => ({ ...c, education: { ...c.education, content: v } }))} placeholder="주일학교, 교사 모임" /></FormField></div></Card>
-                <Card id="sec-mission"><div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>선교부</span></div><div style={{ padding: 18 }}><FormField label="선교부 광고"><FTextarea value={db.current.mission?.content || ""} onChange={v => setCurrent(c => ({ ...c, mission: { ...c.mission, content: v } }))} placeholder="선교 소식, 단기선교" /></FormField></div></Card>
+                        {key === "churchNews" && (<>
+                          <FormField label="교회 전체 소식"><FTextarea value={db.current.general?.content || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, content: v } }))} placeholder="교회 전체 공지사항" /></FormField>
+                          <FormField label="금주 봉사자"><FTextarea value={db.current.general?.servants || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, servants: v } }))} placeholder="안내: OOO&#10;주차: OOO" /></FormField>
+                          <FormField label="지난주 헌금"><FInput value={db.current.general?.offering || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, offering: v } }))} placeholder="십일조 0,000,000원" /></FormField>
+                          <FormField label="금주 교회 일정"><FTextarea value={db.current.general?.schedule || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, schedule: v } }))} placeholder="월: 새벽기도 05:30" /></FormField>
+                          <FormField label="이번 주 생일자"><FInput value={db.current.general?.birthday || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, birthday: v } }))} placeholder="김OO 집사, 이OO 권사" /></FormField>
+                        </>)}
 
-                <Card id="sec-general">
-                  <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>총무/행정</span></div>
-                  <div style={{ padding: 18 }}>
-                    <FormField label="교회 소식/일반 광고"><FTextarea value={db.current.general?.content || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, content: v } }))} placeholder="교회 전체 소식" /></FormField>
-                    <FormField label="이번 주 생일자"><FInput value={db.current.general?.birthday || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, birthday: v } }))} placeholder="김OO 집사, 이OO 권사" /></FormField>
-                    <FormField label="주간 봉사자"><FTextarea value={db.current.general?.servants || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, servants: v } }))} placeholder="안내: OOO&#10;주차: OOO" /></FormField>
-                    <FormField label="지난주 헌금"><FInput value={db.current.general?.offering || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, offering: v } }))} placeholder="십일조 0,000,000원" /></FormField>
-                    <FormField label="금주 교회 일정"><FTextarea value={db.current.general?.schedule || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, schedule: v } }))} placeholder="월: 새벽기도 05:30" /></FormField>
+                        {key === "worship" && (<>
+                          <FormField label="예배 순서"><FTextarea value={db.current.worship?.worshipOrder || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, worshipOrder: v } }))} placeholder="묵도&#10;찬송 ………… 00장" style={{ minHeight: 150 }} /></FormField>
+                          <FormField label="찬양곡"><FInput value={db.current.worship?.praise || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, praise: v } }))} placeholder="찬양곡 목록" /></FormField>
+                          <FormField label="특송/특별순서"><FInput value={db.current.worship?.special || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, special: v } }))} placeholder="특송 - OOO" /></FormField>
+                        </>)}
+
+                        {key === "sermon" && (<>
+                          <FormField label="목사님 칼럼"><FTextarea value={db.current.pastor?.column || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, column: v } }))} placeholder="이번 주 칼럼" style={{ minHeight: 100 }} /></FormField>
+                          <FormField label="특별 공지"><FTextarea value={db.current.pastor?.pastorNotice || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, pastorNotice: v } }))} placeholder="특별 공지 (선택)" /></FormField>
+                        </>)}
+
+                        {key === "departments" && (<>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                            {DEPARTMENTS.map(({ key: dKey, name }) => {
+                              const enabled = db.current.departments?.enabled ?? [];
+                              const checked = enabled.includes(dKey);
+                              return (
+                                <label key={dKey} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                                  <input type="checkbox" checked={checked} onChange={() => {
+                                    const next = checked ? enabled.filter(k => k !== dKey) : [...enabled, dKey];
+                                    setCurrent(c => ({ ...c, departments: { ...c.departments, enabled: next, data: c.departments?.data ?? {} } }));
+                                  }} />
+                                  <span>{name}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          {(db.current.departments?.enabled ?? []).map(dKey => {
+                            const dept = DEPARTMENTS.find(d => d.key === dKey);
+                            if (!dept) return null;
+                            return (
+                              <div key={dKey} style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 4 }}>—— {dept.name} ——</div>
+                                <FormField label="">
+                                  <FTextarea value={db.current.departments?.data?.[dKey] ?? ""} onChange={v => setCurrent(c => ({
+                                    ...c,
+                                    departments: { ...c.departments, data: { ...(c.departments?.data ?? {}), [dKey]: v } },
+                                  }))} placeholder={`${dept.name} 소식 입력`} style={{ minHeight: 80 }} />
+                                </FormField>
+                              </div>
+                            );
+                          })}
+                        </>)}
+
+                        {key === "info" && (<>
+                          <FormField label="헌금 계좌"><textarea className="w-full border rounded-lg p-2 text-sm" rows={2} value={db.settings.account || ""} onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, account: e.target.value } }))} /></FormField>
+                          <FormField label="교회 주소"><FInput value={db.settings.address || ""} onChange={v => setDb(p => ({ ...p, settings: { ...p.settings, address: v } }))} /></FormField>
+                          <FormField label="전화번호"><FInput value={db.settings.phone || ""} onChange={v => setDb(p => ({ ...p, settings: { ...p.settings, phone: v } }))} /></FormField>
+                          <p style={{ fontSize: 11, color: "#999", marginTop: 8 }}>※ 설정 페이지에서도 수정할 수 있습니다</p>
+                        </>)}
+                      </div>
+                    )}
                   </div>
-                </Card>
+                ))}
               </div>
 
               <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ marginTop: mob ? 20 : 0 }}>
@@ -1730,35 +1884,37 @@ export function BulletinPage() {
                         </button>
                       ))}
                     </div>
-                    {outputMode === "print" && (
+                    {/* 뷰 전환(인쇄용) 또는 placeholder: 온라인일 때도 자리 유지해 레이아웃 고정 */}
+                    {outputMode === "print" ? (
                       <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
                         {(printFormat === "fold3" ? VIEW_FOLD3 : VIEW_FOLD2).map((v) => (
                           <button
                             key={v}
                             type="button"
                             onClick={() => setPreviewView(v)}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                              previewView === v
-                                ? "bg-blue-600 text-white shadow-sm"
-                                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                            }`}
+                            style={{
+                              padding: "4px 12px",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              borderRadius: 6,
+                              transition: "all 0.15s",
+                              ...(previewView === v
+                                ? { background: "#2563eb", color: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }
+                                : { background: "transparent", color: "#6b7280", cursor: "pointer" }),
+                            }}
                           >
                             {VIEW_LABEL[v]}
                           </button>
                         ))}
                       </div>
+                    ) : (
+                      <div style={{ width: 200, minWidth: 200 }} aria-hidden />
                     )}
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <button type="button" onClick={handlePrint} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm">
                         <Printer size={12} /> 인쇄
-                      </button>
-                      <button type="button" onClick={handlePDF} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm">
-                        <FileText size={12} /> PDF
-                      </button>
-                      <button type="button" onClick={handleDownloadCard} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm">
-                        카카오 이미지
                       </button>
                       <button type="button" onClick={handleKakaoShare} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-yellow-400 border border-yellow-400 rounded-lg hover:bg-yellow-500 shadow-sm">
                         카카오 공유
@@ -1773,8 +1929,9 @@ export function BulletinPage() {
                 </div>
 
                 <div className="flex-1 overflow-auto min-h-0 bg-white" style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "16px" }}>
-                {outputMode === "kakao" ? (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%" }}>
+                {/* 카카오 공유용 숨김 카드 (캡처 전용) */}
+                {outputMode === "online" && (
+                  <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
                     <KakaoShareCard
                       ref={kakaoCardRef}
                       churchName={db.settings.church || "교회"}
@@ -1789,29 +1946,25 @@ export function BulletinPage() {
                       message={db.current.pastor?.pastorNotice || ""}
                       designTheme={db.current.template === "warm-earth" ? "burgundy" : db.current.template === "natural-botanical" ? "olive" : "navy"}
                     />
-                    <p style={{ fontSize: 12, color: C.textFaint, textAlign: "center", margin: 0 }}>
-                      이미지를 다운로드한 후 카카오톡 단체방에 공유하세요
-                    </p>
-                  </div>
-                ) : (
-                  <div
-                    className="bulletin-preview-display"
-                    id="bulletin-print-container"
-                    style={{
-                      width: "100%",
-                      minHeight: "calc(100vh - 140px)",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      padding: "24px 16px",
-                      backgroundColor: "#ffffff",
-                    }}
-                  >
-                    <div className="bulletin-preview-scale flex-shrink-0" style={{ transform: `scale(${previewScale})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
-                      <div id="bulletin-print-area" ref={previewRef} data-bview={previewView} data-bulletin-preview className="bulletin bulletin-preview-inner bulletin-page-content" style={{ flexShrink: 0, width: ps.width, minHeight: ps.minHeight, padding: ps.padding }} />
-                    </div>
                   </div>
                 )}
+                <div
+                  className="bulletin-preview-display"
+                  id="bulletin-print-container"
+                  style={{
+                    width: "100%",
+                    minHeight: "calc(100vh - 140px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    padding: "24px 16px",
+                    backgroundColor: "#ffffff",
+                  }}
+                >
+                  <div className="bulletin-preview-scale flex-shrink-0" style={{ transform: `scale(${previewScale})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
+                    <div id="bulletin-print-area" ref={previewRef} data-bview={previewView} data-bulletin-preview className="bulletin bulletin-preview-inner bulletin-page-content" style={{ flexShrink: 0, width: ps.width, minHeight: ps.minHeight, padding: ps.padding }} />
+                  </div>
+                </div>
                 </div>
               </div>
             </div>
@@ -1915,13 +2068,6 @@ export function BulletinPage() {
           <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200" style={{ backgroundColor: "#ffffff" }}>
             <span className="text-sm font-medium text-gray-800">주보 미리보기</span>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="px-3 py-1.5 text-xs font-medium rounded bg-gray-800 text-white hover:bg-gray-700"
-                onClick={() => { setShowFullPreview(false); setTimeout(() => handlePDF(), 100); }}
-              >
-                PDF 저장
-              </button>
               <button
                 type="button"
                 className="px-3 py-1.5 text-xs font-medium rounded bg-gray-800 text-white hover:bg-gray-700"
