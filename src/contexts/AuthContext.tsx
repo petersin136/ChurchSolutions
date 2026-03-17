@@ -224,7 +224,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setChurchName(null);
 
     if (typeof window !== "undefined") {
+      const bulletinBackup = localStorage.getItem("bulletin_db");
       localStorage.clear();
+      if (bulletinBackup) {
+        localStorage.setItem("bulletin_db", bulletinBackup);
+      }
     }
 
     if (typeof window !== "undefined") {

@@ -8,6 +8,7 @@ import { Pagination } from "@/components/common/Pagination";
 import KakaoShareCard from "@/components/bulletin/KakaoShareCard";
 import { initKakao, shareTextToKakao } from "@/lib/kakao";
 import { downloadElementAsImage } from "@/utils/captureElement";
+import { supabase } from "@/lib/supabase";
 
 function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
@@ -65,6 +66,9 @@ interface BulletinSettings {
   phone: string;
   account: string;
   deadline: string;
+  pastorTitle?: string;
+  associate?: string;
+  staffList?: string;
 }
 
 interface PastorSection {
@@ -103,6 +107,8 @@ interface CurrentBulletin {
   date: string;
   template: string;
   coverDecor?: string;
+  coverImage?: string;
+  coverImageOpacity?: number;
   pastor: PastorSection;
   worship: WorshipSection;
   youth: ContentSection;
@@ -225,12 +231,17 @@ function defaultDB(): BulletinDB {
       phone: "",
       account: "",
       deadline: "목요일",
+      pastorTitle: "담임목사",
+      associate: "",
+      staffList: "",
     },
     current: {
       key: BULLETIN_KEY,
       date: BULLETIN_DATE_STR,
       template: "natural-botanical",
       coverDecor: "botanical",
+      coverImage: "",
+      coverImageOpacity: 0.3,
       pastor: {
         sermonTitle: "산상수훈의 참된 복",
         sermonPassage: "마태복음 5:1-12",
@@ -276,12 +287,17 @@ function defaultEmptyDB(): BulletinDB {
       phone: "",
       account: "",
       deadline: "",
+      pastorTitle: "담임목사",
+      associate: "",
+      staffList: "",
     },
     current: {
       key: BULLETIN_KEY,
       date: BULLETIN_DATE_STR,
       template: "natural-botanical",
       coverDecor: "botanical",
+      coverImage: "",
+      coverImageOpacity: 0.3,
       pastor: { sermonTitle: "", sermonPassage: "", sermonTheme: "", column: "", pastorNotice: "", submitted: false, submittedAt: "" },
       worship: { worshipOrder: "", praise: "", special: "", submitted: false, submittedAt: "" },
       youth: { content: "", submitted: false, submittedAt: "" },
@@ -298,8 +314,15 @@ function loadBulletin(): BulletinDB {
   if (typeof window === "undefined") return defaultEmptyDB();
   const s = localStorage.getItem(BULLETIN_STORAGE_KEY);
   const db = s ? JSON.parse(s) : defaultEmptyDB();
-  if (!db.current) db.current = defaultEmptyDB().current;
+  const defCurrent = defaultEmptyDB().current;
+  if (!db.current) {
+    db.current = defCurrent;
+  } else {
+    db.current = { ...defCurrent, ...db.current };
+  }
   if (!Array.isArray(db.history)) db.history = [];
+  if (db.current.coverImage === undefined) db.current.coverImage = defCurrent.coverImage ?? "";
+  if (db.current.coverImageOpacity === undefined) db.current.coverImageOpacity = defCurrent.coverImageOpacity ?? 0.3;
   return db;
 }
 function saveBulletin(db: BulletinDB) {
@@ -402,6 +425,100 @@ const BI = {
     c, 14
   ),
   cross: (c: string) => `<div style="position:relative;width:28px;height:36px;margin:0 auto 12px;opacity:0.7;"><div style="position:absolute;left:50%;top:0;transform:translateX(-50%);width:1.5px;height:100%;background:${c};"></div><div style="position:absolute;top:28%;left:0;width:100%;height:1.5px;background:${c};"></div></div>`,
+};
+
+const resizeCoverImage = (file: File, maxW = 800, maxH = 600, quality = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = h * maxW / w; w = maxW; }
+        if (h > maxH) { w = w * maxH / h; h = maxH; }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+const simpleHash = (str: string): string => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+};
+
+const COVER_BUCKET = "bulletin-covers";
+
+const resizeCoverImageAsBlob = (
+  file: File, maxW = 800, maxH = 600, quality = 0.75
+): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = h * maxW / w; w = maxW; }
+        if (h > maxH) { w = w * maxH / h; h = maxH; }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(
+          blob => blob ? resolve(blob) : reject(new Error("blob failed")),
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+const deleteCoverImage = async (churchId: string) => {
+  if (!supabase) throw new Error("Supabase not configured");
+  const { data: files } = await supabase.storage
+    .from(COVER_BUCKET)
+    .list(churchId);
+  if (files && files.length > 0) {
+    const paths = files.map(f => `${churchId}/${f.name}`);
+    await supabase.storage
+      .from(COVER_BUCKET)
+      .remove(paths);
+  }
+};
+
+const uploadCoverImage = async (file: File, churchId: string): Promise<string> => {
+  if (!supabase) throw new Error("Supabase not configured");
+  const resized = await resizeCoverImageAsBlob(file, 800, 600, 0.75);
+  await deleteCoverImage(churchId);
+  const fileName = `${churchId}/cover_${Date.now()}.jpg`;
+  const { error } = await supabase.storage
+    .from(COVER_BUCKET)
+    .upload(fileName, resized, {
+      contentType: "image/jpeg",
+      upsert: true
+    });
+  if (error) throw error;
+  const { data } = supabase.storage
+    .from(COVER_BUCKET)
+    .getPublicUrl(fileName);
+  return data.publicUrl;
 };
 
 /* ── 테마별 표지 장식 SVG ── */
@@ -622,19 +739,32 @@ function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
       const decor = decorStyle === "none"
         ? { topRight: "", bottomLeft: "" }
         : getDecorSVG(decorStyle, tpl.accent, tpl.gold);
-      return `<div class="tp tp-cover" style="background-color:${tpl.headerBg}; border-bottom:2px solid ${tpl.borderColor}; height:100%; width:100%; min-height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; position:relative; overflow:hidden; -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;">
+      const hasCover = !!c.coverImage;
+      const photoLayer = hasCover ? `
+        <div style="width:100%;flex:0 0 35%;overflow:hidden;position:relative;">
+          <img src="${c.coverImage}" style="width:100%;height:100%;object-fit:cover;display:block;opacity:${c.coverImageOpacity ?? 0.3};" />
+        </div>` : "";
+      return `<div class="tp tp-cover" style="background-color:${tpl.headerBg}; border-bottom:2px solid ${tpl.borderColor}; height:100%; width:100%; min-height:100%; display:flex; flex-direction:column; position:relative; overflow:hidden; -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;">
     <div class="tp-bg" style="background-color:${tpl.headerBg}"></div>
     ${decor.topRight}${decor.bottomLeft}${decor.topLeft || ""}${decor.bottomRight || ""}
-    <div class="tp-cover-inner" style="color:${tpl.headerTextColor};position:relative;z-index:1;">
-    ${BI.cross(tpl.headerTextColor)}
-    <div class="tp-cname">${esc(s.church)}</div><div class="tp-csub">${esc(s.churchSub || "")}</div>
-    <div class="tp-cdiv" style="background:${tpl.gold}"></div>
-    ${c.pastor?.sermonTitle ? `<div class="tp-stitle">${esc(c.pastor.sermonTitle)}</div>` : ""}
-    ${c.pastor?.sermonPassage ? `<div class="tp-spass">${esc(c.pastor.sermonPassage)}</div>` : ""}
-    <div class="tp-cdiv" style="background:${tpl.gold}"></div>
-    <div class="tp-date">${esc(c.date || BULLETIN_DATE_STR)} 주일예배</div>
-    <div class="tp-time">${esc(s.worshipTime)}</div>
-    <div class="tp-pastor">담임목사 ${esc(s.pastor)}</div>
+    <div class="tp-cover-inner" style="color:${tpl.headerTextColor};position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;width:100%;height:100%;padding:0;text-shadow:${hasCover ? 'none' : '0 1px 8px rgba(0,0,0,0.3)'};">
+      <div style="flex:0 0 ${hasCover ? '12%' : '18%'};"></div>
+      <div style="text-align:center;padding:0 16px;margin-bottom:10px;">
+        <div style="font-size:18px;font-weight:900;color:${hasCover ? '#1a1a1a' : tpl.headerTextColor};letter-spacing:3px;white-space:nowrap;">${esc(s.church)}</div>
+        ${s.churchSub ? `<div style="font-size:8px;color:${hasCover ? '#555' : tpl.headerTextColor};opacity:0.8;margin-top:3px;">${esc(s.churchSub)}</div>` : ""}
+      </div>
+      ${photoLayer}
+      ${hasCover ? "" : `<div style="width:50px;height:1px;background:${tpl.gold};margin:8px auto;opacity:0.5;"></div>`}
+      ${hasCover ? "" : BI.cross(tpl.headerTextColor)}
+      ${c.pastor?.sermonTitle ? `<div style="font-size:11px;font-weight:700;margin-top:16px;margin-bottom:3px;text-align:center;padding:0 16px;">${esc(c.pastor.sermonTitle)}</div>` : ""}
+      ${c.pastor?.sermonPassage ? `<div style="font-size:8px;opacity:0.8;margin-bottom:4px;padding:0 16px;">${esc(c.pastor.sermonPassage)}</div>` : ""}
+      <div style="width:35px;height:1px;background:${tpl.gold};margin:4px auto;opacity:0.4;"></div>
+      <div style="font-size:9px;opacity:0.85;margin-top:12px;">${esc(c.date || BULLETIN_DATE_STR)} 주일예배</div>
+      <div style="margin-top:24px;text-align:center;font-size:8px;opacity:0.75;padding:0 16px 10px;">
+        <div style="font-size:9px;font-weight:800;opacity:0.9;">${esc(s.pastor)} 목사</div>
+        ${s.staffList ? `<div style="font-size:6.5px;opacity:0.55;margin-top:1px;letter-spacing:0.5px;">${s.staffList.split("\n").map(l => esc(l.trim())).filter(Boolean).join(" · ")}</div>` : ""}
+        <div style="margin-top:2px;">${esc(s.worshipTime)}</div>
+      </div>
     </div></div>`;
     }
     case 1:
@@ -696,16 +826,33 @@ function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
       const decor = decorStyle === "none"
         ? { topRight: "", bottomLeft: "" }
         : getDecorSVG(decorStyle, tpl.accent, tpl.gold);
-      return `<div class="bp bp-1" style="background-color:${tpl.headerBg}; border-bottom:2px solid ${tpl.borderColor}; height:100%; width:100%; min-height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; position:relative; overflow:hidden; -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;">
+      const hasCover = !!c.coverImage;
+      const photoLayer = hasCover ? `
+        <div style="width:100%;flex:0 0 35%;overflow:hidden;position:relative;">
+          <img src="${c.coverImage}" style="width:100%;height:100%;object-fit:cover;display:block;opacity:${c.coverImageOpacity ?? 0.3};" />
+        </div>` : "";
+      return `<div class="bp bp-1" style="background-color:${tpl.headerBg}; border-bottom:2px solid ${tpl.borderColor}; height:100%; width:100%; min-height:100%; display:flex; flex-direction:column; position:relative; overflow:hidden; -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;">
     <div class="bp-cover-bg" style="background-color:${tpl.headerBg}"></div>
     ${decor.topRight}${decor.bottomLeft}${decor.topLeft || ""}${decor.bottomRight || ""}
-    <div class="bp-cover-content" style="color:${tpl.headerTextColor};position:relative;z-index:1;">
-    ${BI.cross(tpl.headerTextColor)}<div class="bp-church-name">${esc(s.church)}</div><div class="bp-church-sub">${esc(s.churchSub || "")}</div>
-    <div class="bp-cdiv" style="background:${tpl.gold}"></div>
-    ${c.pastor?.sermonTitle ? `<div class="bp-sermon-box"><div class="bp-sermon-title">${esc(c.pastor.sermonTitle)}</div>${c.pastor.sermonPassage ? `<div class="bp-sermon-passage">${esc(c.pastor.sermonPassage)}</div>` : ""}${c.pastor.sermonTheme ? `<div class="bp-sermon-theme">${esc(c.pastor.sermonTheme)}</div>` : ""}</div>` : ""}
-    <div class="bp-cdiv" style="background:${tpl.gold}"></div>
-    <div class="bp-date-line">${esc(c.date || BULLETIN_DATE_STR)} 주일예배</div><div class="bp-time-line">${esc(s.worshipTime)}</div>
-    <div class="bp-pastor-line">담임목사 ${esc(s.pastor)}</div></div></div>`;
+    <div class="bp-cover-content" style="color:${tpl.headerTextColor};position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;width:100%;height:100%;padding:0;text-shadow:${hasCover ? 'none' : '0 1px 8px rgba(0,0,0,0.3)'};">
+      <div style="flex:0 0 ${hasCover ? '9%' : '18%'};"></div>
+      <div style="text-align:center;padding:0 20px;margin-bottom:10px;">
+        <div style="font-size:20px;font-weight:900;color:${hasCover ? '#1a1a1a' : tpl.headerTextColor};letter-spacing:3px;white-space:nowrap;">${esc(s.church)}</div>
+        ${s.churchSub ? `<div style="font-size:8px;color:${hasCover ? '#555' : tpl.headerTextColor};opacity:0.8;margin-top:3px;">${esc(s.churchSub)}</div>` : ""}
+      </div>
+      ${photoLayer}
+      ${hasCover ? "" : `<div style="width:60px;height:1.5px;background:${tpl.gold};margin:8px auto;opacity:0.5;"></div>`}
+      ${hasCover ? "" : BI.cross(tpl.headerTextColor)}
+      ${c.pastor?.sermonTitle ? `<div style="font-size:12px;font-weight:700;margin-top:20px;margin-bottom:4px;text-align:center;padding:0 20px;">${esc(c.pastor.sermonTitle)}</div>` : ""}
+      ${c.pastor?.sermonPassage ? `<div style="font-size:10px;opacity:0.8;margin-bottom:6px;padding:0 20px;">${esc(c.pastor.sermonPassage)}</div>` : ""}
+      <div style="width:40px;height:1px;background:${tpl.gold};margin:4px auto;opacity:0.4;"></div>
+      <div style="font-size:10px;opacity:0.85;margin-top:14px;">${esc(c.date || BULLETIN_DATE_STR)} 주일예배</div>
+      <div style="font-size:9px;opacity:0.75;margin-top:2px;">${esc(s.worshipTime)}</div>
+      <div style="margin-top:28px;padding-top:8px;font-size:9px;opacity:0.75;text-align:center;">
+        <div style="font-size:10px;font-weight:800;opacity:0.9;">담임목사 ${esc(s.pastor)}</div>
+        ${s.staffList ? `<div style="font-size:7px;opacity:0.55;margin-top:1px;letter-spacing:0.5px;">${s.staffList.split("\n").map(l => esc(l.trim())).filter(Boolean).join(" · ")}</div>` : ""}
+      </div>
+    </div></div>`;
     }
     case 1:
       return `<div class="bp bp-2"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.worship(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">예배 순서</span></div><div class="bp-page-bd">
@@ -756,11 +903,22 @@ function buildOnlineHTML(db: BulletinDB): string {
     ? { topRight: "", bottomLeft: "" }
     : getDecorSVG(decorStyle, tpl.accent, tpl.gold);
   return `<div class="bp-online" style="--ac:${tpl.accent};--al:${tpl.accentLight};--gold:${tpl.gold}">
-    <div class="ol-header" style="background-color:${tpl.headerBg}; color:${tpl.headerTextColor}; border-bottom:2px solid ${tpl.borderColor}; position:relative; overflow:hidden;">
+    <div class="ol-header" style="background-color:${tpl.headerBg}; color:${tpl.headerTextColor}; border-bottom:2px solid ${tpl.borderColor}; position:relative; overflow:hidden; padding:24px;">
     ${decor.topRight}${decor.bottomLeft}${decor.topLeft || ""}${decor.bottomRight || ""}
-    <div style="position:relative;z-index:1;">${BI.cross(tpl.headerTextColor)}
-      <div class="ol-church">${esc(s.church)}</div><div class="ol-sub">${esc(s.churchSub || "")}</div>
-      <div class="ol-date">${esc(c.date || BULLETIN_DATE_STR)} 주일예배 · ${esc(s.worshipTime)}</div></div></div>
+    <div style="position:relative;z-index:2;text-align:center;text-shadow:${c.coverImage ? 'none' : '0 1px 8px rgba(0,0,0,0.3)'};">
+      <div style="text-align:center;padding:0 16px;margin-bottom:10px;">
+        <div style="font-size:22px;font-weight:900;color:${c.coverImage ? '#1a1a1a' : tpl.headerTextColor};letter-spacing:3px;white-space:nowrap;">${esc(s.church)}</div>
+        ${s.churchSub ? `<div style="font-size:10px;color:${c.coverImage ? '#555' : tpl.headerTextColor};opacity:0.8;margin-top:3px;">${esc(s.churchSub)}</div>` : ""}
+      </div>
+      ${c.coverImage ? `
+  <div style="width:100%;overflow:hidden;margin:0 0 10px;max-height:200px;position:relative;">
+    <img src="${c.coverImage}" style="width:100%;height:100%;object-fit:cover;display:block;opacity:${c.coverImageOpacity ?? 0.3};" />
+  </div>` : ""}
+      ${c.coverImage ? "" : `<div style="width:50px;height:1.5px;background:${tpl.gold};margin:8px auto;opacity:0.5;"></div>`}
+      ${c.coverImage ? "" : BI.cross(tpl.headerTextColor)}
+      ${c.pastor?.sermonTitle ? `<div style="font-size:14px;font-weight:700;margin-top:${c.coverImage ? '16px' : '0'};margin-bottom:4px;">${esc(c.pastor.sermonTitle)}</div>` : ""}
+      <div style="font-size:10px;opacity:0.85;margin-top:12px;">${esc(c.date || BULLETIN_DATE_STR)} 주일예배 · ${esc(s.worshipTime)}</div>
+    </div></div>
     ${c.pastor?.sermonTitle ? `<div class="ol-sermon"><div class="ol-sermon-t">${esc(c.pastor.sermonTitle)}</div>
       ${c.pastor.sermonPassage ? `<div class="ol-sermon-p">${esc(c.pastor.sermonPassage)}</div>` : ""}
       ${c.pastor.sermonTheme ? `<div class="ol-sermon-th">${esc(c.pastor.sermonTheme)}</div>` : ""}</div>` : ""}
@@ -1073,7 +1231,10 @@ export function BulletinPage() {
       showToast("찾을 수 없습니다");
       return;
     }
-    setDb(prev => ({ ...prev, current: JSON.parse(JSON.stringify(h)) }));
+    const loaded = JSON.parse(JSON.stringify(h)) as CurrentBulletin;
+    if (loaded.coverImage === undefined) loaded.coverImage = "";
+    if (loaded.coverImageOpacity === undefined) loaded.coverImageOpacity = 0.3;
+    setDb(prev => ({ ...prev, current: loaded }));
     setActiveSub("edit");
     showToast("불러왔습니다");
   };
@@ -1437,6 +1598,67 @@ export function BulletinPage() {
                           })}
                         </div>
                       </div>
+                      {/* 표지 이미지 */}
+                      <div className="mb-4">
+                        <label className="block text-xs font-semibold text-gray-600 mb-2">표지 이미지</label>
+                        {db.current.coverImage ? (
+                          <div className="relative">
+                            <img src={db.current.coverImage} alt="표지" className="w-full h-32 object-cover rounded-lg border" />
+                            <div className="flex gap-2 mt-2">
+                              <label className="flex-1 text-center text-xs py-1.5 bg-gray-100 rounded cursor-pointer hover:bg-gray-200 border">
+                                변경
+                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                  const f = e.target.files?.[0]; if (!f) return;
+                                  const churchId = simpleHash(db.settings.church || "default");
+                                  try {
+                                    const url = await uploadCoverImage(f, churchId);
+                                    setDb((p) => ({ ...p, current: { ...p.current, coverImage: url } }));
+                                    showToast("이미지가 업로드되었습니다");
+                                  } catch (err) {
+                                    console.error(err);
+                                    showToast("업로드 실패");
+                                  }
+                                  e.target.value = "";
+                                }} />
+                              </label>
+                              <button type="button" className="flex-1 text-xs py-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 border border-red-200"
+                                onClick={async () => {
+                                  const churchId = simpleHash(db.settings.church || "default");
+                                  await deleteCoverImage(churchId);
+                                  setDb((p) => ({ ...p, current: { ...p.current, coverImage: "" } }));
+                                  showToast("이미지가 삭제되었습니다");
+                                }}>
+                                삭제
+                              </button>
+                            </div>
+                            <div className="mt-2">
+                              <label className="text-xs text-gray-500">투명도: {Math.round((db.current.coverImageOpacity ?? 0.3) * 100)}%</label>
+                              <input type="range" min="10" max="80" value={Math.round((db.current.coverImageOpacity ?? 0.3) * 100)}
+                                className="w-full h-1.5 mt-1"
+                                onChange={(e) => setDb((p) => ({ ...p, current: { ...p.current, coverImageOpacity: parseInt(e.target.value, 10) / 100 } }))} />
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5"><path d="M12 5v14M5 12h14" /></svg>
+                            <span className="text-xs text-gray-400 mt-1">교회 사진 업로드</span>
+                            <span className="text-[10px] text-gray-300">JPG, PNG (자동 리사이즈)</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                              const f = e.target.files?.[0]; if (!f) return;
+                              const churchId = simpleHash(db.settings.church || "default");
+                              try {
+                                const url = await uploadCoverImage(f, churchId);
+                                setDb((p) => ({ ...p, current: { ...p.current, coverImage: url } }));
+                                showToast("이미지가 업로드되었습니다");
+                              } catch (err) {
+                                console.error(err);
+                                showToast("업로드 실패");
+                              }
+                              e.target.value = "";
+                            }} />
+                          </label>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1614,6 +1836,17 @@ export function BulletinPage() {
                     <FormField label="담임목사"><FInput value={db.settings.pastor} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, pastor: v } }))} /></FormField>
                     <FormField label="주일예배 시간"><FInput value={db.settings.worshipTime} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, worshipTime: v } }))} /></FormField>
                   </div>
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">교역자 / 부교역자</label>
+                    <textarea
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      rows={3}
+                      placeholder="부목사 홍길동&#10;전도사 김영희&#10;교육전도사 이철수"
+                      value={db.settings.staffList || ""}
+                      onChange={(e) => setDb(p => ({ ...p, settings: { ...p.settings, staffList: e.target.value } }))}
+                    />
+                    <p className="text-xs text-gray-400">한 줄에 한 명씩 입력 (예: 부목사 홍길동)</p>
+                  </div>
                   <FormField label="교회 주소"><FInput value={db.settings.address} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, address: v } }))} /></FormField>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <FormField label="전화번호"><FInput value={db.settings.phone} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, phone: v } }))} /></FormField>
@@ -1621,11 +1854,25 @@ export function BulletinPage() {
                   </div>
                   <FormField label="마감 요일"><FSelect value={db.settings.deadline} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, deadline: v } }))}><option>수요일</option><option>목요일</option><option>금요일</option></FSelect></FormField>
                   <hr style={{ margin: "20px 0", border: "none", borderTop: `1px solid #f3f4f6` }} />
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button type="button" onClick={() => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(db, null, 2)], { type: "application/json" })); a.download = `주보시스템_백업_${fds(TODAY)}.json`; a.click(); showToast("백업 완료"); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>백업</button>
-                    <button type="button" onClick={() => document.getElementById("bulletin-restore")?.click()} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>복원</button>
-                    <input id="bulletin-restore" type="file" accept=".json" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = ev => { try { const d = JSON.parse(ev.target?.result as string); if (d.settings && d.current) { setDb(d); showToast("복원 완료"); } else showToast("올바른 파일이 아닙니다"); } catch { showToast("파일 오류"); } }; r.readAsText(f); e.target.value = ""; }} />
-                    <button type="button" onClick={() => { if (!confirm("초기화하시겠습니까?")) return; localStorage.removeItem(BULLETIN_STORAGE_KEY); setDb(loadBulletin()); setActiveSub("dash"); showToast("초기화 완료"); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: "#ffffff", border: "1px solid #ef4444", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#ef4444", cursor: "pointer" }}>초기화</button>
+                  <div className="flex justify-end pt-4 mt-4">
+                    <button
+                      type="button"
+                      className="rounded transition-colors"
+                      style={{
+                        backgroundColor: "#2563EB",
+                        color: "#ffffff",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        padding: "6px 24px",
+                        letterSpacing: "0.5px"
+                      }}
+                      onClick={() => {
+                        saveBulletin(db);
+                        showToast("설정이 저장되었습니다");
+                      }}
+                    >
+                      저장
+                    </button>
                   </div>
                 </div>
               </Card>
