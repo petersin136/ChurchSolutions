@@ -492,21 +492,26 @@ const resizeCoverImageAsBlob = (
 
 const deleteCoverImage = async (churchId: string) => {
   if (!supabase) throw new Error("Supabase not configured");
-  const { data: files } = await supabase.storage
+  const { data: files, error } = await supabase.storage
     .from(COVER_BUCKET)
     .list(churchId);
+  console.log("[deleteCoverImage] list result:", churchId, files, error);
   if (files && files.length > 0) {
     const paths = files.map(f => `${churchId}/${f.name}`);
-    await supabase.storage
+    console.log("[deleteCoverImage] removing:", paths);
+    const { error: rmError } = await supabase.storage
       .from(COVER_BUCKET)
       .remove(paths);
+    console.log("[deleteCoverImage] remove result:", rmError);
   }
 };
 
 const uploadCoverImage = async (file: File, churchId: string): Promise<string> => {
   if (!supabase) throw new Error("Supabase not configured");
   const resized = await resizeCoverImageAsBlob(file, 800, 600, 0.75);
+  console.log("[uploadCoverImage] before deleteCoverImage, churchId:", churchId);
   await deleteCoverImage(churchId);
+  console.log("[uploadCoverImage] after deleteCoverImage");
   const fileName = `${churchId}/cover_${Date.now()}.jpg`;
   const { error } = await supabase.storage
     .from(COVER_BUCKET)
@@ -712,6 +717,7 @@ function prepData(db: BulletinDB) {
   const c = db.current, s = db.settings;
   const tpl = TEMPLATES.find(t => t.id === c.template) || TEMPLATES[0];
   const esc = (x: string) => (x || "").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const escBr = (s: string) => esc(s).replace(/\n/g, "<br>");
   const nl = (x: string) => esc(x).replace(/\n/g, "<br>");
   const orderLines = (c.worship?.worshipOrder || "").split("\n").filter(l => l.trim());
   const orderRows = orderLines.map(l => {
@@ -728,12 +734,12 @@ function prepData(db: BulletinDB) {
   if (c.pastor?.pastorNotice) ads.push({ dept: "특별 공지", text: c.pastor.pastorNotice });
   const bdays = (c.general?.birthday || "").split(",").map(b => b.trim()).filter(Boolean);
   const decorStyle = (c.coverDecor ?? tpl.decorStyle) as DecorStyle | "none";
-  return { c, s, tpl, decorStyle, esc, nl, orderRows, ads, bdays };
+  return { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays };
 }
 
 /* 6면: section index 0=cover(면1), 1=flap(면2), 2=worship(면3), 3=sermon(면4), 4=news(면5), 5=back(면6) */
 function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
-  const { c, s, tpl, decorStyle, esc, nl, orderRows, ads, bdays } = prepData(db);
+  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays } = prepData(db);
   switch (index) {
     case 0: {
       const decor = decorStyle === "none"
@@ -763,7 +769,7 @@ function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
       <div style="margin-top:24px;text-align:center;font-size:8px;opacity:0.75;padding:0 16px 10px;">
         <div style="font-size:9px;font-weight:800;opacity:0.9;">${esc(s.pastor)} 목사</div>
         ${s.staffList ? `<div style="font-size:6.5px;opacity:0.55;margin-top:1px;letter-spacing:0.5px;">${s.staffList.split("\n").map(l => esc(l.trim())).filter(Boolean).join(" · ")}</div>` : ""}
-        <div style="margin-top:2px;">${esc(s.worshipTime)}</div>
+        <div style="margin-top:2px;">${escBr(s.worshipTime || "")}</div>
       </div>
     </div></div>`;
     }
@@ -791,8 +797,8 @@ function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
   </div></div>`;
     case 5:
       return `<div class="tp tp-back"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.church(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 안내</span></div><div class="tp-bd">
-    <div class="tp-label" style="color:${tpl.accent}">${BI.wallet(tpl.accent)} 헌금 계좌</div><div class="tp-val">${esc(s.account || "")}</div>
-    <div class="tp-label" style="color:${tpl.accent}">${BI.mapPin(tpl.accent)} 주소</div><div class="tp-val">${esc(s.address || "")}</div>
+    <div class="tp-label" style="color:${tpl.accent}">${BI.wallet(tpl.accent)} 헌금 계좌</div><div class="tp-val">${escBr(s.account || "")}</div>
+    <div class="tp-label" style="color:${tpl.accent}">${BI.mapPin(tpl.accent)} 주소</div><div class="tp-val">${escBr(s.address || "")}</div>
     <div class="tp-label" style="color:${tpl.accent}">${BI.phone(tpl.accent)} 전화</div><div class="tp-val">${esc(s.phone || "")}</div>
     <div class="tp-church-badge" style="background:${tpl.accent}">${esc(s.church)}</div></div></div>`;
     default:
@@ -820,7 +826,7 @@ function buildTriFold(db: BulletinDB): string {
 
 /* 4면: section index 0=표지(p1), 1=예배순서(p2), 2=광고(p3), 3=교회안내(p4) */
 function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
-  const { c, s, tpl, decorStyle, esc, nl, orderRows, ads, bdays } = prepData(db);
+  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays } = prepData(db);
   switch (index) {
     case 0: {
       const decor = decorStyle === "none"
@@ -847,7 +853,7 @@ function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
       ${c.pastor?.sermonPassage ? `<div style="font-size:10px;opacity:0.8;margin-bottom:6px;padding:0 20px;">${esc(c.pastor.sermonPassage)}</div>` : ""}
       <div style="width:40px;height:1px;background:${tpl.gold};margin:4px auto;opacity:0.4;"></div>
       <div style="font-size:10px;opacity:0.85;margin-top:14px;">${esc(c.date || BULLETIN_DATE_STR)} 주일예배</div>
-      <div style="font-size:9px;opacity:0.75;margin-top:2px;">${esc(s.worshipTime)}</div>
+      <div style="font-size:9px;opacity:0.75;margin-top:2px;">${escBr(s.worshipTime || "")}</div>
       <div style="margin-top:28px;padding-top:8px;font-size:9px;opacity:0.75;text-align:center;">
         <div style="font-size:10px;font-weight:800;opacity:0.9;">담임목사 ${esc(s.pastor)}</div>
         ${s.staffList ? `<div style="font-size:7px;opacity:0.55;margin-top:1px;letter-spacing:0.5px;">${s.staffList.split("\n").map(l => esc(l.trim())).filter(Boolean).join(" · ")}</div>` : ""}
@@ -873,8 +879,8 @@ function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
       ${c.general?.schedule ? `<div class="bp-icell"><div class="bp-ititle" style="color:${tpl.accent}">${BI.calendar(tpl.accent)} 금주 일정</div><div class="bp-itxt">${nl(c.general.schedule)}</div></div>` : ""}
     </div>
     ${c.general?.offering ? `<div class="bp-offering"><div class="bp-ititle" style="color:${tpl.accent}">${BI.offering(tpl.accent)} 헌금 보고</div><div class="bp-itxt">${nl(c.general.offering)}</div></div>` : ""}
-    <div class="bp-acct"><div class="bp-ititle" style="color:${tpl.accent}">${BI.wallet(tpl.accent)} 헌금 계좌</div><div class="bp-itxt">${esc(s.account || "")}</div></div>
-    <div class="bp-cfooter" style="background-color:${tpl.headerBg}; color:${tpl.headerTextColor}; border-top:2px solid ${tpl.borderColor}"><div class="bp-cf-name">${esc(s.church)}</div><div class="bp-cf-det">${BI.mapPin(tpl.accent)} ${esc(s.address || "")}</div><div class="bp-cf-det">${BI.phone(tpl.accent)} ${esc(s.phone || "")}</div></div>
+    <div class="bp-acct"><div class="bp-ititle" style="color:${tpl.accent}">${BI.wallet(tpl.accent)} 헌금 계좌</div><div class="bp-itxt">${escBr(s.account || "")}</div></div>
+    <div class="bp-cfooter" style="background-color:${tpl.headerBg}; color:${tpl.headerTextColor}; border-top:2px solid ${tpl.borderColor}"><div class="bp-cf-name">${esc(s.church)}</div><div class="bp-cf-det">${BI.mapPin(tpl.accent)} ${escBr(s.address || "")}</div><div class="bp-cf-det">${BI.phone(tpl.accent)} ${esc(s.phone || "")}</div></div>
   </div></div>`;
     default:
       return "";
@@ -898,7 +904,7 @@ function buildHalfFold(db: BulletinDB): string {
 
 /* 온라인/PDF용 (모바일 친화적 카드형) */
 function buildOnlineHTML(db: BulletinDB): string {
-  const { c, s, tpl, decorStyle, esc, nl, orderRows, ads, bdays } = prepData(db);
+  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays } = prepData(db);
   const decor = decorStyle === "none"
     ? { topRight: "", bottomLeft: "" }
     : getDecorSVG(decorStyle, tpl.accent, tpl.gold);
@@ -917,7 +923,7 @@ function buildOnlineHTML(db: BulletinDB): string {
       ${c.coverImage ? "" : `<div style="width:50px;height:1.5px;background:${tpl.gold};margin:8px auto;opacity:0.5;"></div>`}
       ${c.coverImage ? "" : BI.cross(tpl.headerTextColor)}
       ${c.pastor?.sermonTitle ? `<div style="font-size:14px;font-weight:700;margin-top:${c.coverImage ? '16px' : '0'};margin-bottom:4px;">${esc(c.pastor.sermonTitle)}</div>` : ""}
-      <div style="font-size:10px;opacity:0.85;margin-top:12px;">${esc(c.date || BULLETIN_DATE_STR)} 주일예배 · ${esc(s.worshipTime)}</div>
+      <div style="font-size:10px;opacity:0.85;margin-top:12px;">${esc(c.date || BULLETIN_DATE_STR)} 주일예배 · ${escBr(s.worshipTime || "")}</div>
     </div></div>
     ${c.pastor?.sermonTitle ? `<div class="ol-sermon"><div class="ol-sermon-t">${esc(c.pastor.sermonTitle)}</div>
       ${c.pastor.sermonPassage ? `<div class="ol-sermon-p">${esc(c.pastor.sermonPassage)}</div>` : ""}
@@ -937,7 +943,7 @@ function buildOnlineHTML(db: BulletinDB): string {
         ${c.general?.offering ? `<div class="ol-info-item"><strong>${BI.offering(tpl.accent)} 헌금</strong><br>${nl(c.general.offering)}</div>` : ""}
       </div>
     </div>
-    <div class="ol-footer" style="background-color:${tpl.accent}; color:${tpl.headerTextColor}"><div>${esc(s.church)}</div><div>${esc(s.address || "")} · ${BI.phone(tpl.headerTextColor)} ${esc(s.phone || "")}</div><div>${esc(s.account || "")}</div></div>
+    <div class="ol-footer" style="background-color:${tpl.accent}; color:${tpl.headerTextColor}"><div>${esc(s.church)}</div><div>${escBr(s.address || "")} · ${BI.phone(tpl.headerTextColor)} ${esc(s.phone || "")}</div><div>${escBr(s.account || "")}</div></div>
   </div>`;
 }
 
@@ -1531,6 +1537,68 @@ export function BulletinPage() {
                         </div>
                       )}
 
+                      {/* 표지 이미지 */}
+                      <div className="mb-4">
+                        <label className="block text-xs font-semibold text-gray-600 mb-2">표지 이미지</label>
+                        {db.current.coverImage ? (
+                          <div className="relative">
+                            <img src={db.current.coverImage} alt="표지" className="w-full h-32 object-cover rounded-lg border" />
+                            <div className="flex gap-2 mt-2">
+                              <label className="flex-1 text-center text-xs py-1.5 bg-gray-100 rounded cursor-pointer hover:bg-gray-200 border">
+                                변경
+                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                  const f = e.target.files?.[0]; if (!f) return;
+                                  const churchId = simpleHash(db.settings.church || "default");
+                                  try {
+                                    const url = await uploadCoverImage(f, churchId);
+                                    setDb((p) => ({ ...p, current: { ...p.current, coverImage: url } }));
+                                    showToast("이미지가 업로드되었습니다");
+                                  } catch (err) {
+                                    console.error(err);
+                                    showToast("업로드 실패");
+                                  }
+                                  e.target.value = "";
+                                }} />
+                              </label>
+                              <button type="button" className="flex-1 text-xs py-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 border border-red-200"
+                                onClick={async () => {
+                                  const churchId = simpleHash(db.settings.church || "default");
+                                  await deleteCoverImage(churchId);
+                                  setDb((p) => ({ ...p, current: { ...p.current, coverImage: "" } }));
+                                  showToast("이미지가 삭제되었습니다");
+                                }}>
+                                삭제
+                              </button>
+                            </div>
+                            <div className="mt-2">
+                              <label className="text-xs text-gray-500">투명도: {Math.round((db.current.coverImageOpacity ?? 0.3) * 100)}%</label>
+                              <input type="range" min="10" max="80" value={Math.round((db.current.coverImageOpacity ?? 0.3) * 100)}
+                                className="w-full h-1.5 mt-1"
+                                onChange={(e) => setDb((p) => ({ ...p, current: { ...p.current, coverImageOpacity: parseInt(e.target.value, 10) / 100 } }))} />
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5"><path d="M12 5v14M5 12h14" /></svg>
+                            <span className="text-xs text-gray-400 mt-1">교회 사진 업로드</span>
+                            <span className="text-[10px] text-gray-300">JPG, PNG (자동 리사이즈)</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                              const f = e.target.files?.[0]; if (!f) return;
+                              const churchId = simpleHash(db.settings.church || "default");
+                              try {
+                                const url = await uploadCoverImage(f, churchId);
+                                setDb((p) => ({ ...p, current: { ...p.current, coverImage: url } }));
+                                showToast("이미지가 업로드되었습니다");
+                              } catch (err) {
+                                console.error(err);
+                                showToast("업로드 실패");
+                              }
+                              e.target.value = "";
+                            }} />
+                          </label>
+                        )}
+                      </div>
+
                       <div>
                         <div className="text-[11px] font-medium text-gray-400 mb-2">컬러 테마</div>
                         <div className="grid grid-cols-6 gap-1.5">
@@ -1597,67 +1665,6 @@ export function BulletinPage() {
                             );
                           })}
                         </div>
-                      </div>
-                      {/* 표지 이미지 */}
-                      <div className="mb-4">
-                        <label className="block text-xs font-semibold text-gray-600 mb-2">표지 이미지</label>
-                        {db.current.coverImage ? (
-                          <div className="relative">
-                            <img src={db.current.coverImage} alt="표지" className="w-full h-32 object-cover rounded-lg border" />
-                            <div className="flex gap-2 mt-2">
-                              <label className="flex-1 text-center text-xs py-1.5 bg-gray-100 rounded cursor-pointer hover:bg-gray-200 border">
-                                변경
-                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                  const f = e.target.files?.[0]; if (!f) return;
-                                  const churchId = simpleHash(db.settings.church || "default");
-                                  try {
-                                    const url = await uploadCoverImage(f, churchId);
-                                    setDb((p) => ({ ...p, current: { ...p.current, coverImage: url } }));
-                                    showToast("이미지가 업로드되었습니다");
-                                  } catch (err) {
-                                    console.error(err);
-                                    showToast("업로드 실패");
-                                  }
-                                  e.target.value = "";
-                                }} />
-                              </label>
-                              <button type="button" className="flex-1 text-xs py-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 border border-red-200"
-                                onClick={async () => {
-                                  const churchId = simpleHash(db.settings.church || "default");
-                                  await deleteCoverImage(churchId);
-                                  setDb((p) => ({ ...p, current: { ...p.current, coverImage: "" } }));
-                                  showToast("이미지가 삭제되었습니다");
-                                }}>
-                                삭제
-                              </button>
-                            </div>
-                            <div className="mt-2">
-                              <label className="text-xs text-gray-500">투명도: {Math.round((db.current.coverImageOpacity ?? 0.3) * 100)}%</label>
-                              <input type="range" min="10" max="80" value={Math.round((db.current.coverImageOpacity ?? 0.3) * 100)}
-                                className="w-full h-1.5 mt-1"
-                                onChange={(e) => setDb((p) => ({ ...p, current: { ...p.current, coverImageOpacity: parseInt(e.target.value, 10) / 100 } }))} />
-                            </div>
-                          </div>
-                        ) : (
-                          <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5"><path d="M12 5v14M5 12h14" /></svg>
-                            <span className="text-xs text-gray-400 mt-1">교회 사진 업로드</span>
-                            <span className="text-[10px] text-gray-300">JPG, PNG (자동 리사이즈)</span>
-                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                              const f = e.target.files?.[0]; if (!f) return;
-                              const churchId = simpleHash(db.settings.church || "default");
-                              try {
-                                const url = await uploadCoverImage(f, churchId);
-                                setDb((p) => ({ ...p, current: { ...p.current, coverImage: url } }));
-                                showToast("이미지가 업로드되었습니다");
-                              } catch (err) {
-                                console.error(err);
-                                showToast("업로드 실패");
-                              }
-                              e.target.value = "";
-                            }} />
-                          </label>
-                        )}
                       </div>
                     </div>
                   )}
@@ -1834,7 +1841,15 @@ export function BulletinPage() {
                   <FormField label="교회 영문명/부제"><FInput value={db.settings.churchSub} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, churchSub: v } }))} /></FormField>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <FormField label="담임목사"><FInput value={db.settings.pastor} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, pastor: v } }))} /></FormField>
-                    <FormField label="주일예배 시간"><FInput value={db.settings.worshipTime} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, worshipTime: v } }))} /></FormField>
+                    <FormField label="주일예배 시간">
+                    <textarea
+                      className="w-full border rounded-lg p-2 text-sm"
+                      rows={2}
+                      value={db.settings.worshipTime || ""}
+                      onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, worshipTime: e.target.value } }))}
+                      placeholder="주일오전예배 11:00&#10;주일저녁예배 7:30"
+                    />
+                  </FormField>
                   </div>
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700">교역자 / 부교역자</label>
@@ -1847,10 +1862,25 @@ export function BulletinPage() {
                     />
                     <p className="text-xs text-gray-400">한 줄에 한 명씩 입력 (예: 부목사 홍길동)</p>
                   </div>
-                  <FormField label="교회 주소"><FInput value={db.settings.address} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, address: v } }))} /></FormField>
+                  <FormField label="교회 주소">
+                    <textarea
+                      className="w-full border rounded-lg p-2 text-sm"
+                      rows={2}
+                      value={db.settings.address || ""}
+                      onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, address: e.target.value } }))}
+                    />
+                  </FormField>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <FormField label="전화번호"><FInput value={db.settings.phone} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, phone: v } }))} /></FormField>
-                    <FormField label="헌금 계좌"><FInput value={db.settings.account} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, account: v } }))} /></FormField>
+                    <FormField label="헌금 계좌">
+                    <textarea
+                      className="w-full border rounded-lg p-2 text-sm"
+                      rows={2}
+                      value={db.settings.account || ""}
+                      onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, account: e.target.value } }))}
+                      placeholder="국민은행 빛되는교회 000-00-0000000"
+                    />
+                  </FormField>
                   </div>
                   <FormField label="마감 요일"><FSelect value={db.settings.deadline} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, deadline: v } }))}><option>수요일</option><option>목요일</option><option>금요일</option></FSelect></FormField>
                   <hr style={{ margin: "20px 0", border: "none", borderTop: `1px solid #f3f4f6` }} />
@@ -2047,8 +2077,8 @@ export function BulletinPage() {
 
         /* ==================== TRI-FOLD (3면 접지) ==================== */
         .bulletin-page-content .bp-tri { display:flex; flex-direction:column; align-items:center; gap:20px; padding:4px; font-family:'Noto Serif KR','Batang',Georgia,serif; }
-        .bulletin-page-content .bp-tri .bp-spread { box-shadow:0 3px 20px rgba(0,0,0,.1); border-radius:2px; overflow:hidden; }
-        .bulletin-page-content .tp { width:240px; min-height:530px; background:#fff; border-right:1px dashed #d0d0d0; box-sizing:border-box; position:relative; overflow:hidden; }
+        .bulletin-page-content .bp-tri .bp-spread { box-shadow:0 3px 20px rgba(0,0,0,.1); border-radius:2px; overflow:hidden; width:720px; }
+        .bulletin-page-content .tp { width:100%; min-height:530px; background:#fff; border-right:1px dashed #d0d0d0; box-sizing:border-box; position:relative; overflow:hidden; }
         .bulletin-page-content .tp:last-child { border-right:none; }
         .bulletin-page-content .tp-cover { display:flex; align-items:center; justify-content:center; }
         .bulletin-page-content .tp-bg { position:absolute; inset:0; }
@@ -2062,18 +2092,18 @@ export function BulletinPage() {
         .bulletin-page-content .tp-date { font-size:10px; opacity:.75; letter-spacing:1px; }
         .bulletin-page-content .tp-time { font-size:9px; opacity:.5; margin-top:2px; }
         .bulletin-page-content .tp-pastor { font-size:10px; opacity:.6; margin-top:18px; letter-spacing:2px; }
-        .bulletin-page-content .tp-hd { font-size:11.5px; font-weight:800; padding:9px 14px; border-bottom:2px solid; letter-spacing:.8px; background:#fafbfc; font-family:'Inter','Noto Sans KR',sans-serif; }
-        .bulletin-page-content .tp-bd { padding:10px 14px 14px; font-size:9.5px; line-height:1.6; color:#333; }
+        .bulletin-page-content .tp-hd { font-size:11.5px; font-weight:800; padding:8px 8px; border-bottom:2px solid; letter-spacing:.8px; background:#fafbfc; font-family:'Inter','Noto Sans KR',sans-serif; }
+        .bulletin-page-content .tp-bd { padding:8px 8px 10px; font-size:9.5px; line-height:1.6; color:#333; }
         .bulletin-page-content .tp-label { font-size:9px; font-weight:700; letter-spacing:.4px; margin-top:10px; margin-bottom:3px; font-family:'Inter','Noto Sans KR',sans-serif; }
         .bulletin-page-content .tp-label:first-child { margin-top:0; }
         .bulletin-page-content .tp-val { font-size:9px; line-height:1.6; color:#555; }
         .bulletin-page-content .tp-church-badge { margin-top:auto; padding:10px; border-radius:4px; color:inherit; text-align:center; font-size:11px; font-weight:700; letter-spacing:2px; position:absolute; bottom:14px; left:14px; right:14px; }
         .bulletin-page-content .tp-note { font-size:9px; color:#666; margin-top:6px; }
-        .bulletin-page-content .tp-sermon-box { background:#f5f7fa; border-radius:5px; padding:10px; margin-bottom:10px; border-left:3px solid; }
+        .bulletin-page-content .tp-sermon-box { background:#f5f7fa; border-radius:5px; padding:6px 8px; margin-bottom:8px; border-left:3px solid; }
         .bulletin-page-content .tp-sermon-t { font-size:13px; font-weight:800; margin-bottom:3px; }
         .bulletin-page-content .tp-sermon-p { font-size:9.5px; color:#4a6fa5; }
         .bulletin-page-content .tp-sermon-th { font-size:8.5px; color:#888; margin-top:2px; font-style:italic; }
-        .bulletin-page-content .tp-column { border-left:3px solid; padding:10px; margin-top:8px; background:linear-gradient(135deg,#faf5ef,#f3ebe0); border-radius:4px; }
+        .bulletin-page-content .tp-column { border-left:3px solid; padding:6px 8px; margin-top:8px; background:linear-gradient(135deg,#faf5ef,#f3ebe0); border-radius:4px; }
         .bulletin-page-content .tp-col-txt { font-size:9px; line-height:1.75; color:#444; }
         .bulletin-page-content .tp-ad { padding:6px 8px; margin-bottom:6px; background:#f8f9fa; border-radius:3px; border-left:3px solid; }
         .bulletin-page-content .tp-ad-dept { font-size:8px; font-weight:700; letter-spacing:.4px; font-family:'Inter','Noto Sans KR',sans-serif; }
