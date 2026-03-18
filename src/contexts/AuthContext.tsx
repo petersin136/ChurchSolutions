@@ -39,6 +39,7 @@ async function fetchChurchForUser(userId: string): Promise<{ churchId: string; c
   }
 
   const MAX_RETRIES = 3;
+  /** Vercel 등 느린 네트워크 대비 — church_users / churches 각 단계당 동일 적용 */
   const TIMEOUT_MS = 15000;
   const RETRY_DELAY_MS = 1000;
 
@@ -110,30 +111,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isRegistering]);
 
   const loadChurch = useCallback(async (userId: string) => {
-    /** church_users에서 성공할 때만 localStorage에 저장. 캐시를 먼저 쓰지 않음(잘못된 id RLS 403 방지). */
-    const result = await fetchChurchForUser(userId);
-    if (result && result.churchId) {
-      console.log("[AuthContext] church_users 조회 결과:", result);
-      console.log("[AuthContext] churchId 설정됨 (DB 우선, localStorage 덮어쓰기):", result.churchId);
-      setChurchId(result.churchId);
-      setChurchName(result.churchName);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(CHURCH_ID_KEY, result.churchId);
-        if (result.churchName) localStorage.setItem(CHURCH_NAME_KEY, result.churchName);
+    const cachedId =
+      typeof window !== "undefined" ? localStorage.getItem(CHURCH_ID_KEY) : null;
+    const hasValidCache = !!(
+      cachedId &&
+      cachedId !== "null" &&
+      cachedId !== "undefined"
+    );
+
+    if (hasValidCache && typeof window !== "undefined") {
+      const cachedName = localStorage.getItem(CHURCH_NAME_KEY);
+      setChurchId(cachedId);
+      setChurchName(cachedName ?? "");
+      console.log("[Auth] 캐시로 즉시 표시, 백그라운드에서 DB 동기화:", cachedId);
+    }
+
+    const syncFromDb = async () => {
+      const result = await fetchChurchForUser(userId);
+      if (result && result.churchId) {
+        console.log("[AuthContext] church_users 조회 결과:", result);
+        console.log("[AuthContext] churchId DB 동기화 (localStorage 덮어쓰기):", result.churchId);
+        setChurchId(result.churchId);
+        setChurchName(result.churchName);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(CHURCH_ID_KEY, result.churchId);
+          if (result.churchName) localStorage.setItem(CHURCH_NAME_KEY, result.churchName);
+        }
+      } else if (!hasValidCache) {
+        console.warn("[AuthContext] church_users 조회 실패 (캐시 없음) — localStorage 정리");
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(CHURCH_ID_KEY);
+          localStorage.removeItem(CHURCH_NAME_KEY);
+        }
+        setChurchId(null);
+        setChurchName(null);
+        const envId = process.env.NEXT_PUBLIC_CHURCH_ID;
+        if (envId && envId !== "undefined" && envId !== "null") {
+          console.log("[AuthContext] churchId 상태만 env 사용 (localStorage 미저장):", envId);
+          setChurchId(envId);
+        }
+      } else {
+        console.warn("[AuthContext] DB 조회 실패 — 캐시된 churchId 유지");
       }
+    };
+
+    if (hasValidCache) {
+      void syncFromDb();
     } else {
-      console.warn("[AuthContext] church_users 조회 실패 — 잘못된 church_id 캐시 제거, localStorage에는 저장하지 않음");
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(CHURCH_ID_KEY);
-        localStorage.removeItem(CHURCH_NAME_KEY);
-      }
-      setChurchId(null);
-      setChurchName(null);
-      const envId = process.env.NEXT_PUBLIC_CHURCH_ID;
-      if (envId && envId !== "undefined" && envId !== "null") {
-        console.log("[AuthContext] churchId 상태만 env 사용 (localStorage 미저장):", envId);
-        setChurchId(envId);
-      }
+      await syncFromDb();
     }
   }, []);
 
