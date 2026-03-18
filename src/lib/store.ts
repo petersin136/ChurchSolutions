@@ -57,3 +57,5 @@ export function getThisMonth(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
+
+export { loadBulletinFromSupabase, saveBulletinToSupabase } from "@/lib/supabase-db";

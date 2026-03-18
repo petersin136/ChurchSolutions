@@ -9,6 +9,8 @@ import KakaoShareCard from "@/components/bulletin/KakaoShareCard";
 import { initKakao, shareTextToKakao } from "@/lib/kakao";
 import { downloadElementAsImage } from "@/utils/captureElement";
 import { supabase } from "@/lib/supabase";
+import { loadBulletinFromSupabase, saveBulletinToSupabase } from "@/lib/supabase-db";
+import { getChurchId } from "@/lib/tenant";
 
 function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
@@ -1054,6 +1056,46 @@ const NAV_ITEMS: { id: SubPage; Icon: LucideIcon; label: string }[] = [
 export function BulletinPage() {
   const mob = useIsMobile();
   const [db, setDb] = useState<BulletinDB>(() => loadBulletin());
+  const [supabaseLoaded, setSupabaseLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const cid = getChurchId();
+        if (!cid) {
+          setSupabaseLoaded(true);
+          return;
+        }
+        const remote = await loadBulletinFromSupabase(cid);
+        if (cancelled) return;
+        if (remote && typeof remote === "object" && Object.keys(remote).length > 0) {
+          console.log("[Bulletin] Supabase에서 데이터 로드됨");
+          const remoteDb = remote as unknown as BulletinDB;
+          setDb((prev) => {
+            const merged: BulletinDB = {
+              settings: { ...prev.settings, ...(remoteDb.settings || {}) },
+              current: { ...prev.current, ...(remoteDb.current || {}) },
+              history:
+                remoteDb.history && remoteDb.history.length > 0
+                  ? remoteDb.history
+                  : prev.history,
+            };
+            saveBulletin(merged);
+            return merged;
+          });
+        }
+      } catch (e) {
+        console.warn("[Bulletin] Supabase 로드 실패, localStorage 사용:", e);
+      } finally {
+        if (!cancelled) setSupabaseLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [activeSub, setActiveSub] = useState<SubPage>(() => {
     if (typeof window !== "undefined") {
       const v = sessionStorage.getItem("bulletin-activeSub");
@@ -1198,8 +1240,27 @@ export function BulletinPage() {
   const zoomOut = () => setPreviewScale(s => Math.max(s - 0.1, 0.25));
   const zoomReset = () => setPreviewScale(mob ? 0.45 : 0.75);
 
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     saveBulletin(db);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      try {
+        const cid = getChurchId();
+        if (cid) {
+          saveBulletinToSupabase(db as unknown as Record<string, unknown>, cid)
+            .then((ok) => {
+              if (ok) console.log("[Bulletin] Supabase 저장 완료");
+            })
+            .catch((e) => console.warn("[Bulletin] Supabase 저장 실패:", e));
+        }
+      } catch (e) {
+        console.warn("[Bulletin] Supabase 저장 중 예외:", e);
+      }
+    }, 2000);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, [db]);
 
   const [toasts, setToasts] = useState<{ id: number; msg: string }[]>([]);

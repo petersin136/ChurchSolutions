@@ -546,3 +546,41 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
     }
   }
 }
+
+export async function loadBulletinFromSupabase(churchId?: string | null): Promise<Record<string, unknown> | null> {
+  if (!supabase) return null;
+  const cid = churchId || getChurchId();
+  if (!cid) return null;
+  const { data, error } = await supabase
+    .from("bulletins")
+    .select("data, updated_at")
+    .eq("church_id", cid)
+    .maybeSingle();
+  if (error) {
+    console.error("[Bulletin] Supabase load error:", error.message);
+    return null;
+  }
+  return (data?.data as Record<string, unknown>) ?? null;
+}
+
+export async function saveBulletinToSupabase(
+  bulletinData: Record<string, unknown>,
+  churchId?: string | null
+): Promise<boolean> {
+  if (!supabase) return false;
+  const cid = churchId || getChurchId();
+  if (!cid) return false;
+  const { error } = await supabase.from("bulletins").upsert(
+    {
+      church_id: cid,
+      data: bulletinData,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "church_id" }
+  );
+  if (error) {
+    console.error("[Bulletin] Supabase save error:", error.message);
+    return false;
+  }
+  return true;
+}
