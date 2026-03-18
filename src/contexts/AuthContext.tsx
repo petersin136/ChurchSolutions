@@ -110,21 +110,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isRegistering]);
 
   const loadChurch = useCallback(async (userId: string) => {
-    if (typeof window !== "undefined") {
-      const cachedChurchId = localStorage.getItem(CHURCH_ID_KEY);
-      const cachedChurchName = localStorage.getItem(CHURCH_NAME_KEY);
-      if (cachedChurchId) {
-        console.log("[Auth] localStorage 캐시 사용:", cachedChurchId, cachedChurchName);
-        setChurchId(cachedChurchId);
-        setChurchName(cachedChurchName ?? "");
-        setLoading(false);
-      }
-    }
-
+    /** church_users에서 성공할 때만 localStorage에 저장. 캐시를 먼저 쓰지 않음(잘못된 id RLS 403 방지). */
     const result = await fetchChurchForUser(userId);
     if (result && result.churchId) {
       console.log("[AuthContext] church_users 조회 결과:", result);
-      console.log("[AuthContext] churchId 설정됨:", result.churchId);
+      console.log("[AuthContext] churchId 설정됨 (DB 우선, localStorage 덮어쓰기):", result.churchId);
       setChurchId(result.churchId);
       setChurchName(result.churchName);
       if (typeof window !== "undefined") {
@@ -132,13 +122,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (result.churchName) localStorage.setItem(CHURCH_NAME_KEY, result.churchName);
       }
     } else {
+      console.warn("[AuthContext] church_users 조회 실패 — 잘못된 church_id 캐시 제거, localStorage에는 저장하지 않음");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(CHURCH_ID_KEY);
+        localStorage.removeItem(CHURCH_NAME_KEY);
+      }
+      setChurchId(null);
+      setChurchName(null);
       const envId = process.env.NEXT_PUBLIC_CHURCH_ID;
       if (envId && envId !== "undefined" && envId !== "null") {
-        console.log("[AuthContext] churchId 설정됨 (env):", envId);
+        console.log("[AuthContext] churchId 상태만 env 사용 (localStorage 미저장):", envId);
         setChurchId(envId);
-        if (typeof window !== "undefined") {
-          localStorage.setItem(CHURCH_ID_KEY, envId);
-        }
       }
     }
   }, []);
@@ -164,13 +158,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setChurchId(null);
         setChurchName(null);
-        const cached = localStorage.getItem(CHURCH_ID_KEY);
-        if (cached && cached !== "null" && cached !== "undefined") {
-          console.log("[AuthContext] churchId 설정됨 (cached):", cached);
-          setChurchId(cached);
+        const envId = process.env.NEXT_PUBLIC_CHURCH_ID;
+        if (envId && envId !== "undefined" && envId !== "null") {
+          setChurchId(envId);
         }
-        const cachedName = localStorage.getItem(CHURCH_NAME_KEY);
-        if (cachedName) setChurchName(cachedName);
       }
       if (!cancelled) {
         console.log("[Auth] setLoading(false) 실행");
