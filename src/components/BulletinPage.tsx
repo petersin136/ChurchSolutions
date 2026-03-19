@@ -1139,15 +1139,16 @@ export function BulletinPage() {
   const [previewView, setPreviewView] = useState<BulletinView>("all");
   const [previewScale, setPreviewScale] = useState(mob ? 0.45 : 1.0);
   const [previewZoomDraft, setPreviewZoomDraft] = useState<string | null>(null);
-  const [panX, setPanX] = useState(0);
-  const [panY, setPanY] = useState(0);
+  const panRef = useRef({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
+  const [, forceRender] = useState(0);
   const [outputMode, setOutputMode] = useState<OutputMode>("print");
   const [printFormat, setPrintFormat] = useState<PrintFormat>("fold3");
   const kakaoCardRef = useRef<HTMLDivElement>(null);
   const [dashPreviewScale, setDashPreviewScale] = useState(1.0);
   const [dashZoomDraft, setDashZoomDraft] = useState("");
-  const [dashPanX, setDashPanX] = useState(0);
-  const [dashPanY, setDashPanY] = useState(0);
+  const dashPanRef = useRef({ x: 0, y: 0 });
+  const dashRafRef = useRef<number | null>(null);
   const [showFullPreview, setShowFullPreview] = useState(false);
   const [fullPreviewHtml, setFullPreviewHtml] = useState("");
   const [showDashPanelMobile, setShowDashPanelMobile] = useState(false);
@@ -1265,13 +1266,13 @@ export function BulletinPage() {
   const zoomOut = () => setPreviewScale(s => Math.max(parseFloat((s - 0.05).toFixed(2)), 0.25));
   const zoomReset = () => {
     setPreviewScale(mob ? 0.45 : 1.0);
-    setPanX(0);
-    setPanY(0);
+    panRef.current = { x: 0, y: 0 };
+    forceRender((c) => c + 1);
   };
   const dashZoomReset = () => {
     setDashPreviewScale(1.0);
-    setDashPanX(0);
-    setDashPanY(0);
+    dashPanRef.current = { x: 0, y: 0 };
+    forceRender((c) => c + 1);
   };
   const defaultPreviewScale = mob ? 0.45 : 1.0;
   const previewPanZoomRef = useRef<HTMLDivElement>(null);
@@ -1295,14 +1296,19 @@ export function BulletinPage() {
 
   const onPreviewMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
-    dragStartRef.current = { x: e.clientX, y: e.clientY, panX, panY };
+    dragStartRef.current = { x: e.clientX, y: e.clientY, panX: panRef.current.x, panY: panRef.current.y };
     setPreviewDragging(true);
-  }, [panX, panY]);
+  }, []);
   const onPreviewMouseMove = useCallback((e: MouseEvent) => {
     const start = dragStartRef.current;
     if (!start) return;
-    setPanX(start.panX + e.clientX - start.x);
-    setPanY(start.panY + e.clientY - start.y);
+    panRef.current = { x: start.panX + e.clientX - start.x, y: start.panY + e.clientY - start.y };
+    if (!rafRef.current) {
+      rafRef.current = requestAnimationFrame(() => {
+        forceRender((c) => c + 1);
+        rafRef.current = null;
+      });
+    }
   }, []);
   const onPreviewMouseUp = useCallback(() => {
     dragStartRef.current = null;
@@ -1338,26 +1344,48 @@ export function BulletinPage() {
   }, []);
   const onPreviewDoubleClick = useCallback(() => {
     setPreviewScale(defaultPreviewScale);
-    setPanX(0);
-    setPanY(0);
+    panRef.current = { x: 0, y: 0 };
+    forceRender((c) => c + 1);
   }, [defaultPreviewScale]);
 
   const onPreviewTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 1) {
-      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX, panY, touches: 1 };
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        panX: panRef.current.x,
+        panY: panRef.current.y,
+        touches: 1,
+      };
     } else if (e.touches.length >= 2) {
       const dist = getTouchDistance(e);
       const center = getTouchCenter(e);
-      touchStartRef.current = { x: center.x, y: center.y, panX, panY, touches: 2, pinchScale: previewScale, pinchDist: dist };
+      touchStartRef.current = {
+        x: center.x,
+        y: center.y,
+        panX: panRef.current.x,
+        panY: panRef.current.y,
+        touches: 2,
+        pinchScale: previewScale,
+        pinchDist: dist,
+      };
     }
-  }, [panX, panY, previewScale]);
+  }, [previewScale]);
   const onPreviewTouchMove = useCallback((e: React.TouchEvent) => {
     const start = touchStartRef.current;
     if (!start) return;
     if (e.touches.length === 1 && start.touches === 1) {
       e.preventDefault();
-      setPanX(start.panX + e.touches[0].clientX - start.x);
-      setPanY(start.panY + e.touches[0].clientY - start.y);
+      panRef.current = {
+        x: start.panX + e.touches[0].clientX - start.x,
+        y: start.panY + e.touches[0].clientY - start.y,
+      };
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(() => {
+          forceRender((c) => c + 1);
+          rafRef.current = null;
+        });
+      }
     } else if (e.touches.length >= 2 && start.touches === 2 && start.pinchDist != null && start.pinchScale != null) {
       e.preventDefault();
       const dist = getTouchDistance(e);
@@ -1371,14 +1399,24 @@ export function BulletinPage() {
 
   const onDashMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
-    dashDragStartRef.current = { x: e.clientX, y: e.clientY, panX: dashPanX, panY: dashPanY };
+    dashDragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      panX: dashPanRef.current.x,
+      panY: dashPanRef.current.y,
+    };
     setDashDragging(true);
-  }, [dashPanX, dashPanY]);
+  }, []);
   const onDashMouseMove = useCallback((e: MouseEvent) => {
     const start = dashDragStartRef.current;
     if (!start) return;
-    setDashPanX(start.panX + e.clientX - start.x);
-    setDashPanY(start.panY + e.clientY - start.y);
+    dashPanRef.current = { x: start.panX + e.clientX - start.x, y: start.panY + e.clientY - start.y };
+    if (!dashRafRef.current) {
+      dashRafRef.current = requestAnimationFrame(() => {
+        forceRender((c) => c + 1);
+        dashRafRef.current = null;
+      });
+    }
   }, []);
   const onDashMouseUp = useCallback(() => {
     dashDragStartRef.current = null;
@@ -1417,20 +1455,42 @@ export function BulletinPage() {
   }, []);
   const onDashTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 1) {
-      dashTouchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX: dashPanX, panY: dashPanY, touches: 1 };
+      dashTouchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        panX: dashPanRef.current.x,
+        panY: dashPanRef.current.y,
+        touches: 1,
+      };
     } else if (e.touches.length >= 2) {
       const dist = getTouchDistance(e);
       const center = getTouchCenter(e);
-      dashTouchStartRef.current = { x: center.x, y: center.y, panX: dashPanX, panY: dashPanY, touches: 2, pinchScale: dashPreviewScale, pinchDist: dist };
+      dashTouchStartRef.current = {
+        x: center.x,
+        y: center.y,
+        panX: dashPanRef.current.x,
+        panY: dashPanRef.current.y,
+        touches: 2,
+        pinchScale: dashPreviewScale,
+        pinchDist: dist,
+      };
     }
-  }, [dashPanX, dashPanY, dashPreviewScale]);
+  }, [dashPreviewScale]);
   const onDashTouchMove = useCallback((e: React.TouchEvent) => {
     const start = dashTouchStartRef.current;
     if (!start) return;
     if (e.touches.length === 1 && start.touches === 1) {
       e.preventDefault();
-      setDashPanX(start.panX + e.touches[0].clientX - start.x);
-      setDashPanY(start.panY + e.touches[0].clientY - start.y);
+      dashPanRef.current = {
+        x: start.panX + e.touches[0].clientX - start.x,
+        y: start.panY + e.touches[0].clientY - start.y,
+      };
+      if (!dashRafRef.current) {
+        dashRafRef.current = requestAnimationFrame(() => {
+          forceRender((c) => c + 1);
+          dashRafRef.current = null;
+        });
+      }
     } else if (e.touches.length >= 2 && start.touches === 2 && start.pinchDist != null && start.pinchScale != null) {
       e.preventDefault();
       const dist = getTouchDistance(e);
@@ -1440,6 +1500,13 @@ export function BulletinPage() {
   }, []);
   const onDashTouchEnd = useCallback((e: React.TouchEvent) => {
     if (e.touches.length < 2) dashTouchStartRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      if (dashRafRef.current != null) cancelAnimationFrame(dashRafRef.current);
+    };
   }, []);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1869,7 +1936,7 @@ export function BulletinPage() {
                     >
                       <div
                         style={{
-                          transform: `translate3d(${dashPanX}px, ${dashPanY}px, 0) scale(${dashPreviewScale})`,
+                          transform: `translate3d(${dashPanRef.current.x}px, ${dashPanRef.current.y}px, 0) scale(${dashPreviewScale})`,
                           transformOrigin: "center center",
                           transition: dashDragging ? "none" : "transform 0.15s ease",
                           willChange: "transform",
@@ -2466,7 +2533,7 @@ export function BulletinPage() {
                     <div
                       className="bulletin-preview-scale flex-shrink-0"
                       style={{
-                        transform: `translate3d(${panX}px, ${panY}px, 0) scale(${previewScale})`,
+                        transform: `translate3d(${panRef.current.x}px, ${panRef.current.y}px, 0) scale(${previewScale})`,
                         transformOrigin: "center center",
                         transition: previewDragging ? "none" : "transform 0.15s ease",
                         willChange: "transform",
