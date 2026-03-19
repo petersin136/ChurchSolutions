@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown, Eye, Save, Archive, Edit3, type LucideIcon } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
@@ -415,12 +415,12 @@ function FormField({ label, children }: { label: string; children: ReactNode }) 
   return <div style={{ marginBottom: 14 }}><label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 4 }}>{label}</label>{children}</div>;
 }
 
-function FInput({ value, onChange, placeholder, type = "text", style }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; style?: CSSProperties }) {
-  return <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} type={type} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", ...style }} />;
+function FInput({ value, onChange, placeholder, type = "text", style, maxLength }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; style?: CSSProperties; maxLength?: number }) {
+  return <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} type={type} maxLength={maxLength} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", ...style }} />;
 }
 
-function FTextarea({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder?: string; style?: CSSProperties }) {
-  return <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", resize: "vertical", minHeight: 70, ...style }} />;
+function FTextarea({ value, onChange, placeholder, style, maxLength }: { value: string; onChange: (v: string) => void; placeholder?: string; style?: CSSProperties; maxLength?: number }) {
+  return <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} maxLength={maxLength} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", resize: "vertical", minHeight: 70, ...style }} />;
 }
 
 function FSelect({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: ReactNode }) {
@@ -806,6 +806,19 @@ function prepData(db: BulletinDB) {
   return { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays, departmentItems };
 }
 
+/** 화면 미리보기용 패널 고정 높이(px). 인쇄 시에는 @media print의 100vh 사용. */
+const PREVIEW_PANEL_HEIGHT_PX = 480;
+
+/** 패널별 전체 글자수 합산 상한 (미리보기 넘침 방지) */
+const NEWS_TOTAL_MAX = 350;
+const DEPT_TOTAL_MAX = 400;
+const WORSHIP_TOTAL_MAX = 300;
+const SERMON_TOTAL_MAX = 500;
+/** 4면: 예배순서+칼럼 한 면 합산 상한 */
+const FOUR_WORSHIP_TOTAL_MAX = 450;
+/** 4면: 교회소식+부서별소식 한 면 합산 상한 */
+const FOUR_NEWS_TOTAL_MAX = 450;
+
 /* 6면: section index 0=cover(면1), 1=churchNews(면2), 2=worship(면3), 3=sermon(면4), 4=departments(면5), 5=back(면6) */
 function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
   const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays, departmentItems } = prepData(db);
@@ -843,7 +856,7 @@ function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
     </div></div>`;
     }
     case 1:
-      return `<div class="tp tp-flap"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 소식</span></div><div class="tp-bd">
+      return `<div class="tp tp-flap" style="height:100%;overflow:hidden;"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 소식</span></div><div class="tp-bd">
     ${c.general?.content ? `<div class="tp-label" style="color:${tpl.accent}">${BI.news(tpl.accent)} 교회 소식</div><div class="tp-val">${nl(c.general.content)}</div>` : ""}
     ${c.general?.servants ? `<div class="tp-label" style="color:${tpl.accent}">${BI.users(tpl.accent)} 금주 봉사자</div><div class="tp-val">${nl(c.general.servants)}</div>` : ""}
     ${c.general?.offering ? `<div class="tp-label" style="color:${tpl.accent}">${BI.offering(tpl.accent)} 헌금 보고</div><div class="tp-val">${nl(c.general.offering)}</div>` : ""}
@@ -851,22 +864,22 @@ function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
     ${bdays.length ? `<div class="tp-label" style="color:${tpl.accent}">${BI.gift(tpl.accent)} 이번 주 생일</div><div class="tp-bday-list">${bdays.map(b => `<span class="tp-bday-tag" style="background:${tpl.accentLight};color:${tpl.accent}">${esc(b)}</span>`).join("")}</div>` : ""}
   </div></div>`;
     case 2:
-      return `<div class="tp tp-worship"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.worship(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">예배 순서</span></div><div class="tp-bd">
+      return `<div class="tp tp-worship" style="height:100%;overflow:hidden;"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.worship(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">예배 순서</span></div><div class="tp-bd">
     ${orderRows ? `<table class="tp-otbl">${orderRows}</table>` : '<div class="tp-empty">예배 순서를 입력하세요</div>'}
     ${c.worship?.praise ? `<div class="tp-note">${BI.music(tpl.accent)} 찬양: ${esc(c.worship.praise)}</div>` : ""}
     ${c.worship?.special ? `<div class="tp-note">${BI.mic(tpl.accent)} ${esc(c.worship.special)}</div>` : ""}
   </div></div>`;
     case 3:
-      return `<div class="tp tp-sermon"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.sermon(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">말씀 / 칼럼</span></div><div class="tp-bd">
+      return `<div class="tp tp-sermon" style="height:100%;overflow:hidden;"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.sermon(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">말씀 / 칼럼</span></div><div class="tp-bd">
     ${c.pastor?.sermonTitle ? `<div class="tp-sermon-box" style="border-color:${tpl.gold}"><div class="tp-sermon-t" style="color:${tpl.accent}">${esc(c.pastor.sermonTitle)}</div>${c.pastor.sermonPassage ? `<div class="tp-sermon-p">${esc(c.pastor.sermonPassage)}</div>` : ""}${c.pastor.sermonTheme ? `<div class="tp-sermon-th">${esc(c.pastor.sermonTheme)}</div>` : ""}</div>` : ""}
     ${c.pastor?.column ? `<div class="tp-column" style="border-left-color:${tpl.gold}"><div class="tp-col-txt">${nl(c.pastor.column)}</div></div>` : ""}
   </div></div>`;
     case 4:
-      return `<div class="tp tp-news"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">부서별 소식</span></div><div class="tp-bd">
+      return `<div class="tp tp-news" style="height:100%;overflow:hidden;"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">부서별 소식</span></div><div class="tp-bd">
     ${departmentItems.length ? departmentItems.map(d => `<div class="tp-ad" style="border-left-color:${tpl.accent}"><div class="tp-ad-dept" style="color:${tpl.accent}">▶ ${esc(d.name)}</div><div class="tp-ad-txt">${nl(d.text)}</div></div>`).join("") : '<div class="tp-empty">부서를 선택하고 내용을 입력하세요</div>'}
   </div></div>`;
     case 5:
-      return `<div class="tp tp-back"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.church(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 안내</span></div><div class="tp-bd">
+      return `<div class="tp tp-back" style="height:100%;overflow:hidden;"><div class="tp-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.church(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 안내</span></div><div class="tp-bd">
     <div class="tp-label" style="color:${tpl.accent}">${BI.wallet(tpl.accent)} 헌금 계좌</div><div class="tp-val">${escBr(s.account || "")}</div>
     <div class="tp-label" style="color:${tpl.accent}">${BI.mapPin(tpl.accent)} 주소</div><div class="tp-val">${escBr(s.address || "")}</div>
     <div class="tp-label" style="color:${tpl.accent}">${BI.phone(tpl.accent)} 전화</div><div class="tp-val">${esc(s.phone || "")}</div>
@@ -881,15 +894,15 @@ function buildTriFold(db: BulletinDB): string {
   const churchNews = getTriFoldSectionHTML(db, 1), back = getTriFoldSectionHTML(db, 5), cover = getTriFoldSectionHTML(db, 0);
   const worship = getTriFoldSectionHTML(db, 2), sermon = getTriFoldSectionHTML(db, 3), deptNews = getTriFoldSectionHTML(db, 4);
   return `<div class="bp-tri">
-    <div class="bp-spread bp-tri-out" style="display:grid;grid-template-columns:1fr 1fr 1fr;width:100%;height:100%;">
-      <div class="bp-cell">${churchNews}</div>
-      <div class="bp-cell">${back}</div>
-      <div class="bp-cell">${cover}</div>
+    <div class="bp-spread bp-tri-out" style="display:grid;grid-template-columns:1fr 1fr 1fr;width:100%;height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;">
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${churchNews}</div>
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${back}</div>
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${cover}</div>
     </div>
-    <div class="bp-spread bp-tri-in" style="display:grid;grid-template-columns:1fr 1fr 1fr;width:100%;height:100%;">
-      <div class="bp-cell">${worship}</div>
-      <div class="bp-cell">${sermon}</div>
-      <div class="bp-cell">${deptNews}</div>
+    <div class="bp-spread bp-tri-in" style="display:grid;grid-template-columns:1fr 1fr 1fr;width:100%;height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;">
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${worship}</div>
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${sermon}</div>
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${deptNews}</div>
     </div>
   </div>`;
 }
@@ -931,14 +944,14 @@ function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
     </div></div>`;
     }
     case 1:
-      return `<div class="bp bp-2"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.worship(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">예배 순서</span></div><div class="bp-page-bd">
+      return `<div class="bp bp-2" style="height:100%;overflow:hidden;"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.worship(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">예배 순서</span></div><div class="bp-page-bd">
     ${orderRows ? `<table class="bp-otbl">${orderRows}</table>` : '<div class="bp-empty">예배 순서를 입력하세요</div>'}
     ${c.worship?.praise ? `<div class="bp-note">${BI.music(tpl.accent)} 찬양: ${esc(c.worship.praise)}</div>` : ""}
     ${c.worship?.special ? `<div class="bp-note">${BI.mic(tpl.accent)} ${esc(c.worship.special)}</div>` : ""}
     ${c.pastor?.column ? `<div class="bp-colbox" style="border-left-color:${tpl.gold}"><div class="bp-col-hd" style="color:${tpl.accent}">${BI.sermon(tpl.accent)} 목사님 칼럼</div><div class="bp-col-txt">${nl(c.pastor.column)}</div></div>` : ""}
   </div></div>`;
     case 2:
-      return `<div class="bp bp-3"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 소식 / 부서별 소식</span></div><div class="bp-page-bd">
+      return `<div class="bp bp-3" style="height:100%;overflow:hidden;"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 소식 / 부서별 소식</span></div><div class="bp-page-bd">
     ${c.general?.content ? `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">교회 소식</div><div class="bp-ad-txt">${nl(c.general.content)}</div></div>` : ""}
     ${c.general?.servants ? `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">금주 봉사자</div><div class="bp-ad-txt">${nl(c.general.servants)}</div></div>` : ""}
     ${c.general?.offering ? `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">헌금 보고</div><div class="bp-ad-txt">${nl(c.general.offering)}</div></div>` : ""}
@@ -947,7 +960,7 @@ function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
     ${departmentItems.length ? departmentItems.map(d => `<div class="bp-ad" style="border-left-color:${tpl.accent}"><div class="bp-ad-dept" style="color:${tpl.accent}">▶ ${esc(d.name)}</div><div class="bp-ad-txt">${nl(d.text)}</div></div>`).join("") : ""}
   </div></div>`;
     case 3:
-      return `<div class="bp bp-4"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.church(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 안내</span></div><div class="bp-page-bd">
+      return `<div class="bp bp-4" style="height:100%;overflow:hidden;"><div class="bp-page-hd" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.church(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 안내</span></div><div class="bp-page-bd">
     <div class="bp-igrid">
       ${c.general?.servants ? `<div class="bp-icell"><div class="bp-ititle" style="color:${tpl.accent}">${BI.users(tpl.accent)} 금주 봉사자</div><div class="bp-itxt">${nl(c.general.servants)}</div></div>` : ""}
       ${c.general?.schedule ? `<div class="bp-icell"><div class="bp-ititle" style="color:${tpl.accent}">${BI.calendar(tpl.accent)} 금주 일정</div><div class="bp-itxt">${nl(c.general.schedule)}</div></div>` : ""}
@@ -965,13 +978,13 @@ function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
 function buildHalfFold(db: BulletinDB): string {
   const p1 = getHalfFoldSectionHTML(db, 0), p2 = getHalfFoldSectionHTML(db, 1), p3 = getHalfFoldSectionHTML(db, 2), p4 = getHalfFoldSectionHTML(db, 3);
   return `<div class="bp-four-face">
-    <div class="bp-spread" style="display:grid;grid-template-columns:1fr 1fr;width:100%;height:100%;">
-      <div class="bp-cell">${p4}</div>
-      <div class="bp-cell">${p1}</div>
+    <div class="bp-spread" style="display:grid;grid-template-columns:1fr 1fr;width:100%;height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;">
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${p4}</div>
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${p1}</div>
     </div>
-    <div class="bp-spread" style="display:grid;grid-template-columns:1fr 1fr;width:100%;height:100%;">
-      <div class="bp-cell">${p2}</div>
-      <div class="bp-cell">${p3}</div>
+    <div class="bp-spread" style="display:grid;grid-template-columns:1fr 1fr;width:100%;height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;">
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${p2}</div>
+      <div class="bp-cell" style="max-height:${PREVIEW_PANEL_HEIGHT_PX}px;overflow:hidden;position:relative;">${p3}</div>
     </div>
   </div>`;
 }
@@ -1119,10 +1132,14 @@ export function BulletinPage() {
   const dashPreviewRef = useRef<HTMLDivElement>(null);
   const [previewView, setPreviewView] = useState<BulletinView>("all");
   const [previewScale, setPreviewScale] = useState(mob ? 0.45 : 0.75);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
   const [outputMode, setOutputMode] = useState<OutputMode>("print");
   const [printFormat, setPrintFormat] = useState<PrintFormat>("fold3");
   const kakaoCardRef = useRef<HTMLDivElement>(null);
   const [dashPreviewScale, setDashPreviewScale] = useState(0.6);
+  const [dashPanX, setDashPanX] = useState(0);
+  const [dashPanY, setDashPanY] = useState(0);
   const [showFullPreview, setShowFullPreview] = useState(false);
   const [fullPreviewHtml, setFullPreviewHtml] = useState("");
   const [showDashPanelMobile, setShowDashPanelMobile] = useState(false);
@@ -1238,7 +1255,182 @@ export function BulletinPage() {
   }, [bulletinFormatDisplay]);
   const zoomIn = () => setPreviewScale(s => Math.min(s + 0.1, 2.0));
   const zoomOut = () => setPreviewScale(s => Math.max(s - 0.1, 0.25));
-  const zoomReset = () => setPreviewScale(mob ? 0.45 : 0.75);
+  const zoomReset = () => {
+    setPreviewScale(mob ? 0.45 : 0.75);
+    setPanX(0);
+    setPanY(0);
+  };
+  const dashZoomReset = () => {
+    setDashPreviewScale(0.6);
+    setDashPanX(0);
+    setDashPanY(0);
+  };
+  const defaultPreviewScale = mob ? 0.45 : 0.75;
+  const previewPanZoomRef = useRef<HTMLDivElement>(null);
+  const dashPanZoomRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const dashDragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; panX: number; panY: number; touches: number; pinchScale?: number; pinchDist?: number } | null>(null);
+  const dashTouchStartRef = useRef<{ x: number; y: number; panX: number; panY: number; touches: number; pinchScale?: number; pinchDist?: number } | null>(null);
+  const [previewDragging, setPreviewDragging] = useState(false);
+  const [dashDragging, setDashDragging] = useState(false);
+
+  const getTouchPoint = (e: React.TouchEvent) => ({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  const getTouchDistance = (e: React.TouchEvent) =>
+    e.touches.length >= 2
+      ? Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY)
+      : 0;
+  const getTouchCenter = (e: React.TouchEvent) =>
+    e.touches.length >= 2
+      ? { x: (e.touches[0].clientX + e.touches[1].clientX) / 2, y: (e.touches[0].clientY + e.touches[1].clientY) / 2 }
+      : getTouchPoint(e);
+
+  const onPreviewMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    dragStartRef.current = { x: e.clientX, y: e.clientY, panX, panY };
+    setPreviewDragging(true);
+  }, [panX, panY]);
+  const onPreviewMouseMove = useCallback((e: MouseEvent) => {
+    const start = dragStartRef.current;
+    if (!start) return;
+    setPanX(start.panX + e.clientX - start.x);
+    setPanY(start.panY + e.clientY - start.y);
+  }, []);
+  const onPreviewMouseUp = useCallback(() => {
+    dragStartRef.current = null;
+    setPreviewDragging(false);
+  }, []);
+  useEffect(() => {
+    if (!previewDragging) return;
+    document.addEventListener("mousemove", onPreviewMouseMove);
+    document.addEventListener("mouseup", onPreviewMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", onPreviewMouseMove);
+      document.removeEventListener("mouseup", onPreviewMouseUp);
+    };
+  }, [previewDragging, onPreviewMouseMove, onPreviewMouseUp]);
+
+  const onPreviewWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+    setPreviewScale(s => Math.min(2, Math.max(0.25, s - e.deltaY * 0.002)));
+  }, []);
+  useEffect(() => {
+    const el = previewPanZoomRef.current;
+    if (!el) return;
+    el.addEventListener("wheel", onPreviewWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onPreviewWheel);
+  }, [onPreviewWheel]);
+  useEffect(() => {
+    const el = previewPanZoomRef.current;
+    if (!el) return;
+    const preventTouch = (e: TouchEvent) => { if (touchStartRef.current && e.touches.length >= 1) e.preventDefault(); };
+    el.addEventListener("touchmove", preventTouch, { passive: false });
+    return () => el.removeEventListener("touchmove", preventTouch);
+  }, []);
+  const onPreviewDoubleClick = useCallback(() => {
+    setPreviewScale(defaultPreviewScale);
+    setPanX(0);
+    setPanY(0);
+  }, [defaultPreviewScale]);
+
+  const onPreviewTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX, panY, touches: 1 };
+    } else if (e.touches.length >= 2) {
+      const dist = getTouchDistance(e);
+      const center = getTouchCenter(e);
+      touchStartRef.current = { x: center.x, y: center.y, panX, panY, touches: 2, pinchScale: previewScale, pinchDist: dist };
+    }
+  }, [panX, panY, previewScale]);
+  const onPreviewTouchMove = useCallback((e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    if (!start) return;
+    if (e.touches.length === 1 && start.touches === 1) {
+      e.preventDefault();
+      setPanX(start.panX + e.touches[0].clientX - start.x);
+      setPanY(start.panY + e.touches[0].clientY - start.y);
+    } else if (e.touches.length >= 2 && start.touches === 2 && start.pinchDist != null && start.pinchScale != null) {
+      e.preventDefault();
+      const dist = getTouchDistance(e);
+      const scale = (dist / start.pinchDist) * start.pinchScale;
+      setPreviewScale(Math.min(2, Math.max(0.25, scale)));
+    }
+  }, []);
+  const onPreviewTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length < 2) touchStartRef.current = null;
+  }, []);
+
+  const onDashMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    dashDragStartRef.current = { x: e.clientX, y: e.clientY, panX: dashPanX, panY: dashPanY };
+    setDashDragging(true);
+  }, [dashPanX, dashPanY]);
+  const onDashMouseMove = useCallback((e: MouseEvent) => {
+    const start = dashDragStartRef.current;
+    if (!start) return;
+    setDashPanX(start.panX + e.clientX - start.x);
+    setDashPanY(start.panY + e.clientY - start.y);
+  }, []);
+  const onDashMouseUp = useCallback(() => {
+    dashDragStartRef.current = null;
+    setDashDragging(false);
+  }, []);
+  useEffect(() => {
+    if (!dashDragging) return;
+    document.addEventListener("mousemove", onDashMouseMove);
+    document.addEventListener("mouseup", onDashMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", onDashMouseMove);
+      document.removeEventListener("mouseup", onDashMouseUp);
+    };
+  }, [dashDragging, onDashMouseMove, onDashMouseUp]);
+
+  const onDashWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+    setDashPreviewScale(s => Math.min(2, Math.max(0.25, s - e.deltaY * 0.002)));
+  }, []);
+  useEffect(() => {
+    const el = dashPanZoomRef.current;
+    if (!el) return;
+    el.addEventListener("wheel", onDashWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onDashWheel);
+  }, [onDashWheel]);
+  useEffect(() => {
+    const el = dashPanZoomRef.current;
+    if (!el) return;
+    const preventTouch = (e: TouchEvent) => { if (dashTouchStartRef.current && e.touches.length >= 1) e.preventDefault(); };
+    el.addEventListener("touchmove", preventTouch, { passive: false });
+    return () => el.removeEventListener("touchmove", preventTouch);
+  }, []);
+  const onDashDoubleClick = useCallback(() => {
+    dashZoomReset();
+  }, []);
+  const onDashTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      dashTouchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX: dashPanX, panY: dashPanY, touches: 1 };
+    } else if (e.touches.length >= 2) {
+      const dist = getTouchDistance(e);
+      const center = getTouchCenter(e);
+      dashTouchStartRef.current = { x: center.x, y: center.y, panX: dashPanX, panY: dashPanY, touches: 2, pinchScale: dashPreviewScale, pinchDist: dist };
+    }
+  }, [dashPanX, dashPanY, dashPreviewScale]);
+  const onDashTouchMove = useCallback((e: React.TouchEvent) => {
+    const start = dashTouchStartRef.current;
+    if (!start) return;
+    if (e.touches.length === 1 && start.touches === 1) {
+      e.preventDefault();
+      setDashPanX(start.panX + e.touches[0].clientX - start.x);
+      setDashPanY(start.panY + e.touches[0].clientY - start.y);
+    } else if (e.touches.length >= 2 && start.touches === 2 && start.pinchDist != null && start.pinchScale != null) {
+      e.preventDefault();
+      const dist = getTouchDistance(e);
+      const scale = (dist / start.pinchDist) * start.pinchScale;
+      setDashPreviewScale(Math.min(2, Math.max(0.25, scale)));
+    }
+  }, []);
+  const onDashTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length < 2) dashTouchStartRef.current = null;
+  }, []);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -1613,6 +1805,7 @@ export function BulletinPage() {
                     className="bulletin-preview-display"
                     id="bulletin-print-container"
                     style={{
+                      width: "100%",
                       minHeight: "calc(100vh - 170px)",
                       display: "flex",
                       flexDirection: "column",
@@ -1622,21 +1815,48 @@ export function BulletinPage() {
                     }}
                   >
                     <div
-                      id="bulletin-print-area"
-                      ref={dashPreviewRef}
-                      className="bulletin-page-content"
+                      ref={dashPanZoomRef}
                       style={{
-                        width: ps.width,
-                        minHeight: ps.minHeight,
-                        padding: ps.padding,
-                        transform: `scale(${dashPreviewScale})`,
-                        transformOrigin: "top center",
-                        backgroundColor: "#ffffff",
-                        borderRadius: 4,
-                        border: "1px solid #e5e7eb",
-                        flexShrink: 0,
+                        width: "100%",
+                        height: "calc(100vh - 170px)",
+                        minHeight: 400,
+                        overflow: "hidden",
+                        cursor: dashDragging ? "grabbing" : "grab",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
                       }}
-                    />
+                      onMouseDown={onDashMouseDown}
+                      onDoubleClick={onDashDoubleClick}
+                      onTouchStart={onDashTouchStart}
+                      onTouchMove={onDashTouchMove}
+                      onTouchEnd={onDashTouchEnd}
+                      onTouchCancel={onDashTouchEnd}
+                    >
+                      <div
+                        style={{
+                          transform: `translate(${dashPanX}px, ${dashPanY}px) scale(${dashPreviewScale})`,
+                          transformOrigin: "center center",
+                          transition: dashDragging ? "none" : "transform 0.15s ease",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <div
+                          id="bulletin-print-area"
+                          ref={dashPreviewRef}
+                          className="bulletin-page-content"
+                          style={{
+                            width: ps.width,
+                            minHeight: ps.minHeight,
+                            padding: ps.padding,
+                            backgroundColor: "#ffffff",
+                            borderRadius: 4,
+                            border: "1px solid #e5e7eb",
+                            flexShrink: 0,
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1647,6 +1867,11 @@ export function BulletinPage() {
           {activeSub === "edit" && (
             <div className="flex" style={{ height: "calc(100vh - 120px)", minHeight: 0, gap: 20, flexDirection: mob ? "column" : "row" }}>
               <div style={{ overflowY: "auto", paddingRight: mob ? 0 : 10, flex: mob ? "none" : "0 0 auto", width: mob ? "100%" : 400, minWidth: 0 }}>
+                {printFormat === "fold2" && (
+                  <div style={{ fontSize: 12, color: "#f59e0b", padding: "8px 12px", background: "#fffbeb", borderRadius: 8, marginBottom: 8 }}>
+                    4면 주보: 예배순서+칼럼이 한 면, 교회소식+부서소식이 한 면에 들어갑니다
+                  </div>
+                )}
                 {/* 출력 형식 — 아코디언 스타일 통일 */}
                 <div style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #e5e7eb", overflow: "hidden" }}>
                   <button
@@ -1844,86 +2069,197 @@ export function BulletinPage() {
                   )}
                 </div>
 
-                {Object.entries(SECTIONS).map(([key, sec]) => (
-                  <div key={key} style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #e5e7eb", overflow: "hidden" }}>
-                    <button type="button" onClick={() => toggleSection(key)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>
-                      <span>{sec.name}</span>
-                      <span style={{ transform: openSections[key] ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-flex" }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#999" }}><path d="m6 9 6 6 6-6"/></svg>
-                      </span>
-                    </button>
-                    {openSections[key] && (
-                      <div style={{ padding: "0 16px 16px" }}>
-                        <p style={{ fontSize: 11, color: "#888", marginBottom: 12 }}>{sec.desc}</p>
-
-                        {key === "cover" && (<>
-                          <FormField label="설교 제목"><FInput value={db.current.pastor?.sermonTitle || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonTitle: v } }))} placeholder="이번 주 설교 제목" /></FormField>
-                          <FormField label="성경 본문"><FInput value={db.current.pastor?.sermonPassage || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonPassage: v } }))} placeholder="마태복음 5:1-12" /></FormField>
-                          <FormField label="설교 주제"><FInput value={db.current.pastor?.sermonTheme || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonTheme: v } }))} placeholder="설교 핵심 주제" /></FormField>
-                        </>)}
-
-                        {key === "churchNews" && (<>
-                          <FormField label="교회 전체 소식"><FTextarea value={db.current.general?.content || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, content: v } }))} placeholder="교회 전체 공지사항" /></FormField>
-                          <FormField label="금주 봉사자"><FTextarea value={db.current.general?.servants || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, servants: v } }))} placeholder="안내: OOO&#10;주차: OOO" /></FormField>
-                          <FormField label="지난주 헌금"><FInput value={db.current.general?.offering || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, offering: v } }))} placeholder="십일조 0,000,000원" /></FormField>
-                          <FormField label="금주 교회 일정"><FTextarea value={db.current.general?.schedule || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, schedule: v } }))} placeholder="월: 새벽기도 05:30" /></FormField>
-                          <FormField label="이번 주 생일자"><FInput value={db.current.general?.birthday || ""} onChange={v => setCurrent(c => ({ ...c, general: { ...c.general, birthday: v } }))} placeholder="김OO 집사, 이OO 권사" /></FormField>
-                        </>)}
-
-                        {key === "worship" && (<>
-                          <FormField label="예배 순서"><FTextarea value={db.current.worship?.worshipOrder || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, worshipOrder: v } }))} placeholder="묵도&#10;찬송 ………… 00장" style={{ minHeight: 150 }} /></FormField>
-                          <FormField label="찬양곡"><FInput value={db.current.worship?.praise || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, praise: v } }))} placeholder="찬양곡 목록" /></FormField>
-                          <FormField label="특송/특별순서"><FInput value={db.current.worship?.special || ""} onChange={v => setCurrent(c => ({ ...c, worship: { ...c.worship, special: v } }))} placeholder="특송 - OOO" /></FormField>
-                        </>)}
-
-                        {key === "sermon" && (<>
-                          <FormField label="목사님 칼럼"><FTextarea value={db.current.pastor?.column || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, column: v } }))} placeholder="이번 주 칼럼" style={{ minHeight: 100 }} /></FormField>
-                          <FormField label="특별 공지"><FTextarea value={db.current.pastor?.pastorNotice || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, pastorNotice: v } }))} placeholder="특별 공지 (선택)" /></FormField>
-                        </>)}
-
-                        {key === "departments" && (<>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                            {DEPARTMENTS.map(({ key: dKey, name }) => {
-                              const enabled = db.current.departments?.enabled ?? [];
-                              const checked = enabled.includes(dKey);
+                {(() => {
+                  const displaySections = printFormat === "fold2"
+                    ? [
+                        { key: "cover", name: "① 표지", desc: SECTIONS.cover.desc },
+                        { key: "worshipSermon", name: "② 예배 순서 / 말씀", desc: "예배 순서와 목사님 칼럼이 한 면에 표시됩니다", keys: ["worship", "sermon"] as const },
+                        { key: "churchNewsDept", name: "③ 교회 소식 / 부서별", desc: "교회 소식과 부서별 소식이 한 면에 표시됩니다", keys: ["churchNews", "departments"] as const },
+                        { key: "info", name: "④ 교회 안내", desc: SECTIONS.info.desc },
+                      ]
+                    : (Object.entries(SECTIONS) as [SectionKey, { name: string; desc: string }][]).map(([key, sec]) => ({ key, name: sec.name, desc: sec.desc }));
+                  const renderSectionContent = (sectionKey: SectionKey) => {
+                    switch (sectionKey) {
+                      case "cover":
+                        return (<>
+                          <FormField label="설교 제목"><><FInput value={db.current.pastor?.sermonTitle || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonTitle: v } }))} placeholder="이번 주 설교 제목" maxLength={100} /><div style={{ fontSize: 11, color: (db.current.pastor?.sermonTitle?.length ?? 0) >= 90 ? "#ef4444" : "#999", marginTop: 4 }}>{(db.current.pastor?.sermonTitle?.length ?? 0)}/100</div></></FormField>
+                          <FormField label="성경 본문"><><FInput value={db.current.pastor?.sermonPassage || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonPassage: v } }))} placeholder="마태복음 5:1-12" maxLength={100} /><div style={{ fontSize: 11, color: (db.current.pastor?.sermonPassage?.length ?? 0) >= 90 ? "#ef4444" : "#999", marginTop: 4 }}>{(db.current.pastor?.sermonPassage?.length ?? 0)}/100</div></></FormField>
+                          <FormField label="설교 주제"><><FInput value={db.current.pastor?.sermonTheme || ""} onChange={v => setCurrent(c => ({ ...c, pastor: { ...c.pastor, sermonTheme: v } }))} placeholder="설교 핵심 주제" maxLength={100} /><div style={{ fontSize: 11, color: (db.current.pastor?.sermonTheme?.length ?? 0) >= 90 ? "#ef4444" : "#999", marginTop: 4 }}>{(db.current.pastor?.sermonTheme?.length ?? 0)}/100</div></></FormField>
+                        </>);
+                      case "churchNews":
+                        return (() => {
+                          const g = db.current.general;
+                          const isFour = printFormat === "fold2";
+                          const deptData = db.current.departments?.data ?? {};
+                          const deptTotal = (db.current.departments?.enabled ?? []).reduce((sum: number, dKey: string) => sum + ((deptData[dKey] ?? "")?.length ?? 0), 0);
+                          const newsTotal = (g?.content?.length ?? 0) + (g?.servants?.length ?? 0) + (g?.offering?.length ?? 0) + (g?.schedule?.length ?? 0) + (g?.birthday?.length ?? 0);
+                          const newsCombinedTotal = isFour ? newsTotal + deptTotal : newsTotal;
+                          const newsMax = isFour ? FOUR_NEWS_TOTAL_MAX : NEWS_TOTAL_MAX;
+                          return (<>
+                            <div style={{ fontSize: 11, color: newsCombinedTotal >= newsMax * 0.9 ? "#ef4444" : "#999", marginBottom: 8 }}>전체 {newsCombinedTotal}/{newsMax}{isFour ? " (교회소식+부서)" : ""}</div>
+                            <FormField label="교회 전체 소식"><><FTextarea value={g?.content || ""} onChange={v => setCurrent(c => {
+                              const other = (c.general?.servants?.length ?? 0) + (c.general?.offering?.length ?? 0) + (c.general?.schedule?.length ?? 0) + (c.general?.birthday?.length ?? 0) + (isFour ? (c.departments?.enabled ?? []).reduce((s: number, k: string) => s + ((c.departments?.data ?? {})[k]?.length ?? 0), 0) : 0);
+                              const trimmed = v.length > newsMax - other ? v.slice(0, newsMax - other) : v;
+                              return { ...c, general: { ...c.general, content: trimmed } };
+                            })} placeholder="교회 전체 공지사항" maxLength={120} /><div style={{ fontSize: 11, color: (g?.content?.length ?? 0) >= 108 ? "#ef4444" : "#999", marginTop: 4 }}>{(g?.content?.length ?? 0)}/120</div></></FormField>
+                            <FormField label="금주 봉사자"><><FTextarea value={g?.servants || ""} onChange={v => setCurrent(c => {
+                              const other = (c.general?.content?.length ?? 0) + (c.general?.offering?.length ?? 0) + (c.general?.schedule?.length ?? 0) + (c.general?.birthday?.length ?? 0) + (isFour ? (c.departments?.enabled ?? []).reduce((s: number, k: string) => s + ((c.departments?.data ?? {})[k]?.length ?? 0), 0) : 0);
+                              const trimmed = v.length > newsMax - other ? v.slice(0, newsMax - other) : v;
+                              return { ...c, general: { ...c.general, servants: trimmed } };
+                            })} placeholder="안내: OOO&#10;주차: OOO" maxLength={80} /><div style={{ fontSize: 11, color: (g?.servants?.length ?? 0) >= 72 ? "#ef4444" : "#999", marginTop: 4 }}>{(g?.servants?.length ?? 0)}/80</div></></FormField>
+                            <FormField label="지난주 헌금"><><FInput value={g?.offering || ""} onChange={v => setCurrent(c => {
+                              const other = (c.general?.content?.length ?? 0) + (c.general?.servants?.length ?? 0) + (c.general?.schedule?.length ?? 0) + (c.general?.birthday?.length ?? 0) + (isFour ? (c.departments?.enabled ?? []).reduce((s: number, k: string) => s + ((c.departments?.data ?? {})[k]?.length ?? 0), 0) : 0);
+                              const trimmed = v.length > newsMax - other ? v.slice(0, newsMax - other) : v;
+                              return { ...c, general: { ...c.general, offering: trimmed } };
+                            })} placeholder="십일조 0,000,000원" maxLength={60} /><div style={{ fontSize: 11, color: (g?.offering?.length ?? 0) >= 54 ? "#ef4444" : "#999", marginTop: 4 }}>{(g?.offering?.length ?? 0)}/60</div></></FormField>
+                            <FormField label="금주 교회 일정"><><FTextarea value={g?.schedule || ""} onChange={v => setCurrent(c => {
+                              const other = (c.general?.content?.length ?? 0) + (c.general?.servants?.length ?? 0) + (c.general?.offering?.length ?? 0) + (c.general?.birthday?.length ?? 0) + (isFour ? (c.departments?.enabled ?? []).reduce((s: number, k: string) => s + ((c.departments?.data ?? {})[k]?.length ?? 0), 0) : 0);
+                              const trimmed = v.length > newsMax - other ? v.slice(0, newsMax - other) : v;
+                              return { ...c, general: { ...c.general, schedule: trimmed } };
+                            })} placeholder="월: 새벽기도 05:30" maxLength={80} /><div style={{ fontSize: 11, color: (g?.schedule?.length ?? 0) >= 72 ? "#ef4444" : "#999", marginTop: 4 }}>{(g?.schedule?.length ?? 0)}/80</div></></FormField>
+                            <FormField label="이번 주 생일자"><><FInput value={g?.birthday || ""} onChange={v => setCurrent(c => {
+                              const other = (c.general?.content?.length ?? 0) + (c.general?.servants?.length ?? 0) + (c.general?.offering?.length ?? 0) + (c.general?.schedule?.length ?? 0) + (isFour ? (c.departments?.enabled ?? []).reduce((s: number, k: string) => s + ((c.departments?.data ?? {})[k]?.length ?? 0), 0) : 0);
+                              const trimmed = v.length > newsMax - other ? v.slice(0, newsMax - other) : v;
+                              return { ...c, general: { ...c.general, birthday: trimmed } };
+                            })} placeholder="김OO 집사, 이OO 권사" maxLength={60} /><div style={{ fontSize: 11, color: (g?.birthday?.length ?? 0) >= 54 ? "#ef4444" : "#999", marginTop: 4 }}>{(g?.birthday?.length ?? 0)}/60</div></>                            </FormField>
+                          </>);
+                        })();
+                      case "worship":
+                        return (() => {
+                          const w = db.current.worship;
+                          const p = db.current.pastor;
+                          const isFour = printFormat === "fold2";
+                          const worshipOnly = (w?.worshipOrder?.length ?? 0) + (w?.praise?.length ?? 0) + (w?.special?.length ?? 0);
+                          const worshipTotal = isFour ? worshipOnly + (p?.column?.length ?? 0) : worshipOnly;
+                          const worshipMax = isFour ? FOUR_WORSHIP_TOTAL_MAX : WORSHIP_TOTAL_MAX;
+                          return (<>
+                            <div style={{ fontSize: 11, color: worshipTotal >= worshipMax * 0.9 ? "#ef4444" : "#999", marginBottom: 8 }}>전체 {worshipTotal}/{worshipMax}{isFour ? " (예배+칼럼)" : ""}</div>
+                            <FormField label="예배 순서"><><FTextarea value={w?.worshipOrder || ""} onChange={v => setCurrent(c => {
+                              const other = (c.worship?.praise?.length ?? 0) + (c.worship?.special?.length ?? 0) + (isFour ? (c.pastor?.column?.length ?? 0) : 0);
+                              const max = isFour ? FOUR_WORSHIP_TOTAL_MAX : WORSHIP_TOTAL_MAX;
+                              const trimmed = v.length > max - other ? v.slice(0, max - other) : v;
+                              return { ...c, worship: { ...c.worship, worshipOrder: trimmed } };
+                            })} placeholder="묵도&#10;찬송 ………… 00장" style={{ minHeight: 150 }} maxLength={isFour ? 450 : 300} /><div style={{ fontSize: 11, color: (w?.worshipOrder?.length ?? 0) >= (isFour ? 405 : 270) ? "#ef4444" : "#999", marginTop: 4 }}>{(w?.worshipOrder?.length ?? 0)}/{isFour ? 450 : 300}</div></></FormField>
+                            <FormField label="찬양곡"><><FInput value={w?.praise || ""} onChange={v => setCurrent(c => {
+                              const other = (c.worship?.worshipOrder?.length ?? 0) + (c.worship?.special?.length ?? 0) + (isFour ? (c.pastor?.column?.length ?? 0) : 0);
+                              const max = isFour ? FOUR_WORSHIP_TOTAL_MAX : WORSHIP_TOTAL_MAX;
+                              const trimmed = v.length > max - other ? v.slice(0, max - other) : v;
+                              return { ...c, worship: { ...c.worship, praise: trimmed } };
+                            })} placeholder="찬양곡 목록" /><div style={{ fontSize: 11, color: "#999", marginTop: 4 }}>{(w?.praise?.length ?? 0)}자</div></></FormField>
+                            <FormField label="특송/특별순서"><><FInput value={w?.special || ""} onChange={v => setCurrent(c => {
+                              const other = (c.worship?.worshipOrder?.length ?? 0) + (c.worship?.praise?.length ?? 0) + (isFour ? (c.pastor?.column?.length ?? 0) : 0);
+                              const max = isFour ? FOUR_WORSHIP_TOTAL_MAX : WORSHIP_TOTAL_MAX;
+                              const trimmed = v.length > max - other ? v.slice(0, max - other) : v;
+                              return { ...c, worship: { ...c.worship, special: trimmed } };
+                            })} placeholder="특송 - OOO" /><div style={{ fontSize: 11, color: "#999", marginTop: 4 }}>{(w?.special?.length ?? 0)}자</div></>                            </FormField>
+                          </>);
+                        })();
+                      case "sermon":
+                        return (() => {
+                          const p = db.current.pastor;
+                          const w = db.current.worship;
+                          const isFour = printFormat === "fold2";
+                          const worshipOnly = (w?.worshipOrder?.length ?? 0) + (w?.praise?.length ?? 0) + (w?.special?.length ?? 0);
+                          const columnMax = isFour ? Math.max(0, FOUR_WORSHIP_TOTAL_MAX - worshipOnly) : 500;
+                          const sermonTotal = (p?.column?.length ?? 0) + (p?.pastorNotice?.length ?? 0);
+                          const fourWorshipTotal = worshipOnly + (p?.column?.length ?? 0);
+                          return (<>
+                            <div style={{ fontSize: 11, color: (isFour ? fourWorshipTotal >= FOUR_WORSHIP_TOTAL_MAX * 0.9 : sermonTotal >= SERMON_TOTAL_MAX * 0.9) ? "#ef4444" : "#999", marginBottom: 8 }}>{isFour ? `칼럼 (예배+칼럼 합계 ${fourWorshipTotal}/${FOUR_WORSHIP_TOTAL_MAX})` : `전체 ${sermonTotal}/${SERMON_TOTAL_MAX}`}</div>
+                            <FormField label="목사님 칼럼"><><FTextarea value={p?.column || ""} onChange={v => setCurrent(c => {
+                              const worshipOnlyC = (c.worship?.worshipOrder?.length ?? 0) + (c.worship?.praise?.length ?? 0) + (c.worship?.special?.length ?? 0);
+                              const other = isFour ? 0 : (c.pastor?.pastorNotice?.length ?? 0);
+                              const max = isFour ? Math.max(0, FOUR_WORSHIP_TOTAL_MAX - worshipOnlyC) : SERMON_TOTAL_MAX - other;
+                              const trimmed = v.length > max ? v.slice(0, max) : v;
+                              return { ...c, pastor: { ...c.pastor, column: trimmed } };
+                            })} placeholder="이번 주 칼럼" style={{ minHeight: 100 }} maxLength={isFour ? 450 : 500} /><div style={{ fontSize: 11, color: (p?.column?.length ?? 0) >= (isFour ? columnMax * 0.9 : 450) ? "#ef4444" : "#999", marginTop: 4 }}>{(p?.column?.length ?? 0)}/{isFour ? columnMax : 500}</div></></FormField>
+                            <FormField label="특별 공지"><><FTextarea value={p?.pastorNotice || ""} onChange={v => setCurrent(c => {
+                              const other = (c.pastor?.column?.length ?? 0);
+                              const trimmed = v.length > SERMON_TOTAL_MAX - other ? v.slice(0, SERMON_TOTAL_MAX - other) : v;
+                              return { ...c, pastor: { ...c.pastor, pastorNotice: trimmed } };
+                            })} placeholder="특별 공지 (선택)" maxLength={500} /><div style={{ fontSize: 11, color: (p?.pastorNotice?.length ?? 0) >= 450 ? "#ef4444" : "#999", marginTop: 4 }}>{(p?.pastorNotice?.length ?? 0)}/500</div></>                            </FormField>
+                          </>);
+                        })();
+                      case "departments":
+                        return (() => {
+                          const enabled = db.current.departments?.enabled ?? [];
+                          const deptData = db.current.departments?.data ?? {};
+                          const g = db.current.general;
+                          const newsTotal = (g?.content?.length ?? 0) + (g?.servants?.length ?? 0) + (g?.offering?.length ?? 0) + (g?.schedule?.length ?? 0) + (g?.birthday?.length ?? 0);
+                          const deptTotal = enabled.reduce((sum, dKey) => sum + ((deptData[dKey] ?? "")?.length ?? 0), 0);
+                          const isFour = printFormat === "fold2";
+                          const combinedTotal = isFour ? newsTotal + deptTotal : deptTotal;
+                          const deptMax = isFour ? FOUR_NEWS_TOTAL_MAX : DEPT_TOTAL_MAX;
+                          return (<>
+                            <div style={{ fontSize: 11, color: combinedTotal >= deptMax * 0.9 ? "#ef4444" : "#999", marginBottom: 8 }}>전체 {combinedTotal}/{deptMax}{isFour ? " (교회소식+부서)" : ""}</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                              {DEPARTMENTS.map(({ key: dKey, name }) => {
+                                const checked = enabled.includes(dKey);
+                                return (
+                                  <label key={dKey} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                                    <input type="checkbox" checked={checked} onChange={() => {
+                                      const next = checked ? enabled.filter(k => k !== dKey) : [...enabled, dKey];
+                                      setCurrent(c => ({ ...c, departments: { ...c.departments, enabled: next, data: c.departments?.data ?? {} } }));
+                                    }} />
+                                    <span>{name}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            {enabled.map(dKey => {
+                              const dept = DEPARTMENTS.find(d => d.key === dKey);
+                              if (!dept) return null;
                               return (
-                                <label key={dKey} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
-                                  <input type="checkbox" checked={checked} onChange={() => {
-                                    const next = checked ? enabled.filter(k => k !== dKey) : [...enabled, dKey];
-                                    setCurrent(c => ({ ...c, departments: { ...c.departments, enabled: next, data: c.departments?.data ?? {} } }));
-                                  }} />
-                                  <span>{name}</span>
-                                </label>
+                                <div key={dKey} style={{ marginBottom: 12 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 4 }}>—— {dept.name} ——</div>
+                                  <FormField label="">
+                                    <><FTextarea value={deptData[dKey] ?? ""} onChange={v => setCurrent(c => {
+                                      const data = c.departments?.data ?? {};
+                                      const newsOnly = (c.general?.content?.length ?? 0) + (c.general?.servants?.length ?? 0) + (c.general?.offering?.length ?? 0) + (c.general?.schedule?.length ?? 0) + (c.general?.birthday?.length ?? 0);
+                                      const other = isFour ? newsOnly + (c.departments?.enabled ?? []).filter((k: string) => k !== dKey).reduce((s: number, k: string) => s + ((data[k] ?? "")?.length ?? 0), 0) : (c.departments?.enabled ?? []).filter((k: string) => k !== dKey).reduce((s: number, k: string) => s + ((data[k] ?? "")?.length ?? 0), 0);
+                                      const trimmed = v.length > deptMax - other ? v.slice(0, deptMax - other) : v;
+                                      return { ...c, departments: { ...c.departments, data: { ...data, [dKey]: trimmed } } };
+                                    })} placeholder={`${dept.name} 소식 입력`} style={{ minHeight: 80 }} maxLength={150} /><div style={{ fontSize: 11, color: combinedTotal >= deptMax * 0.9 ? "#ef4444" : "#999", marginTop: 4 }}>{((deptData[dKey] ?? "")?.length ?? 0)}자{isFour ? "" : ` / 150`}</div></>
+                                  </FormField>
+                                </div>
                               );
                             })}
-                          </div>
-                          {(db.current.departments?.enabled ?? []).map(dKey => {
-                            const dept = DEPARTMENTS.find(d => d.key === dKey);
-                            if (!dept) return null;
-                            return (
-                              <div key={dKey} style={{ marginBottom: 12 }}>
-                                <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 4 }}>—— {dept.name} ——</div>
-                                <FormField label="">
-                                  <FTextarea value={db.current.departments?.data?.[dKey] ?? ""} onChange={v => setCurrent(c => ({
-                                    ...c,
-                                    departments: { ...c.departments, data: { ...(c.departments?.data ?? {}), [dKey]: v } },
-                                  }))} placeholder={`${dept.name} 소식 입력`} style={{ minHeight: 80 }} />
-                                </FormField>
-                              </div>
-                            );
-                          })}
-                        </>)}
-
-                        {key === "info" && (<>
+                          </>);
+                        })();
+                      case "info":
+                        return (<>
                           <FormField label="헌금 계좌"><textarea className="w-full border rounded-lg p-2 text-sm" rows={2} value={db.settings.account || ""} onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, account: e.target.value } }))} /></FormField>
                           <FormField label="교회 주소"><FInput value={db.settings.address || ""} onChange={v => setDb(p => ({ ...p, settings: { ...p.settings, address: v } }))} /></FormField>
                           <FormField label="전화번호"><FInput value={db.settings.phone || ""} onChange={v => setDb(p => ({ ...p, settings: { ...p.settings, phone: v } }))} /></FormField>
                           <p style={{ fontSize: 11, color: "#999", marginTop: 8 }}>※ 설정 페이지에서도 수정할 수 있습니다</p>
-                        </>)}
+                        </>);
+                      default:
+                        return null;
+                    }
+                  };
+                  const hrStyle = { border: "none" as const, borderTop: "1px solid #e5e7eb", margin: "12px 0" };
+                  return displaySections.map((item) => {
+                    const displayKey = item.key;
+                    const name = item.name;
+                    const desc = item.desc;
+                    const keys = "keys" in item ? item.keys : undefined;
+                    return (
+                      <div key={displayKey} style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                        <button type="button" onClick={() => toggleSection(displayKey)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>
+                          <span>{name}</span>
+                          <span style={{ transform: (openSections[displayKey] ?? false) ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-flex" }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#999" }}><path d="m6 9 6 6 6-6"/></svg>
+                          </span>
+                        </button>
+                        {(openSections[displayKey] ?? false) && (
+                          <div style={{ padding: "0 16px 16px" }}>
+                            <p style={{ fontSize: 11, color: "#888", marginBottom: 12 }}>{desc}</p>
+                            {keys ? keys.map((k, i) => <Fragment key={k}>{i > 0 && <hr style={hrStyle} />}{renderSectionContent(k)}</Fragment>) : renderSectionContent(displayKey as SectionKey)}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    );
+                  });
+                })()}
               </div>
 
               <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ marginTop: mob ? 20 : 0 }}>
@@ -2028,8 +2364,35 @@ export function BulletinPage() {
                     backgroundColor: "#ffffff",
                   }}
                 >
-                  <div className="bulletin-preview-scale flex-shrink-0" style={{ transform: `scale(${previewScale})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
-                    <div id="bulletin-print-area" ref={previewRef} data-bview={previewView} data-bulletin-preview className="bulletin bulletin-preview-inner bulletin-page-content" style={{ flexShrink: 0, width: ps.width, minHeight: ps.minHeight, padding: ps.padding }} />
+                  <div
+                    ref={previewPanZoomRef}
+                    style={{
+                      width: "100%",
+                      height: "calc(100vh - 140px)",
+                      minHeight: 400,
+                      overflow: "hidden",
+                      cursor: previewDragging ? "grabbing" : "grab",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                    onMouseDown={onPreviewMouseDown}
+                    onDoubleClick={onPreviewDoubleClick}
+                    onTouchStart={onPreviewTouchStart}
+                    onTouchMove={onPreviewTouchMove}
+                    onTouchEnd={onPreviewTouchEnd}
+                    onTouchCancel={onPreviewTouchEnd}
+                  >
+                    <div
+                      className="bulletin-preview-scale flex-shrink-0"
+                      style={{
+                        transform: `translate(${panX}px, ${panY}px) scale(${previewScale})`,
+                        transformOrigin: "center center",
+                        transition: previewDragging ? "none" : "transform 0.15s ease",
+                      }}
+                    >
+                      <div id="bulletin-print-area" ref={previewRef} data-bview={previewView} data-bulletin-preview className="bulletin bulletin-preview-inner bulletin-page-content" style={{ flexShrink: 0, width: ps.width, minHeight: ps.minHeight, padding: ps.padding }} />
+                    </div>
                   </div>
                 </div>
                 </div>
@@ -2291,6 +2654,8 @@ export function BulletinPage() {
         /* ==================== TRI-FOLD (3면 접지) ==================== */
         .bulletin-page-content .bp-tri { display:flex; flex-direction:column; align-items:center; gap:20px; padding:4px; font-family:'Noto Serif KR','Batang',Georgia,serif; }
         .bulletin-page-content .bp-tri .bp-spread { box-shadow:0 3px 20px rgba(0,0,0,.1); border-radius:2px; overflow:hidden; width:720px; }
+        .bulletin-page-content .bp-spread { height:480px; overflow:hidden; }
+        .bulletin-page-content .print-cell { height:480px; overflow:hidden; }
         .bulletin-page-content .tp { width:100%; min-height:530px; background:#fff; border-right:1px dashed #d0d0d0; box-sizing:border-box; position:relative; overflow:hidden; }
         .bulletin-page-content .tp:last-child { border-right:none; }
         .bulletin-page-content .tp-cover { display:flex; align-items:center; justify-content:center; }
@@ -2335,7 +2700,7 @@ export function BulletinPage() {
         .bulletin-page-content .bp-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; padding:4px; font-family:'Noto Serif KR','Batang',Georgia,serif; }
         .bulletin-page-content .bp { width:100%; min-height:280px; background:#fff; border:1px solid #ddd; box-shadow:0 2px 12px rgba(0,0,0,.06); overflow:hidden; position:relative; box-sizing:border-box; }
         .bulletin-page-content .bp-four-face { width:100%; height:100%; display:flex; flex-direction:column; font-family:'Noto Serif KR','Batang',Georgia,serif; }
-        .bulletin-page-content .bp-four-face .bp-spread { display:grid; grid-template-columns:1fr 1fr; width:100%; height:50%; min-height:600px; box-shadow:0 1px 3px rgba(0,0,0,0.1); border-radius:4px; overflow:hidden; box-sizing:border-box; }
+        .bulletin-page-content .bp-four-face .bp-spread { display:grid; grid-template-columns:1fr 1fr; width:100%; height:50%; min-height:0; box-shadow:0 1px 3px rgba(0,0,0,0.1); border-radius:4px; overflow:hidden; box-sizing:border-box; }
         .bulletin-page-content .bp-four-face .bp-cell .bp { box-shadow:none; border:none; }
         .bulletin-page-content .bp-four-face .bp-cell .bp-2 { border-right:none; }
         .bulletin-page-content .bp-1 { display:flex; align-items:center; justify-content:center; }
