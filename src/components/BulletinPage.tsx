@@ -1869,9 +1869,12 @@ export function BulletinPage() {
                     >
                       <div
                         style={{
-                          transform: `translate(${dashPanX}px, ${dashPanY}px) scale(${dashPreviewScale})`,
+                          transform: `translate3d(${dashPanX}px, ${dashPanY}px, 0) scale(${dashPreviewScale})`,
                           transformOrigin: "center center",
                           transition: dashDragging ? "none" : "transform 0.15s ease",
+                          willChange: "transform",
+                          backfaceVisibility: "hidden" as const,
+                          WebkitBackfaceVisibility: "hidden" as const,
                           flexShrink: 0,
                         }}
                       >
@@ -2463,9 +2466,12 @@ export function BulletinPage() {
                     <div
                       className="bulletin-preview-scale flex-shrink-0"
                       style={{
-                        transform: `translate(${panX}px, ${panY}px) scale(${previewScale})`,
+                        transform: `translate3d(${panX}px, ${panY}px, 0) scale(${previewScale})`,
                         transformOrigin: "center center",
                         transition: previewDragging ? "none" : "transform 0.15s ease",
+                        willChange: "transform",
+                        backfaceVisibility: "hidden" as const,
+                        WebkitBackfaceVisibility: "hidden" as const,
                       }}
                     >
                       <div id="bulletin-print-area" ref={previewRef} data-bview={previewView} data-bulletin-preview className="bulletin bulletin-preview-inner bulletin-page-content" style={{ flexShrink: 0, width: ps.width, minHeight: ps.minHeight, padding: ps.padding }} />
