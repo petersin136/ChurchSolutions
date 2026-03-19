@@ -354,10 +354,21 @@ function defaultEmptyDB(): BulletinDB {
   };
 }
 
-const BULLETIN_STORAGE_KEY = "bulletin_db";
+function getBulletinStorageKey(): string {
+  const cid = getChurchId();
+  return cid ? `bulletin_db_${cid}` : "bulletin_db";
+}
 function loadBulletin(): BulletinDB {
   if (typeof window === "undefined") return defaultEmptyDB();
-  const s = localStorage.getItem(BULLETIN_STORAGE_KEY);
+  const key = getBulletinStorageKey();
+  const oldData = localStorage.getItem("bulletin_db");
+  if (oldData && key !== "bulletin_db") {
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, oldData);
+    }
+    localStorage.removeItem("bulletin_db");
+  }
+  const s = localStorage.getItem(key);
   const db = s ? JSON.parse(s) : defaultEmptyDB();
   const defCurrent = defaultEmptyDB().current;
   if (!db.current) {
@@ -398,7 +409,7 @@ function loadBulletin(): BulletinDB {
   return db;
 }
 function saveBulletin(db: BulletinDB) {
-  if (typeof window !== "undefined") localStorage.setItem(BULLETIN_STORAGE_KEY, JSON.stringify(db));
+  if (typeof window !== "undefined") localStorage.setItem(getBulletinStorageKey(), JSON.stringify(db));
 }
 
 /* ---------- UI ---------- */
@@ -1068,11 +1079,13 @@ export function BulletinPage() {
           setSupabaseLoaded(true);
           return;
         }
-        const remote = await loadBulletinFromSupabase(cid);
+        const result = await loadBulletinFromSupabase(cid);
         if (cancelled) return;
-        if (remote && typeof remote === "object" && Object.keys(remote).length > 0) {
+        if (result.status === "error") {
+          console.warn("[Bulletin] Supabase 로드 실패, localStorage 유지:", result.message);
+        } else if (result.data && typeof result.data === "object" && Object.keys(result.data).length > 0) {
           console.log("[Bulletin] Supabase에서 데이터 로드됨");
-          const remoteDb = remote as unknown as BulletinDB;
+          const remoteDb = result.data as unknown as BulletinDB;
           setDb((prev) => {
             const merged: BulletinDB = {
               settings: { ...prev.settings, ...(remoteDb.settings || {}) },
@@ -1085,6 +1098,11 @@ export function BulletinPage() {
             saveBulletin(merged);
             return merged;
           });
+        } else {
+          console.log("[Bulletin] 새 교회 — 빈 주보로 초기화");
+          const empty = defaultEmptyDB();
+          setDb(empty);
+          saveBulletin(empty);
         }
       } catch (e) {
         console.warn("[Bulletin] Supabase 로드 실패, localStorage 사용:", e);

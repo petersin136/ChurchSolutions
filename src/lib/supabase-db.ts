@@ -547,10 +547,14 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   }
 }
 
-export async function loadBulletinFromSupabase(churchId?: string | null): Promise<Record<string, unknown> | null> {
-  if (!supabase) return null;
+export type LoadBulletinFromSupabaseResult =
+  | { status: "ok"; data: Record<string, unknown> | null }
+  | { status: "error"; message: string };
+
+export async function loadBulletinFromSupabase(churchId?: string | null): Promise<LoadBulletinFromSupabaseResult> {
+  if (!supabase) return { status: "error", message: "Supabase client unavailable" };
   const cid = churchId || getChurchId();
-  if (!cid) return null;
+  if (!cid) return { status: "error", message: "church_id가 없습니다" };
   const { data, error } = await supabase
     .from("bulletins")
     .select("data, updated_at")
@@ -558,9 +562,9 @@ export async function loadBulletinFromSupabase(churchId?: string | null): Promis
     .maybeSingle();
   if (error) {
     console.error("[Bulletin] Supabase load error:", error.message);
-    return null;
+    return { status: "error", message: error.message };
   }
-  return (data?.data as Record<string, unknown>) ?? null;
+  return { status: "ok", data: (data?.data as Record<string, unknown>) ?? null };
 }
 
 export async function saveBulletinToSupabase(
