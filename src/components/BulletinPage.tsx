@@ -1277,6 +1277,20 @@ export function BulletinPage() {
   const defaultPreviewScale = mob ? 0.45 : 1.0;
   const previewPanZoomRef = useRef<HTMLDivElement>(null);
   const dashPanZoomRef = useRef<HTMLDivElement>(null);
+  const previewTransformRef = useRef<HTMLDivElement>(null);
+  const dashTransformRef = useRef<HTMLDivElement>(null);
+  const updatePreviewTransform = useCallback(() => {
+    const el = previewTransformRef.current;
+    if (el) {
+      el.style.transform = `translate3d(${panRef.current.x}px, ${panRef.current.y}px, 0) scale(${previewScale})`;
+    }
+  }, [previewScale]);
+  const updateDashTransform = useCallback(() => {
+    const el = dashTransformRef.current;
+    if (el) {
+      el.style.transform = `translate3d(${dashPanRef.current.x}px, ${dashPanRef.current.y}px, 0) scale(${dashPreviewScale})`;
+    }
+  }, [dashPreviewScale]);
   const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const dashDragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; panX: number; panY: number; touches: number; pinchScale?: number; pinchDist?: number } | null>(null);
@@ -1305,14 +1319,15 @@ export function BulletinPage() {
     panRef.current = { x: start.panX + e.clientX - start.x, y: start.panY + e.clientY - start.y };
     if (!rafRef.current) {
       rafRef.current = requestAnimationFrame(() => {
-        forceRender((c) => c + 1);
+        updatePreviewTransform();
         rafRef.current = null;
       });
     }
-  }, []);
+  }, [updatePreviewTransform]);
   const onPreviewMouseUp = useCallback(() => {
     dragStartRef.current = null;
     setPreviewDragging(false);
+    forceRender((c) => c + 1);
   }, []);
   useEffect(() => {
     if (!previewDragging) return;
@@ -1382,7 +1397,7 @@ export function BulletinPage() {
       };
       if (!rafRef.current) {
         rafRef.current = requestAnimationFrame(() => {
-          forceRender((c) => c + 1);
+          updatePreviewTransform();
           rafRef.current = null;
         });
       }
@@ -1392,9 +1407,10 @@ export function BulletinPage() {
       const scale = (dist / start.pinchDist) * start.pinchScale;
       setPreviewScale(Math.min(2, Math.max(0.25, scale)));
     }
-  }, []);
+  }, [updatePreviewTransform]);
   const onPreviewTouchEnd = useCallback((e: React.TouchEvent) => {
     if (e.touches.length < 2) touchStartRef.current = null;
+    forceRender((c) => c + 1);
   }, []);
 
   const onDashMouseDown = useCallback((e: React.MouseEvent) => {
@@ -1413,14 +1429,15 @@ export function BulletinPage() {
     dashPanRef.current = { x: start.panX + e.clientX - start.x, y: start.panY + e.clientY - start.y };
     if (!dashRafRef.current) {
       dashRafRef.current = requestAnimationFrame(() => {
-        forceRender((c) => c + 1);
+        updateDashTransform();
         dashRafRef.current = null;
       });
     }
-  }, []);
+  }, [updateDashTransform]);
   const onDashMouseUp = useCallback(() => {
     dashDragStartRef.current = null;
     setDashDragging(false);
+    forceRender((c) => c + 1);
   }, []);
   useEffect(() => {
     if (!dashDragging) return;
@@ -1487,7 +1504,7 @@ export function BulletinPage() {
       };
       if (!dashRafRef.current) {
         dashRafRef.current = requestAnimationFrame(() => {
-          forceRender((c) => c + 1);
+          updateDashTransform();
           dashRafRef.current = null;
         });
       }
@@ -1497,9 +1514,10 @@ export function BulletinPage() {
       const scale = (dist / start.pinchDist) * start.pinchScale;
       setDashPreviewScale(Math.min(2, Math.max(0.25, scale)));
     }
-  }, []);
+  }, [updateDashTransform]);
   const onDashTouchEnd = useCallback((e: React.TouchEvent) => {
     if (e.touches.length < 2) dashTouchStartRef.current = null;
+    forceRender((c) => c + 1);
   }, []);
 
   useEffect(() => {
@@ -1934,7 +1952,8 @@ export function BulletinPage() {
                       onTouchEnd={onDashTouchEnd}
                       onTouchCancel={onDashTouchEnd}
                     >
-                      <div
+                    <div
+                      ref={dashTransformRef}
                         style={{
                           transform: `translate3d(${dashPanRef.current.x}px, ${dashPanRef.current.y}px, 0) scale(${dashPreviewScale})`,
                           transformOrigin: "center center",
@@ -2531,6 +2550,7 @@ export function BulletinPage() {
                     onTouchCancel={onPreviewTouchEnd}
                   >
                     <div
+                      ref={previewTransformRef}
                       className="bulletin-preview-scale flex-shrink-0"
                       style={{
                         transform: `translate3d(${panRef.current.x}px, ${panRef.current.y}px, 0) scale(${previewScale})`,
