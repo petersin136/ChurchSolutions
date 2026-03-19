@@ -54,6 +54,11 @@ function fds(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function extractYoutubeId(url: string): string | null {
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 const nextSun = getNextSunday();
 const BULLETIN_DATE_STR = fd(nextSun);
 const BULLETIN_KEY = fds(nextSun);
@@ -111,6 +116,7 @@ interface CurrentBulletin {
   coverDecor?: string;
   coverImage?: string;
   coverImageOpacity?: number;
+  youtubeUrl?: string;
   pastor: PastorSection;
   worship: WorshipSection;
   general: GeneralSection;
@@ -276,6 +282,7 @@ function defaultDB(): BulletinDB {
       coverDecor: "botanical",
       coverImage: "",
       coverImageOpacity: 0.3,
+      youtubeUrl: "",
       pastor: {
         sermonTitle: "산상수훈의 참된 복",
         sermonPassage: "마태복음 5:1-12",
@@ -337,6 +344,7 @@ function defaultEmptyDB(): BulletinDB {
       coverDecor: "botanical",
       coverImage: "",
       coverImageOpacity: 0.3,
+      youtubeUrl: "",
       pastor: { sermonTitle: "", sermonPassage: "", sermonTheme: "", column: "", pastorNotice: "", submitted: false, submittedAt: "" },
       worship: { worshipOrder: "", praise: "", special: "", submitted: false, submittedAt: "" },
       departments: { enabled: [], data: {} },
@@ -989,54 +997,34 @@ function buildHalfFold(db: BulletinDB): string {
   </div>`;
 }
 
-/* 온라인/PDF용 (모바일 친화적 카드형) */
+/* 온라인/PDF용 (모바일 친화적 카드형) — 간소화 + YouTube 영역 */
 function buildOnlineHTML(db: BulletinDB): string {
-  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows, ads, bdays, departmentItems } = prepData(db);
+  const { c, s, tpl, decorStyle, esc, escBr, nl, orderRows } = prepData(db);
   const decor = decorStyle === "none"
     ? { topRight: "", bottomLeft: "" }
     : getDecorSVG(decorStyle, tpl.accent, tpl.gold);
+  const youtubeUrl = (c.youtubeUrl ?? "").trim();
+  const youtubeVideoId = youtubeUrl ? extractYoutubeId(youtubeUrl) : null;
   return `<div class="bp-online" style="--ac:${tpl.accent};--al:${tpl.accentLight};--gold:${tpl.gold}">
     <div class="ol-header" style="background-color:${tpl.headerBg}; color:${tpl.headerTextColor}; border-bottom:2px solid ${tpl.borderColor}; position:relative; overflow:hidden; padding:24px;">
     ${decor.topRight}${decor.bottomLeft}${decor.topLeft || ""}${decor.bottomRight || ""}
-    <div style="position:relative;z-index:2;text-align:center;text-shadow:${c.coverImage ? 'none' : '0 1px 8px rgba(0,0,0,0.3)'};">
+    <div style="position:relative;z-index:2;text-align:center;text-shadow:${(c.coverImage || youtubeVideoId) ? 'none' : '0 1px 8px rgba(0,0,0,0.3)'};">
       <div style="text-align:center;padding:0 16px;margin-bottom:10px;">
-        <div style="font-size:22px;font-weight:900;color:${c.coverImage ? '#1a1a1a' : tpl.headerTextColor};letter-spacing:3px;white-space:nowrap;">${esc(s.church)}</div>
-        ${s.churchSub ? `<div style="font-size:10px;color:${c.coverImage ? '#555' : tpl.headerTextColor};opacity:0.8;margin-top:3px;">${esc(s.churchSub)}</div>` : ""}
+        <div style="font-size:22px;font-weight:900;color:${(c.coverImage || youtubeVideoId) ? '#1a1a1a' : tpl.headerTextColor};letter-spacing:3px;white-space:nowrap;">${esc(s.church)}</div>
+        ${s.churchSub ? `<div style="font-size:10px;color:${(c.coverImage || youtubeVideoId) ? '#555' : tpl.headerTextColor};opacity:0.8;margin-top:3px;">${esc(s.churchSub)}</div>` : ""}
       </div>
-      ${c.coverImage ? `
-  <div style="width:100%;overflow:hidden;margin:0 0 10px;max-height:200px;position:relative;">
-    <img src="${c.coverImage}" style="width:100%;height:100%;object-fit:cover;display:block;opacity:${c.coverImageOpacity ?? 0.3};" />
-  </div>` : ""}
-      ${c.coverImage ? "" : `<div style="width:50px;height:1.5px;background:${tpl.gold};margin:8px auto;opacity:0.5;"></div>`}
-      ${c.coverImage ? "" : BI.cross(tpl.headerTextColor)}
-      ${c.pastor?.sermonTitle ? `<div style="font-size:14px;font-weight:700;margin-top:${c.coverImage ? '16px' : '0'};margin-bottom:4px;">${esc(c.pastor.sermonTitle)}</div>` : ""}
+      ${youtubeVideoId ? `<div style="width:100%;overflow:hidden;margin:0 0 10px;max-height:200px;position:relative;border-radius:8px;"><a href="${esc(youtubeUrl)}" target="_blank" rel="noopener" style="display:block;position:relative;"><img src="https://img.youtube.com/vi/${youtubeVideoId}/maxresdefault.jpg" alt="예배 영상" style="width:100%;display:block;border-radius:8px;" onerror="this.src='https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg'" /><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:68px;height:48px;background:rgba(255,0,0,0.85);border-radius:12px;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-left:20px solid white;border-top:12px solid transparent;border-bottom:12px solid transparent;margin-left:4px;"></div></div></a></div>` : c.coverImage ? `<div style="width:100%;overflow:hidden;margin:0 0 10px;max-height:200px;position:relative;"><img src="${c.coverImage}" style="width:100%;height:100%;object-fit:cover;display:block;opacity:${c.coverImageOpacity ?? 0.3};" /></div>` : ""}
+      ${(c.coverImage || youtubeVideoId) ? "" : `<div style="width:50px;height:1.5px;background:${tpl.gold};margin:8px auto;opacity:0.5;"></div>`}
+      ${(c.coverImage || youtubeVideoId) ? "" : BI.cross(tpl.headerTextColor)}
+      ${c.pastor?.sermonTitle ? `<div style="font-size:14px;font-weight:700;margin-top:${(c.coverImage || youtubeVideoId) ? '16px' : '0'};margin-bottom:4px;">${esc(c.pastor.sermonTitle)}</div>` : ""}
       <div style="font-size:10px;opacity:0.85;margin-top:12px;">${esc(c.date || BULLETIN_DATE_STR)} 주일예배 · ${escBr(s.worshipTime || "")}</div>
     </div></div>
-    ${c.pastor?.sermonTitle ? `<div class="ol-sermon"><div class="ol-sermon-t">${esc(c.pastor.sermonTitle)}</div>
-      ${c.pastor.sermonPassage ? `<div class="ol-sermon-p">${esc(c.pastor.sermonPassage)}</div>` : ""}
-      ${c.pastor.sermonTheme ? `<div class="ol-sermon-th">${esc(c.pastor.sermonTheme)}</div>` : ""}</div>` : ""}
+    <div class="ol-sermon"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.sermon(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">설교 제목 / 성경 본문 / 설교 주제</span></div>${c.pastor?.sermonTitle ? `<div class="ol-sermon-t">${esc(c.pastor.sermonTitle)}</div>` : ""}${c.pastor?.sermonPassage ? `<div class="ol-sermon-p">${esc(c.pastor.sermonPassage)}</div>` : ""}${c.pastor?.sermonTheme ? `<div class="ol-sermon-th">${esc(c.pastor.sermonTheme)}</div>` : ""}${!c.pastor?.sermonTitle && !c.pastor?.sermonPassage && !c.pastor?.sermonTheme ? `<div class="bp-empty" style="font-size:12px;color:#9ca3af;">입력된 내용이 없습니다</div>` : ""}</div>
     <div class="ol-body">
-      <div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.worship(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">예배 순서</span></div>
-        ${orderRows ? `<table class="bp-otbl">${orderRows}</table>` : '<div class="bp-empty">예배 순서 없음</div>'}
-        ${c.worship?.praise ? `<div class="ol-note">${BI.music(tpl.accent)} ${esc(c.worship.praise)}</div>` : ""}
-        ${c.worship?.special ? `<div class="ol-note">${BI.mic(tpl.accent)} ${esc(c.worship.special)}</div>` : ""}</div>
-      ${c.pastor?.column ? `<div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.sermon(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">목사님 칼럼</span></div><div class="ol-col-txt">${nl(c.pastor.column)}</div></div>` : ""}
-      ${(c.general?.content || c.general?.servants || c.general?.offering || c.general?.schedule || bdays.length) ? `<div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 소식</span></div>
-        ${c.general?.content ? `<div class="ol-ad"><div class="ol-ad-dept">교회 소식</div><div class="ol-ad-txt">${nl(c.general.content)}</div></div>` : ""}
-        ${c.general?.servants ? `<div class="ol-ad"><div class="ol-ad-dept">금주 봉사자</div><div class="ol-ad-txt">${nl(c.general.servants)}</div></div>` : ""}
-        ${c.general?.offering ? `<div class="ol-ad"><div class="ol-ad-dept">헌금 보고</div><div class="ol-ad-txt">${nl(c.general.offering)}</div></div>` : ""}
-        ${c.general?.schedule ? `<div class="ol-ad"><div class="ol-ad-dept">금주 일정</div><div class="ol-ad-txt">${nl(c.general.schedule)}</div></div>` : ""}
-        ${bdays.length ? `<div class="ol-ad"><div class="ol-ad-dept">이번 주 생일</div><div class="ol-bdays">${bdays.map(b => `<span class="ol-bday">${esc(b)}</span>`).join("")}</div></div>` : ""}
-        </div>` : ""}
-      ${departmentItems.length ? `<div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">부서별 소식</span></div>
-        ${departmentItems.map(d => `<div class="ol-ad"><div class="ol-ad-dept">▶ ${esc(d.name)}</div><div class="ol-ad-txt">${nl(d.text)}</div></div>`).join("")}</div>` : ""}
-      <div class="ol-sec ol-info-sec">
-        ${c.general?.servants ? `<div class="ol-info-item"><strong>${BI.users(tpl.accent)} 봉사자</strong><br>${nl(c.general.servants)}</div>` : ""}
-        ${c.general?.schedule ? `<div class="ol-info-item"><strong>${BI.calendar(tpl.accent)} 일정</strong><br>${nl(c.general.schedule)}</div>` : ""}
-        ${c.general?.offering ? `<div class="ol-info-item"><strong>${BI.offering(tpl.accent)} 헌금</strong><br>${nl(c.general.offering)}</div>` : ""}
-      </div>
+      <div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.worship(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">예배 순서</span></div>${orderRows ? `<table class="bp-otbl">${orderRows}</table>` : '<div class="bp-empty">예배 순서 없음</div>'}${c.worship?.praise ? `<div class="ol-note">${BI.music(tpl.accent)} ${esc(c.worship.praise)}</div>` : ""}${c.worship?.special ? `<div class="ol-note">${BI.mic(tpl.accent)} ${esc(c.worship.special)}</div>` : ""}</div>
+      <div class="ol-sec"><div class="ol-sec-t" style="display:flex;align-items:center;gap:6px;padding-bottom:8px;border-bottom:1.5px solid ${tpl.borderColor};margin-bottom:10px;">${BI.news(tpl.accent)}<span style="font-size:13px;font-weight:700;color:${tpl.headerTextColor};letter-spacing:0.3px;">교회 소식</span></div>${c.general?.content ? `<div class="ol-ad"><div class="ol-ad-dept">교회 소식</div><div class="ol-ad-txt">${nl(c.general.content)}</div></div>` : `<div class="bp-empty" style="font-size:12px;color:#9ca3af;">입력된 내용이 없습니다</div>`}</div>
     </div>
-    <div class="ol-footer" style="background-color:${tpl.accent}; color:${tpl.headerTextColor}"><div>${esc(s.church)}</div><div>${escBr(s.address || "")} · ${BI.phone(tpl.headerTextColor)} ${esc(s.phone || "")}</div><div>${escBr(s.account || "")}</div></div>
+    <div class="ol-footer" style="background-color:${tpl.accent}; color:#ffffff;"><div>${esc(s.church)}</div><div>${escBr(s.address || "")} · ${BI.phone("#ffffff")} ${esc(s.phone || "")}</div><div>${escBr(s.account || "")}</div></div>
   </div>`;
 }
 
@@ -1311,6 +1299,7 @@ export function BulletinPage() {
   }, [previewDragging, onPreviewMouseMove, onPreviewMouseUp]);
 
   const onPreviewWheel = useCallback((e: WheelEvent) => {
+    if (!e.ctrlKey) return;
     e.preventDefault();
     setPreviewScale(s => Math.min(2, Math.max(0.25, s - e.deltaY * 0.002)));
   }, []);
@@ -1386,6 +1375,7 @@ export function BulletinPage() {
   }, [dashDragging, onDashMouseMove, onDashMouseUp]);
 
   const onDashWheel = useCallback((e: WheelEvent) => {
+    if (!e.ctrlKey) return;
     e.preventDefault();
     setDashPreviewScale(s => Math.min(2, Math.max(0.25, s - e.deltaY * 0.002)));
   }, []);
@@ -2063,6 +2053,22 @@ export function BulletinPage() {
                             );
                           })}
                         </div>
+                      </div>
+
+                      <div style={{ marginTop: 16 }}>
+                        <label className="block text-xs font-semibold text-gray-600 mb-2">YouTube 예배 링크</label>
+                        <input
+                          type="url"
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          value={db.current.youtubeUrl ?? ""}
+                          onChange={(e) => setCurrent((c) => ({ ...c, youtubeUrl: e.target.value }))}
+                          style={{ width: "100%", padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 8, outline: "none" }}
+                        />
+                        {extractYoutubeId(db.current.youtubeUrl ?? "") && (
+                          <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+                            <img src={`https://img.youtube.com/vi/${extractYoutubeId(db.current.youtubeUrl ?? "")}/mqdefault.jpg`} alt="YouTube 썸네일" style={{ width: "100%", display: "block" }} />
+                          </div>
+                        )}
                       </div>
                     </div>
                     </div>
