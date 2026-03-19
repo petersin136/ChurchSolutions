@@ -58,8 +58,8 @@ export function Pagination({
   const showTrailingEllipsis = pageEnd < totalPages;
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+    <div style={{ marginTop: 0 }}>
+      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 8, textAlign: "center" }}>
         총 {totalItems}건 중 {totalItems === 0 ? 0 : start}-{end} 표시
       </div>
       <div

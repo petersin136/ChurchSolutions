@@ -419,8 +419,8 @@ function Btn({ children, variant = "primary", size = "md", onClick, style }: { c
   return <button onClick={onClick} style={{ ...base, ...sizes[size], ...variants[variant], ...style }}>{children}</button>;
 }
 
-function FormField({ label, children }: { label: string; children: ReactNode }) {
-  return <div style={{ marginBottom: 14 }}><label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 4 }}>{label}</label>{children}</div>;
+function FormField({ label, children, labelStyle }: { label: string; children: ReactNode; labelStyle?: CSSProperties }) {
+  return <div style={{ marginBottom: 14 }}><label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 4, ...labelStyle }}>{label}</label>{children}</div>;
 }
 
 function FInput({ value, onChange, placeholder, type = "text", style, maxLength }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; style?: CSSProperties; maxLength?: number }) {
@@ -431,8 +431,8 @@ function FTextarea({ value, onChange, placeholder, style, maxLength }: { value: 
   return <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} maxLength={maxLength} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", resize: "vertical", minHeight: 70, ...style }} />;
 }
 
-function FSelect({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: ReactNode }) {
-  return <select value={value} onChange={e => onChange(e.target.value)} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", cursor: "pointer" }}>{children}</select>;
+function FSelect({ value, onChange, children, style }: { value: string; onChange: (v: string) => void; children: ReactNode; style?: CSSProperties }) {
+  return <select value={value} onChange={e => onChange(e.target.value)} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", cursor: "pointer", ...style }}>{children}</select>;
 }
 
 /* ── 주보용 인라인 SVG 아이콘 (Lucide 스타일) ── */
@@ -857,7 +857,7 @@ function getTriFoldSectionHTML(db: BulletinDB, index: number): string {
       <div style="width:35px;height:1px;background:${tpl.gold};margin:4px auto;opacity:0.4;"></div>
       <div style="font-size:9px;opacity:0.85;margin-top:12px;">${esc(c.date || BULLETIN_DATE_STR)} 주일예배</div>
       <div style="margin-top:24px;text-align:center;font-size:8px;opacity:0.75;padding:0 16px 10px;">
-        <div style="font-size:9px;font-weight:800;opacity:0.9;">${esc(s.pastor)} 목사</div>
+        <div style="font-size:9px;font-weight:800;opacity:0.9;">${esc(s.pastor)}</div>
         ${s.staffList ? `<div style="font-size:6.5px;opacity:0.55;margin-top:1px;letter-spacing:0.5px;">${s.staffList.split("\n").map(l => esc(l.trim())).filter(Boolean).join(" · ")}</div>` : ""}
         <div style="margin-top:2px;">${escBr(s.worshipTime || "")}</div>
       </div>
@@ -946,7 +946,7 @@ function getHalfFoldSectionHTML(db: BulletinDB, index: number): string {
       <div style="font-size:10px;opacity:0.85;margin-top:14px;">${esc(c.date || BULLETIN_DATE_STR)} 주일예배</div>
       <div style="font-size:9px;opacity:0.75;margin-top:2px;">${escBr(s.worshipTime || "")}</div>
       <div style="margin-top:28px;padding-top:8px;font-size:9px;opacity:0.75;text-align:center;">
-        <div style="font-size:10px;font-weight:800;opacity:0.9;">담임목사 ${esc(s.pastor)}</div>
+        <div style="font-size:10px;font-weight:800;opacity:0.9;">${esc(s.pastor)}</div>
         ${s.staffList ? `<div style="font-size:7px;opacity:0.55;margin-top:1px;letter-spacing:0.5px;">${s.staffList.split("\n").map(l => esc(l.trim())).filter(Boolean).join(" · ")}</div>` : ""}
       </div>
     </div></div>`;
@@ -1109,7 +1109,7 @@ export function BulletinPage() {
     sessionStorage.setItem("bulletin-activeSub", activeSub);
   }, [activeSub]);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    cover: true, worship: false, sermon: false,
+    cover: false, worship: false, sermon: false,
     churchNews: false, departments: false, info: false,
   });
   const toggleSection = (key: string) =>
@@ -1119,13 +1119,15 @@ export function BulletinPage() {
   const previewRef = useRef<HTMLDivElement>(null);
   const dashPreviewRef = useRef<HTMLDivElement>(null);
   const [previewView, setPreviewView] = useState<BulletinView>("all");
-  const [previewScale, setPreviewScale] = useState(mob ? 0.45 : 0.75);
+  const [previewScale, setPreviewScale] = useState(mob ? 0.45 : 1.0);
+  const [previewZoomDraft, setPreviewZoomDraft] = useState<string | null>(null);
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
   const [outputMode, setOutputMode] = useState<OutputMode>("print");
   const [printFormat, setPrintFormat] = useState<PrintFormat>("fold3");
   const kakaoCardRef = useRef<HTMLDivElement>(null);
-  const [dashPreviewScale, setDashPreviewScale] = useState(0.6);
+  const [dashPreviewScale, setDashPreviewScale] = useState(1.0);
+  const [dashZoomDraft, setDashZoomDraft] = useState("");
   const [dashPanX, setDashPanX] = useState(0);
   const [dashPanY, setDashPanY] = useState(0);
   const [showFullPreview, setShowFullPreview] = useState(false);
@@ -1241,19 +1243,19 @@ export function BulletinPage() {
       if (el) el.remove();
     };
   }, [bulletinFormatDisplay]);
-  const zoomIn = () => setPreviewScale(s => Math.min(s + 0.1, 2.0));
-  const zoomOut = () => setPreviewScale(s => Math.max(s - 0.1, 0.25));
+  const zoomIn = () => setPreviewScale(s => Math.min(parseFloat((s + 0.05).toFixed(2)), 2.0));
+  const zoomOut = () => setPreviewScale(s => Math.max(parseFloat((s - 0.05).toFixed(2)), 0.25));
   const zoomReset = () => {
-    setPreviewScale(mob ? 0.45 : 0.75);
+    setPreviewScale(mob ? 0.45 : 1.0);
     setPanX(0);
     setPanY(0);
   };
   const dashZoomReset = () => {
-    setDashPreviewScale(0.6);
+    setDashPreviewScale(1.0);
     setDashPanX(0);
     setDashPanY(0);
   };
-  const defaultPreviewScale = mob ? 0.45 : 0.75;
+  const defaultPreviewScale = mob ? 0.45 : 1.0;
   const previewPanZoomRef = useRef<HTMLDivElement>(null);
   const dashPanZoomRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
@@ -1755,17 +1757,41 @@ export function BulletinPage() {
                       <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg shadow-sm">
                         <button
                           type="button"
-                          onClick={() => setDashPreviewScale(s => Math.max(0.3, s - 0.1))}
+                          onClick={() => setDashPreviewScale(s => Math.max(0.25, parseFloat((s - 0.05).toFixed(2))))}
                           className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-l-lg transition-colors text-sm"
                         >
                           −
                         </button>
-                        <span className="w-10 text-center text-xs text-gray-600 font-medium border-x border-gray-200">
-                          {Math.round(dashPreviewScale * 100)}%
-                        </span>
+                        <input
+                          type="text"
+                          value={dashZoomDraft || `${Math.round(dashPreviewScale * 100)}%`}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/[^0-9]/g, "");
+                            setDashZoomDraft(raw);
+                            const num = parseInt(raw, 10);
+                            if (!isNaN(num) && num >= 25 && num <= 200) {
+                              setDashPreviewScale(num / 100);
+                            }
+                          }}
+                          onFocus={(e) => {
+                            setDashZoomDraft(String(Math.round(dashPreviewScale * 100)));
+                            setTimeout(() => (e.target as HTMLInputElement).select(), 0);
+                          }}
+                          onBlur={() => {
+                            const num = parseInt(dashZoomDraft, 10);
+                            if (isNaN(num) || num < 25) setDashPreviewScale(0.25);
+                            else if (num > 200) setDashPreviewScale(2.0);
+                            setDashZoomDraft("");
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                          }}
+                          className="w-12 text-center text-xs text-gray-600 font-medium bg-transparent outline-none"
+                          style={{ height: "28px", padding: 0, border: "none", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb" }}
+                        />
                         <button
                           type="button"
-                          onClick={() => setDashPreviewScale(s => Math.min(2.0, s + 0.1))}
+                          onClick={() => setDashPreviewScale(s => Math.min(2.0, parseFloat((s + 0.05).toFixed(2))))}
                           className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-r-lg transition-colors text-sm"
                         >
                           +
@@ -2331,7 +2357,34 @@ export function BulletinPage() {
                     </div>
                     <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg shadow-sm">
                       <button type="button" onClick={zoomOut} className="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700 rounded-l-lg text-xs">−</button>
-                      <span className="w-9 text-center text-xs text-gray-600 font-medium border-x border-gray-200">{Math.round(previewScale * 100)}%</span>
+                      <input
+                        type="text"
+                        value={previewZoomDraft !== null ? previewZoomDraft : `${Math.round(previewScale * 100)}%`}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/[^0-9]/g, "");
+                          const display = digits === "" ? "" : `${digits}%`;
+                          setPreviewZoomDraft(display);
+                          const num = parseInt(digits, 10);
+                          if (!isNaN(num) && num >= 25 && num <= 200) {
+                            setPreviewScale(num / 100);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const num = parseInt(e.target.value.replace(/[^0-9]/g, ""), 10);
+                          if (isNaN(num) || num < 25) setPreviewScale(0.25);
+                          else if (num > 200) setPreviewScale(2.0);
+                          setPreviewZoomDraft(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                        }}
+                        onFocus={(e) => {
+                          setPreviewZoomDraft(`${Math.round(previewScale * 100)}%`);
+                          (e.target as HTMLInputElement).select();
+                        }}
+                        className="w-12 text-center text-xs text-gray-600 font-medium border-x border-gray-200 bg-transparent outline-none"
+                        style={{ height: "24px", padding: 0, border: "none", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb" }}
+                      />
                       <button type="button" onClick={zoomIn} className="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700 rounded-r-lg text-xs">+</button>
                     </div>
                   </div>
@@ -2407,32 +2460,56 @@ export function BulletinPage() {
           )}
 
           {activeSub === "history" && (
-            <div ref={listRefHistory}><Card>
-              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>지난 주보 목록</span></div>
-              <div style={{ padding: 18 }}>
-                {db.history.length === 0 ? <div style={{ color: "#9ca3af", textAlign: "center", padding: 40, fontSize: 14 }}>저장된 주보가 없습니다. 편집에서 저장하면 여기에 표시됩니다.</div> : db.history.slice().reverse().slice((currentPageHistory - 1) * 10, currentPageHistory * 10).map(h => (
-                  <div key={h.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "12px 0", borderBottom: `1px solid #f3f4f6` }}>
-                    <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>{h.date || h.key}</div><div style={{ fontSize: 12, color: "#9ca3af" }}>{h.sermonTitle || "제목 없음"} · 저장: {h.savedAt || ""}</div></div>
-                    <button type="button" onClick={() => loadHistory(h.key)} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 500, backgroundColor: "#111827", border: "none", borderRadius: 8, color: "#ffffff", cursor: "pointer" }}>불러오기</button>
+            <div ref={listRefHistory} style={{ width: "100%" }}>
+              <Card style={{ padding: 0, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 200px)" }}>
+                {db.history.length === 0 ? (
+                  <div style={{ color: "#9ca3af", textAlign: "center", padding: 40, fontSize: 14 }}>저장된 주보가 없습니다. 편집에서 저장하면 여기에 표시됩니다.</div>
+                ) : (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", padding: "12px 20px", borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>날짜</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>설교 제목</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", textAlign: "right" }}>관리</span>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ padding: 0, overflow: "hidden" }}>
+                        {db.history.slice().reverse().slice((currentPageHistory - 1) * 10, currentPageHistory * 10).map(h => (
+                          <div key={h.key} style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", alignItems: "center", padding: mob ? "14px 16px" : "14px 20px", borderBottom: "1px solid #f3f4f6" }}>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: "#374151" }}>{h.date || h.key}</div>
+                            <div style={{ fontSize: 13, color: "#6b7280" }}>{h.sermonTitle || "제목없음"} · 저장: {h.savedAt || ""}</div>
+                            <div style={{ textAlign: mob ? "left" : "right" }}>
+                              <button type="button" onClick={() => loadHistory(h.key)} style={{ padding: "8px 16px", minWidth: 70, fontSize: 13, fontWeight: 500, backgroundColor: "#111827", border: "none", borderRadius: 8, color: "#ffffff", cursor: "pointer", width: mob ? "100%" : undefined }}>불러오기</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+                {db.history.length > 0 && (
+                  <div style={{ borderTop: "1px solid #e5e7eb", padding: "12px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                    <Pagination totalItems={db.history.length} itemsPerPage={10} currentPage={currentPageHistory} onPageChange={(p) => { setCurrentPageHistory(p); listRefHistory.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
                   </div>
-                ))}
-              </div>
-              <Pagination totalItems={db.history.length} itemsPerPage={10} currentPage={currentPageHistory} onPageChange={(p) => { setCurrentPageHistory(p); listRefHistory.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
-            </Card></div>
+                )}
+              </Card>
+            </div>
           )}
 
           {activeSub === "settings" && (
-            <div style={{ maxWidth: 600 }}>
-              <Card>
-                <div style={{ padding: "14px 18px", borderBottom: `1px solid ${C.borderLight}` }}><span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>교회 기본 정보</span></div>
-                <div style={{ padding: 18 }}>
-                  <FormField label="교회명"><FInput value={db.settings.church} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, church: v } }))} /></FormField>
-                  <FormField label="교회 영문명/부제"><FInput value={db.settings.churchSub} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, churchSub: v } }))} /></FormField>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <FormField label="담임목사"><FInput value={db.settings.pastor} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, pastor: v } }))} /></FormField>
-                    <FormField label="주일예배 시간">
+            <div style={{ width: "100%" }}>
+              <Card style={{ padding: 0, overflow: "hidden" }}>
+                <div style={{ padding: "16px 28px", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>교회 기본 정보</span>
+                </div>
+                <div style={{ padding: mob ? 16 : 28, display: "flex", flexDirection: "column", gap: 16 }}>
+                  <FormField label="교회명" labelStyle={{ fontSize: 14, fontWeight: 600, color: "#374151" }}><FInput value={db.settings.church} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, church: v } }))} style={{ fontSize: 14 }} /></FormField>
+                  <FormField label="교회 영문명/부제" labelStyle={{ fontSize: 14, fontWeight: 600, color: "#374151" }}><FInput value={db.settings.churchSub} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, churchSub: v } }))} style={{ fontSize: 14 }} /></FormField>
+                  <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
+                    <FormField label="담임목사" labelStyle={{ fontSize: 14, fontWeight: 600, color: "#374151" }}><FInput value={db.settings.pastor} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, pastor: v } }))} style={{ fontSize: 14 }} /></FormField>
+                    <FormField label="주일예배 시간" labelStyle={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
                     <textarea
-                      className="w-full border rounded-lg p-2 text-sm"
+                      className="w-full border rounded-lg p-2"
+                      style={{ fontSize: 14 }}
                       rows={2}
                       value={db.settings.worshipTime || ""}
                       onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, worshipTime: e.target.value } }))}
@@ -2441,9 +2518,10 @@ export function BulletinPage() {
                   </FormField>
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">교역자 / 부교역자</label>
+                    <label className="block font-medium" style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>교역자 / 부교역자</label>
                     <textarea
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      style={{ fontSize: 14 }}
                       rows={3}
                       placeholder="부목사 홍길동&#10;전도사 김영희&#10;교육전도사 이철수"
                       value={db.settings.staffList || ""}
@@ -2451,19 +2529,21 @@ export function BulletinPage() {
                     />
                     <p className="text-xs text-gray-400">한 줄에 한 명씩 입력 (예: 부목사 홍길동)</p>
                   </div>
-                  <FormField label="교회 주소">
+                  <FormField label="교회 주소" labelStyle={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
                     <textarea
-                      className="w-full border rounded-lg p-2 text-sm"
+                      className="w-full border rounded-lg p-2"
+                      style={{ fontSize: 14 }}
                       rows={2}
                       value={db.settings.address || ""}
                       onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, address: e.target.value } }))}
                     />
                   </FormField>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <FormField label="전화번호"><FInput value={db.settings.phone} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, phone: v } }))} /></FormField>
-                    <FormField label="헌금 계좌">
+                  <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
+                    <FormField label="전화번호" labelStyle={{ fontSize: 14, fontWeight: 600, color: "#374151" }}><FInput value={db.settings.phone} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, phone: v } }))} style={{ fontSize: 14 }} /></FormField>
+                    <FormField label="헌금 계좌" labelStyle={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
                     <textarea
-                      className="w-full border rounded-lg p-2 text-sm"
+                      className="w-full border rounded-lg p-2"
+                      style={{ fontSize: 14 }}
                       rows={2}
                       value={db.settings.account || ""}
                       onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, account: e.target.value } }))}
@@ -2471,19 +2551,23 @@ export function BulletinPage() {
                     />
                   </FormField>
                   </div>
-                  <FormField label="마감 요일"><FSelect value={db.settings.deadline} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, deadline: v } }))}><option>수요일</option><option>목요일</option><option>금요일</option></FSelect></FormField>
+                  <FormField label="마감 요일" labelStyle={{ fontSize: 14, fontWeight: 600, color: "#374151" }}><FSelect value={db.settings.deadline} onChange={v => setDb(prev => ({ ...prev, settings: { ...prev.settings, deadline: v } }))} style={{ fontSize: 14 }}><option>수요일</option><option>목요일</option><option>금요일</option></FSelect></FormField>
                   <hr style={{ margin: "20px 0", border: "none", borderTop: `1px solid #f3f4f6` }} />
-                  <div className="flex justify-end pt-4 mt-4">
+                  <div style={{ marginTop: 8 }}>
                     <button
                       type="button"
-                      className="rounded transition-colors"
+                      className="rounded transition-colors w-full"
                       style={{
                         backgroundColor: "#2563EB",
                         color: "#ffffff",
-                        fontSize: "12px",
+                        fontSize: 15,
                         fontWeight: 600,
-                        padding: "6px 24px",
-                        letterSpacing: "0.5px"
+                        padding: "12px 0",
+                        borderRadius: 10,
+                        marginTop: 8,
+                        letterSpacing: "0.5px",
+                        border: "none",
+                        cursor: "pointer"
                       }}
                       onClick={() => {
                         saveBulletin(db);
