@@ -41,6 +41,7 @@ const Icons = {
 };
 import { Pagination } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
+import { UnifiedPageLayout, type NavSection } from "@/components/layout/UnifiedPageLayout";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -1397,11 +1398,9 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   const { refreshVisits: contextRefreshVisits, rawAttendance, db: appDb } = useAppData();
   const [db, setDb] = useState<VCDB>(() => loadVC());
   const [activeSub, setActiveSub] = useState<SubPage>("dash");
-  const [sideOpen, setSideOpen] = useState(false);
   const [visitsLoading, setVisitsLoading] = useState(false);
   const [visitSaving, setVisitSaving] = useState(false);
 
-  useEffect(() => { if (!mob) setSideOpen(true); else setSideOpen(false); }, [mob]);
   const [toasts, setToasts] = useState<{ id: number; msg: string }[]>([]);
 
   useEffect(() => {
@@ -1515,7 +1514,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
     return [...local, ...unique];
   }, [db.prayers, appDb?.notes, appDb?.answeredPrayerKeys]);
 
-  const handleNav = (id: SubPage) => { setActiveSub(id); if (mob) setSideOpen(false); };
+  const handleNav = (id: SubPage) => { setActiveSub(id); };
 
   const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
@@ -1698,74 +1697,53 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   const overdueCnt = allFU.filter(f => daysFromNow(f.date) < 0).length;
   const detailMember = detailMemberId ? getMember(detailMemberId) : null;
 
+  const navSections: NavSection[] = [
+    {
+      sectionLabel: "심방/상담",
+      items: NAV_ITEMS.map((n) => ({
+        id: n.id,
+        label: n.label,
+        Icon: n.Icon,
+        badge:
+          n.id === "dash" && overdueCnt > 0
+            ? overdueCnt
+            : n.id === "followup" && allFU.length > 0
+              ? allFU.length
+              : undefined,
+      })),
+    },
+  ];
+
   return (
-    <div style={{ fontFamily: "'Inter','Noto Sans KR',-apple-system,sans-serif", background: C.bg, display: "flex", color: C.text, minHeight: "calc(100vh - 56px)", overflow: "hidden", position: "relative" }}>
+    <UnifiedPageLayout
+      pageTitle="심방 · 상담"
+      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      navSections={navSections}
+      activeId={activeSub}
+      onNav={(id) => handleNav(id as SubPage)}
+      versionText="심방/상담 관리 v1.0"
+      headerTitle={info.title}
+      headerDesc={info.desc}
+      headerActions={
+        <>
+          <Btn variant="secondary" size="sm" onClick={exportCSV} icon={<Icons.Export />}>{mob ? "엑셀" : "엑셀"}</Btn>
+          <Btn variant="primary" size="sm" onClick={() => {
+            if (activeSub === "visits" || activeSub === "dash") openVisitModal();
+            else if (activeSub === "counsels") openCounselModal();
+            else openVisitModal();
+          }}>{mob ? "＋" : "＋ 빠른 등록"}</Btn>
+        </>
+      }
+      SidebarIcon={Home}
+      accentColor="#1e3a5f"
+    >
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      {mob && sideOpen && <div onClick={() => setSideOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 99 }} />}
-
-      {/* Sidebar */}
-      <aside style={{
-        width: mob ? 260 : (sideOpen ? 260 : 64), background: "#1a1f36", color: "#fff",
-        display: "flex", flexDirection: "column",
-        transition: mob ? "transform 0.3s ease" : "width 0.25s ease",
-        overflow: "hidden", flexShrink: 0, zIndex: 100,
-        ...(mob ? { position: "fixed", top: 0, left: 0, bottom: 0, transform: sideOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
-      }}>
-        <div style={{ padding: "24px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.9)" }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Home size={20} strokeWidth={1.5} /></div>
-          <div><div style={{ fontWeight: 700, fontSize: 18, letterSpacing: -0.5, whiteSpace: "nowrap" }}>심방 · 상담</div><div style={{ fontSize: 12, opacity: 0.5, whiteSpace: "nowrap" }}>교역자 기록 관리 시스템</div></div>
-        </div>
-        <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
-          <div style={{ fontSize: 11, textTransform: "uppercase", color: "rgba(255,255,255,0.35)", padding: "16px 12px 6px", letterSpacing: 1, fontWeight: 600 }}>심방/상담</div>
-          {NAV_ITEMS.map(n => {
-            const isActive = activeSub === n.id;
-            const Icon = n.Icon;
-            return (
-              <button key={n.id} onClick={() => handleNav(n.id)} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
-                borderRadius: 8, border: "none", background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-                color: isActive ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isActive ? 600 : 500,
-                fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", textAlign: "left", whiteSpace: "nowrap", position: "relative",
-              }}>
-                <Icon size={20} strokeWidth={isActive ? 2 : 1.5} style={{ flexShrink: 0 }} /><span>{n.label}</span>
-                {n.id === "dash" && overdueCnt > 0 && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{overdueCnt}</span>}
-                {n.id === "followup" && allFU.length > 0 && <span style={{ marginLeft: "auto", background: C.red, color: "#fff", fontSize: 11, padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>{allFU.length}</span>}
-              </button>
-            );
-          })}
-        </nav>
-        <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>심방/상담 관리 v1.0</div>
-      </aside>
-
-      {/* Main */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
-        <header style={{ height: mob ? 52 : 64, padding: mob ? "0 12px" : "0 28px", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            {mob && <button onClick={() => setSideOpen(true)} style={{ width: 36, height: 36, border: "none", background: C.bg, borderRadius: 8, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>☰</button>}
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: mob ? 16 : 20, fontWeight: 700, letterSpacing: -0.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{info.title}</div>
-              {!mob && <div style={{ fontSize: 13, color: C.textMuted }}>{info.desc}</div>}
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-            <Btn variant="secondary" size="sm" onClick={exportCSV} icon={<Icons.Export />}>{mob ? "엑셀" : "엑셀"}</Btn>
-            <Btn variant="primary" size="sm" onClick={() => {
-              if (activeSub === "visits" || activeSub === "dash") openVisitModal();
-              else if (activeSub === "counsels") openCounselModal();
-              else openVisitModal();
-            }}>{mob ? "＋" : "＋ 빠른 등록"}</Btn>
-          </div>
-        </header>
-
-        <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 24 }}>
-          {activeSub === "dash" && <DashSub db={db} goPage={handleNav} openVisitModal={openVisitModal} openCounselModal={openCounselModal} loading={visitsLoading} mergedPrayers={mergedPrayers} />}
-          {activeSub === "visits" && mainDb != null && setMainDb && saveMain
-            ? <MainDBVisitList mainDb={mainDb} setMainDb={setMainDb} saveMain={saveMain} toast={toast} />
-            : activeSub === "visits" && <VisitListSub db={db} openVisitModal={openVisitModal} loading={visitsLoading} />}
-          {activeSub === "counsels" && <CounselListSub db={db} openCounselModal={openCounselModal} />}
-          {activeSub === "followup" && <FollowUpSub db={db} setDb={setDb} persist={persist} toast={toast} openVisitModal={openVisitModal} openCounselModal={openCounselModal} />}
-        </div>
-      </main>
+      {activeSub === "dash" && <DashSub db={db} goPage={handleNav} openVisitModal={openVisitModal} openCounselModal={openCounselModal} loading={visitsLoading} mergedPrayers={mergedPrayers} />}
+      {activeSub === "visits" && mainDb != null && setMainDb && saveMain
+        ? <MainDBVisitList mainDb={mainDb} setMainDb={setMainDb} saveMain={saveMain} toast={toast} />
+        : activeSub === "visits" && <VisitListSub db={db} openVisitModal={openVisitModal} loading={visitsLoading} />}
+      {activeSub === "counsels" && <CounselListSub db={db} openCounselModal={openCounselModal} />}
+      {activeSub === "followup" && <FollowUpSub db={db} setDb={setDb} persist={persist} toast={toast} openVisitModal={openVisitModal} openCounselModal={openCounselModal} />}
 
       {/* Visit Modal */}
       <Modal open={showVisitModal} onClose={() => setShowVisitModal(false)} title={editVisitId ? "심방 수정" : "심방 등록"} footer={
@@ -1935,6 +1913,6 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
       </div>
 
       <style>{`@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
-    </div>
+    </UnifiedPageLayout>
   );
 }

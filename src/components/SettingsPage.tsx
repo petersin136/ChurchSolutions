@@ -263,6 +263,7 @@ export function SettingsPage({
       headerTitle={info.title}
       headerDesc={info.desc}
       SidebarIcon={Settings}
+      accentColor="#6b7280"
     >
       {settingsSubTab === "organization" && (
         <OrganizationManagement

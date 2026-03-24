@@ -31,6 +31,16 @@ const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[
   { id: "reports", label: "보고서·설정", Icon: FileBarChart },
 ];
 
+/** 상단 탭별 accent — 각 UnifiedPageLayout `accentColor`와 동일한 팔레트 */
+const PAGE_TAB_ACCENT: Record<PageId, string> = {
+  pastoral: "#1e3a5f",
+  visit: "#2563eb",
+  school: "#7c3aed",
+  finance: "#166534",
+  bulletin: "#8b6f47",
+  reports: "#6b7280",
+};
+
 export interface SuperPlannerUIProps {
   currentPage: PageId;
   setCurrentPage: (p: PageId) => void;
@@ -112,7 +122,8 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
       <nav className="tab-bar">
         {TAB_CONFIG.map(({ id, label, Icon }) => {
           const isActive = currentPage === id;
-          const iconColor = isActive ? "#3b82f6" : "#9ca3af";
+          const accent = PAGE_TAB_ACCENT[id];
+          const iconColor = isActive ? accent : "#9ca3af";
           const strokeWidth = isActive ? 2 : 1.5;
           return (
             <button
@@ -120,6 +131,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
               type="button"
               className={`tab-item ${isActive ? "active" : ""}`}
               onClick={() => setCurrentPage(id)}
+              style={isActive ? { color: accent } : undefined}
             >
               <span className="tab-icon">
                 <Icon size={24} strokeWidth={strokeWidth} style={{ color: iconColor }} />

@@ -44,7 +44,13 @@
     --header-h: 56px;
     --tab-h: 64px;
   }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
   html { -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; }
   body {
     font-family: var(--font);
@@ -144,6 +150,7 @@
   #page-planner.page { max-width: 100%; padding: 0; margin: 0; }
   #page-visit.page { max-width: 100%; padding: 0; margin: 0; }
   #page-bulletin.page { max-width: 100%; padding: 0; margin: 0; }
+  #page-reports.page { max-width: 100%; padding: 0; margin: 0; }
   #page-statistics.page { max-width: 100%; padding: 0; margin: 0; }
   #page-messaging.page { max-width: 100%; padding: 0; margin: 0; }
   #page-school.page { max-width: 100%; padding: 0; margin: 0; }
@@ -492,10 +499,12 @@
     font-size: 10px;
     line-height: 1.2;
     white-space: nowrap;
+    word-break: keep-all;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
   }
+  .mobile-sub-tabs::-webkit-scrollbar { display: none; }
   .modal-bg {
     align-items: flex-end;
   }

@@ -77,6 +77,7 @@ export function MessagingPage({ db, toast }: MessagingPageProps) {
       headerTitle={info.title}
       headerDesc={info.desc}
       SidebarIcon={MessageSquare}
+      accentColor="#db2777"
     >
       {subTab === "send" && (
         <SendMessage members={db.members ?? []} onSend={handleSend} />

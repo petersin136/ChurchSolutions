@@ -8,6 +8,8 @@ export interface PaginationProps {
   itemsPerPage?: number;
   currentPage: number;
   onPageChange: (page: number) => void;
+  /** true이면 상단 "총 N건 중 X-Y 표시" 줄을 렌더링하지 않음 (버튼 행만) */
+  hideSummary?: boolean;
 }
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
@@ -18,6 +20,7 @@ export function Pagination({
   itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
   currentPage,
   onPageChange,
+  hideSummary = false,
 }: PaginationProps) {
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
@@ -59,9 +62,11 @@ export function Pagination({
 
   return (
     <div style={{ marginTop: 0 }}>
-      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 8, textAlign: "center" }}>
-        총 {totalItems}건 중 {totalItems === 0 ? 0 : start}-{end} 표시
-      </div>
+      {!hideSummary && (
+        <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 8, textAlign: "center" }}>
+          총 {totalItems}건 중 {totalItems === 0 ? 0 : start}-{end} 표시
+        </div>
+      )}
       <div
         style={{
           display: "flex",

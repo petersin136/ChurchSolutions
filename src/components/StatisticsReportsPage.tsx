@@ -59,6 +59,7 @@ export function StatisticsReportsPage({ db, toast }: StatisticsReportsPageProps)
       headerTitle={info.title}
       headerDesc={info.desc}
       SidebarIcon={BarChart3}
+      accentColor="#0891b2"
     >
       {subTab === "dashboard" && <StatisticsDashboard db={db} />}
       {subTab === "weekly" && <WeeklyReport db={db} toast={toast} />}

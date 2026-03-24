@@ -3216,6 +3216,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         </>
       }
       SidebarIcon={Church}
+      accentColor="#1e3a5f"
     >
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} />}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} detailId={detailId} deleteMembers={deleteMembers} churchId={churchId} />}

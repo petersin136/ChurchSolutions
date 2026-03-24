@@ -3118,6 +3118,7 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
       headerDesc="교회 재정 관리 시스템"
       headerActions={!mob ? <Badge color={C.success} bg={C.successLight}>● 정상 운영중</Badge> : undefined}
       SidebarIcon={Church}
+      accentColor="#166534"
     >
           {activeTab === "dashboard" && (
             <FinanceDashboard
