@@ -1052,6 +1052,18 @@ type BulletinView = "all" | "cover" | "inner" | "back" | "outside" | "inside";
 const VIEW_FOLD2: BulletinView[] = ["all", "cover", "inner", "back"];
 const VIEW_FOLD3: BulletinView[] = ["all", "outside", "inside"];
 const VIEW_LABEL: Record<BulletinView, string> = { all: "전체", cover: "표지", inner: "내지", back: "뒷면", outside: "겉면", inside: "속면" };
+
+function bulletinViewForMobileEditSection(sectionKey: string, printFormat: PrintFormat): BulletinView {
+  if (printFormat === "fold2") {
+    if (sectionKey === "cover") return "cover";
+    if (sectionKey === "worshipSermon") return "inner";
+    if (sectionKey === "churchNewsDept" || sectionKey === "info") return "back";
+    return "all";
+  }
+  if (sectionKey === "cover") return "outside";
+  return "inside";
+}
+
 const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
   dash: { title: "대시보드", desc: "이번 주 주보 제출 현황" },
   edit: { title: "주보 편집", desc: "내용 입력 시 실시간 미리보기" },
@@ -1163,6 +1175,15 @@ export function BulletinPage() {
   useEffect(() => {
     setMobileEditSection("cover");
   }, [printFormat]);
+
+  useEffect(() => {
+    if (!mob || activeSub !== "edit") return;
+    if (outputMode !== "print") {
+      setPreviewView("all");
+      return;
+    }
+    setPreviewView(bulletinViewForMobileEditSection(mobileEditSection, printFormat));
+  }, [mob, activeSub, outputMode, mobileEditSection, printFormat]);
 
   const editDisplaySections = useMemo(() => {
     if (printFormat === "fold2") {
@@ -1914,6 +1935,7 @@ export function BulletinPage() {
       }
       style={{ marginTop: 0 }}
     >
+      {variant !== "mobile" && (
       <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-3 py-2 space-y-2">
         <div
           style={{
@@ -2075,6 +2097,7 @@ export function BulletinPage() {
           </div>
         </div>
       </div>
+      )}
 
       <div
         className="flex-1 overflow-auto min-h-0 bg-white"
@@ -2442,53 +2465,74 @@ export function BulletinPage() {
             mob ? (
               <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", minHeight: 0 }}>
                 {printFormat === "fold2" && (
-                  <div style={{ fontSize: 11, color: "#f59e0b", padding: "6px 12px", background: "#fffbeb", flexShrink: 0 }}>
-                    4면 주보: 예배순서+칼럼이 한 면, 교회소식+부서소식이 한 면에 들어갑니다
+                  <div style={{ fontSize: 10, color: "#f59e0b", padding: "4px 12px", background: "#fffbeb", flexShrink: 0 }}>
+                    4면: 예배순서+칼럼 한 면 / 교회소식+부서 한 면
                   </div>
                 )}
-                <div style={{ padding: "8px 12px", borderBottom: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                  <div className="flex gap-1.5" style={{ flex: "1 1 140px", minWidth: 0 }}>
+                <div style={{ padding: "8px 12px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+                  <div style={{ display: "flex", gap: 6 }}>
                     {[
                       { key: "print", label: "인쇄용" },
-                      { key: "online", label: "온라인/카카오" },
+                      { key: "online", label: "카카오톡 공유용" },
                     ].map((m) => (
-                      <button key={m.key} type="button" onClick={() => { setOutputMode(m.key as OutputMode); if (m.key !== "print") setPreviewView("all"); }}
+                      <button
+                        key={m.key}
+                        type="button"
+                        onClick={() => {
+                          setOutputMode(m.key as OutputMode);
+                          if (m.key !== "print") setPreviewView("all");
+                        }}
                         style={{
                           flex: 1,
-                          padding: "6px 12px",
+                          padding: "8px 0",
                           fontSize: 13,
                           fontWeight: 600,
                           borderRadius: 8,
-                          transition: "all 0.15s",
-                          ...(outputMode === m.key ? { background: "#111827", color: "#ffffff" } : { background: "#f3f4f6", color: "#4b5563", cursor: "pointer" }),
+                          border: "none",
+                          cursor: "pointer",
+                          ...(outputMode === m.key
+                            ? { background: "#111827", color: "#fff" }
+                            : { background: "#f3f4f6", color: "#4b5563" }),
                         }}
-                      >{m.label}</button>
+                      >
+                        {m.label}
+                      </button>
                     ))}
                   </div>
                   {outputMode === "print" && (
-                    <div className="flex gap-1.5" style={{ flex: "1 1 140px", minWidth: 0 }}>
-                      <button type="button" onClick={() => { setPrintFormat("fold3"); setPreviewView("all"); }}
+                    <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => { setPrintFormat("fold3"); setPreviewView("all"); }}
                         style={{
                           flex: 1,
-                          padding: "6px 12px",
-                          fontSize: 13,
+                          padding: "6px 0",
+                          fontSize: 12,
                           fontWeight: 600,
-                          borderRadius: 8,
-                          transition: "all 0.15s",
-                          ...(printFormat === "fold3" ? { background: "#111827", color: "#ffffff" } : { background: "#f3f4f6", color: "#4b5563", cursor: "pointer" }),
+                          borderRadius: 6,
+                          border: "none",
+                          cursor: "pointer",
+                          ...(printFormat === "fold3" ? { background: "#8b6f47", color: "#fff" } : { background: "#f3f4f6", color: "#4b5563" }),
                         }}
-                      >3면 접지</button>
-                      <button type="button" onClick={() => { setPrintFormat("fold2"); setPreviewView("all"); }}
+                      >
+                        6면
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setPrintFormat("fold2"); setPreviewView("all"); }}
                         style={{
                           flex: 1,
-                          padding: "6px 12px",
-                          fontSize: 13,
+                          padding: "6px 0",
+                          fontSize: 12,
                           fontWeight: 600,
-                          borderRadius: 8,
-                          transition: "all 0.15s",
-                          ...(printFormat === "fold2" ? { background: "#111827", color: "#ffffff" } : { background: "#f3f4f6", color: "#4b5563", cursor: "pointer" }),
+                          borderRadius: 6,
+                          border: "none",
+                          cursor: "pointer",
+                          ...(printFormat === "fold2" ? { background: "#8b6f47", color: "#fff" } : { background: "#f3f4f6", color: "#4b5563" }),
                         }}
-                      >2면 접지</button>
+                      >
+                        4면
+                      </button>
                     </div>
                   )}
                 </div>
@@ -2509,11 +2553,15 @@ export function BulletinPage() {
                       <button
                         key={item.key}
                         type="button"
-                        onClick={() => setMobileEditSection(item.key)}
+                        onClick={() => {
+                          setMobileEditSection(item.key);
+                          const scrollArea = document.querySelector(".mobile-edit-scroll");
+                          if (scrollArea) scrollArea.scrollTop = 0;
+                        }}
                         style={{
                           flex: "0 0 auto",
-                          padding: "10px 12px",
-                          fontSize: 13,
+                          padding: "8px 10px",
+                          fontSize: 12,
                           fontWeight: isActive ? 700 : 500,
                           color: isActive ? "#8b6f47" : "#6b7280",
                           background: "none",
@@ -2529,24 +2577,73 @@ export function BulletinPage() {
                     );
                   })}
                 </div>
-                <div style={{ flex: 1, overflowY: "auto", padding: 12, minHeight: 0 }}>
-                  {editDisplaySections.map((item) => {
-                    if (item.key !== mobileEditSection) return null;
-                    const keys = "keys" in item && item.keys ? item.keys : undefined;
-                    const hrStyle = { border: "none" as const, borderTop: "1px solid #e5e7eb", margin: "12px 0" };
-                    return (
-                      <div key={item.key}>
-                        {keys ? keys.map((k, i) => (
-                          <Fragment key={k}>
-                            {i > 0 && <hr style={hrStyle} />}
-                            {renderBulletinEditSectionContent(k)}
-                          </Fragment>
-                        )) : renderBulletinEditSectionContent(item.key as SectionKey)}
-                      </div>
-                    );
-                  })}
-                  <div style={{ marginTop: 16, borderTop: "1px solid #e5e7eb", paddingTop: 16, width: "100%" }}>
-                    {renderEditPreviewColumn("mobile")}
+                <div className="mobile-edit-scroll" style={{ flex: 1, overflowY: "auto", padding: 10, minHeight: 0 }}>
+                  {outputMode === "online" && (
+                    <div style={{ display: "flex", gap: 8, padding: "8px 0", marginBottom: 8 }}>
+                      <button
+                        type="button"
+                        onClick={handleKakaoShare}
+                        style={{
+                          flex: 1,
+                          padding: "10px 0",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          background: "#FEE500",
+                          color: "#191919",
+                          border: "none",
+                          borderRadius: 8,
+                          cursor: "pointer",
+                        }}
+                      >
+                        카카오톡 공유
+                      </button>
+                    </div>
+                  )}
+                  <div style={{
+                    width: "100%",
+                    background: "#f9fafb",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    marginBottom: 12,
+                    border: "1px solid #e5e7eb",
+                    position: "relative",
+                  }}
+                  >
+                    <div style={{
+                      transform: `scale(${Math.min(1, (typeof window !== "undefined" ? window.innerWidth - 44 : 360) / ps.width)})`,
+                      transformOrigin: "top left",
+                      width: ps.width,
+                    }}>
+                      {renderEditPreviewColumn("mobile")}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#374151",
+                    padding: "8px 0",
+                    borderBottom: "1px solid #e5e7eb",
+                    marginBottom: 8,
+                  }}
+                  >
+                    {editDisplaySections.find((s) => s.key === mobileEditSection)?.name ?? ""}
+                  </div>
+                  <div style={{ fontSize: 13 }}>
+                    {editDisplaySections.map((item) => {
+                      if (item.key !== mobileEditSection) return null;
+                      const keys = "keys" in item && item.keys ? item.keys : undefined;
+                      const hrStyle = { border: "none" as const, borderTop: "1px solid #e5e7eb", margin: "12px 0" };
+                      return (
+                        <div key={item.key}>
+                          {keys ? keys.map((k, i) => (
+                            <Fragment key={k}>
+                              {i > 0 && <hr style={hrStyle} />}
+                              {renderBulletinEditSectionContent(k)}
+                            </Fragment>
+                          )) : renderBulletinEditSectionContent(item.key as SectionKey)}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
