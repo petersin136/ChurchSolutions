@@ -1246,7 +1246,7 @@ export function BulletinPage() {
   useEffect(() => {
     if (!mob || activeSub !== "edit" || !mobileCellRef.current) return;
     mobileCellRef.current.innerHTML = extractMobileCellHTML(db, mobileEditSection, printFormat, outputMode);
-  }, [mob, activeSub, db, mobileEditSection, printFormat, outputMode]);
+  }, [mob, activeSub, db, mobileEditSection, printFormat, outputMode, mobileKbOpen]);
 
   const editDisplaySections = useMemo(() => {
     if (printFormat === "fold2") {
