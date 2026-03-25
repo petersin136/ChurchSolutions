@@ -1064,6 +1064,13 @@ function bulletinViewForMobileEditSection(sectionKey: string, printFormat: Print
   return "inside";
 }
 
+function getMobilePreviewVisibleWidth(view: BulletinView, pf: PrintFormat, psWidth: number): number {
+  if (view === "all") return psWidth;
+  if (pf === "fold3") return psWidth;
+  if (view === "cover" || view === "inner" || view === "back") return psWidth * 0.55;
+  return psWidth;
+}
+
 const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
   dash: { title: "대시보드", desc: "이번 주 주보 제출 현황" },
   edit: { title: "주보 편집", desc: "내용 입력 시 실시간 미리보기" },
@@ -1171,18 +1178,35 @@ export function BulletinPage() {
   const [showDashPanelMobile, setShowDashPanelMobile] = useState(false);
   const [showFormatPanel, setShowFormatPanel] = useState(false);
   const [mobileEditSection, setMobileEditSection] = useState<string>("cover");
+  const [mobilePreviewScale, setMobilePreviewScale] = useState(() => {
+    const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
+    return Math.min(1, screenW / 1134);
+  });
 
   useEffect(() => {
     setMobileEditSection("cover");
+    const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
+    const newPsW = printFormat === "fold3" ? 1134 : printFormat === "fold2" ? 756 : 595;
+    const newView = bulletinViewForMobileEditSection("cover", printFormat);
+    const visibleW = getMobilePreviewVisibleWidth(newView, printFormat, newPsW);
+    setMobilePreviewScale(Math.min(1.5, screenW / visibleW));
   }, [printFormat]);
 
   useEffect(() => {
     if (!mob || activeSub !== "edit") return;
     if (outputMode !== "print") {
       setPreviewView("all");
+      const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
+      const onlineW = 595;
+      setMobilePreviewScale(Math.min(1.5, screenW / onlineW));
       return;
     }
-    setPreviewView(bulletinViewForMobileEditSection(mobileEditSection, printFormat));
+    const newView = bulletinViewForMobileEditSection(mobileEditSection, printFormat);
+    setPreviewView(newView);
+    const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
+    const currentPsW = printFormat === "fold3" ? 1134 : 756;
+    const visibleW = getMobilePreviewVisibleWidth(newView, printFormat, currentPsW);
+    setMobilePreviewScale(Math.min(1.5, screenW / visibleW));
   }, [mob, activeSub, outputMode, mobileEditSection, printFormat]);
 
   const editDisplaySections = useMemo(() => {
@@ -2464,12 +2488,7 @@ export function BulletinPage() {
           {activeSub === "edit" && (
             mob ? (
               <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", minHeight: 0 }}>
-                {printFormat === "fold2" && (
-                  <div style={{ fontSize: 10, color: "#f59e0b", padding: "4px 12px", background: "#fffbeb", flexShrink: 0 }}>
-                    4면: 예배순서+칼럼 한 면 / 교회소식+부서 한 면
-                  </div>
-                )}
-                <div style={{ padding: "8px 12px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+                <div style={{ padding: "8px 6px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     {[
                       { key: "print", label: "인쇄용" },
@@ -2499,7 +2518,7 @@ export function BulletinPage() {
                       </button>
                     ))}
                   </div>
-                  {outputMode === "print" && (
+                  {outputMode === "print" ? (
                     <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                       <button
                         type="button"
@@ -2534,6 +2553,25 @@ export function BulletinPage() {
                         4면
                       </button>
                     </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleKakaoShare}
+                      style={{
+                        width: "100%",
+                        marginTop: 6,
+                        padding: "6px 0",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        backgroundColor: "#FEE500",
+                        color: "#191919",
+                        border: "none",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                      }}
+                    >
+                      카카오톡 공유
+                    </button>
                   )}
                 </div>
                 <div style={{
@@ -2541,7 +2579,7 @@ export function BulletinPage() {
                   overflowX: "auto",
                   borderBottom: "1px solid #e5e7eb",
                   background: "#fff",
-                  padding: "0 8px",
+                  padding: "0 2px",
                   flexShrink: 0,
                   gap: 0,
                   WebkitOverflowScrolling: "touch",
@@ -2577,42 +2615,73 @@ export function BulletinPage() {
                     );
                   })}
                 </div>
-                <div className="mobile-edit-scroll" style={{ flex: 1, overflowY: "auto", padding: 10, minHeight: 0 }}>
-                  {outputMode === "online" && (
-                    <div style={{ display: "flex", gap: 8, padding: "8px 0", marginBottom: 8 }}>
-                      <button
-                        type="button"
-                        onClick={handleKakaoShare}
-                        style={{
-                          flex: 1,
-                          padding: "10px 0",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          background: "#FEE500",
-                          color: "#191919",
-                          border: "none",
-                          borderRadius: 8,
-                          cursor: "pointer",
-                        }}
-                      >
-                        카카오톡 공유
-                      </button>
-                    </div>
-                  )}
+                <div style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "6px 0",
+                  borderBottom: "1px solid #e5e7eb",
+                  flexShrink: 0,
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setMobilePreviewScale((prev) => Math.max(0.15, parseFloat((prev - 0.1).toFixed(2))))}
+                    style={{
+                      width: 32, height: 32, borderRadius: 6,
+                      border: "1px solid #d1d5db", background: "#fff",
+                      fontSize: 16, fontWeight: 600, color: "#374151",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >−</button>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", minWidth: 40, textAlign: "center" }}>
+                    {Math.round(mobilePreviewScale * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMobilePreviewScale((prev) => Math.min(2, parseFloat((prev + 0.1).toFixed(2))))}
+                    style={{
+                      width: 32, height: 32, borderRadius: 6,
+                      border: "1px solid #d1d5db", background: "#fff",
+                      fontSize: 16, fontWeight: 600, color: "#374151",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >+</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
+                      const visibleW = getMobilePreviewVisibleWidth(previewView, printFormat, ps.width);
+                      setMobilePreviewScale(Math.min(1.5, screenW / visibleW));
+                    }}
+                    style={{
+                      padding: "4px 8px", borderRadius: 6,
+                      border: "1px solid #d1d5db", background: "#fff",
+                      fontSize: 11, color: "#6b7280", cursor: "pointer",
+                    }}
+                  >맞춤</button>
+                </div>
+                <div className="mobile-edit-scroll" style={{ flex: 1, overflowY: "auto", padding: "6px 4px", minHeight: 0 }}>
                   <div style={{
                     width: "100%",
                     background: "#f9fafb",
                     borderRadius: 8,
                     overflow: "hidden",
-                    marginBottom: 12,
+                    marginBottom: 8,
                     border: "1px solid #e5e7eb",
                     position: "relative",
+                    height: ps.minHeight * mobilePreviewScale + 20,
+                    maxHeight: "50vh",
+                    overflowY: "auto",
                   }}
                   >
                     <div style={{
-                      transform: `scale(${Math.min(1, (typeof window !== "undefined" ? window.innerWidth - 44 : 360) / ps.width)})`,
-                      transformOrigin: "top left",
+                      transform: `scale(${mobilePreviewScale})`,
+                      transformOrigin: "top center",
                       width: ps.width,
+                      margin: "0 auto",
                     }}>
                       {renderEditPreviewColumn("mobile")}
                     </div>
