@@ -1048,14 +1048,20 @@ function buildPreviewHTML(db: BulletinDB, mode: OutputMode, fmt: PrintFormat): s
 
 function extractMobileCellHTML(db: BulletinDB, sectionKey: string, pf: PrintFormat, mode: OutputMode): string {
   if (mode !== "print") return buildOnlineHTML(db);
+  let html = "";
   if (pf === "fold3") {
     const idx: Record<string, number> = { cover: 0, churchNews: 1, worship: 2, sermon: 3, departments: 4, info: 5 };
     const i = idx[sectionKey];
-    return i !== undefined ? getTriFoldSectionHTML(db, i) : "";
+    html = i !== undefined ? getTriFoldSectionHTML(db, i) : "";
+  } else {
+    const idx: Record<string, number> = { cover: 0, worshipSermon: 1, churchNewsDept: 2, info: 3 };
+    const i = idx[sectionKey];
+    html = i !== undefined ? getHalfFoldSectionHTML(db, i) : "";
   }
-  const idx: Record<string, number> = { cover: 0, worshipSermon: 1, churchNewsDept: 2, info: 3 };
-  const i = idx[sectionKey];
-  return i !== undefined ? getHalfFoldSectionHTML(db, i) : "";
+  return html
+    .replace(/height:\s*100%/g, `height:${PREVIEW_PANEL_HEIGHT_PX}px`)
+    .replace(/min-height:\s*100%/g, `min-height:${PREVIEW_PANEL_HEIGHT_PX}px`)
+    .replace(/overflow:\s*hidden/g, "overflow:visible");
 }
 
 type SubPage = "dash" | "edit" | "history" | "settings";
@@ -1187,11 +1193,19 @@ export function BulletinPage() {
   const [showDashPanelMobile, setShowDashPanelMobile] = useState(false);
   const [showFormatPanel, setShowFormatPanel] = useState(false);
   const [mobileEditSection, setMobileEditSection] = useState<string>("cover");
+  const [mobilePreviewScale, setMobilePreviewScale] = useState(1);
   const mobileCellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMobileEditSection("cover");
   }, [printFormat]);
+
+  useEffect(() => {
+    if (!mob || activeSub !== "edit") return;
+    const cw = window.innerWidth - 32;
+    const cellW = printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595;
+    setMobilePreviewScale(+(Math.min(1.5, cw / cellW).toFixed(2)));
+  }, [mob, activeSub, printFormat]);
 
   useEffect(() => {
     if (!mob || activeSub !== "edit") return;
@@ -2613,19 +2627,51 @@ export function BulletinPage() {
                     );
                   })}
                 </div>
+                <div style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "6px 0",
+                  borderBottom: "1px solid #e5e7eb",
+                  flexShrink: 0,
+                }}>
+                  <button type="button" onClick={() => setMobilePreviewScale(s => Math.max(0.3, +(s - 0.1).toFixed(1)))}
+                    style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                  <span style={{ fontSize: 13, color: "#374151", minWidth: 40, textAlign: "center" }}>
+                    {Math.round(mobilePreviewScale * 100)}%
+                  </span>
+                  <button type="button" onClick={() => setMobilePreviewScale(s => Math.min(2, +(s + 0.1).toFixed(1)))}
+                    style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                  <button type="button" onClick={() => {
+                    const cw = typeof window !== "undefined" ? window.innerWidth - 32 : 360;
+                    const cellW = printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595;
+                    setMobilePreviewScale(+(Math.min(1.5, cw / cellW).toFixed(2)));
+                  }}
+                    style={{ padding: "4px 12px", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 12, cursor: "pointer" }}>맞춤</button>
+                </div>
                 <div className="mobile-edit-scroll" style={{ flex: 1, overflowY: "auto", padding: "6px 4px", minHeight: 0 }}>
                   <div style={{
                     width: "100%",
                     background: "#f9fafb",
                     borderRadius: 8,
-                    overflow: "auto",
+                    overflowY: "auto",
+                    overflowX: "hidden",
                     marginBottom: 8,
                     border: "1px solid #e5e7eb",
+                    maxHeight: "50vh",
                   }}>
                     <div
                       ref={mobileCellRef}
                       className="bulletin bulletin-preview-inner bulletin-page-content"
-                      style={{ padding: 16, minHeight: 200 }}
+                      style={{
+                        padding: 16,
+                        minHeight: 300,
+                        width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
+                        transform: `scale(${mobilePreviewScale})`,
+                        transformOrigin: "top left",
+                        boxSizing: "border-box",
+                      }}
                     />
                   </div>
                   <div style={{
