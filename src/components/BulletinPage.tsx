@@ -1046,6 +1046,18 @@ function buildPreviewHTML(db: BulletinDB, mode: OutputMode, fmt: PrintFormat): s
   return buildHalfFold(db);
 }
 
+function extractMobileCellHTML(db: BulletinDB, sectionKey: string, pf: PrintFormat, mode: OutputMode): string {
+  if (mode !== "print") return buildOnlineHTML(db);
+  if (pf === "fold3") {
+    const idx: Record<string, number> = { cover: 0, churchNews: 1, worship: 2, sermon: 3, departments: 4, info: 5 };
+    const i = idx[sectionKey];
+    return i !== undefined ? getTriFoldSectionHTML(db, i) : "";
+  }
+  const idx: Record<string, number> = { cover: 0, worshipSermon: 1, churchNewsDept: 2, info: 3 };
+  const i = idx[sectionKey];
+  return i !== undefined ? getHalfFoldSectionHTML(db, i) : "";
+}
+
 type SubPage = "dash" | "edit" | "history" | "settings";
 type BulletinFormat = "6면" | "4면" | "온라인";
 type BulletinView = "all" | "cover" | "inner" | "back" | "outside" | "inside";
@@ -1064,12 +1076,9 @@ function bulletinViewForMobileEditSection(sectionKey: string, printFormat: Print
   return "inside";
 }
 
-function getMobilePreviewVisibleWidth(view: BulletinView, pf: PrintFormat, psWidth: number): number {
-  if (view === "all") return psWidth;
-  if (pf === "fold3") return psWidth;
-  if (view === "cover" || view === "inner" || view === "back") return psWidth * 0.55;
-  return psWidth;
-}
+
+
+
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
   dash: { title: "대시보드", desc: "이번 주 주보 제출 현황" },
@@ -1178,36 +1187,25 @@ export function BulletinPage() {
   const [showDashPanelMobile, setShowDashPanelMobile] = useState(false);
   const [showFormatPanel, setShowFormatPanel] = useState(false);
   const [mobileEditSection, setMobileEditSection] = useState<string>("cover");
-  const [mobilePreviewScale, setMobilePreviewScale] = useState(() => {
-    const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
-    return Math.min(1, screenW / 1134);
-  });
+  const mobileCellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMobileEditSection("cover");
-    const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
-    const newPsW = printFormat === "fold3" ? 1134 : printFormat === "fold2" ? 756 : 595;
-    const newView = bulletinViewForMobileEditSection("cover", printFormat);
-    const visibleW = getMobilePreviewVisibleWidth(newView, printFormat, newPsW);
-    setMobilePreviewScale(Math.min(1.5, screenW / visibleW));
   }, [printFormat]);
 
   useEffect(() => {
     if (!mob || activeSub !== "edit") return;
     if (outputMode !== "print") {
       setPreviewView("all");
-      const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
-      const onlineW = 595;
-      setMobilePreviewScale(Math.min(1.5, screenW / onlineW));
       return;
     }
-    const newView = bulletinViewForMobileEditSection(mobileEditSection, printFormat);
-    setPreviewView(newView);
-    const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
-    const currentPsW = printFormat === "fold3" ? 1134 : 756;
-    const visibleW = getMobilePreviewVisibleWidth(newView, printFormat, currentPsW);
-    setMobilePreviewScale(Math.min(1.5, screenW / visibleW));
+    setPreviewView(bulletinViewForMobileEditSection(mobileEditSection, printFormat));
   }, [mob, activeSub, outputMode, mobileEditSection, printFormat]);
+
+  useEffect(() => {
+    if (!mob || activeSub !== "edit" || !mobileCellRef.current) return;
+    mobileCellRef.current.innerHTML = extractMobileCellHTML(db, mobileEditSection, printFormat, outputMode);
+  }, [mob, activeSub, db, mobileEditSection, printFormat, outputMode]);
 
   const editDisplaySections = useMemo(() => {
     if (printFormat === "fold2") {
@@ -2615,76 +2613,20 @@ export function BulletinPage() {
                     );
                   })}
                 </div>
-                <div style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "6px 0",
-                  borderBottom: "1px solid #e5e7eb",
-                  flexShrink: 0,
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => setMobilePreviewScale((prev) => Math.max(0.15, parseFloat((prev - 0.1).toFixed(2))))}
-                    style={{
-                      width: 32, height: 32, borderRadius: 6,
-                      border: "1px solid #d1d5db", background: "#fff",
-                      fontSize: 16, fontWeight: 600, color: "#374151",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      cursor: "pointer",
-                    }}
-                  >−</button>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", minWidth: 40, textAlign: "center" }}>
-                    {Math.round(mobilePreviewScale * 100)}%
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setMobilePreviewScale((prev) => Math.min(2, parseFloat((prev + 0.1).toFixed(2))))}
-                    style={{
-                      width: 32, height: 32, borderRadius: 6,
-                      border: "1px solid #d1d5db", background: "#fff",
-                      fontSize: 16, fontWeight: 600, color: "#374151",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      cursor: "pointer",
-                    }}
-                  >+</button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const screenW = typeof window !== "undefined" ? window.innerWidth - 16 : 360;
-                      const visibleW = getMobilePreviewVisibleWidth(previewView, printFormat, ps.width);
-                      setMobilePreviewScale(Math.min(1.5, screenW / visibleW));
-                    }}
-                    style={{
-                      padding: "4px 8px", borderRadius: 6,
-                      border: "1px solid #d1d5db", background: "#fff",
-                      fontSize: 11, color: "#6b7280", cursor: "pointer",
-                    }}
-                  >맞춤</button>
-                </div>
                 <div className="mobile-edit-scroll" style={{ flex: 1, overflowY: "auto", padding: "6px 4px", minHeight: 0 }}>
                   <div style={{
                     width: "100%",
                     background: "#f9fafb",
                     borderRadius: 8,
-                    overflow: "hidden",
+                    overflow: "auto",
                     marginBottom: 8,
                     border: "1px solid #e5e7eb",
-                    position: "relative",
-                    height: ps.minHeight * mobilePreviewScale + 20,
-                    maxHeight: "50vh",
-                    overflowY: "auto",
-                  }}
-                  >
-                    <div style={{
-                      transform: `scale(${mobilePreviewScale})`,
-                      transformOrigin: "top center",
-                      width: ps.width,
-                      margin: "0 auto",
-                    }}>
-                      {renderEditPreviewColumn("mobile")}
-                    </div>
+                  }}>
+                    <div
+                      ref={mobileCellRef}
+                      className="bulletin bulletin-preview-inner bulletin-page-content"
+                      style={{ padding: 16, minHeight: 200 }}
+                    />
                   </div>
                   <div style={{
                     fontSize: 12,
@@ -3315,6 +3257,7 @@ export function BulletinPage() {
         /* --- TRI-FOLD VIEW TOGGLE (outside=겉면, inside=속면) --- */
         [data-bview="outside"] .bp-tri-in { display:none !important; }
         [data-bview="inside"] .bp-tri-out { display:none !important; }
+
         .bulletin-page-content .bp-cell { padding:16px; overflow:auto; box-sizing:border-box; border-right:1px dashed #e5e7eb; }
         .bulletin-page-content .bp-cell:last-child { border-right:none; }
 
