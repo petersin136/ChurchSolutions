@@ -1195,7 +1195,15 @@ export function BulletinPage() {
   const [mobileDesignOpen, setMobileDesignOpen] = useState(false);
   const [mobileEditSection, setMobileEditSection] = useState<string>("cover");
   const [mobilePreviewScale, setMobilePreviewScale] = useState(1);
+  const [mobilePan, setMobilePan] = useState({ x: 0, y: 0 });
+  const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const pinchStartRef = useRef({ dist: 0, scale: 1 });
   const mobileCellRef = useRef<HTMLDivElement>(null);
+
+  function getTouchDist(e: React.TouchEvent) {
+    const [a, b] = [e.touches[0], e.touches[1]];
+    return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  }
 
   useEffect(() => {
     setMobileEditSection("cover");
@@ -1206,6 +1214,7 @@ export function BulletinPage() {
     const cw = window.innerWidth - 32;
     const cellW = printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595;
     setMobilePreviewScale(+(Math.min(1.5, cw / cellW).toFixed(2)));
+    setMobilePan({ x: 0, y: 0 });
   }, [mob, activeSub, printFormat]);
 
   useEffect(() => {
@@ -2746,6 +2755,7 @@ export function BulletinPage() {
                         type="button"
                         onClick={() => {
                           setMobileEditSection(item.key);
+                          setMobilePan({ x: 0, y: 0 });
                           const scrollArea = document.querySelector(".mobile-edit-scroll");
                           if (scrollArea) scrollArea.scrollTop = 0;
                         }}
@@ -2777,28 +2787,54 @@ export function BulletinPage() {
                   borderBottom: "1px solid #e5e7eb",
                   flexShrink: 0,
                 }}>
-                  <button type="button" onClick={() => setMobilePreviewScale(s => Math.max(0.3, +(s - 0.1).toFixed(1)))}
+                  <button type="button" onClick={() => { setMobilePreviewScale(s => Math.max(0.3, +(s - 0.1).toFixed(1))); setMobilePan({ x: 0, y: 0 }); }}
                     style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
                   <span style={{ fontSize: 13, color: "#374151", minWidth: 40, textAlign: "center" }}>
                     {Math.round(mobilePreviewScale * 100)}%
                   </span>
-                  <button type="button" onClick={() => setMobilePreviewScale(s => Math.min(2, +(s + 0.1).toFixed(1)))}
+                  <button type="button" onClick={() => { setMobilePreviewScale(s => Math.min(2, +(s + 0.1).toFixed(1))); setMobilePan({ x: 0, y: 0 }); }}
                     style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
                   <button type="button" onClick={() => {
                     const cw = typeof window !== "undefined" ? window.innerWidth - 32 : 360;
                     const cellW = printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595;
                     setMobilePreviewScale(+(Math.min(1.5, cw / cellW).toFixed(2)));
+                    setMobilePan({ x: 0, y: 0 });
                   }}
                     style={{ padding: "4px 12px", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 12, cursor: "pointer" }}>맞춤</button>
                 </div>
-                <div style={{
-                  flexShrink: 0,
-                  height: "30vh",
-                  overflow: "auto",
-                  background: "#f9fafb",
-                  borderBottom: "1px solid #e5e7eb",
-                  padding: "4px",
-                }}>
+                <div
+                  style={{
+                    flexShrink: 0,
+                    height: "30vh",
+                    overflow: "hidden",
+                    background: "#f9fafb",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "4px",
+                    touchAction: "none",
+                  }}
+                  onTouchStart={(e) => {
+                    if (e.touches.length === 1) {
+                      const t = e.touches[0];
+                      panStartRef.current = { x: t.clientX, y: t.clientY, panX: mobilePan.x, panY: mobilePan.y };
+                    } else if (e.touches.length === 2) {
+                      pinchStartRef.current = { dist: getTouchDist(e), scale: mobilePreviewScale };
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    e.preventDefault();
+                    if (e.touches.length === 1) {
+                      const t = e.touches[0];
+                      const dx = t.clientX - panStartRef.current.x;
+                      const dy = t.clientY - panStartRef.current.y;
+                      setMobilePan({ x: panStartRef.current.panX + dx, y: panStartRef.current.panY + dy });
+                    } else if (e.touches.length === 2) {
+                      const newDist = getTouchDist(e);
+                      const ratio = newDist / pinchStartRef.current.dist;
+                      const newScale = Math.max(0.2, Math.min(3, pinchStartRef.current.scale * ratio));
+                      setMobilePreviewScale(+(newScale.toFixed(2)));
+                    }
+                  }}
+                >
                   <div
                     ref={mobileCellRef}
                     className="bulletin bulletin-preview-inner bulletin-page-content"
@@ -2806,7 +2842,7 @@ export function BulletinPage() {
                       padding: 16,
                       minHeight: 300,
                       width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
-                      transform: `scale(${mobilePreviewScale})`,
+                      transform: `translate(${mobilePan.x}px, ${mobilePan.y}px) scale(${mobilePreviewScale})`,
                       transformOrigin: "top left",
                       boxSizing: "border-box",
                     }}
