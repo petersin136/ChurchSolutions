@@ -1058,10 +1058,10 @@ function extractMobileCellHTML(db: BulletinDB, sectionKey: string, pf: PrintForm
     const i = idx[sectionKey];
     html = i !== undefined ? getHalfFoldSectionHTML(db, i) : "";
   }
-  return html
-    .replace(/height:\s*100%/g, `height:${PREVIEW_PANEL_HEIGHT_PX}px`)
-    .replace(/min-height:\s*100%/g, `min-height:${PREVIEW_PANEL_HEIGHT_PX}px`)
-    .replace(/overflow:\s*hidden/g, "overflow:visible");
+  let result = html.replace(/height:\s*100%/, `height:${PREVIEW_PANEL_HEIGHT_PX}px`);
+  result = result.replace(/min-height:\s*100%/, `min-height:${PREVIEW_PANEL_HEIGHT_PX}px`);
+  result = result.replace(/overflow:\s*hidden/, "overflow:visible");
+  return result;
 }
 
 type SubPage = "dash" | "edit" | "history" | "settings";
@@ -1192,6 +1192,7 @@ export function BulletinPage() {
   const [fullPreviewHtml, setFullPreviewHtml] = useState("");
   const [showDashPanelMobile, setShowDashPanelMobile] = useState(false);
   const [showFormatPanel, setShowFormatPanel] = useState(false);
+  const [mobileDesignOpen, setMobileDesignOpen] = useState(false);
   const [mobileEditSection, setMobileEditSection] = useState<string>("cover");
   const [mobilePreviewScale, setMobilePreviewScale] = useState(1);
   const mobileCellRef = useRef<HTMLDivElement>(null);
@@ -2253,7 +2254,7 @@ export function BulletinPage() {
       SidebarIcon={Newspaper}
       accentColor="#8b6f47"
     >
-        <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 20 }} className="bulletin-page-content">
+        <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 20 }} className={`bulletin-page-content${mob && activeSub === "edit" ? " mobile-edit-host" : ""}`}>
           {activeSub === "dash" && (() => {
             return (
             <div className="flex" style={{ height: "calc(100vh - 120px)", minHeight: 0 }}>
@@ -2500,6 +2501,146 @@ export function BulletinPage() {
           {activeSub === "edit" && (
             mob ? (
               <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", minHeight: 0 }}>
+                <div style={{ flexShrink: 0, borderBottom: "1px solid #e5e7eb" }}>
+                  <button type="button" onClick={() => setMobileDesignOpen(v => !v)}
+                    style={{
+                      width: "100%", display: "flex", justifyContent: "center", alignItems: "center",
+                      gap: 8, padding: "6px 0", background: mobileDesignOpen ? "#8b6f47" : "#111827", border: "none",
+                      borderRadius: 6, fontSize: 13, fontWeight: 600, color: "#fff", cursor: "pointer",
+                      margin: "0 6px", width: "calc(100% - 12px)",
+                    }}>
+                    <span>디자인 설정</span>
+                    <span style={{ fontSize: 9, transform: mobileDesignOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>▼</span>
+                  </button>
+                  {mobileDesignOpen && (() => {
+                    const currentDecor = db.current.coverDecor ?? (TEMPLATES.find(t => t.id === db.current.template) || TEMPLATES[0]).decorStyle;
+                    return (
+                      <div style={{ padding: "10px 8px", background: "#fff", maxHeight: "60vh", overflowY: "auto" }}>
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>표지 이미지</div>
+                          {db.current.coverImage ? (
+                            <div>
+                              <img src={db.current.coverImage} alt="표지" style={{ width: "100%", maxHeight: 160, objectFit: "contain", borderRadius: 6, marginBottom: 8 }} />
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <label style={{ flex: 1, textAlign: "center", padding: "8px 0", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>
+                                  변경
+                                  <input type="file" accept="image/*" hidden onChange={async (e) => {
+                                    const f = e.target.files?.[0]; if (!f) return;
+                                    const churchId = simpleHash(db.settings.church || "default");
+                                    try {
+                                      const url = await uploadCoverImage(f, churchId);
+                                      setDb(p => ({ ...p, current: { ...p.current, coverImage: url } }));
+                                      showToast("이미지가 업로드되었습니다");
+                                    } catch { showToast("업로드 실패"); }
+                                    e.target.value = "";
+                                  }} />
+                                </label>
+                                <button type="button" onClick={async () => {
+                                  const churchId = simpleHash(db.settings.church || "default");
+                                  await deleteCoverImage(churchId);
+                                  setDb(p => ({ ...p, current: { ...p.current, coverImage: "" } }));
+                                  showToast("이미지가 삭제되었습니다");
+                                }}
+                                  style={{ flex: 1, padding: "8px 0", border: "1px solid #fca5a5", borderRadius: 6, fontSize: 13, background: "#fef2f2", color: "#dc2626", cursor: "pointer" }}>삭제</button>
+                              </div>
+                              <div style={{ marginTop: 8 }}>
+                                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>투명도: {Math.round((db.current.coverImageOpacity ?? 0.3) * 100)}%</div>
+                                <input type="range" min={10} max={80} value={Math.round((db.current.coverImageOpacity ?? 0.3) * 100)}
+                                  onChange={(e) => setDb(p => ({ ...p, current: { ...p.current, coverImageOpacity: parseInt(e.target.value, 10) / 100 } }))}
+                                  style={{ width: "100%" }} />
+                              </div>
+                            </div>
+                          ) : (
+                            <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 100, border: "2px dashed #d1d5db", borderRadius: 8, cursor: "pointer" }}>
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5"><path d="M12 5v14M5 12h14" /></svg>
+                              <span style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>교회 사진 업로드</span>
+                              <input type="file" accept="image/*" hidden onChange={async (e) => {
+                                const f = e.target.files?.[0]; if (!f) return;
+                                const churchId = simpleHash(db.settings.church || "default");
+                                try {
+                                  const url = await uploadCoverImage(f, churchId);
+                                  setDb(p => ({ ...p, current: { ...p.current, coverImage: url } }));
+                                  showToast("이미지가 업로드되었습니다");
+                                } catch { showToast("업로드 실패"); }
+                                e.target.value = "";
+                              }} />
+                            </label>
+                          )}
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>컬러 테마</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6 }}>
+                            {TEMPLATES.map((t) => (
+                              <button key={t.id} type="button"
+                                onClick={() => setDb(p => ({ ...p, current: { ...p.current, template: t.id } }))}
+                                style={{
+                                  padding: 4, border: db.current.template === t.id ? "2px solid #3b82f6" : "1px solid #e5e7eb",
+                                  borderRadius: 6, background: "#fff", cursor: "pointer",
+                                }}>
+                                <div style={{ display: "flex", gap: 2, justifyContent: "center", marginBottom: 2 }}>
+                                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: t.accent }} />
+                                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: t.gold }} />
+                                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: t.accentLight }} />
+                                </div>
+                                <div style={{ fontSize: 9, color: "#6b7280", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>표지 장식 (일반)</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+                            {(DECOR_OPTIONS as readonly { id: string; name: string; desc?: string; category?: string }[]).filter(d => d.category === "general").map((d) => {
+                              const tpl = TEMPLATES.find(t => t.id === db.current.template) || TEMPLATES[0];
+                              const previewHtml = d.id !== "none" ? (() => { try { const p = getDecorSVG(d.id, tpl.accent, tpl.gold); return (p.topRight || "") + (p.bottomLeft || ""); } catch { return ""; } })() : "";
+                              return (
+                                <button key={d.id} type="button"
+                                  onClick={() => setDb(p => ({ ...p, current: { ...p.current, coverDecor: d.id } }))}
+                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
+                                  <div style={{ width: "100%", aspectRatio: "1", borderRadius: 4, position: "relative", overflow: "hidden", marginBottom: 2, background: tpl.headerBg, border: `1px solid ${tpl.borderColor}` }}>
+                                    {d.id !== "none" && previewHtml ? <div style={{ position: "absolute", inset: 0, opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: previewHtml }} /> : null}
+                                  </div>
+                                  <div style={{ fontSize: 9, color: "#6b7280", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>교회 절기 · 특별 주일</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                            {(DECOR_OPTIONS as readonly { id: string; name: string; desc?: string; category?: string }[]).filter(d => d.category === "season").map((d) => {
+                              const tpl = TEMPLATES.find(t => t.id === db.current.template) || TEMPLATES[0];
+                              const previewHtml = (() => { try { const p = getDecorSVG(d.id, tpl.accent, tpl.gold); return (p.topRight || "") + (p.bottomLeft || ""); } catch { return ""; } })();
+                              return (
+                                <button key={d.id} type="button"
+                                  onClick={() => setDb(p => ({ ...p, current: { ...p.current, coverDecor: d.id } }))}
+                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
+                                  <div style={{ width: "100%", aspectRatio: "1", borderRadius: 4, position: "relative", overflow: "hidden", marginBottom: 2, background: tpl.headerBg, border: `1px solid ${tpl.borderColor}` }}>
+                                    {previewHtml ? <div style={{ position: "absolute", inset: 0, opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: previewHtml }} /> : null}
+                                  </div>
+                                  <div style={{ fontSize: 9, color: "#6b7280", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>YouTube 예배 영상</div>
+                          <input type="url" placeholder="https://www.youtube.com/watch?v=..."
+                            value={db.current.youtubeUrl ?? ""}
+                            onChange={(e) => setCurrent(c => ({ ...c, youtubeUrl: e.target.value }))}
+                            style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
+                          {extractYoutubeId(db.current.youtubeUrl ?? "") && (
+                            <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+                              <img src={`https://img.youtube.com/vi/${extractYoutubeId(db.current.youtubeUrl ?? "")}/mqdefault.jpg`} alt="YouTube 썸네일" style={{ width: "100%", display: "block" }} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
                 <div style={{ padding: "8px 6px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     {[
@@ -3391,6 +3532,19 @@ export function BulletinPage() {
         .bulletin-page-content .bp-four-face .bp-spread > div { height: 100%; overflow: hidden; box-sizing: border-box; }
         .bulletin-page-content .bp-four-face .bp-spread .tp-cover { height: 100%; min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .bulletin-page-content .bp-four-face .bp-spread .bp-1 { height: 100%; min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+
+        /* 모바일 주보 편집 스크롤바 숨김 */
+        .mobile-edit-scroll,
+        .mobile-edit-scroll *,
+        .mobile-edit-host {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .mobile-edit-scroll::-webkit-scrollbar,
+        .mobile-edit-scroll *::-webkit-scrollbar,
+        .mobile-edit-host::-webkit-scrollbar {
+          display: none;
+        }
       `}</style>
     </UnifiedPageLayout>
   );
