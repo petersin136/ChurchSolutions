@@ -1248,6 +1248,33 @@ export function BulletinPage() {
     mobileCellRef.current.innerHTML = extractMobileCellHTML(db, mobileEditSection, printFormat, outputMode);
   }, [mob, activeSub, db, mobileEditSection, printFormat, outputMode, mobileKbOpen]);
 
+  useEffect(() => {
+    if (!mob || !mobileKbOpen) return;
+    const timer = setTimeout(() => {
+      const active = document.activeElement as HTMLElement | null;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT")) {
+        active.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [mob, mobileKbOpen]);
+
+  useEffect(() => {
+    if (!mob) return;
+    const scrollArea = document.querySelector(".mobile-edit-scroll");
+    if (!scrollArea) return;
+    const handleFocus = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") {
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 350);
+      }
+    };
+    scrollArea.addEventListener("focusin", handleFocus);
+    return () => scrollArea.removeEventListener("focusin", handleFocus);
+  }, [mob, activeSub]);
+
   const editDisplaySections = useMemo(() => {
     if (printFormat === "fold2") {
       return [
@@ -2828,7 +2855,7 @@ export function BulletinPage() {
                       style={{
                         flexShrink: 0,
                         width: "100%",
-                        height: 110,
+                        height: 80,
                         overflow: "hidden",
                         background: "#f9fafb",
                         borderBottom: "1px solid #e5e7eb",
