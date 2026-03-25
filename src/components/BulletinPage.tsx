@@ -1267,7 +1267,14 @@ export function BulletinPage() {
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") {
         setTimeout(() => {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          target.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          const sa = document.querySelector(".mobile-edit-scroll");
+          if (sa) {
+            const rect = target.getBoundingClientRect();
+            const scrollRect = sa.getBoundingClientRect();
+            const offset = rect.top - scrollRect.top - 40;
+            if (offset < 0) sa.scrollTop += offset;
+          }
         }, 350);
       }
     };
@@ -2850,41 +2857,32 @@ export function BulletinPage() {
                 </>)}
                 {mobileKbOpen ? (
                   <>
-                    <div
-                      onClick={() => setMobilePreviewOverlay(true)}
-                      style={{
-                        flexShrink: 0,
-                        width: "100%",
-                        height: 80,
-                        overflow: "hidden",
-                        background: "#f9fafb",
-                        borderBottom: "1px solid #e5e7eb",
-                        position: "relative",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div
-                        ref={mobileCellRef}
-                        className="bulletin bulletin-preview-inner bulletin-page-content"
+                    <div style={{
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "4px 10px",
+                      background: "#f5f0e8",
+                      borderBottom: "1px solid #e5e7eb",
+                      height: 32,
+                    }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#8b6f47" }}>
+                        {editDisplaySections.find(s => s.key === mobileEditSection)?.name ?? ""}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMobilePreviewOverlay(true)}
                         style={{
-                          padding: 4,
-                          width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
-                          transform: `scale(${((typeof window !== "undefined" ? window.innerWidth : 400) / (printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595)).toFixed(2)})`,
-                          transformOrigin: "top left",
-                          pointerEvents: "none",
+                          fontSize: 11,
+                          color: "#8b6f47",
+                          background: "none",
+                          border: "1px solid #8b6f47",
+                          borderRadius: 4,
+                          padding: "2px 8px",
+                          cursor: "pointer",
                         }}
-                      />
-                      <div style={{
-                        position: "absolute",
-                        bottom: 2,
-                        right: 8,
-                        fontSize: 9,
-                        color: "#8b6f47",
-                        fontWeight: 600,
-                        background: "rgba(255,255,255,0.8)",
-                        padding: "1px 6px",
-                        borderRadius: 4,
-                      }}>탭하여 크게 보기</div>
+                      >미리보기</button>
                     </div>
                   </>
                 ) : (
@@ -2992,7 +2990,7 @@ export function BulletinPage() {
                     >
                       <div
                         className="bulletin bulletin-preview-inner bulletin-page-content"
-                        dangerouslySetInnerHTML={{ __html: mobileCellRef.current?.innerHTML ?? "" }}
+                        dangerouslySetInnerHTML={{ __html: extractMobileCellHTML(db, mobileEditSection, printFormat, outputMode) }}
                         style={{
                           width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
                           transform: `scale(${Math.min(1, (typeof window !== "undefined" ? window.innerWidth - 64 : 314) / (printFormat === "fold3" || printFormat === "fold2" ? 378 : 595))})`,
