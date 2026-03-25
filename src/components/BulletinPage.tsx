@@ -2791,30 +2791,28 @@ export function BulletinPage() {
                   }}
                     style={{ padding: "4px 12px", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 12, cursor: "pointer" }}>맞춤</button>
                 </div>
+                <div style={{
+                  flexShrink: 0,
+                  height: "30vh",
+                  overflow: "auto",
+                  background: "#f9fafb",
+                  borderBottom: "1px solid #e5e7eb",
+                  padding: "4px",
+                }}>
+                  <div
+                    ref={mobileCellRef}
+                    className="bulletin bulletin-preview-inner bulletin-page-content"
+                    style={{
+                      padding: 16,
+                      minHeight: 300,
+                      width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
+                      transform: `scale(${mobilePreviewScale})`,
+                      transformOrigin: "top left",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
                 <div className="mobile-edit-scroll" style={{ flex: 1, overflowY: "auto", padding: "6px 4px", minHeight: 0 }}>
-                  <div style={{
-                    width: "100%",
-                    background: "#f9fafb",
-                    borderRadius: 8,
-                    overflowY: "auto",
-                    overflowX: "hidden",
-                    marginBottom: 8,
-                    border: "1px solid #e5e7eb",
-                    maxHeight: "50vh",
-                  }}>
-                    <div
-                      ref={mobileCellRef}
-                      className="bulletin bulletin-preview-inner bulletin-page-content"
-                      style={{
-                        padding: 16,
-                        minHeight: 300,
-                        width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
-                        transform: `scale(${mobilePreviewScale})`,
-                        transformOrigin: "top left",
-                        boxSizing: "border-box",
-                      }}
-                    />
-                  </div>
                   <div style={{
                     fontSize: 12,
                     fontWeight: 700,
