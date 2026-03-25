@@ -1202,8 +1202,7 @@ export function BulletinPage() {
   const [mobileCellHTML, setMobileCellHTML] = useState("");
   const [mobileKbOpen, setMobileKbOpen] = useState(false);
   const [mobilePreviewOverlay, setMobilePreviewOverlay] = useState(false);
-  const [kbFocusIndex, setKbFocusIndex] = useState(-1);
-  const [kbInputTick, setKbInputTick] = useState(0);
+  const [kbFocusLabel, setKbFocusLabel] = useState("");
 
   function getTouchDist(e: React.TouchEvent) {
     const [a, b] = [e.touches[0], e.touches[1]];
@@ -1223,7 +1222,7 @@ export function BulletinPage() {
 
   useEffect(() => {
     if (!mobileKbOpen) {
-      setKbFocusIndex(-1);
+      setKbFocusLabel("");
       setMobilePreviewOverlay(false);
     }
   }, [mobileKbOpen]);
@@ -1274,24 +1273,20 @@ export function BulletinPage() {
       const target = e.target as HTMLElement;
       if (!target || !["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
 
-      const fields = scrollArea.querySelectorAll("input, textarea, select");
-      const idx = Array.from(fields).indexOf(target);
-      setKbFocusIndex(idx);
+      const parent = target.closest("div");
+      const ph = "placeholder" in target ? (target as HTMLInputElement | HTMLTextAreaElement).placeholder : "";
+      const label = parent?.previousElementSibling?.textContent?.trim()
+        || ph
+        || "";
+      setKbFocusLabel(label);
 
       setTimeout(() => {
         target.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 300);
     };
 
-    const bumpTick = () => setKbInputTick((t) => t + 1);
     scrollArea.addEventListener("focusin", handleFocus);
-    scrollArea.addEventListener("input", bumpTick, true);
-    scrollArea.addEventListener("change", bumpTick, true);
-    return () => {
-      scrollArea.removeEventListener("focusin", handleFocus);
-      scrollArea.removeEventListener("input", bumpTick, true);
-      scrollArea.removeEventListener("change", bumpTick, true);
-    };
+    return () => scrollArea.removeEventListener("focusin", handleFocus);
   }, [mob, activeSub]);
 
   const editDisplaySections = useMemo(() => {
@@ -2868,78 +2863,35 @@ export function BulletinPage() {
                 </div>
                 </>)}
                 {mobileKbOpen ? (
-                  <div
-                    data-input-tick={kbInputTick}
-                    style={{
-                      flexShrink: 0,
-                      width: "100%",
-                      background: "#f9fafb",
-                      borderBottom: "1px solid #e5e7eb",
-                      padding: "6px 10px",
-                      fontSize: 13,
-                      color: "#374151",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
-                      <button
-                        type="button"
-                        onClick={() => setMobilePreviewOverlay(true)}
-                        style={{
-                          fontSize: 11,
-                          color: "#8b6f47",
-                          background: "none",
-                          border: "1px solid #8b6f47",
-                          borderRadius: 4,
-                          padding: "2px 8px",
-                          cursor: "pointer",
-                        }}
-                      >미리보기</button>
-                    </div>
-                    {(() => {
-                      const scrollArea = document.querySelector(".mobile-edit-scroll");
-                      if (!scrollArea) return null;
-                      const fields = scrollArea.querySelectorAll("input, textarea, select");
-                      if (fields.length === 0 || kbFocusIndex < 0) return null;
-
-                      const getFieldInfo = (idx: number) => {
-                        if (idx < 0 || idx >= fields.length) return null;
-                        const f = fields[idx] as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-                        const ph = f instanceof HTMLSelectElement ? "" : f.placeholder;
-                        const wrapper = f.closest("div");
-                        const label = wrapper?.previousElementSibling?.textContent
-                          || wrapper?.querySelector("label")?.textContent
-                          || ph
-                          || f.name
-                          || `필드 ${idx + 1}`;
-                        const val = f.value || ph || "";
-                        return { label: label.trim(), val: val.substring(0, 30) };
-                      };
-
-                      const prev = getFieldInfo(kbFocusIndex - 1);
-                      const curr = getFieldInfo(kbFocusIndex);
-                      const next = getFieldInfo(kbFocusIndex + 1);
-
-                      return (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          {prev && (
-                            <div style={{ fontSize: 11, color: "#9ca3af", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                              {prev.label}: {prev.val}
-                            </div>
-                          )}
-                          {curr && (
-                            <div style={{ fontSize: 13, color: "#111827", fontWeight: 700, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", background: "#e0d5c5", borderRadius: 4, padding: "2px 6px", margin: "1px 0" }}>
-                              ▶ {curr.label}: {curr.val}
-                            </div>
-                          )}
-                          {next && (
-                            <div style={{ fontSize: 11, color: "#9ca3af", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                              {next.label}: {next.val}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
+                  <div style={{
+                    flexShrink: 0,
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    background: "#f9fafb",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "8px 12px",
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#8b6f47" }}>
+                      {kbFocusLabel || "입력 중..."}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setMobilePreviewOverlay(true)}
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#fff",
+                        background: "#8b6f47",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      미리보기
+                    </button>
                   </div>
                 ) : (
                 <div
