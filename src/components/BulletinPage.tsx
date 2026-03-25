@@ -1199,11 +1199,28 @@ export function BulletinPage() {
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const pinchStartRef = useRef({ dist: 0, scale: 1 });
   const mobileCellRef = useRef<HTMLDivElement>(null);
+  const [mobileKbOpen, setMobileKbOpen] = useState(false);
+  const [mobilePreviewOverlay, setMobilePreviewOverlay] = useState(false);
 
   function getTouchDist(e: React.TouchEvent) {
     const [a, b] = [e.touches[0], e.touches[1]];
     return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
   }
+
+  useEffect(() => {
+    if (!mob) return;
+    const onResize = () => {
+      if (!window.visualViewport) return;
+      const ratio = window.visualViewport.height / window.innerHeight;
+      setMobileKbOpen(ratio < 0.75);
+    };
+    window.visualViewport?.addEventListener("resize", onResize);
+    return () => window.visualViewport?.removeEventListener("resize", onResize);
+  }, [mob]);
+
+  useEffect(() => {
+    if (!mobileKbOpen) setMobilePreviewOverlay(false);
+  }, [mobileKbOpen]);
 
   useEffect(() => {
     setMobileEditSection("cover");
@@ -2510,6 +2527,7 @@ export function BulletinPage() {
           {activeSub === "edit" && (
             mob ? (
               <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", minHeight: 0 }}>
+                {!mobileKbOpen && (<>
                 <div style={{ flexShrink: 0, borderBottom: "1px solid #e5e7eb" }}>
                   <button type="button" onClick={() => setMobileDesignOpen(v => !v)}
                     style={{
@@ -2802,6 +2820,38 @@ export function BulletinPage() {
                   }}
                     style={{ padding: "4px 12px", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 12, cursor: "pointer" }}>맞춤</button>
                 </div>
+                </>)}
+                {mobileKbOpen ? (
+                  <div
+                    onClick={() => setMobilePreviewOverlay(true)}
+                    style={{
+                      position: "fixed",
+                      top: 60,
+                      right: 8,
+                      width: 80,
+                      height: 100,
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      border: "2px solid #8b6f47",
+                      background: "#f9fafb",
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
+                      zIndex: 100,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      ref={mobileCellRef}
+                      className="bulletin bulletin-preview-inner bulletin-page-content"
+                      style={{
+                        padding: 4,
+                        width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
+                        transform: "scale(0.18)",
+                        transformOrigin: "top left",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  </div>
+                ) : (
                 <div
                   style={{
                     flexShrink: 0,
@@ -2848,6 +2898,7 @@ export function BulletinPage() {
                     }}
                   />
                 </div>
+                )}
                 <div className="mobile-edit-scroll" style={{ flex: 1, overflowY: "auto", padding: "6px 4px", minHeight: 0 }}>
                   <div style={{
                     fontSize: 12,
@@ -2878,6 +2929,43 @@ export function BulletinPage() {
                     })}
                   </div>
                 </div>
+                {mobilePreviewOverlay && (
+                  <div
+                    onClick={() => setMobilePreviewOverlay(false)}
+                    style={{
+                      position: "fixed",
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      background: "rgba(0,0,0,0.6)",
+                      zIndex: 200,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 16,
+                    }}
+                  >
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        background: "#fff",
+                        borderRadius: 12,
+                        padding: 12,
+                        maxWidth: "90vw",
+                        maxHeight: "70vh",
+                        overflow: "auto",
+                      }}
+                    >
+                      <div
+                        className="bulletin bulletin-preview-inner bulletin-page-content"
+                        dangerouslySetInnerHTML={{ __html: mobileCellRef.current?.innerHTML ?? "" }}
+                        style={{
+                          width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
+                          transform: `scale(${Math.min(1, (typeof window !== "undefined" ? window.innerWidth - 64 : 314) / (printFormat === "fold3" || printFormat === "fold2" ? 378 : 595))})`,
+                          transformOrigin: "top left",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
             <div className="flex" style={{ height: "calc(100vh - 120px)", minHeight: 0, gap: 20, flexDirection: "row" }}>
