@@ -2823,82 +2823,41 @@ export function BulletinPage() {
                 </>)}
                 {mobileKbOpen ? (
                   <>
-                    <div style={{
-                      display: "flex",
-                      flexShrink: 0,
-                      height: 120,
-                      borderBottom: "1px solid #e5e7eb",
-                      background: "#f9fafb",
-                    }}>
+                    <div
+                      onClick={() => setMobilePreviewOverlay(true)}
+                      style={{
+                        flexShrink: 0,
+                        width: "100%",
+                        height: 110,
+                        overflow: "hidden",
+                        background: "#f9fafb",
+                        borderBottom: "1px solid #e5e7eb",
+                        position: "relative",
+                        cursor: "pointer",
+                      }}
+                    >
                       <div
-                        onClick={() => setMobilePreviewOverlay(true)}
+                        ref={mobileCellRef}
+                        className="bulletin bulletin-preview-inner bulletin-page-content"
                         style={{
-                          width: 140,
-                          height: 120,
-                          flexShrink: 0,
-                          overflow: "hidden",
-                          borderRight: "1px solid #e5e7eb",
-                          position: "relative",
-                          cursor: "pointer",
+                          padding: 4,
+                          width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
+                          transform: `scale(${((typeof window !== "undefined" ? window.innerWidth : 400) / (printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595)).toFixed(2)})`,
+                          transformOrigin: "top left",
+                          pointerEvents: "none",
                         }}
-                      >
-                        <div
-                          ref={mobileCellRef}
-                          className="bulletin bulletin-preview-inner bulletin-page-content"
-                          style={{
-                            padding: 4,
-                            width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
-                            transform: "scale(0.32)",
-                            transformOrigin: "top left",
-                            pointerEvents: "none",
-                          }}
-                        />
-                        <div style={{
-                          position: "absolute",
-                          bottom: 4,
-                          left: 0,
-                          right: 0,
-                          textAlign: "center",
-                          fontSize: 9,
-                          color: "#8b6f47",
-                          fontWeight: 600,
-                        }}>탭하여 크게 보기</div>
-                      </div>
+                      />
                       <div style={{
-                        flex: 1,
-                        padding: "8px 10px",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        gap: 4,
-                      }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>
-                          {editDisplaySections.find(s => s.key === mobileEditSection)?.name ?? ""}
-                        </div>
-                        <div style={{ fontSize: 11, color: "#6b7280" }}>
-                          {printFormat === "fold3" ? "6면" : "4면"} · {outputMode === "print" ? "인쇄용" : "카카오"}
-                        </div>
-                        <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
-                          {editDisplaySections.map(item => (
-                            <button
-                              key={item.key}
-                              type="button"
-                              onClick={() => setMobileEditSection(item.key)}
-                              style={{
-                                padding: "2px 6px",
-                                fontSize: 9,
-                                fontWeight: mobileEditSection === item.key ? 700 : 400,
-                                color: mobileEditSection === item.key ? "#8b6f47" : "#9ca3af",
-                                background: mobileEditSection === item.key ? "#f5f0e8" : "transparent",
-                                border: "none",
-                                borderRadius: 4,
-                                cursor: "pointer",
-                                whiteSpace: "nowrap",
-                              }}
-                            >{item.name.replace(/^[①-⑩]\s*/, "").slice(0, 3)}</button>
-                          ))}
-                        </div>
-                      </div>
+                        position: "absolute",
+                        bottom: 2,
+                        right: 8,
+                        fontSize: 9,
+                        color: "#8b6f47",
+                        fontWeight: 600,
+                        background: "rgba(255,255,255,0.8)",
+                        padding: "1px 6px",
+                        borderRadius: 4,
+                      }}>탭하여 크게 보기</div>
                     </div>
                   </>
                 ) : (
