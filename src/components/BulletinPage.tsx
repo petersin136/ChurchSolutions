@@ -1199,6 +1199,7 @@ export function BulletinPage() {
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const pinchStartRef = useRef({ dist: 0, scale: 1 });
   const mobileCellRef = useRef<HTMLDivElement>(null);
+  const [mobileCellHTML, setMobileCellHTML] = useState("");
   const [mobileKbOpen, setMobileKbOpen] = useState(false);
   const [mobilePreviewOverlay, setMobilePreviewOverlay] = useState(false);
 
@@ -1244,9 +1245,9 @@ export function BulletinPage() {
   }, [mob, activeSub, outputMode, mobileEditSection, printFormat]);
 
   useEffect(() => {
-    if (!mob || activeSub !== "edit" || !mobileCellRef.current) return;
-    mobileCellRef.current.innerHTML = extractMobileCellHTML(db, mobileEditSection, printFormat, outputMode);
-  }, [mob, activeSub, db, mobileEditSection, printFormat, outputMode, mobileKbOpen]);
+    if (!mob || activeSub !== "edit") return;
+    setMobileCellHTML(extractMobileCellHTML(db, mobileEditSection, printFormat, outputMode));
+  }, [mob, activeSub, db, mobileEditSection, printFormat, outputMode]);
 
   useEffect(() => {
     if (!mob || !mobileKbOpen) return;
@@ -2856,35 +2857,36 @@ export function BulletinPage() {
                 </div>
                 </>)}
                 {mobileKbOpen ? (
-                  <>
-                    <div style={{
+                  <div
+                    onClick={() => setMobilePreviewOverlay(true)}
+                    style={{
                       flexShrink: 0,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "4px 10px",
-                      background: "#f5f0e8",
+                      width: "100%",
+                      height: 80,
+                      overflow: "hidden",
+                      background: "#f9fafb",
                       borderBottom: "1px solid #e5e7eb",
-                      height: 32,
-                    }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "#8b6f47" }}>
-                        {editDisplaySections.find(s => s.key === mobileEditSection)?.name ?? ""}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setMobilePreviewOverlay(true)}
-                        style={{
-                          fontSize: 11,
-                          color: "#8b6f47",
-                          background: "none",
-                          border: "1px solid #8b6f47",
-                          borderRadius: 4,
-                          padding: "2px 8px",
-                          cursor: "pointer",
-                        }}
-                      >미리보기</button>
-                    </div>
-                  </>
+                      position: "relative",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      className="bulletin bulletin-preview-inner bulletin-page-content"
+                      dangerouslySetInnerHTML={{ __html: mobileCellHTML }}
+                      style={{
+                        padding: 4,
+                        width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
+                        transform: `scale(${((typeof window !== "undefined" ? window.innerWidth : 400) / (printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595)).toFixed(3)})`,
+                        transformOrigin: "top left",
+                        pointerEvents: "none",
+                      }}
+                    />
+                    <div style={{
+                      position: "absolute", bottom: 2, right: 8,
+                      fontSize: 9, color: "#8b6f47", fontWeight: 600,
+                      background: "rgba(255,255,255,0.8)", padding: "1px 6px", borderRadius: 4,
+                    }}>탭하여 크게 보기</div>
+                  </div>
                 ) : (
                 <div
                   style={{
@@ -2922,13 +2924,14 @@ export function BulletinPage() {
                   <div
                     ref={mobileCellRef}
                     className="bulletin bulletin-preview-inner bulletin-page-content"
+                    dangerouslySetInnerHTML={{ __html: mobileCellHTML }}
                     style={{
-                      padding: 16,
-                      minHeight: 300,
+                      padding: 4,
                       width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
                       transform: `translate(${mobilePan.x}px, ${mobilePan.y}px) scale(${mobilePreviewScale})`,
                       transformOrigin: "top left",
                       boxSizing: "border-box",
+                      minHeight: 300,
                     }}
                   />
                 </div>
@@ -2968,13 +2971,12 @@ export function BulletinPage() {
                     onClick={() => setMobilePreviewOverlay(false)}
                     style={{
                       position: "fixed",
-                      top: 0, left: 0, right: 0, bottom: 0,
+                      inset: 0,
                       background: "rgba(0,0,0,0.6)",
-                      zIndex: 200,
+                      zIndex: 9999,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      padding: 16,
                     }}
                   >
                     <div
@@ -2982,18 +2984,18 @@ export function BulletinPage() {
                       style={{
                         background: "#fff",
                         borderRadius: 12,
-                        padding: 12,
-                        maxWidth: "90vw",
-                        maxHeight: "70vh",
+                        padding: 8,
+                        maxWidth: "95vw",
+                        maxHeight: "85vh",
                         overflow: "auto",
                       }}
                     >
                       <div
                         className="bulletin bulletin-preview-inner bulletin-page-content"
-                        dangerouslySetInnerHTML={{ __html: extractMobileCellHTML(db, mobileEditSection, printFormat, outputMode) }}
+                        dangerouslySetInnerHTML={{ __html: mobileCellHTML }}
                         style={{
                           width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
-                          transform: `scale(${Math.min(1, (typeof window !== "undefined" ? window.innerWidth - 64 : 314) / (printFormat === "fold3" || printFormat === "fold2" ? 378 : 595))})`,
+                          transform: `scale(${((typeof window !== "undefined" ? Math.min(window.innerWidth * 0.9, 600) : 380) / (printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595)).toFixed(3)})`,
                           transformOrigin: "top left",
                         }}
                       />
