@@ -2504,7 +2504,7 @@ export function BulletinPage() {
                 <div style={{ flexShrink: 0, borderBottom: "1px solid #e5e7eb" }}>
                   <button type="button" onClick={() => setMobileDesignOpen(v => !v)}
                     style={{
-                      width: "100%", display: "flex", justifyContent: "center", alignItems: "center",
+                      display: "flex", justifyContent: "center", alignItems: "center",
                       gap: 8, padding: "6px 0", background: mobileDesignOpen ? "#8b6f47" : "#111827", border: "none",
                       borderRadius: 6, fontSize: 13, fontWeight: 600, color: "#fff", cursor: "pointer",
                       margin: "0 6px", width: "calc(100% - 12px)",
