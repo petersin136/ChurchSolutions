@@ -1199,10 +1199,8 @@ export function BulletinPage() {
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const pinchStartRef = useRef({ dist: 0, scale: 1 });
   const mobileCellRef = useRef<HTMLDivElement>(null);
-  const [mobileCellHTML, setMobileCellHTML] = useState("");
   const [mobileKbOpen, setMobileKbOpen] = useState(false);
   const [mobilePreviewOverlay, setMobilePreviewOverlay] = useState(false);
-  const [kbFocusLabel, setKbFocusLabel] = useState("");
 
   function getTouchDist(e: React.TouchEvent) {
     const [a, b] = [e.touches[0], e.touches[1]];
@@ -1221,10 +1219,7 @@ export function BulletinPage() {
   }, [mob]);
 
   useEffect(() => {
-    if (!mobileKbOpen) {
-      setKbFocusLabel("");
-      setMobilePreviewOverlay(false);
-    }
+    if (!mobileKbOpen) setMobilePreviewOverlay(false);
   }, [mobileKbOpen]);
 
   useEffect(() => {
@@ -1249,9 +1244,9 @@ export function BulletinPage() {
   }, [mob, activeSub, outputMode, mobileEditSection, printFormat]);
 
   useEffect(() => {
-    if (!mob || activeSub !== "edit") return;
-    setMobileCellHTML(extractMobileCellHTML(db, mobileEditSection, printFormat, outputMode));
-  }, [mob, activeSub, db, mobileEditSection, printFormat, outputMode]);
+    if (!mob || activeSub !== "edit" || !mobileCellRef.current) return;
+    mobileCellRef.current.innerHTML = extractMobileCellHTML(db, mobileEditSection, printFormat, outputMode);
+  }, [mob, activeSub, db, mobileEditSection, printFormat, outputMode, mobileKbOpen]);
 
   useEffect(() => {
     if (!mob || !mobileKbOpen) return;
@@ -1266,25 +1261,16 @@ export function BulletinPage() {
 
   useEffect(() => {
     if (!mob) return;
-    const scrollArea = document.querySelector(".mobile-edit-scroll") as HTMLElement | null;
+    const scrollArea = document.querySelector(".mobile-edit-scroll");
     if (!scrollArea) return;
-
     const handleFocus = (e: Event) => {
       const target = e.target as HTMLElement;
-      if (!target || !["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
-
-      const parent = target.closest("div");
-      const ph = "placeholder" in target ? (target as HTMLInputElement | HTMLTextAreaElement).placeholder : "";
-      const label = parent?.previousElementSibling?.textContent?.trim()
-        || ph
-        || "";
-      setKbFocusLabel(label);
-
-      setTimeout(() => {
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 300);
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") {
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 350);
+      }
     };
-
     scrollArea.addEventListener("focusin", handleFocus);
     return () => scrollArea.removeEventListener("focusin", handleFocus);
   }, [mob, activeSub]);
@@ -2863,36 +2849,44 @@ export function BulletinPage() {
                 </div>
                 </>)}
                 {mobileKbOpen ? (
-                  <div style={{
-                    flexShrink: 0,
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    background: "#f9fafb",
-                    borderBottom: "1px solid #e5e7eb",
-                    padding: "8px 12px",
-                  }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#8b6f47" }}>
-                      {kbFocusLabel || "입력 중..."}
-                    </span>
-                    <button
-                      type="button"
+                  <>
+                    <div
                       onClick={() => setMobilePreviewOverlay(true)}
                       style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#fff",
-                        background: "#8b6f47",
-                        border: "none",
-                        borderRadius: 4,
-                        padding: "4px 10px",
+                        flexShrink: 0,
+                        width: "100%",
+                        height: 80,
+                        overflow: "hidden",
+                        background: "#f9fafb",
+                        borderBottom: "1px solid #e5e7eb",
+                        position: "relative",
                         cursor: "pointer",
                       }}
                     >
-                      미리보기
-                    </button>
-                  </div>
+                      <div
+                        ref={mobileCellRef}
+                        className="bulletin bulletin-preview-inner bulletin-page-content"
+                        style={{
+                          padding: 4,
+                          width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
+                          transform: `scale(${((typeof window !== "undefined" ? window.innerWidth : 400) / (printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595)).toFixed(2)})`,
+                          transformOrigin: "top left",
+                          pointerEvents: "none",
+                        }}
+                      />
+                      <div style={{
+                        position: "absolute",
+                        bottom: 2,
+                        right: 8,
+                        fontSize: 9,
+                        color: "#8b6f47",
+                        fontWeight: 600,
+                        background: "rgba(255,255,255,0.8)",
+                        padding: "1px 6px",
+                        borderRadius: 4,
+                      }}>탭하여 크게 보기</div>
+                    </div>
+                  </>
                 ) : (
                 <div
                   style={{
@@ -2930,14 +2924,13 @@ export function BulletinPage() {
                   <div
                     ref={mobileCellRef}
                     className="bulletin bulletin-preview-inner bulletin-page-content"
-                    dangerouslySetInnerHTML={{ __html: mobileCellHTML }}
                     style={{
-                      padding: 4,
+                      padding: 16,
+                      minHeight: 300,
                       width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
                       transform: `translate(${mobilePan.x}px, ${mobilePan.y}px) scale(${mobilePreviewScale})`,
                       transformOrigin: "top left",
                       boxSizing: "border-box",
-                      minHeight: 300,
                     }}
                   />
                 </div>
@@ -2977,12 +2970,13 @@ export function BulletinPage() {
                     onClick={() => setMobilePreviewOverlay(false)}
                     style={{
                       position: "fixed",
-                      inset: 0,
+                      top: 0, left: 0, right: 0, bottom: 0,
                       background: "rgba(0,0,0,0.6)",
-                      zIndex: 9999,
+                      zIndex: 200,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      padding: 16,
                     }}
                   >
                     <div
@@ -2990,18 +2984,18 @@ export function BulletinPage() {
                       style={{
                         background: "#fff",
                         borderRadius: 12,
-                        padding: 8,
-                        maxWidth: "95vw",
-                        maxHeight: "85vh",
+                        padding: 12,
+                        maxWidth: "90vw",
+                        maxHeight: "70vh",
                         overflow: "auto",
                       }}
                     >
                       <div
                         className="bulletin bulletin-preview-inner bulletin-page-content"
-                        dangerouslySetInnerHTML={{ __html: mobileCellHTML }}
+                        dangerouslySetInnerHTML={{ __html: mobileCellRef.current?.innerHTML ?? "" }}
                         style={{
                           width: printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595,
-                          transform: `scale(${((typeof window !== "undefined" ? Math.min(window.innerWidth * 0.9, 600) : 380) / (printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595)).toFixed(3)})`,
+                          transform: `scale(${Math.min(1, (typeof window !== "undefined" ? window.innerWidth - 64 : 314) / (printFormat === "fold3" || printFormat === "fold2" ? 378 : 595))})`,
                           transformOrigin: "top left",
                         }}
                       />
