@@ -356,8 +356,12 @@ function defaultEmptyDB(): BulletinDB {
 }
 
 function getBulletinStorageKey(): string {
-  const cid = getChurchId();
-  return cid ? `bulletin_db_${cid}` : "bulletin_db";
+  try {
+    const cid = getChurchId();
+    return cid ? `bulletin_db_${cid}` : "bulletin_db";
+  } catch {
+    return "bulletin_db";
+  }
 }
 function loadBulletin(): BulletinDB {
   if (typeof window === "undefined") return defaultEmptyDB();
