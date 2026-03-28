@@ -303,6 +303,10 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
       if (photoFile && memberId) {
         const path = `${memberId}.jpg`;
         const { error: upErr } = await supabase.storage.from("member-photos").upload(path, photoFile, { upsert: true, contentType: photoFile.type });
+        if (upErr) {
+          console.error("=== 이미지 업로드 실패 ===", upErr.message, upErr);
+          alert("이미지 업로드 실패: " + upErr.message);
+        }
         if (!upErr) {
           const { data: signed } = await supabase.storage.from("member-photos").createSignedUrl(path, 60 * 60 * 24 * 365);
           if (signed?.signedUrl) {

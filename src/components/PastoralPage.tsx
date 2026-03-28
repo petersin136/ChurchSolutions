@@ -1054,40 +1054,40 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         </div>
         {mob ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, width: "100%" }}>
-            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ flex: "1 1 80px", height: 36, width: "auto", fontSize: 12 }}>
+            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ flex: "0 1 auto", height: 36, width: "auto", fontSize: 12 }}>
               <option value="all">부서</option>
               {depts.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ flex: "1 1 80px", height: 36, width: "auto", fontSize: 12 }}>
+            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ flex: "0 1 auto", height: 36, width: "auto", fontSize: 12 }}>
               <option value="all">전체 상태</option>
               {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
             </select>
-            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer" }}><input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} /> 새가족</label>
-            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer" }}><input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} /> 관심성도</label>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} /> 새가족</label>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} /> 관심성도</label>
             <SBadge variant="accent">{filtered.length}명</SBadge>
             <Btn onClick={() => openMemberModal()} icon={<Icons.Plus />}>새 교인 등록</Btn>
           </div>
         ) : (
           <>
-            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
+            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
               <option value="all">부서</option>
               {depts.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-            <select value={roleF} onChange={e => { setRoleF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
+            <select value={roleF} onChange={e => { setRoleF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
               <option value="all">직분</option>
               {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
-            <select value={mokjangF} onChange={e => { setMokjangF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
+            <select value={mokjangF} onChange={e => { setMokjangF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
               <option value="all">목장</option>
               {mokjangList.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
-            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
+            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
               <option value="all">전체 상태</option>
               {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
             </select>
             <label style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} /> 새가족</label>
             <label style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} /> 관심성도</label>
-            <select value={baptismF} onChange={e => { setBaptismF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 100 }}>
+            <select value={baptismF} onChange={e => { setBaptismF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
               <option value="all">전체</option>
               {baptismOptions.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
             </select>
@@ -1221,9 +1221,16 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       {/* ─── 테이블 목록 뷰 ─── */}
       {viewMode === "list" && (
         <>
+          {mob && (
+            <style>{`
+              .pastoral-list-table td { padding: 6px 8px !important; }
+              .pastoral-list-table th { padding: 8px 8px !important; }
+              .pastoral-list-table .member-avatar { width: 30px !important; height: 30px !important; }
+            `}</style>
+          )}
           <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <table className="pastoral-list-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? 12 : 14 }}>
                 <thead>
                   <tr style={{ background: C.bg }}>
                     <th style={{ padding: "12px 8px", width: 40, textAlign: "center", fontWeight: 600, fontSize: 13, color: C.navy, borderBottom: `1px solid ${C.border}` }}><input type="checkbox" checked={filtered.length > 0 && selectedMemberIds.size === filtered.length} onChange={e => { if (e.target.checked) selectAllFiltered(); else clearSelection(); }} onClick={e => e.stopPropagation()} /></th>
@@ -1257,7 +1264,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                         </td>
                         <td style={{ padding: "12px 16px", minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                            <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
+                            <div className="member-avatar" style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
                               {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
                             </div>
                             <div style={{ minWidth: 0 }}><div style={{ fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div><div style={{ fontSize: 12, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
