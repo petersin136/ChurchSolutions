@@ -270,7 +270,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
       };
       let memberId: string;
       const currentChurchId = getChurchId();
-      console.log("=== [MemberForm] church_id 확인 ===", currentChurchId, "| localStorage:", localStorage.getItem("church_solution_church_id"), "| env:", process.env.NEXT_PUBLIC_CHURCH_ID);
+      console.log("=== [MemberForm] church_id 확인 ===", currentChurchId, "| localStorage:", localStorage.getItem("church_solution_church_id"));
       if (!currentChurchId) {
         alert("church_id가 없습니다. 로그인 상태를 확인해주세요.");
         throw new Error("church_id is empty");

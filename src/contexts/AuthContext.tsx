@@ -145,11 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setChurchId(null);
         setChurchName(null);
-        const envId = process.env.NEXT_PUBLIC_CHURCH_ID;
-        if (envId && envId !== "undefined" && envId !== "null") {
-          console.log("[AuthContext] churchId 상태만 env 사용 (localStorage 미저장):", envId);
-          setChurchId(envId);
-        }
+        console.log("[AuthContext] church_users 미등록 유저 — churchId null 유지");
       } else {
         console.warn("[AuthContext] DB 조회 실패 — 캐시된 churchId 유지");
       }
@@ -183,10 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setChurchId(null);
         setChurchName(null);
-        const envId = process.env.NEXT_PUBLIC_CHURCH_ID;
-        if (envId && envId !== "undefined" && envId !== "null") {
-          setChurchId(envId);
-        }
+        console.log("[AuthContext] 세션 없음 — churchId null 유지");
       }
       if (!cancelled) {
         console.log("[Auth] setLoading(false) 실행");

@@ -6,8 +6,8 @@ let _loggedOnce = false;
 const isBrowser = typeof window !== "undefined";
 
 /**
- * 우선순위: 1) localStorage (church_solution_church_id) — 로그인 시 AuthContext가 저장
- *          2) NEXT_PUBLIC_CHURCH_ID — fallback. localStorage에 값이 있으면 환경변수는 무시.
+ * localStorage (church_solution_church_id) — 로그인 시 AuthContext가 저장.
+ * 없으면 에러 (환경변수로 교회 ID를 주입하지 않음).
  */
 export function getChurchId(): string {
   if (isBrowser) {
@@ -25,22 +25,8 @@ export function getChurchId(): string {
     }
   }
 
-  const id = process.env.NEXT_PUBLIC_CHURCH_ID;
-  if (!id || id === "undefined" || id === "null") {
-    throw new Error("church_id를 확인할 수 없습니다. 로그인이 필요합니다.");
-  }
-  if (isBrowser) {
-    try {
-      localStorage.setItem(CHURCH_ID_KEY, id);
-    } catch {
-      // silent
-    }
-  }
-  if (!_loggedOnce && isBrowser) {
-    console.log("[tenant] church_id (env fallback, 2순위) =", id);
-    _loggedOnce = true;
-  }
-  return id;
+  console.log("[tenant] localStorage에 church_id 없음 — 로그인 필요");
+  throw new Error("church_id를 확인할 수 없습니다. 로그인이 필요합니다.");
 }
 
 export function withChurchId<T extends Row>(row: T): T & { church_id: string };

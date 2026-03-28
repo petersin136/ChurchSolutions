@@ -147,7 +147,14 @@ export function SettingsPage({
     try {
       setResetLoading(true);
       if (saveDb) {
-        const res = await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope: "all" }) });
+        let cid: string;
+        try {
+          cid = getChurchId();
+        } catch {
+          toast("교회 정보가 없습니다. 로그인 후 다시 시도하세요.", "err");
+          return;
+        }
+        const res = await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope: "all", churchId: cid }) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data?.ok) {
           throw new Error(data?.message || res.statusText || "전체 초기화 요청 실패");
@@ -222,7 +229,14 @@ export function SettingsPage({
       setResetLoading(true);
       const apiScope = name === "members" ? "members" : name === "visits" ? "visits" : name;
       if (saveDb) {
-        const res = await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope: apiScope }) });
+        let cid: string;
+        try {
+          cid = getChurchId();
+        } catch {
+          toast("교회 정보가 없습니다. 로그인 후 다시 시도하세요.", "err");
+          return;
+        }
+        const res = await fetch("/api/reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope: apiScope, churchId: cid }) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data?.ok) throw new Error(data?.message || res.statusText || `${name} 초기화 실패`);
       }

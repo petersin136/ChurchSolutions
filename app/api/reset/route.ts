@@ -3,10 +3,6 @@ import { getServiceSupabase } from "@/lib/supabase";
 
 const MATCH_ALL_ID = "00000000-0000-0000-0000-000000000000";
 
-function getChurchIdForApi(): string | null {
-  return process.env.NEXT_PUBLIC_CHURCH_ID ?? null;
-}
-
 /** 전체 초기화 시 삭제할 테이블 순서 (FK 의존성: 자식 먼저). settings 제외. */
 const ALL_TABLES_IN_ORDER = [
   "school_attendance",
@@ -49,8 +45,8 @@ const TABLE_DELETE_SPECIAL: Record<string, { column: string; value: string | num
   checklist: { column: "week_key", value: "__none__" },
 };
 
-function deleteAllFromTable(sb: ReturnType<typeof getServiceSupabase>, table: string, churchId: string | null) {
-  const base = churchId ? sb.from(table).delete().eq("church_id", churchId) : sb.from(table).delete();
+function deleteAllFromTable(sb: ReturnType<typeof getServiceSupabase>, table: string, churchId: string) {
+  const base = sb.from(table).delete().eq("church_id", churchId);
   const spec = TABLE_DELETE_SPECIAL[table];
   if (spec) return base.neq(spec.column, spec.value);
   return base.neq("id", MATCH_ALL_ID);
@@ -61,9 +57,20 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const scope = body?.scope as string;
+    const rawCid = body?.churchId;
+    const churchId =
+      typeof rawCid === "string" && rawCid.trim() && rawCid !== "null" && rawCid !== "undefined"
+        ? rawCid.trim()
+        : null;
+
+    if (!churchId) {
+      return NextResponse.json(
+        { ok: false, message: "churchId가 필요합니다. 로그인된 교회 컨텍스트에서만 초기화할 수 있습니다." },
+        { status: 400 }
+      );
+    }
 
     const sb = getServiceSupabase();
-    const churchId = getChurchIdForApi();
 
     if (scope === "all") {
       for (const table of ALL_TABLES_IN_ORDER) {
@@ -79,12 +86,12 @@ export async function POST(request: Request) {
     }
 
     if (scope === "members" || scope === "pastoral") {
-      const eq = churchId ? (q: ReturnType<typeof sb.from>) => q.delete().eq("church_id", churchId) : (q: ReturnType<typeof sb.from>) => q.delete();
+      const eq = (q: ReturnType<typeof sb.from>) => q.delete().eq("church_id", churchId);
       const { error: e1 } = await eq(sb.from("member_status_history")).neq("id", MATCH_ALL_ID);
       if (e1) return NextResponse.json({ ok: false, message: `member_status_history: ${e1.message}` }, { status: 500 });
       const { error: e2 } = await eq(sb.from("notes")).neq("member_id", MATCH_ALL_ID);
       if (e2) return NextResponse.json({ ok: false, message: `notes: ${e2.message}` }, { status: 500 });
-      const { error: e3 } = churchId ? await sb.from("attendance").delete().eq("church_id", churchId).gte("week_num", 0) : await sb.from("attendance").delete().gte("week_num", 0);
+      const { error: e3 } = await sb.from("attendance").delete().eq("church_id", churchId).gte("week_num", 0);
       if (e3) return NextResponse.json({ ok: false, message: `attendance: ${e3.message}` }, { status: 500 });
       const { error: e4 } = await eq(sb.from("members")).neq("id", MATCH_ALL_ID);
       if (e4) return NextResponse.json({ ok: false, message: `members: ${e4.message}` }, { status: 500 });
@@ -94,7 +101,7 @@ export async function POST(request: Request) {
     }
 
     if (scope === "finance") {
-      const del = (t: string, col: string, val: string | number) => churchId ? sb.from(t).delete().eq("church_id", churchId).neq(col, val) : sb.from(t).delete().neq(col, val);
+      const del = (t: string, col: string, val: string | number) => sb.from(t).delete().eq("church_id", churchId).neq(col, val);
       const { error: e1 } = await del("special_account_transactions", "id", MATCH_ALL_ID);
       if (e1) return NextResponse.json({ ok: false, message: `special_account_transactions: ${e1.message}` }, { status: 500 });
       const { error: e2 } = await del("special_accounts", "id", MATCH_ALL_ID);
@@ -103,13 +110,13 @@ export async function POST(request: Request) {
       if (e3) return NextResponse.json({ ok: false, message: `income: ${e3.message}` }, { status: 500 });
       const { error: e4 } = await del("expense", "id", MATCH_ALL_ID);
       if (e4) return NextResponse.json({ ok: false, message: `expense: ${e4.message}` }, { status: 500 });
-      const { error: e5 } = churchId ? await sb.from("budget").delete().eq("church_id", churchId).neq("fiscal_year", "__none__") : await sb.from("budget").delete().neq("fiscal_year", "__none__");
+      const { error: e5 } = await sb.from("budget").delete().eq("church_id", churchId).neq("fiscal_year", "__none__");
       if (e5) return NextResponse.json({ ok: false, message: `budget: ${e5.message}` }, { status: 500 });
       return NextResponse.json({ ok: true, scope: "finance" });
     }
 
     if (scope === "visits") {
-      const eq = churchId ? (q: ReturnType<typeof sb.from>) => q.delete().eq("church_id", churchId) : (q: ReturnType<typeof sb.from>) => q.delete();
+      const eq = (q: ReturnType<typeof sb.from>) => q.delete().eq("church_id", churchId);
       const { error: e1 } = await eq(sb.from("notes")).neq("member_id", MATCH_ALL_ID);
       if (e1) return NextResponse.json({ ok: false, message: `notes: ${e1.message}` }, { status: 500 });
       const { error: e2 } = await eq(sb.from("visits")).neq("id", MATCH_ALL_ID);
@@ -118,7 +125,7 @@ export async function POST(request: Request) {
     }
 
     if (scope === "attendance") {
-      const { error } = churchId ? await sb.from("attendance").delete().eq("church_id", churchId).gte("week_num", 0) : await sb.from("attendance").delete().gte("week_num", 0);
+      const { error } = await sb.from("attendance").delete().eq("church_id", churchId).gte("week_num", 0);
       if (error) return NextResponse.json({ ok: false, message: `attendance: ${error.message}` }, { status: 500 });
       return NextResponse.json({ ok: true, scope: "attendance" });
     }
@@ -133,14 +140,14 @@ export async function POST(request: Request) {
     }
 
     if (scope === "new_family") {
-      const q = churchId ? sb.from("new_family_program").delete().eq("church_id", churchId) : sb.from("new_family_program").delete();
+      const q = sb.from("new_family_program").delete().eq("church_id", churchId);
       const { error } = await q.neq("id", MATCH_ALL_ID);
       if (error) return NextResponse.json({ ok: false, message: `new_family_program: ${error.message}` }, { status: 500 });
       return NextResponse.json({ ok: true, scope: "new_family" });
     }
 
     if (scope === "planner") {
-      const eq = churchId ? (t: string) => sb.from(t).delete().eq("church_id", churchId) : (t: string) => sb.from(t).delete();
+      const eq = (t: string) => sb.from(t).delete().eq("church_id", churchId);
       const { error: e1 } = await eq("plans").neq("id", MATCH_ALL_ID);
       if (e1) return NextResponse.json({ ok: false, message: `plans: ${e1.message}` }, { status: 500 });
       const { error: e2 } = await eq("sermons").neq("id", MATCH_ALL_ID);
@@ -153,7 +160,7 @@ export async function POST(request: Request) {
     }
 
     if (scope === "messaging") {
-      const eq = churchId ? (t: string) => sb.from(t).delete().eq("church_id", churchId) : (t: string) => sb.from(t).delete();
+      const eq = (t: string) => sb.from(t).delete().eq("church_id", churchId);
       const { error: e1 } = await eq("message_logs").neq("id", MATCH_ALL_ID);
       if (e1) return NextResponse.json({ ok: false, message: `message_logs: ${e1.message}` }, { status: 500 });
       const { error: e2 } = await eq("frequent_groups").neq("id", MATCH_ALL_ID);

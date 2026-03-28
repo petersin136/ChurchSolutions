@@ -1194,7 +1194,6 @@ export function BulletinPage() {
   const dashRafRef = useRef<number | null>(null);
   const [showFullPreview, setShowFullPreview] = useState(false);
   const [fullPreviewHtml, setFullPreviewHtml] = useState("");
-  const [showDashPanelMobile, setShowDashPanelMobile] = useState(false);
   const [showFormatPanel, setShowFormatPanel] = useState(false);
   const [mobileDesignOpen, setMobileDesignOpen] = useState(false);
   const [mobileEditSection, setMobileEditSection] = useState<string>("cover");
@@ -1428,6 +1427,33 @@ export function BulletinPage() {
       el.style.transform = `translate3d(${dashPanRef.current.x}px, ${dashPanRef.current.y}px, 0) scale(${dashPreviewScale})`;
     }
   }, [dashPreviewScale]);
+
+  const dashMobileFit = useCallback(() => {
+    if (!mob) return;
+    const containerWidth =
+      dashPanZoomRef.current?.clientWidth ?? (typeof window !== "undefined" ? window.innerWidth - 32 : 800);
+    const contentWidth = ps.width || 800;
+    const fitScale = Math.max(0.25, Math.min(containerWidth / contentWidth, 1));
+    setDashPreviewScale(fitScale);
+    dashPanRef.current = { x: 0, y: 0 };
+    const el = dashTransformRef.current;
+    if (el) el.style.transform = `translate3d(0,0,0) scale(${fitScale})`;
+    forceRender((c) => c + 1);
+  }, [mob, ps.width]);
+
+  useEffect(() => {
+    if (!mob || activeSub !== "dash") return;
+    const contentWidth = ps.width || 800;
+    const fitScale = Math.max(0.25, Math.min((window.innerWidth - 32) / contentWidth, 0.95));
+    setDashPreviewScale(fitScale);
+    dashPanRef.current = { x: 0, y: 0 };
+    requestAnimationFrame(() => {
+      const el = dashTransformRef.current;
+      if (el) el.style.transform = `translate3d(0,0,0) scale(${fitScale})`;
+    });
+    forceRender((c) => c + 1);
+  }, [mob, activeSub, ps.width]);
+
   const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const dashDragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; panX: number; panY: number; touches: number; pinchScale?: number; pinchDist?: number } | null>(null);
@@ -2313,9 +2339,124 @@ export function BulletinPage() {
     >
         <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 20 }} className={`bulletin-page-content${mob && activeSub === "edit" ? " mobile-edit-host" : ""}`}>
           {activeSub === "dash" && (() => {
+            const dashPreviewBoxHDesktop = "calc(100vh - 170px)";
+            const fmtBtnDesktop = (format: BulletinFormat) => (
+              <button
+                key={format}
+                type="button"
+                onClick={() => setBulletinFormat(format)}
+                style={{
+                  padding: "6px 16px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  borderRadius: 6,
+                  transition: "all 0.15s",
+                  cursor: "pointer",
+                  ...(bulletinFormatDisplay === format
+                    ? { background: "#111827", color: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }
+                    : { background: "transparent", color: "#6b7280" }),
+                }}
+              >
+                {format}
+              </button>
+            );
+            const zoomMinusDesktop = (
+              <button
+                type="button"
+                onClick={() => setDashPreviewScale(s => Math.max(0.25, parseFloat((s - 0.05).toFixed(2))))}
+                className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-l-lg transition-colors text-sm"
+              >
+                −
+              </button>
+            );
+            const zoomInputDesktop = (
+              <input
+                type="text"
+                value={dashZoomDraft || `${Math.round(dashPreviewScale * 100)}%`}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setDashZoomDraft(raw);
+                  const num = parseInt(raw, 10);
+                  if (!isNaN(num) && num >= 25 && num <= 200) {
+                    setDashPreviewScale(num / 100);
+                  }
+                }}
+                onFocus={(e) => {
+                  setDashZoomDraft(String(Math.round(dashPreviewScale * 100)));
+                  setTimeout(() => (e.target as HTMLInputElement).select(), 0);
+                }}
+                onBlur={() => {
+                  const num = parseInt(dashZoomDraft, 10);
+                  if (isNaN(num) || num < 25) setDashPreviewScale(0.25);
+                  else if (num > 200) setDashPreviewScale(2.0);
+                  setDashZoomDraft("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                }}
+                className="w-12 text-center text-xs text-gray-600 font-medium bg-transparent outline-none"
+                style={{ height: 28, padding: 0, border: "none", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb" }}
+              />
+            );
+            const zoomPlusDesktop = (
+              <button
+                type="button"
+                onClick={() => setDashPreviewScale(s => Math.min(2.0, parseFloat((s + 0.05).toFixed(2))))}
+                className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-r-lg transition-colors text-sm"
+              >
+                +
+              </button>
+            );
+
+            const dashPreviewInner = (
+              <>
+                <div
+                  ref={dashTransformRef}
+                  style={{
+                    transform: `translate3d(${dashPanRef.current.x}px, ${dashPanRef.current.y}px, 0) scale(${dashPreviewScale})`,
+                    transformOrigin: "center center",
+                    transition: dashDragging ? "none" : "transform 0.15s ease",
+                    willChange: "transform",
+                    backfaceVisibility: "hidden" as const,
+                    WebkitBackfaceVisibility: "hidden" as const,
+                    flexShrink: 0,
+                  }}
+                >
+                  <div
+                    id="bulletin-print-area"
+                    ref={dashPreviewRef}
+                    className="bulletin-page-content"
+                    style={{
+                      width: ps.width,
+                      minHeight: ps.minHeight,
+                      padding: ps.padding,
+                      backgroundColor: "#ffffff",
+                      borderRadius: 4,
+                      border: "1px solid #e5e7eb",
+                      flexShrink: 0,
+                    }}
+                  />
+                </div>
+              </>
+            );
+
             return (
-            <div className="flex" style={{ height: "calc(100vh - 120px)", minHeight: 0 }}>
-              <div className={`${mob && !showDashPanelMobile ? "hidden" : ""} md:block w-[420px] flex-shrink-0 border-r border-gray-100 bg-white overflow-y-auto`}>
+            <div
+              className={mob ? undefined : "flex flex-row"}
+              style={
+                mob
+                  ? {
+                      display: "flex",
+                      flexDirection: "column",
+                      width: "100%",
+                      height: "calc(100vh - 120px)",
+                      overflow: "hidden",
+                    }
+                  : { display: "flex", flexDirection: "row", height: "calc(100vh - 120px)", minHeight: 0 }
+              }
+            >
+              {!mob && (
+              <div className="w-[420px] flex-shrink-0 border-r border-gray-100 bg-white overflow-y-auto">
                 <div className="p-6 space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     {[
@@ -2358,7 +2499,7 @@ export function BulletinPage() {
                       <p className="text-[13px] text-gray-400">저장된 주보가 없습니다</p>
                     ) : (
                       <div className="space-y-2">
-                        {db.history.slice(-5).reverse().map(h => (
+                        {db.history.slice(-5).reverse().map((h) => (
                           <div key={h.key} className="flex items-center justify-between py-2">
                             <div><span className="text-sm text-gray-700">{h.date}</span><span className="text-[11px] text-gray-400 ml-1">{h.sermonTitle || "제목 없음"}</span></div>
                             <button type="button" onClick={() => loadHistory(h.key)} className="text-[11px] text-blue-500 hover:text-blue-600">불러오기</button>
@@ -2369,42 +2510,279 @@ export function BulletinPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0">
-                {mob && (
-                  <button type="button" onClick={() => setShowDashPanelMobile(v => !v)} className="md:hidden w-full px-4 py-2 text-sm text-gray-600 bg-white border-b border-gray-100 flex-shrink-0">
-                    대시보드 정보 보기
-                  </button>
-                )}
-                {/* ── 대시보드 툴바 ── */}
-                <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50">
-                  {/* 상단: 포맷 선택 */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 16px 8px" }}>
-                    <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
-                      {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => (
-                        <button
-                          key={format}
-                          type="button"
-                          onClick={() => setBulletinFormat(format)}
-                          style={{
-                            padding: "6px 16px",
-                            fontSize: 13,
-                            fontWeight: 600,
-                            borderRadius: 6,
-                            transition: "all 0.15s",
-                            ...(bulletinFormatDisplay === format
-                              ? { background: "#111827", color: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.1)" }
-                              : { background: "transparent", color: "#6b7280", cursor: "pointer" }),
-                          }}
-                        >
-                          {format}
-                        </button>
-                      ))}
+              )}
+
+              {mob && (
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderBottom: "1px solid #e5e7eb",
+                    background: "#fafafa",
+                    flexShrink: 0,
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+                    {[
+                      { label: "이번 주 주보", value: BULLETIN_DATE_STR },
+                      { label: "제출 현황", value: `${submittedCount}/6` },
+                    ].map((c) => (
+                      <div
+                        key={c.label}
+                        style={{
+                          flex: 1,
+                          background: "#fff",
+                          borderRadius: 10,
+                          padding: "12px 16px",
+                          border: "1px solid #e5e7eb",
+                        }}
+                      >
+                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{c.label}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2937" }}>{c.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    {[
+                      { label: "작성률", value: "—" },
+                      { label: "누적 주보", value: String(db.history.length) },
+                    ].map((c) => (
+                      <div
+                        key={c.label}
+                        style={{
+                          flex: 1,
+                          background: "#fff",
+                          borderRadius: 10,
+                          padding: "12px 16px",
+                          border: "1px solid #e5e7eb",
+                        }}
+                      >
+                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{c.label}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2937" }}>{c.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0 w-full" style={{ minHeight: 0 }}>
+                {mob ? (
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      borderBottom: "1px solid #e5e7eb",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      background: "#fff",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {/* 1행: 인쇄(pill) | 카카오 공유(노란색 고정) */}
+                    <div style={{ display: "flex", gap: 6, width: "100%" }}>
+                      <button
+                        type="button"
+                        onClick={handlePrint}
+                        style={{
+                          flex: 1,
+                          padding: "8px 0",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          borderRadius: 8,
+                          border: "none",
+                          cursor: "pointer",
+                          ...(outputMode === "print"
+                            ? { background: "#111827", color: "#fff" }
+                            : { background: "#f3f4f6", color: "#4b5563" }),
+                        }}
+                      >
+                        인쇄
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleKakaoShare}
+                        style={{
+                          flex: 1,
+                          padding: "8px 0",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          borderRadius: 8,
+                          border: "none",
+                          cursor: "pointer",
+                          background: "#FEE500",
+                          color: "#191919",
+                        }}
+                      >
+                        카카오 공유
+                      </button>
+                    </div>
+                    {/* 2행: 편집 탭 「6면 | 4면」 pill과 동일 + 온라인(3번째, 동일 토큰) */}
+                    <div style={{ display: "flex", gap: 6, width: "100%" }}>
+                      <button
+                        type="button"
+                        onClick={() => setBulletinFormat("6면")}
+                        style={{
+                          flex: 1,
+                          padding: "6px 0",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          borderRadius: 6,
+                          border: "none",
+                          cursor: "pointer",
+                          ...(bulletinFormatDisplay === "6면"
+                            ? { background: "#8b6f47", color: "#fff" }
+                            : { background: "#f3f4f6", color: "#4b5563" }),
+                        }}
+                      >
+                        6면
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBulletinFormat("4면")}
+                        style={{
+                          flex: 1,
+                          padding: "6px 0",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          borderRadius: 6,
+                          border: "none",
+                          cursor: "pointer",
+                          ...(bulletinFormatDisplay === "4면"
+                            ? { background: "#8b6f47", color: "#fff" }
+                            : { background: "#f3f4f6", color: "#4b5563" }),
+                        }}
+                      >
+                        4면
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBulletinFormat("온라인")}
+                        style={{
+                          flex: 1,
+                          padding: "6px 0",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          borderRadius: 6,
+                          border: "none",
+                          cursor: "pointer",
+                          ...(bulletinFormatDisplay === "온라인"
+                            ? { background: "#8b6f47", color: "#fff" }
+                            : { background: "#f3f4f6", color: "#4b5563" }),
+                        }}
+                      >
+                        온라인
+                      </button>
+                    </div>
+                    {/* 3행: 편집 탭 줌(−/%/+) + 맞춤 + 미리보기 + 편집 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, width: "100%" }}>
+                      <button
+                        type="button"
+                        onClick={() => setDashPreviewScale(s => Math.max(0.25, parseFloat((s - 0.05).toFixed(2))))}
+                        style={{
+                          width: 32,
+                          height: 32,
+                          border: "1px solid #d1d5db",
+                          borderRadius: 6,
+                          background: "#fff",
+                          fontSize: 16,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        −
+                      </button>
+                      <span style={{ fontSize: 13, color: "#374151", minWidth: 40, textAlign: "center", flexShrink: 0 }}>
+                        {Math.round(dashPreviewScale * 100)}%
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDashPreviewScale(s => Math.min(2.0, parseFloat((s + 0.05).toFixed(2))))}
+                        style={{
+                          width: 32,
+                          height: 32,
+                          border: "1px solid #d1d5db",
+                          borderRadius: 6,
+                          background: "#fff",
+                          fontSize: 16,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={dashMobileFit}
+                        style={{
+                          padding: "4px 12px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 6,
+                          background: "#fff",
+                          fontSize: 12,
+                          cursor: "pointer",
+                          flexShrink: 0,
+                        }}
+                      >
+                        맞춤
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handlePreview}
+                        style={{
+                          flex: 1,
+                          padding: "4px 12px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 6,
+                          background: "#fff",
+                          fontSize: 12,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          color: "#374151",
+                          minWidth: 0,
+                        }}
+                      >
+                        <Eye size={14} /> 미리보기
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleNav("edit")}
+                        style={{
+                          flex: 1,
+                          padding: "4px 12px",
+                          border: "none",
+                          borderRadius: 6,
+                          background: "#2563eb",
+                          color: "#fff",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          minWidth: 0,
+                        }}
+                      >
+                        <Edit3 size={14} /> 편집
+                      </button>
                     </div>
                   </div>
-
-                  {/* 하단: 액션 버튼 + 줌 */}
+                ) : (
+                <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 16px 8px" }}>
+                    <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
+                      {(["6면", "4면", "온라인"] as BulletinFormat[]).map((format) => fmtBtnDesktop(format))}
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between px-4 pb-3">
-                    {/* 왼쪽: 액션 버튼들 */}
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
@@ -2421,55 +2799,12 @@ export function BulletinPage() {
                         카카오 공유
                       </button>
                     </div>
-
-                    {/* 오른쪽: 줌 + 편집/미리보기 */}
                     <div className="flex items-center gap-3">
-                      {/* 줌 컨트롤 */}
                       <div className="inline-flex items-center bg-white border border-gray-200 rounded-lg shadow-sm">
-                        <button
-                          type="button"
-                          onClick={() => setDashPreviewScale(s => Math.max(0.25, parseFloat((s - 0.05).toFixed(2))))}
-                          className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-l-lg transition-colors text-sm"
-                        >
-                          −
-                        </button>
-                        <input
-                          type="text"
-                          value={dashZoomDraft || `${Math.round(dashPreviewScale * 100)}%`}
-                          onChange={(e) => {
-                            const raw = e.target.value.replace(/[^0-9]/g, "");
-                            setDashZoomDraft(raw);
-                            const num = parseInt(raw, 10);
-                            if (!isNaN(num) && num >= 25 && num <= 200) {
-                              setDashPreviewScale(num / 100);
-                            }
-                          }}
-                          onFocus={(e) => {
-                            setDashZoomDraft(String(Math.round(dashPreviewScale * 100)));
-                            setTimeout(() => (e.target as HTMLInputElement).select(), 0);
-                          }}
-                          onBlur={() => {
-                            const num = parseInt(dashZoomDraft, 10);
-                            if (isNaN(num) || num < 25) setDashPreviewScale(0.25);
-                            else if (num > 200) setDashPreviewScale(2.0);
-                            setDashZoomDraft("");
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                          }}
-                          className="w-12 text-center text-xs text-gray-600 font-medium bg-transparent outline-none"
-                          style={{ height: "28px", padding: 0, border: "none", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setDashPreviewScale(s => Math.min(2.0, parseFloat((s + 0.05).toFixed(2))))}
-                          className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-r-lg transition-colors text-sm"
-                        >
-                          +
-                        </button>
+                        {zoomMinusDesktop}
+                        {zoomInputDesktop}
+                        {zoomPlusDesktop}
                       </div>
-
-                      {/* 미리보기 & 편집 */}
                       <button
                         type="button"
                         onClick={handlePreview}
@@ -2487,13 +2822,48 @@ export function BulletinPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex-1 overflow-auto bg-white" style={{ minHeight: 0, display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "16px" }}>
+                )}
+
+                {mob ? (
+                  <div style={{ flex: 1, overflow: "hidden", position: "relative", background: "#f9fafb", minHeight: 0 }}>
+                    <div
+                      ref={dashPanZoomRef}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        overflow: "hidden",
+                        cursor: dashDragging ? "grabbing" : "grab",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                      onMouseDown={onDashMouseDown}
+                      onDoubleClick={onDashDoubleClick}
+                      onTouchStart={onDashTouchStart}
+                      onTouchMove={onDashTouchMove}
+                      onTouchEnd={onDashTouchEnd}
+                      onTouchCancel={onDashTouchEnd}
+                    >
+                      {dashPreviewInner}
+                    </div>
+                  </div>
+                ) : (
+                <div
+                  className="flex-1 overflow-auto bg-white"
+                  style={{
+                    minHeight: 0,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "flex-start",
+                    padding: "16px",
+                  }}
+                >
                   <div
                     className="bulletin-preview-display"
                     id="bulletin-print-container"
                     style={{
                       width: "100%",
-                      minHeight: "calc(100vh - 170px)",
+                      minHeight: dashPreviewBoxHDesktop,
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
@@ -2505,7 +2875,7 @@ export function BulletinPage() {
                       ref={dashPanZoomRef}
                       style={{
                         width: "100%",
-                        height: "calc(100vh - 170px)",
+                        height: dashPreviewBoxHDesktop,
                         minHeight: 400,
                         overflow: "hidden",
                         cursor: dashDragging ? "grabbing" : "grab",
@@ -2520,36 +2890,11 @@ export function BulletinPage() {
                       onTouchEnd={onDashTouchEnd}
                       onTouchCancel={onDashTouchEnd}
                     >
-                    <div
-                      ref={dashTransformRef}
-                        style={{
-                          transform: `translate3d(${dashPanRef.current.x}px, ${dashPanRef.current.y}px, 0) scale(${dashPreviewScale})`,
-                          transformOrigin: "center center",
-                          transition: dashDragging ? "none" : "transform 0.15s ease",
-                          willChange: "transform",
-                          backfaceVisibility: "hidden" as const,
-                          WebkitBackfaceVisibility: "hidden" as const,
-                          flexShrink: 0,
-                        }}
-                      >
-                        <div
-                          id="bulletin-print-area"
-                          ref={dashPreviewRef}
-                          className="bulletin-page-content"
-                          style={{
-                            width: ps.width,
-                            minHeight: ps.minHeight,
-                            padding: ps.padding,
-                            backgroundColor: "#ffffff",
-                            borderRadius: 4,
-                            border: "1px solid #e5e7eb",
-                            flexShrink: 0,
-                          }}
-                        />
-                      </div>
+                      {dashPreviewInner}
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             </div>
             );
