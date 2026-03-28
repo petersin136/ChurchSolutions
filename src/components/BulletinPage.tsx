@@ -1193,6 +1193,8 @@ export function BulletinPage() {
   const dashPanRef = useRef({ x: 0, y: 0 });
   const dashRafRef = useRef<number | null>(null);
   const [showFullPreview, setShowFullPreview] = useState(false);
+  const [fullPreviewScale, setFullPreviewScale] = useState(0.5);
+  const [fullPreviewPan, setFullPreviewPan] = useState({ x: 0, y: 0 });
   const [fullPreviewHtml, setFullPreviewHtml] = useState("");
   const [showFormatPanel, setShowFormatPanel] = useState(false);
   const [mobileDesignOpen, setMobileDesignOpen] = useState(false);
@@ -1428,28 +1430,17 @@ export function BulletinPage() {
     }
   }, [dashPreviewScale]);
 
-  const dashMobileFit = useCallback(() => {
-    if (!mob) return;
-    const containerWidth =
-      dashPanZoomRef.current?.clientWidth ?? (typeof window !== "undefined" ? window.innerWidth - 32 : 800);
-    const contentWidth = ps.width || 800;
-    const fitScale = Math.max(0.25, Math.min(containerWidth / contentWidth, 1));
-    setDashPreviewScale(fitScale);
-    dashPanRef.current = { x: 0, y: 0 };
-    const el = dashTransformRef.current;
-    if (el) el.style.transform = `translate3d(0,0,0) scale(${fitScale})`;
-    forceRender((c) => c + 1);
-  }, [mob, ps.width]);
-
   useEffect(() => {
     if (!mob || activeSub !== "dash") return;
+    const containerWidth = typeof window !== "undefined" ? window.innerWidth - 32 : 800;
     const contentWidth = ps.width || 800;
-    const fitScale = Math.max(0.25, Math.min((window.innerWidth - 32) / contentWidth, 0.95));
-    setDashPreviewScale(fitScale);
+    const fitScale = containerWidth / contentWidth;
+    const s = Math.max(0.2, Math.min(fitScale, 0.95));
+    setDashPreviewScale(s);
     dashPanRef.current = { x: 0, y: 0 };
     requestAnimationFrame(() => {
       const el = dashTransformRef.current;
-      if (el) el.style.transform = `translate3d(0,0,0) scale(${fitScale})`;
+      if (el) el.style.transform = `translate3d(0,0,0) scale(${s})`;
     });
     forceRender((c) => c + 1);
   }, [mob, activeSub, ps.width]);
@@ -1876,9 +1867,13 @@ export function BulletinPage() {
     setTimeout(() => {
       const el = document.getElementById("bulletin-print-area");
       setFullPreviewHtml(el?.innerHTML ?? "");
+      const cw2 = typeof window !== "undefined" ? window.innerWidth - 32 : 360;
+      const contentW2 = bulletinFormatDisplay === "6면" ? 1134 : bulletinFormatDisplay === "4면" ? 756 : 595;
+      setFullPreviewScale(Math.max(0.15, Math.min(+(cw2 / contentW2).toFixed(2), 1.5)));
+      setFullPreviewPan({ x: 0, y: 0 });
       setShowFullPreview(true);
     }, 300);
-  }, [saveFields]);
+  }, [saveFields, bulletinFormatDisplay]);
 
   const handlePrint = useCallback(() => {
     if (typeof saveFields === "function") saveFields();
@@ -2412,9 +2407,10 @@ export function BulletinPage() {
               <>
                 <div
                   ref={dashTransformRef}
+                  className={mob ? "mobile-dash-preview" : undefined}
                   style={{
                     transform: `translate3d(${dashPanRef.current.x}px, ${dashPanRef.current.y}px, 0) scale(${dashPreviewScale})`,
-                    transformOrigin: "center center",
+                    transformOrigin: mob ? ("top center" as const) : ("center center" as const),
                     transition: dashDragging ? "none" : "transform 0.15s ease",
                     willChange: "transform",
                     backfaceVisibility: "hidden" as const,
@@ -2428,11 +2424,19 @@ export function BulletinPage() {
                     className="bulletin-page-content"
                     style={{
                       width: ps.width,
-                      minHeight: ps.minHeight,
+                      ...(mob
+                        ? {
+                            overflow: "visible" as const,
+                            backgroundColor: "#ffffff",
+                            border: "none",
+                          }
+                        : {
+                            minHeight: ps.minHeight,
+                            backgroundColor: "#ffffff",
+                            borderRadius: 4,
+                            border: "1px solid #e5e7eb",
+                          }),
                       padding: ps.padding,
-                      backgroundColor: "#ffffff",
-                      borderRadius: 4,
-                      border: "1px solid #e5e7eb",
                       flexShrink: 0,
                     }}
                   />
@@ -2515,7 +2519,7 @@ export function BulletinPage() {
               {mob && (
                 <div
                   style={{
-                    padding: "12px 16px",
+                    padding: "12px 6px",
                     borderBottom: "1px solid #e5e7eb",
                     background: "#fafafa",
                     flexShrink: 0,
@@ -2564,119 +2568,110 @@ export function BulletinPage() {
                 </div>
               )}
 
-              <div className="flex-1 flex flex-col overflow-hidden bg-white min-w-0 w-full" style={{ minHeight: 0 }}>
+              <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full" style={{ minHeight: 0 }}>
                 {mob ? (
-                  <div
-                    style={{
-                      padding: "12px 16px",
-                      borderBottom: "1px solid #e5e7eb",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 8,
-                      background: "#fff",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {/* 1행: 인쇄(pill) | 카카오 공유(노란색 고정) */}
-                    <div style={{ display: "flex", gap: 6, width: "100%" }}>
-                      <button
-                        type="button"
-                        onClick={handlePrint}
-                        style={{
-                          flex: 1,
-                          padding: "8px 0",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          borderRadius: 8,
-                          border: "none",
-                          cursor: "pointer",
-                          ...(outputMode === "print"
-                            ? { background: "#111827", color: "#fff" }
-                            : { background: "#f3f4f6", color: "#4b5563" }),
-                        }}
-                      >
-                        인쇄
-                      </button>
+                  <div style={{ padding: "8px 6px", borderBottom: "1px solid #e5e7eb", flexShrink: 0, display: "flex", flexDirection: "column", gap: 6, background: "transparent" }}>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {[
+                        { key: "print", label: "인쇄용" },
+                        { key: "online", label: "카카오톡 공유용" },
+                      ].map((m) => (
+                        <button
+                          key={m.key}
+                          type="button"
+                          onClick={() => {
+                            setOutputMode(m.key as OutputMode);
+                            if (m.key !== "print") setPreviewView("all");
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: "8px 0",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            borderRadius: 8,
+                            border: "none",
+                            cursor: "pointer",
+                            ...(outputMode === m.key
+                              ? { background: "#111827", color: "#fff" }
+                              : { background: "#f3f4f6", color: "#4b5563" }),
+                          }}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                    {outputMode === "print" ? (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPrintFormat("fold3");
+                            setPreviewView("all");
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: "6px 0",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            borderRadius: 6,
+                            border: "none",
+                            cursor: "pointer",
+                            ...(printFormat === "fold3"
+                              ? { background: "#8b6f47", color: "#fff" }
+                              : { background: "#f3f4f6", color: "#4b5563" }),
+                          }}
+                        >
+                          6면
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPrintFormat("fold2");
+                            setPreviewView("all");
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: "6px 0",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            borderRadius: 6,
+                            border: "none",
+                            cursor: "pointer",
+                            ...(printFormat === "fold2"
+                              ? { background: "#8b6f47", color: "#fff" }
+                              : { background: "#f3f4f6", color: "#4b5563" }),
+                          }}
+                        >
+                          4면
+                        </button>
+                      </div>
+                    ) : (
                       <button
                         type="button"
                         onClick={handleKakaoShare}
                         style={{
-                          flex: 1,
-                          padding: "8px 0",
-                          fontSize: 13,
+                          width: "100%",
+                          padding: "6px 0",
+                          fontSize: 12,
                           fontWeight: 600,
-                          borderRadius: 8,
-                          border: "none",
-                          cursor: "pointer",
-                          background: "#FEE500",
+                          backgroundColor: "#FEE500",
                           color: "#191919",
-                        }}
-                      >
-                        카카오 공유
-                      </button>
-                    </div>
-                    {/* 2행: 편집 탭 「6면 | 4면」 pill과 동일 + 온라인(3번째, 동일 토큰) */}
-                    <div style={{ display: "flex", gap: 6, width: "100%" }}>
-                      <button
-                        type="button"
-                        onClick={() => setBulletinFormat("6면")}
-                        style={{
-                          flex: 1,
-                          padding: "6px 0",
-                          fontSize: 12,
-                          fontWeight: 600,
-                          borderRadius: 6,
                           border: "none",
-                          cursor: "pointer",
-                          ...(bulletinFormatDisplay === "6면"
-                            ? { background: "#8b6f47", color: "#fff" }
-                            : { background: "#f3f4f6", color: "#4b5563" }),
-                        }}
-                      >
-                        6면
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBulletinFormat("4면")}
-                        style={{
-                          flex: 1,
-                          padding: "6px 0",
-                          fontSize: 12,
-                          fontWeight: 600,
                           borderRadius: 6,
-                          border: "none",
                           cursor: "pointer",
-                          ...(bulletinFormatDisplay === "4면"
-                            ? { background: "#8b6f47", color: "#fff" }
-                            : { background: "#f3f4f6", color: "#4b5563" }),
                         }}
                       >
-                        4면
+                        카카오톡 공유
                       </button>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <button
                         type="button"
-                        onClick={() => setBulletinFormat("온라인")}
-                        style={{
-                          flex: 1,
-                          padding: "6px 0",
-                          fontSize: 12,
-                          fontWeight: 600,
-                          borderRadius: 6,
-                          border: "none",
-                          cursor: "pointer",
-                          ...(bulletinFormatDisplay === "온라인"
-                            ? { background: "#8b6f47", color: "#fff" }
-                            : { background: "#f3f4f6", color: "#4b5563" }),
+                        onClick={() => {
+                          dashPanRef.current = { x: 0, y: 0 };
+                          setDashPreviewScale((s) => Math.max(0.2, +(s - 0.1).toFixed(1)));
+                          forceRender((c) => c + 1);
                         }}
-                      >
-                        온라인
-                      </button>
-                    </div>
-                    {/* 3행: 편집 탭 줌(−/%/+) + 맞춤 + 미리보기 + 편집 */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, width: "100%" }}>
-                      <button
-                        type="button"
-                        onClick={() => setDashPreviewScale(s => Math.max(0.25, parseFloat((s - 0.05).toFixed(2))))}
                         style={{
                           width: 32,
                           height: 32,
@@ -2688,17 +2683,20 @@ export function BulletinPage() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          flexShrink: 0,
                         }}
                       >
                         −
                       </button>
-                      <span style={{ fontSize: 13, color: "#374151", minWidth: 40, textAlign: "center", flexShrink: 0 }}>
+                      <span style={{ fontSize: 13, color: "#374151", minWidth: 40, textAlign: "center" }}>
                         {Math.round(dashPreviewScale * 100)}%
                       </span>
                       <button
                         type="button"
-                        onClick={() => setDashPreviewScale(s => Math.min(2.0, parseFloat((s + 0.05).toFixed(2))))}
+                        onClick={() => {
+                          dashPanRef.current = { x: 0, y: 0 };
+                          setDashPreviewScale((s) => Math.min(2, +(s + 0.1).toFixed(1)));
+                          forceRender((c) => c + 1);
+                        }}
                         style={{
                           width: 32,
                           height: 32,
@@ -2710,68 +2708,82 @@ export function BulletinPage() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          flexShrink: 0,
                         }}
                       >
                         +
                       </button>
                       <button
                         type="button"
-                        onClick={dashMobileFit}
+                        onClick={() => {
+                          const cw = typeof window !== "undefined" ? window.innerWidth - 32 : 360;
+                          const contentW = ps.width || 800;
+                          const s = Math.max(0.2, Math.min(+(cw / contentW).toFixed(2), 0.95));
+                          dashPanRef.current = { x: 0, y: 0 };
+                          setDashPreviewScale(s);
+                          const el = dashTransformRef.current;
+                          if (el) el.style.transform = `translate3d(0px,0px,0) scale(${s})`;
+                          forceRender((c) => c + 1);
+                        }}
                         style={{
-                          padding: "4px 12px",
+                          padding: "4px 10px",
                           border: "1px solid #d1d5db",
                           borderRadius: 6,
                           background: "#fff",
                           fontSize: 12,
+                          fontWeight: 600,
                           cursor: "pointer",
-                          flexShrink: 0,
                         }}
                       >
                         맞춤
+                      </button>
+                      <div style={{ flex: 1 }} />
+                      <button
+                        type="button"
+                        onClick={handlePrint}
+                        style={{
+                          padding: "4px 10px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 6,
+                          background: "#fff",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          color: "#374151",
+                        }}
+                      >
+                        인쇄
                       </button>
                       <button
                         type="button"
                         onClick={handlePreview}
                         style={{
-                          flex: 1,
-                          padding: "4px 12px",
+                          padding: "4px 10px",
                           border: "1px solid #d1d5db",
                           borderRadius: 6,
                           background: "#fff",
                           fontSize: 12,
+                          fontWeight: 600,
                           cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
                           color: "#374151",
-                          minWidth: 0,
                         }}
                       >
-                        <Eye size={14} /> 미리보기
+                        미리보기
                       </button>
                       <button
                         type="button"
                         onClick={() => handleNav("edit")}
                         style={{
-                          flex: 1,
-                          padding: "4px 12px",
-                          border: "none",
+                          padding: "4px 14px",
                           borderRadius: 6,
                           background: "#2563eb",
                           color: "#fff",
                           fontSize: 12,
                           fontWeight: 700,
+                          border: "none",
                           cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          minWidth: 0,
                         }}
                       >
-                        <Edit3 size={14} /> 편집
+                        편집
                       </button>
                     </div>
                   </div>
@@ -2825,17 +2837,67 @@ export function BulletinPage() {
                 )}
 
                 {mob ? (
-                  <div style={{ flex: 1, overflow: "hidden", position: "relative", background: "#f9fafb", minHeight: 0 }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      width: "100%",
+                      height: "calc(100vh - 380px)",
+                      minHeight: 200,
+                      overflow: "auto",
+                      position: "relative",
+                      background: "#f3f4f6",
+                      borderRadius: 12,
+                      WebkitOverflowScrolling: "touch" as const,
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {mob && activeSub === "dash" && (
+                      <style>{`
+    @media screen {
+      .mobile-dash-preview .bp-tri {
+        gap: 8px !important;
+        padding: 0 !important;
+        background: transparent !important;
+      }
+      .mobile-dash-preview .bp-tri .bp-spread {
+        box-shadow: 0 1px 6px rgba(0,0,0,.1) !important;
+        border-radius: 4px !important;
+        height: auto !important;
+        min-height: 0 !important;
+        background: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+      }
+      .mobile-dash-preview .bp-spread {
+        height: auto !important;
+        min-height: 0 !important;
+      }
+      .mobile-dash-preview .bp-cell {
+        max-height: none !important;
+        height: auto !important;
+        min-height: 200px;
+        background: #ffffff;
+      }
+      .mobile-dash-preview .bp-four-face .bp-spread {
+        background: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: 0 1px 6px rgba(0,0,0,.1) !important;
+        border-radius: 4px !important;
+      }
+    }
+  `}</style>
+                    )}
                     <div
                       ref={dashPanZoomRef}
                       style={{
                         width: "100%",
-                        height: "100%",
-                        overflow: "hidden",
+                        overflow: "visible",
+                        position: "relative",
                         cursor: dashDragging ? "grabbing" : "grab",
                         display: "flex",
                         justifyContent: "center",
-                        alignItems: "center",
+                        alignItems: "flex-start",
+                        paddingTop: 8,
+                        paddingBottom: 8,
                       }}
                       onMouseDown={onDashMouseDown}
                       onDoubleClick={onDashDoubleClick}
@@ -3752,58 +3814,164 @@ export function BulletinPage() {
         </div>
 
       {showFullPreview && (
-        <div className="fixed inset-0 z-[9999]" style={{ backgroundColor: "#ffffff" }}>
-          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200" style={{ backgroundColor: "#ffffff" }}>
-            <span className="text-sm font-medium text-gray-800">주보 미리보기</span>
-            <div className="flex items-center gap-2">
+        <div className="fixed inset-0 z-[9999]" style={{ backgroundColor: "#ffffff", display: "flex", flexDirection: "column" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "8px 12px",
+              borderBottom: "1px solid #e5e7eb",
+              backgroundColor: "#ffffff",
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#1f2937" }}>주보 미리보기</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <button
                 type="button"
-                className="px-3 py-1.5 text-xs font-medium rounded bg-gray-800 text-white hover:bg-gray-700"
-                onClick={() => { setShowFullPreview(false); setTimeout(() => handlePrint(), 100); }}
+                onClick={() => {
+                  const cw = typeof window !== "undefined" ? window.innerWidth - 32 : 360;
+                  const contentW = bulletinFormatDisplay === "6면" ? 1134 : bulletinFormatDisplay === "4면" ? 756 : 595;
+                  setFullPreviewScale(Math.max(0.15, Math.min(+(cw / contentW).toFixed(2), 1.5)));
+                  setFullPreviewPan({ x: 0, y: 0 });
+                }}
+                style={{
+                  padding: "4px 10px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 6,
+                  background: "#fff",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                맞춤
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowFullPreview(false);
+                  setTimeout(() => handlePrint(), 100);
+                }}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  background: "#111827",
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  border: "none",
+                  cursor: "pointer",
+                }}
               >
                 인쇄
               </button>
               <button
                 type="button"
                 onClick={() => setShowFullPreview(false)}
-                className="px-3 py-1.5 text-xs font-medium rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  border: "1px solid #d1d5db",
+                  background: "#fff",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  color: "#374151",
+                }}
               >
                 닫기
               </button>
             </div>
           </div>
           <div
-            className="overflow-auto"
             style={{
-              height: "calc(100vh - 52px)",
-              backgroundColor: "#f9fafb",
               display: "flex",
+              alignItems: "center",
               justifyContent: "center",
-              alignItems: "flex-start",
-              paddingTop: 32,
-              paddingBottom: 32,
+              gap: 8,
+              padding: "6px 0",
+              borderBottom: "1px solid #e5e7eb",
+              flexShrink: 0,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setFullPreviewScale((s) => Math.max(0.15, +(s - 0.1).toFixed(2)))}
+              style={{
+                width: 32,
+                height: 32,
+                border: "1px solid #d1d5db",
+                borderRadius: 6,
+                background: "#fff",
+                fontSize: 16,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              −
+            </button>
+            <span style={{ fontSize: 13, color: "#374151", minWidth: 44, textAlign: "center" }}>
+              {Math.round((typeof fullPreviewScale === "number" ? fullPreviewScale : 0.5) * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={() => setFullPreviewScale((s) => Math.min(3, +(s + 0.1).toFixed(2)))}
+              style={{
+                width: 32,
+                height: 32,
+                border: "1px solid #d1d5db",
+                borderRadius: 6,
+                background: "#fff",
+                fontSize: 16,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              +
+            </button>
+          </div>
+          <div
+            style={{
+              flex: 1,
+              overflow: "auto",
+              backgroundColor: "#f9fafb",
+              WebkitOverflowScrolling: "touch" as const,
             }}
           >
             <div
-              className="bulletin-page-content"
               style={{
-                width: bulletinFormatDisplay === "6면" ? 1134
-                  : bulletinFormatDisplay === "4면" ? 756
-                  : 595,
-                minHeight: bulletinFormatDisplay === "6면" ? 1274
-                  : bulletinFormatDisplay === "4면" ? 1274
-                  : 842,
-                backgroundColor: "#ffffff",
-                padding: bulletinFormatDisplay === "온라인" ? 40 : 0,
-                border: "1px solid #e5e7eb",
-                borderRadius: 4,
-                flexShrink: 0,
-                alignSelf: "flex-start",
-                transformOrigin: "top center",
-                transform: bulletinFormatDisplay === "6면" ? "scale(0.7)" : "none",
+                display: "inline-flex",
+                justifyContent: "flex-start",
+                alignItems: "flex-start",
+                paddingTop: 16,
+                paddingBottom: 32,
+                minWidth: "100%",
+                minHeight: "100%",
               }}
-              dangerouslySetInnerHTML={{ __html: fullPreviewHtml || "" }}
-            />
+            >
+              <div
+                className="bulletin-page-content"
+                style={{
+                  width: bulletinFormatDisplay === "6면" ? 1134 : bulletinFormatDisplay === "4면" ? 756 : 595,
+                  backgroundColor: "#ffffff",
+                  padding: bulletinFormatDisplay === "온라인" ? 40 : 0,
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 4,
+                  flexShrink: 0,
+                  transformOrigin: "top left",
+                  marginLeft: "auto",
+                  marginRight: "auto",
+                  transform: `scale(${typeof fullPreviewScale === "number" ? fullPreviewScale : 0.5})`,
+                }}
+                dangerouslySetInnerHTML={{ __html: fullPreviewHtml || "" }}
+              />
+            </div>
           </div>
         </div>
       )}
