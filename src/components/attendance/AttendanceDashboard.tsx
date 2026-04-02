@@ -198,46 +198,49 @@ export function AttendanceDashboard({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="text-xs text-gray-500 mb-1">이번 주 출석</div>
-          <div className="text-2xl font-bold text-[#1e3a5f]">
-            {thisWeekPresent} <span className="text-sm font-normal text-gray-500">/ {totalActive}명</span>
+      <div className="grid grid-cols-2 gap-3" style={{ gridAutoRows: "1fr" }}>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center" style={{ padding: "10px 14px", minHeight: 80 }}>
+          <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>이번 주 출석</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+            <span style={{ fontSize: 28, fontWeight: 800, color: "#1e3a5f" }}>{thisWeekPresent}</span>
+            <span style={{ fontSize: 12, color: "#888" }}>/ {totalActive}명</span>
           </div>
-          <div className="flex items-center gap-1 mt-1 text-sm">
-            {rateDiff >= 0 ? (
-              <span className="text-green-600">▲ {rateDiff}%p</span>
-            ) : (
-              <span className="text-red-600">▼ {Math.abs(rateDiff)}%p</span>
-            )}
-            <span className="text-gray-400">전주 대비</span>
+          <div
+            style={{
+              fontSize: 11,
+              color: rateDiff >= 0 ? "#2563eb" : "#dc2626",
+              marginTop: 2,
+            }}
+          >
+            {rateDiff >= 0 ? `▲ ${rateDiff}%p` : `▼ ${Math.abs(rateDiff)}%p`} 전주 대비
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="text-xs text-gray-500 mb-1">이번 주 출석률</div>
-          <div className="text-2xl font-bold text-[#1e3a5f]">{attendanceRate}%</div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center" style={{ padding: "10px 14px", minHeight: 80 }}>
+          <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>이번 주 출석률</div>
+          <span style={{ fontSize: 28, fontWeight: 800, color: "#1e3a5f" }}>{attendanceRate}%</span>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="text-xs text-gray-500 mb-1">이번 달 평균 출석률</div>
-          <div className="text-2xl font-bold text-[#1e3a5f]">{monthlyRate}%</div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center" style={{ padding: "10px 14px", minHeight: 80 }}>
+          <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>이번 달 평균 출석률</div>
+          <span style={{ fontSize: 28, fontWeight: 800, color: "#1e3a5f" }}>{monthlyRate}%</span>
         </div>
         <button
           type="button"
           onClick={() => onOpenAbsenteeList?.(consecutiveAbsent)}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-left hover:shadow-md transition"
+          className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center text-left hover:shadow-md transition"
+          style={{ padding: "10px 14px", minHeight: 80 }}
         >
-          <div className="text-xs text-gray-500 mb-1">3주 연속 결석</div>
-          <div className="text-2xl font-bold text-red-600">{consecutiveAbsent.length}명</div>
-          <div className="text-xs text-gray-400 mt-1">클릭 시 명단</div>
+          <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>3주 연속 결석</div>
+          <span style={{ fontSize: 28, fontWeight: 800, color: "#1e3a5f" }}>{consecutiveAbsent.length}명</span>
+          <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>클릭 시 명단</div>
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4" style={{ maxHeight: 260 }}>
           <h4 className="text-sm font-semibold text-[#1e3a5f] mb-4">주간 출석 추이 (최근 12주)</h4>
-          <LazyChart height={260}>
+          <LazyChart height={180}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={weeklyTrendData}>
+              <LineChart data={weeklyTrendData} margin={{ top: 5, right: 10, left: -15, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                 <XAxis dataKey="week" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -247,14 +250,14 @@ export function AttendanceDashboard({
             </ResponsiveContainer>
           </LazyChart>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4" style={{ maxHeight: 260 }}>
           <h4 className="text-sm font-semibold text-[#1e3a5f] mb-4">부서별 출석률</h4>
-          <LazyChart height={260}>
+          <LazyChart height={180}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={deptRates} layout="vertical" margin={{ left: 60 }}>
+              <BarChart data={deptRates} layout="vertical" margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="dept" tick={{ fontSize: 11 }} width={55} />
+                <YAxis type="category" dataKey="dept" width={60} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
                 <Bar dataKey="rate" name="출석률" fill={NAVY} radius={[0, 4, 4, 0]} />
               </BarChart>
@@ -265,7 +268,7 @@ export function AttendanceDashboard({
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <h4 className="text-sm font-semibold text-[#1e3a5f] mb-4">월별 출석 히트맵 (최근 8주)</h4>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-4 gap-2 w-full place-items-center">
           {heatmapData.map((row) => (
             <div
               key={row.date}

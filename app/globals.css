@@ -96,16 +96,6 @@
     background-position: right 12px center;
     background-size: 16px;
   }
-  @media (max-width: 768px) {
-    select,
-    select.select-modern,
-    .select-modern {
-      padding: 0 28px 0 10px !important;
-      font-size: 12px !important;
-      height: 36px !important;
-      box-sizing: border-box !important;
-    }
-  }
   select.select-modern:hover,
   .select-modern:hover {
     border-color: var(--text3);
@@ -731,4 +721,23 @@
   body { background: #fff; padding: 0; }
   .page { display: block !important; }
   .card { box-shadow: none; border: 1px solid #ddd; }
+}
+
+@media (max-width: 768px) {
+  select,
+  select.select-modern,
+  .select-modern {
+    padding: 0 28px 0 10px !important;
+    font-size: 14px !important;
+    height: 40px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    -webkit-text-size-adjust: 100% !important;
+  }
+  select option,
+  select.select-modern option,
+  .select-modern option {
+    font-size: 14px !important;
+    padding: 12px 14px !important;
+  }
 }

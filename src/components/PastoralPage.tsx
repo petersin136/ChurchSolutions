@@ -1045,73 +1045,65 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box" }}>
       {/* ─── 필터 바 ─── */}
-      <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap", width: "100%", minWidth: 0 }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
           <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted }}><Icons.Search /></div>
           <input value={search} onChange={e => { setSearch(e.target.value); setPageList(1); setPageGroup(1); }} placeholder="이름, 연락처 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none" }} />
         </div>
         {mob ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-            {/* 1행: 부서 / 전체상태 */}
-            <div style={{ display: "flex", flexDirection: "row", gap: 8, width: "100%" }}>
-              <select
-                id="debug-dept"
-                value={deptF}
-                onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }}
-                style={{ flex: 1, height: 36, minWidth: 0 }}
-              >
-                <option value="all">부서</option>
-                {depts.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-              <select
-                id="debug-status"
-                value={statusF}
-                onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }}
-                style={{ flex: 1, height: 36, minWidth: 0 }}
-              >
-                <option value="all">전체 상태</option>
-                {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
-              </select>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%" }}>
+            <select
+              id="debug-dept"
+              value={deptF}
+              onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }}
+              style={{ height: 40, padding: "0 28px 0 10px", boxSizing: "border-box", minWidth: 0, textAlign: "center" }}
+            >
+              <option value="all">부서</option>
+              {depts.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <select
+              id="debug-status"
+              value={statusF}
+              onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }}
+              style={{ height: 40, padding: "0 28px 0 10px", boxSizing: "border-box", minWidth: 0, textAlign: "center" }}
+            >
+              <option value="all">전체 상태</option>
+              {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
+            </select>
+            <div
+              id="debug-checkbox-box"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                gap: 8, height: 40, padding: "0 10px",
+                border: "1px solid #ddd", borderRadius: 8, background: "#fff",
+                fontSize: 14, boxSizing: "border-box", minWidth: 0
+              }}
+            >
+              <label style={{ display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", cursor: "pointer", fontSize: 14 }}>
+                <input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} />
+                새가족
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", cursor: "pointer", fontSize: 14 }}>
+                <input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} />
+                관심성도
+              </label>
+              <span style={{ marginLeft: "auto", color: "#3B5BDB", fontWeight: 700, fontSize: 14 }}>{filtered.length}명</span>
             </div>
-            {/* 2행: 새가족+관심성도+인원 / 새교인등록 */}
-            <div style={{ display: "flex", flexDirection: "row", gap: 8, width: "100%", alignItems: "stretch" }}>
-              <div
-                id="debug-checkbox-box"
-                style={{
-                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                  gap: 8, height: 36, padding: "0 10px",
-                  border: "1px solid #ddd", borderRadius: 8, background: "#fff",
-                  fontSize: 12, boxSizing: "border-box"
-                }}
-              >
-                <label style={{ display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", cursor: "pointer", fontSize: 12 }}>
-                  <input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} />
-                  새가족
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", cursor: "pointer", fontSize: 12 }}>
-                  <input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} />
-                  관심성도
-                </label>
-                <span style={{ marginLeft: "auto", color: "#3B5BDB", fontWeight: 700, fontSize: 12 }}>
-                  {filtered.length}명
-                </span>
-              </div>
-              <button
-                id="debug-register-btn"
-                type="button"
-                onClick={() => openMemberModal()}
-                style={{
-                  flex: 1, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
-                  gap: 4, background: "#1B2A4A", color: "#fff", border: "none", borderRadius: 8,
-                  fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
-                  whiteSpace: "nowrap", boxSizing: "border-box"
-                }}
-              >
-                + 새 교인 등록
-              </button>
-            </div>
+            <button
+              id="debug-register-btn"
+              type="button"
+              onClick={() => openMemberModal()}
+              style={{
+                height: 40, display: "flex", alignItems: "center", justifyContent: "center",
+                gap: 4, background: "#1B2A4A", color: "#fff", border: "none", borderRadius: 8,
+                fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
+                whiteSpace: "nowrap", boxSizing: "border-box", minWidth: 0
+              }}
+            >
+              + 새 교인 등록
+            </button>
           </div>
         ) : (
           <>
@@ -1143,16 +1135,16 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         )}
       </div>
 
-      {/* ─── 뷰 토글 ─── */}
-      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" onClick={() => { setViewMode("list"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "list" ? C.navy : C.bg, color: viewMode === "list" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Table /></span> 테이블</button>
-        <button type="button" onClick={() => { setViewMode("card"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "card" ? C.navy : C.bg, color: viewMode === "card" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Card /></span> 카드별</button>
-        <button type="button" onClick={() => { setViewMode("group"); setSelectedMokjang(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "group" ? C.navy : C.bg, color: viewMode === "group" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
+      {/* ─── 뷰 토글 — 모바일: 가로 전체 균등 분할(우측 빈 여백 방지) ─── */}
+      <div style={mob ? { display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: 6, width: "100%", minWidth: 0 } : { display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+        <button type="button" onClick={() => { setViewMode("list"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "list" ? C.navy : C.bg, color: viewMode === "list" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, ...(mob ? { flex: "1 1 0", minWidth: 0 } : {}) }}><span style={{ display: "flex" }}><Icons.Table /></span> 테이블</button>
+        <button type="button" onClick={() => { setViewMode("card"); setSelectedMokjang(null); setPageList(1); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "card" ? C.navy : C.bg, color: viewMode === "card" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, ...(mob ? { flex: "1 1 0", minWidth: 0 } : {}) }}><span style={{ display: "flex" }}><Icons.Card /></span> 카드별</button>
+        <button type="button" onClick={() => { setViewMode("group"); setSelectedMokjang(null); }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewMode === "group" ? C.navy : C.bg, color: viewMode === "group" ? "#fff" : C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, ...(mob ? { flex: "1 1 0", minWidth: 0 } : {}) }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
         {viewMode === "list" && selectedMemberIds.size > 0 && (
-          <button type="button" onClick={() => { deleteMembers(Array.from(selectedMemberIds)); setSelectedMemberIds(new Set()); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.danger}`, fontSize: 13, fontFamily: "inherit", background: C.dangerBg || "#fee2e2", color: C.danger, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Trash2 /></span> 삭제 ({selectedMemberIds.size}명)</button>
+          <button type="button" onClick={() => { deleteMembers(Array.from(selectedMemberIds)); setSelectedMemberIds(new Set()); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.danger}`, fontSize: 13, fontFamily: "inherit", background: C.dangerBg || "#fee2e2", color: C.danger, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, ...(mob ? { flex: "1 1 0", minWidth: 0 } : {}) }}><span style={{ display: "flex" }}><Icons.Trash2 /></span> 삭제 ({selectedMemberIds.size}명)</button>
         )}
-        <div ref={printDropdownRef} style={{ position: "relative" }}>
-          <button type="button" onClick={() => setPrintOpen(p => !p)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ display: "flex" }}><Icons.Printer /></span> 인쇄</button>
+        <div ref={printDropdownRef} style={{ position: "relative", ...(mob ? { flex: "1 1 0", minWidth: 0 } : {}) }}>
+          <button type="button" onClick={() => setPrintOpen(p => !p)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, ...(mob ? { width: "100%", boxSizing: "border-box" } : {}) }}><span style={{ display: "flex" }}><Icons.Printer /></span> 인쇄</button>
           {printOpen && (
             <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 50, minWidth: 160 }}>
               <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; try { const { generateChurchRegisterPdf } = await import("@/components/print/ChurchRegisterPrint"); await generateChurchRegisterPdf(detailMember, db.settings.churchName ?? "", db.settings.denomination); toast("교적부 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>교적부 양식</button>
@@ -1274,8 +1266,8 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
               .pastoral-list-table .member-avatar { width: 30px !important; height: 30px !important; }
             `}</style>
           )}
-          <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ overflowX: "auto" }}>
+          <div ref={listRef} style={{ width: "100%", maxWidth: "100%", minWidth: 0 }}><Card style={{ padding: 0, overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+            <div style={{ overflowX: "auto", width: "100%", maxWidth: "100%", minWidth: 0 }}>
               <table className="pastoral-list-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? 12 : 14 }}>
                 <thead>
                   <tr style={{ background: C.bg }}>
@@ -3275,7 +3267,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} detailId={detailId} deleteMembers={deleteMembers} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
                 {[
                   { id: "dashboard" as const, label: "대시보드", Icon: LayoutDashboard },
                   { id: "check" as const, label: "출석 체크", Icon: CalendarCheck },
@@ -3288,8 +3280,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                     type="button"
                     onClick={() => setAttendanceSubTab(id)}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10,
-                      fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      padding: "8px 0", borderRadius: 10,
+                      fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer",
                       background: attendanceSubTab === id ? C.navy : "transparent",
                       color: attendanceSubTab === id ? "#fff" : C.text,
                       borderWidth: 1, borderStyle: "solid", borderColor: attendanceSubTab === id ? C.navy : C.border,
