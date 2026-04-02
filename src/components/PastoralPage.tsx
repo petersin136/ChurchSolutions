@@ -1053,19 +1053,65 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
           <input value={search} onChange={e => { setSearch(e.target.value); setPageList(1); setPageGroup(1); }} placeholder="이름, 연락처 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 10, color: C.text, outline: "none" }} />
         </div>
         {mob ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, width: "100%" }}>
-            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ flex: "0 1 auto", height: 36, width: "auto", fontSize: 12 }}>
-              <option value="all">부서</option>
-              {depts.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ flex: "0 1 auto", height: 36, width: "auto", fontSize: 12 }}>
-              <option value="all">전체 상태</option>
-              {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
-            </select>
-            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} /> 새가족</label>
-            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} /> 관심성도</label>
-            <SBadge variant="accent">{filtered.length}명</SBadge>
-            <Btn onClick={() => openMemberModal()} icon={<Icons.Plus />}>새 교인 등록</Btn>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+            {/* 1행: 부서 / 전체상태 */}
+            <div style={{ display: "flex", flexDirection: "row", gap: 8, width: "100%" }}>
+              <select
+                id="debug-dept"
+                value={deptF}
+                onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }}
+                style={{ flex: 1, height: 36, minWidth: 0 }}
+              >
+                <option value="all">부서</option>
+                {depts.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+              <select
+                id="debug-status"
+                value={statusF}
+                onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }}
+                style={{ flex: 1, height: 36, minWidth: 0 }}
+              >
+                <option value="all">전체 상태</option>
+                {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            {/* 2행: 새가족+관심성도+인원 / 새교인등록 */}
+            <div style={{ display: "flex", flexDirection: "row", gap: 8, width: "100%", alignItems: "stretch" }}>
+              <div
+                id="debug-checkbox-box"
+                style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                  gap: 8, height: 36, padding: "0 10px",
+                  border: "1px solid #ddd", borderRadius: 8, background: "#fff",
+                  fontSize: 12, boxSizing: "border-box"
+                }}
+              >
+                <label style={{ display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", cursor: "pointer", fontSize: 12 }}>
+                  <input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} />
+                  새가족
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", cursor: "pointer", fontSize: 12 }}>
+                  <input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} />
+                  관심성도
+                </label>
+                <span style={{ marginLeft: "auto", color: "#3B5BDB", fontWeight: 700, fontSize: 12 }}>
+                  {filtered.length}명
+                </span>
+              </div>
+              <button
+                id="debug-register-btn"
+                type="button"
+                onClick={() => openMemberModal()}
+                style={{
+                  flex: 1, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
+                  gap: 4, background: "#1B2A4A", color: "#fff", border: "none", borderRadius: 8,
+                  fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
+                  whiteSpace: "nowrap", boxSizing: "border-box"
+                }}
+              >
+                + 새 교인 등록
+              </button>
+            </div>
           </div>
         ) : (
           <>
