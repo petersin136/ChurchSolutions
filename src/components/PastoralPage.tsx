@@ -906,10 +906,10 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 24 }}>
-      {churchName && (
-        <div style={{ padding: mob ? "8px 0 2px" : "12px 0 4px", borderBottom: `2px solid ${C.border}`, marginBottom: mob ? 2 : 4 }}>
-          <h2 style={{ margin: 0, fontSize: mob ? 18 : 24, fontWeight: 800, color: C.navy }}>{churchName}</h2>
-          <p style={{ margin: "4px 0 0", fontSize: mob ? 12 : 13, color: C.textMuted }}>목양 대시보드</p>
+      {churchName && !mob && (
+        <div style={{ padding: "12px 0 4px", borderBottom: `2px solid ${C.border}`, marginBottom: 4 }}>
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: C.navy }}>{churchName}</h2>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: C.textMuted }}>목양 대시보드</p>
         </div>
       )}
       <div
@@ -3681,7 +3681,15 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} detailId={detailId} deleteMembers={deleteMembers} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>
-              <div style={{ marginBottom: mob ? 6 : 16, paddingBottom: mob ? 8 : 12, borderBottom: `1px solid ${C.border}` }}>
+              <div
+                style={{
+                  marginBottom: mob ? 6 : 16,
+                  paddingBottom: mob ? 8 : 12,
+                  borderBottom: `1px solid ${C.border}`,
+                  minHeight: mob ? 72 : undefined,
+                  boxSizing: "border-box",
+                }}
+              >
                 <SegmentedControl
                   items={attendanceSegmentItems}
                   value={attendanceSubTab}

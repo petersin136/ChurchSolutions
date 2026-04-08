@@ -44,6 +44,10 @@ const LAYOUT = {
 
 const DEFAULT_SIDEBAR_ACCENT = "#2563eb";
 
+/** 모바일: 상단 헤더 + 탭 바 높이 고정(탭 전환 시 콘텐츠 점프 방지) */
+const MOB_TOP_HEADER_H = 48;
+const MOB_TOP_TABS_H = 40;
+
 /** 사이드바 상단(교회명/날짜) — 모바일·데스크톱 동일 */
 const SIDEBAR_HEADER_FIXED = {
   padding: "24px 20px 16px 20px",
@@ -398,20 +402,41 @@ export function UnifiedPageLayout({
         }}
       >
         <header
-          style={{
-            minHeight: mob ? LAYOUT.mainHeaderHeightMob : LAYOUT.mainHeaderHeight,
-            padding: mob ? LAYOUT.mainHeaderPaddingMob : LAYOUT.mainHeaderPadding,
-            background: "rgba(255,255,255,0.85)",
-            backdropFilter: "blur(20px)",
-            borderBottom: `1px solid ${LAYOUT.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexShrink: 0,
-            gap: 8,
-          }}
+          style={
+            mob
+              ? {
+                  flexShrink: 0,
+                  height: MOB_TOP_HEADER_H,
+                  minHeight: MOB_TOP_HEADER_H,
+                  maxHeight: MOB_TOP_HEADER_H,
+                  padding: "12px 16px 0",
+                  boxSizing: "border-box",
+                  overflow: "hidden",
+                  background: "#fff",
+                  borderBottom: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 20,
+                }
+              : {
+                  minHeight: LAYOUT.mainHeaderHeight,
+                  padding: LAYOUT.mainHeaderPadding,
+                  background: "rgba(255,255,255,0.85)",
+                  backdropFilter: "blur(20px)",
+                  borderBottom: `1px solid ${LAYOUT.border}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexShrink: 0,
+                  gap: 8,
+                }
+          }
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1, height: "100%", overflow: "hidden" }}>
             {mob && (
               <button
                 type="button"
@@ -420,40 +445,57 @@ export function UnifiedPageLayout({
                 style={{
                   background: LAYOUT.mainBg,
                   lineHeight: 1,
+                  alignSelf: "center",
                 }}
                 aria-label="메뉴 열기"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               </button>
             )}
-            <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                minWidth: 0,
+                flex: 1,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: mob ? "flex-start" : "center",
+                ...(mob ? { paddingTop: 0 } : {}),
+              }}
+            >
               <div
                 style={{
-                  fontSize: mob ? 17 : 20,
+                  fontSize: mob ? 16 : 20,
                   fontWeight: 700,
-                  letterSpacing: -0.5,
-                  color: LAYOUT.headerTitleColor,
+                  letterSpacing: mob ? -0.3 : -0.5,
+                  color: mob ? "#1f2937" : LAYOUT.headerTitleColor,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
+                  lineHeight: 1.2,
                 }}
               >
                 {headerTitle}
               </div>
-              {headerDesc && (
+              {(mob || headerDesc) && (
                 <div
-                  style={
-                    mob
-                      ? { fontSize: 12, color: "#6b7280", marginTop: 0 }
-                      : { fontSize: 14, color: "#6b7280", marginTop: 2 }
-                  }
+                  style={{
+                    fontSize: mob ? 11 : 14,
+                    color: mob ? "#999" : "#6b7280",
+                    marginTop: mob ? 2 : 2,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    lineHeight: 1.2,
+                    minHeight: mob ? 14 : undefined,
+                  }}
                 >
-                  {headerDesc}
+                  {mob ? headerDesc || "\u00a0" : headerDesc}
                 </div>
               )}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>{headerActions}</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, alignSelf: "center" }}>{headerActions}</div>
         </header>
 
         {mob && navSections.length > 0 && (
@@ -463,16 +505,24 @@ export function UnifiedPageLayout({
             onTouchEnd={handleSwipeTouchEnd}
             style={{
               display: "flex",
+              alignItems: "stretch",
               overflowX: "auto",
               overflowY: "hidden",
-              borderBottom: "1px solid #e5e7eb",
+              height: MOB_TOP_TABS_H,
+              minHeight: MOB_TOP_TABS_H,
+              maxHeight: MOB_TOP_TABS_H,
+              borderBottom: "2px solid #f0f2f5",
               background: "#ffffff",
-              padding: "6px 8px",
-              gap: 2,
+              padding: 0,
+              gap: 0,
               flexShrink: 0,
               WebkitOverflowScrolling: "touch",
               scrollbarWidth: "none",
               msOverflowStyle: "none",
+              position: "sticky",
+              top: MOB_TOP_HEADER_H,
+              zIndex: 19,
+              boxSizing: "border-box",
             }}
           >
             {navSections.flatMap((sec) =>
@@ -488,17 +538,22 @@ export function UnifiedPageLayout({
                     onClick={() => onNav(item.id)}
                     style={{
                       flex: "0 0 auto",
-                      padding: "8px 10px",
+                      height: MOB_TOP_TABS_H,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "0 12px",
                       fontSize: 12,
                       fontWeight: isActive ? 700 : 500,
                       color: isActive ? accent : "#6b7280",
                       background: "none",
                       border: "none",
                       borderBottom: isActive ? `2px solid ${accent}` : "2px solid transparent",
+                      boxSizing: "border-box",
                       cursor: "pointer",
                       whiteSpace: "nowrap",
                       wordBreak: "keep-all",
                       transition: "color 0.15s, border-color 0.15s",
+                      fontFamily: "inherit",
                     }}
                   >
                     {item.label}
@@ -516,7 +571,7 @@ export function UnifiedPageLayout({
             flex: 1,
             width: "100%",
             overflowY: "auto",
-            padding: mob ? LAYOUT.mainContentPaddingMob : LAYOUT.mainContentPadding,
+            padding: mob ? `8px ${LAYOUT.mainContentPaddingMob}px ${LAYOUT.mainContentPaddingMob}px` : LAYOUT.mainContentPadding,
             fontSize: mob ? 14 : 15,
             lineHeight: 1.55,
           }}
