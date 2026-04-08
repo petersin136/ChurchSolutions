@@ -26,6 +26,12 @@ export interface ModernSelectProps {
   id?: string;
   style?: React.CSSProperties;
   className?: string;
+  /** 모바일 필터용: 낮은 높이·작은 글자 */
+  compact?: boolean;
+  /** compact와 함께: 높이 28px, radius 6, 좌우 패딩 좁게 (52주 출석 필터 등) */
+  uniform28?: boolean;
+  /** compact와 함께: 높이 30px, 12px 글자, radius 6, padding 0 8px (52주 출석 필터 등) */
+  uniform30?: boolean;
 }
 
 export function ModernSelect({
@@ -38,9 +44,22 @@ export function ModernSelect({
   id,
   style,
   className,
+  compact = false,
+  uniform28 = false,
+  uniform30 = false,
 }: ModernSelectProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const u30 = compact && uniform30;
+  const u28 = compact && uniform28 && !u30;
+  const FILTER_BORDER = "#e8ecf1";
+  const pad = u30 ? "0 26px 0 8px" : u28 ? "0 22px 0 6px" : compact ? "4px 28px 4px 8px" : "10px 40px 10px 14px";
+  const fs = u30 ? 12 : compact ? 11 : 14;
+  const br = u30 || u28 ? 6 : compact ? 4 : RADIUS;
+  const chev = u30 ? 15 : compact ? 14 : 16;
+  const chevRight = u30 ? 8 : u28 ? 6 : compact ? 8 : 12;
+  const optPad = u30 || compact ? "8px 10px" : "10px 14px";
+  const optFs = u30 ? 12 : compact ? 12 : 14;
 
   const selected = options.find((o) => o.value === value);
   const display = selected?.label ?? placeholder;
@@ -72,26 +91,39 @@ export function ModernSelect({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "10px 40px 10px 14px",
-          fontSize: 14,
+          padding: pad,
+          minHeight: compact ? (u30 ? 30 : 28) : undefined,
+          height: u30 ? 30 : u28 ? 28 : undefined,
+          boxSizing: u30 || u28 ? "border-box" : undefined,
+          fontSize: fs,
           lineHeight: 1.4,
           fontFamily: "inherit",
           color: value ? TEXT : TEXT_MUTED,
           background: SURFACE,
-          border: `1px solid ${BORDER}`,
-          borderRadius: RADIUS,
+          border: u30 ? `1px solid ${FILTER_BORDER}` : `1px solid ${BORDER}`,
+          borderRadius: br,
           cursor: disabled ? "not-allowed" : "pointer",
           outline: "none",
           transition: "border-color 0.2s, box-shadow 0.2s",
           opacity: disabled ? 0.6 : 1,
         }}
       >
-        <span style={{ textAlign: "left", whiteSpace: "nowrap" }}>{display}</span>
+        <span
+          style={{
+            textAlign: "left",
+            whiteSpace: "nowrap",
+            ...(u28 || u30
+              ? { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }
+              : {}),
+          }}
+        >
+          {display}
+        </span>
         <ChevronDown
-          size={16}
+          size={chev}
           style={{
             position: "absolute",
-            right: 12,
+            right: chevRight,
             top: "50%",
             transform: open ? "translateY(-50%) rotate(180deg)" : "translateY(-50%)",
             transition: "transform 0.2s",
@@ -111,7 +143,7 @@ export function ModernSelect({
             marginTop: 4,
             background: SURFACE,
             border: `1px solid ${BORDER}`,
-            borderRadius: RADIUS,
+            borderRadius: br,
             boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
             zIndex: 1000,
             maxHeight: 260,
@@ -133,8 +165,8 @@ export function ModernSelect({
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "10px 14px",
-                fontSize: 14,
+                padding: optPad,
+                fontSize: optFs,
                 fontFamily: "inherit",
                 color: TEXT,
                 background: o.value === value ? BLUE_LIGHT : "transparent",

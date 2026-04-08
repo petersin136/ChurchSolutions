@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -8,20 +8,27 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   BarChart,
   Bar,
 } from "recharts";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
+import { tokens } from "@/styles/tokens";
 import LazyChart from "../common/LazyChart";
 
-const NAVY = "#1e3a5f";
-const GOLD = "#d4a853";
-const GRAY = "#6b7280";
-const SUCCESS = "#10B981";
-const DANGER = "#ef476f";
+const { color: tc, fontSize: tf, height: th, space: ts, radius: tr, fontWeight: tw } = tokens;
+
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
 
 export interface AttendanceDashboardProps {
   members: Member[];
@@ -67,6 +74,7 @@ export function AttendanceDashboard({
   attendanceList,
   onOpenAbsenteeList,
 }: AttendanceDashboardProps) {
+  const mob = useIsMobile();
   const activeMembers = useMemo(() => getActiveMembers(members), [members]);
   const totalActive = activeMembers.length;
 
@@ -196,98 +204,138 @@ export function AttendanceDashboard({
     });
   }, [byWeekService, recentSundays, totalActive]);
 
+  const metricPad = mob ? "6px 8px" : ts.padding.desktopCard;
+  const metricMinH = mob ? 50 : th.desktopCardMin;
+  const chartH = mob ? 140 : th.desktopChart;
+  const mLabel = mob ? 9 : tf.desktop.label;
+  const mValue = mob ? 18 : tf.desktop.value;
+  const mSub = mob ? 8 : tf.desktop.sub;
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3" style={{ gridAutoRows: "1fr" }}>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center" style={{ padding: "10px 14px", minHeight: 80 }}>
-          <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>이번 주 출석</div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-            <span style={{ fontSize: 28, fontWeight: 800, color: "#1e3a5f" }}>{thisWeekPresent}</span>
-            <span style={{ fontSize: 12, color: "#888" }}>/ {totalActive}명</span>
+    <div className={mob ? "space-y-2" : "space-y-6"}>
+      <div className={mob ? "grid grid-cols-2 gap-1.5" : "grid grid-cols-2 gap-3"} style={{ gridAutoRows: "1fr" }}>
+        <div
+          className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
+          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
+        >
+          <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 주 출석</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: ts.gap.xs }}>
+            <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: tc.navyEmphasis }}>{thisWeekPresent}</span>
+            <span style={{ fontSize: mSub, color: tc.labelMuted }}>/ {totalActive}명</span>
           </div>
           <div
             style={{
-              fontSize: 11,
-              color: rateDiff >= 0 ? "#2563eb" : "#dc2626",
-              marginTop: 2,
+              fontSize: mSub,
+              color: rateDiff >= 0 ? tc.trendPositive : tc.trendNegative,
+              marginTop: ts.gap.xxs,
             }}
           >
             {rateDiff >= 0 ? `▲ ${rateDiff}%p` : `▼ ${Math.abs(rateDiff)}%p`} 전주 대비
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center" style={{ padding: "10px 14px", minHeight: 80 }}>
-          <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>이번 주 출석률</div>
-          <span style={{ fontSize: 28, fontWeight: 800, color: "#1e3a5f" }}>{attendanceRate}%</span>
+        <div
+          className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
+          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
+        >
+          <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 주 출석률</div>
+          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: tc.navyEmphasis }}>{attendanceRate}%</span>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center" style={{ padding: "10px 14px", minHeight: 80 }}>
-          <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>이번 달 평균 출석률</div>
-          <span style={{ fontSize: 28, fontWeight: 800, color: "#1e3a5f" }}>{monthlyRate}%</span>
+        <div
+          className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
+          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
+        >
+          <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 달 평균 출석률</div>
+          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: tc.navyEmphasis }}>{monthlyRate}%</span>
         </div>
         <button
           type="button"
           onClick={() => onOpenAbsenteeList?.(consecutiveAbsent)}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center text-left hover:shadow-md transition"
-          style={{ padding: "10px 14px", minHeight: 80 }}
+          className={
+            mob
+              ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white text-left shadow-sm transition hover:shadow-md"
+              : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center text-left hover:shadow-md transition"
+          }
+          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
         >
-          <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>3주 연속 결석</div>
-          <span style={{ fontSize: 28, fontWeight: 800, color: "#1e3a5f" }}>{consecutiveAbsent.length}명</span>
-          <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>클릭 시 명단</div>
+          <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>3주 연속 결석</div>
+          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: tc.navyEmphasis }}>{consecutiveAbsent.length}명</span>
+          <div style={{ fontSize: mSub, color: tc.labelMuted, marginTop: ts.gap.xxs }}>클릭 시 명단</div>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4" style={{ maxHeight: 260 }}>
-          <h4 className="text-sm font-semibold text-[#1e3a5f] mb-4">주간 출석 추이 (최근 12주)</h4>
-          <LazyChart height={180}>
+      <div className={mob ? "grid grid-cols-1 gap-2" : "grid grid-cols-1 gap-6 lg:grid-cols-2"}>
+        <div
+          className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}
+          style={{ maxHeight: chartH + (mob ? 56 : 80) }}
+        >
+          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: tc.navyEmphasis }}>
+            주간 출석 추이 (최근 12주)
+          </h4>
+          <LazyChart height={chartH}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={weeklyTrendData} margin={{ top: 5, right: 10, left: -15, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
+              <LineChart data={weeklyTrendData} margin={{ top: 5, right: 10, left: mob ? -20 : -15, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={tc.chartGrid} />
+                <XAxis dataKey="week" tick={{ fontSize: mob ? 8 : tf.scale.xs }} />
+                <YAxis tick={{ fontSize: mob ? 8 : tf.scale.xs }} width={mob ? 28 : undefined} />
                 <Tooltip formatter={(v: any) => [`${v ?? 0}명`, ""]} />
-                <Line type="monotone" dataKey="주일예배" stroke={NAVY} strokeWidth={2} name="주일예배" dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="주일예배" stroke={tc.navyEmphasis} strokeWidth={2} name="주일예배" dot={{ r: mob ? 2 : 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </LazyChart>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4" style={{ maxHeight: 260 }}>
-          <h4 className="text-sm font-semibold text-[#1e3a5f] mb-4">부서별 출석률</h4>
-          <LazyChart height={180}>
+        <div
+          className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}
+          style={{ maxHeight: chartH + (mob ? 56 : 80) }}
+        >
+          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: tc.navyEmphasis }}>
+            부서별 출석률
+          </h4>
+          <LazyChart height={chartH}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={deptRates} layout="vertical" margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="dept" width={60} tick={{ fontSize: 11 }} />
+              <BarChart data={deptRates} layout="vertical" margin={{ top: 5, right: 10, left: mob ? -14 : -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={tc.chartGrid} />
+                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: mob ? 8 : tf.scale.xs }} />
+                <YAxis type="category" dataKey="dept" width={mob ? 44 : 60} tick={{ fontSize: mob ? 8 : tf.scale.xs }} />
                 <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
-                <Bar dataKey="rate" name="출석률" fill={NAVY} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="rate" name="출석률" fill={tc.navyEmphasis} radius={[0, tr.xs, tr.xs, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </LazyChart>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <h4 className="text-sm font-semibold text-[#1e3a5f] mb-4">월별 출석 히트맵 (최근 8주)</h4>
-        <div className="grid grid-cols-4 gap-2 w-full place-items-center">
+      <div className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}>
+        <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: tc.navyEmphasis }}>
+          월별 출석 히트맵 (최근 8주)
+        </h4>
+        <div className={mob ? "grid w-full grid-cols-4 place-items-center gap-1" : "grid w-full grid-cols-4 place-items-center gap-2"}>
           {heatmapData.map((row) => (
             <div
               key={row.date}
-              className="rounded-lg px-3 py-2 text-center text-xs font-medium text-white min-w-[4rem]"
+              className={mob ? "rounded-md text-center font-medium text-white" : "rounded-lg px-3 py-2 text-center text-xs font-medium text-white min-w-[4rem]"}
               style={{
+                width: mob ? 28 : undefined,
+                height: mob ? 28 : undefined,
+                fontSize: mob ? 8 : undefined,
+                lineHeight: mob ? 1.1 : undefined,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: mob ? 2 : undefined,
                 backgroundColor:
                   row.rate >= 80
-                    ? NAVY
+                    ? tc.navyEmphasis
                     : row.rate >= 50
-                      ? "#4a6fa5"
+                      ? tc.heatMid
                       : row.rate >= 20
-                        ? "#7a9bc4"
-                        : "rgba(30,58,95,0.2)",
+                        ? tc.heatLight
+                        : tc.heatFaint,
               }}
               title={`${row.date} ${row.rate}% (${row.present}/${row.total}명)`}
             >
-              {row.date}
-              <br />
-              {row.rate}%
+              <span className="block leading-tight">{row.date}</span>
+              <span className="block leading-tight">{row.rate}%</span>
             </div>
           ))}
         </div>

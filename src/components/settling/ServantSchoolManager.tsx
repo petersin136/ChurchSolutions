@@ -26,7 +26,19 @@ interface Props {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
+
 export function ServantSchoolManager({ members, toast }: Props) {
+  const mob = useIsMobile();
   const [graduates, setGraduates] = useState<Graduate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMemberId, setSelectedMemberId] = useState("");
@@ -35,12 +47,22 @@ export function ServantSchoolManager({ members, toast }: Props) {
   const [saving, setSaving] = useState(false);
 
   const fetchGraduates = useCallback(async () => {
-    if (!supabase) { setLoading(false); return; }
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       let churchId = "";
-      try { churchId = getChurchId(); } catch { /* ignore */ }
-      if (!churchId) { setLoading(false); return; }
+      try {
+        churchId = getChurchId();
+      } catch {
+        /* ignore */
+      }
+      if (!churchId) {
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from("servant_school_graduates")
@@ -63,15 +85,12 @@ export function ServantSchoolManager({ members, toast }: Props) {
     fetchGraduates();
   }, [fetchGraduates]);
 
-  const existingMemberIds = useMemo(() => new Set(graduates.map(g => g.member_id)), [graduates]);
+  const existingMemberIds = useMemo(() => new Set(graduates.map((g) => g.member_id)), [graduates]);
 
-  const availableMembers = useMemo(
-    () => members.filter(m => !existingMemberIds.has(m.id)),
-    [members, existingMemberIds]
-  );
+  const availableMembers = useMemo(() => members.filter((m) => !existingMemberIds.has(m.id)), [members, existingMemberIds]);
 
   const selectedMember = useMemo(
-    () => availableMembers.find(m => m.id === selectedMemberId) ?? null,
+    () => availableMembers.find((m) => m.id === selectedMemberId) ?? null,
     [availableMembers, selectedMemberId]
   );
 
@@ -120,10 +139,7 @@ export function ServantSchoolManager({ members, toast }: Props) {
   const handleDelete = async (g: Graduate) => {
     if (!supabase) return;
     if (!confirm(`${g.name} 수료자를 삭제하시겠습니까?`)) return;
-    const { error } = await supabase
-      .from("servant_school_graduates")
-      .delete()
-      .eq("id", g.id);
+    const { error } = await supabase.from("servant_school_graduates").delete().eq("id", g.id);
     if (error) {
       toast("삭제 실패: " + error.message, "err");
     } else {
@@ -132,32 +148,55 @@ export function ServantSchoolManager({ members, toast }: Props) {
     }
   };
 
-  const activeGraduates = graduates.filter(g => g.is_active);
-  const inactiveGraduates = graduates.filter(g => !g.is_active);
+  const activeGraduates = graduates.filter((g) => g.is_active);
+  const inactiveGraduates = graduates.filter((g) => !g.is_active);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 className="text-base font-bold text-[#1e3a5f] mb-4">섬김이 학교 수료자 등록</h3>
-        <div className="flex flex-col sm:flex-row gap-3 items-start">
+    <div className={mob ? "space-y-3" : "space-y-6"}>
+      <div
+        className={
+          mob
+            ? "rounded-lg border border-gray-100 bg-white p-3"
+            : "rounded-xl border border-gray-100 bg-white p-5 shadow-sm"
+        }
+      >
+        <h3
+          className={
+            mob ? "mb-2 text-[12px] font-bold text-[#1e3a5f]" : "mb-4 text-base font-bold text-[#1e3a5f]"
+          }
+        >
+          섬김이 학교 수료자 등록
+        </h3>
+        <div className={mob ? "flex flex-col gap-2" : "flex flex-col items-start gap-3 sm:flex-row"}>
           <select
             value={selectedMemberId}
             onChange={(e) => setSelectedMemberId(e.target.value)}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] min-w-0"
+            className={
+              mob
+                ? "h-7 w-full rounded border border-gray-200 px-2 py-1.5 text-[11px]"
+                : "min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20"
+            }
           >
             <option value="">-- 성도 선택 ({availableMembers.length}명) --</option>
-            {availableMembers.map(m => (
+            {availableMembers.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.name}{m.role ? ` (${m.role})` : ""}{m.dept ? ` · ${m.dept}` : ""}
+                {m.name}
+                {m.role ? ` (${m.role})` : ""}
+                {m.dept ? ` · ${m.dept}` : ""}
               </option>
             ))}
           </select>
-          <div className="w-full sm:w-48 shrink-0">
+          <div className={mob ? "w-full" : "w-full shrink-0 sm:w-48"}>
             <CalendarDropdown
               value={graduatedAt}
               onChange={setGraduatedAt}
               compact
               style={{ marginBottom: 0 }}
+              triggerStyle={
+                mob
+                  ? { fontSize: 11, minHeight: 28, height: 28, padding: "4px 8px", borderRadius: 6 }
+                  : undefined
+              }
             />
           </div>
           <input
@@ -165,54 +204,107 @@ export function ServantSchoolManager({ members, toast }: Props) {
             placeholder="메모 (선택)"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2.5 text-sm w-full sm:w-48 shrink-0"
+            className={
+              mob
+                ? "h-7 w-full rounded border border-gray-200 px-2 py-1.5 text-[11px]"
+                : "w-full shrink-0 rounded-lg border border-gray-200 px-3 py-2.5 text-sm sm:w-48"
+            }
           />
           <button
             type="button"
             onClick={handleRegister}
             disabled={!selectedMemberId || saving}
-            className="px-5 py-2.5 rounded-xl bg-[#1e3a5f] text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 whitespace-nowrap shrink-0"
+            className={
+              mob
+                ? "h-7 w-full rounded-lg bg-[#1e3a5f] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-40"
+                : "shrink-0 whitespace-nowrap rounded-xl bg-[#1e3a5f] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40"
+            }
           >
             {saving ? "등록 중..." : "수료자 등록"}
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100">
-          <h3 className="text-base font-bold text-[#1e3a5f]">
-            수료자 목록 <span className="text-sm font-normal text-gray-400 ml-1">({activeGraduates.length}명 활성)</span>
+      <div
+        className={
+          mob
+            ? "overflow-hidden rounded-lg border border-gray-100 bg-white"
+            : "overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
+        }
+      >
+        <div className={mob ? "border-b border-gray-100 px-3 py-2" : "border-b border-gray-100 px-5 py-3"}>
+          <h3 className={mob ? "text-[11px] font-bold text-[#1e3a5f]" : "text-base font-bold text-[#1e3a5f]"}>
+            수료자 목록{" "}
+            <span className={mob ? "ml-1 text-[10px] font-normal text-gray-400" : "ml-1 text-sm font-normal text-gray-400"}>
+              ({activeGraduates.length}명 활성)
+            </span>
           </h3>
         </div>
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <span className="inline-block w-6 h-6 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
-            <span className="ml-2 text-gray-500">로딩 중...</span>
+          <div className={mob ? "flex items-center justify-center py-6" : "flex items-center justify-center py-12"}>
+            <span
+              className={
+                mob
+                  ? "inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#1e3a5f] border-t-transparent"
+                  : "inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#1e3a5f] border-t-transparent"
+              }
+            />
+            <span className={mob ? "ml-2 text-[10px] text-gray-500" : "ml-2 text-gray-500"}>로딩 중...</span>
           </div>
         ) : activeGraduates.length === 0 ? (
-          <div className="py-12 text-center text-gray-400">등록된 섬김이 학교 수료자가 없습니다.</div>
+          <div className={mob ? "py-6 text-center text-[11px] text-gray-400" : "py-12 text-center text-gray-400"}>
+            등록된 섬김이 학교 수료자가 없습니다.
+          </div>
+        ) : mob ? (
+          <div className="divide-y divide-gray-50">
+            {activeGraduates.map((g) => (
+              <div key={g.id} className="flex items-center gap-2 px-3 py-2 text-[11px]">
+                <span className="w-[50px] truncate font-medium text-gray-900">{g.name}</span>
+                <span className="w-[70px] text-gray-500">{g.graduated_at}</span>
+                <span className="flex-1 truncate text-gray-400">{g.notes || "-"}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleActive(g)}
+                  className="rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-medium text-green-700"
+                >
+                  활성
+                </button>
+                <button type="button" onClick={() => handleDelete(g)} className="text-[9px] font-medium text-red-500">
+                  삭제
+                </button>
+              </div>
+            ))}
+          </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/50">
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">이름</th>
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">수료일</th>
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">메모</th>
-                <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">활성</th>
-                <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">액션</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">이름</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">수료일</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">메모</th>
+                <th className="px-4 py-3 text-center font-semibold text-[#1e3a5f]">활성</th>
+                <th className="px-4 py-3 text-center font-semibold text-[#1e3a5f]">액션</th>
               </tr>
             </thead>
             <tbody>
-              {activeGraduates.map(g => (
+              {activeGraduates.map((g) => (
                 <tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="py-3 px-4 font-medium">{g.name}</td>
-                  <td className="py-3 px-4 text-gray-600">{g.graduated_at}</td>
-                  <td className="py-3 px-4 text-gray-500 max-w-[200px] truncate">{g.notes || "-"}</td>
-                  <td className="py-3 px-4 text-center">
-                    <button type="button" onClick={() => toggleActive(g)} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200">활성</button>
+                  <td className="px-4 py-3 font-medium">{g.name}</td>
+                  <td className="px-4 py-3 text-gray-600">{g.graduated_at}</td>
+                  <td className="max-w-[200px] truncate px-4 py-3 text-gray-500">{g.notes || "-"}</td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      type="button"
+                      onClick={() => toggleActive(g)}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-200"
+                    >
+                      활성
+                    </button>
                   </td>
-                  <td className="py-3 px-4 text-center">
-                    <button type="button" onClick={() => handleDelete(g)} className="text-xs text-red-500 hover:text-red-700 font-medium">삭제</button>
+                  <td className="px-4 py-3 text-center">
+                    <button type="button" onClick={() => handleDelete(g)} className="text-xs font-medium text-red-500 hover:text-red-700">
+                      삭제
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -222,27 +314,65 @@ export function ServantSchoolManager({ members, toast }: Props) {
       </div>
 
       {inactiveGraduates.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-400">비활성 수료자 ({inactiveGraduates.length}명)</h3>
+        <div
+          className={
+            mob
+              ? "overflow-hidden rounded-lg border border-gray-100 bg-white"
+              : "overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
+          }
+        >
+          <div className={mob ? "border-b border-gray-100 px-3 py-2" : "border-b border-gray-100 px-5 py-3"}>
+            <h3 className={mob ? "text-[10px] font-semibold text-gray-400" : "text-sm font-semibold text-gray-400"}>
+              비활성 수료자 ({inactiveGraduates.length}명)
+            </h3>
           </div>
-          <table className="w-full text-sm">
-            <tbody>
-              {inactiveGraduates.map(g => (
-                <tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50/50 opacity-60">
-                  <td className="py-2.5 px-4 font-medium">{g.name}</td>
-                  <td className="py-2.5 px-4 text-gray-500">{g.graduated_at}</td>
-                  <td className="py-2.5 px-4 text-gray-400 max-w-[200px] truncate">{g.notes || "-"}</td>
-                  <td className="py-2.5 px-4 text-center">
-                    <button type="button" onClick={() => toggleActive(g)} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 hover:bg-gray-200">비활성</button>
-                  </td>
-                  <td className="py-2.5 px-4 text-center">
-                    <button type="button" onClick={() => handleDelete(g)} className="text-xs text-red-500 hover:text-red-700 font-medium">삭제</button>
-                  </td>
-                </tr>
+          {mob ? (
+            <div className="divide-y divide-gray-50">
+              {inactiveGraduates.map((g) => (
+                <div key={g.id} className="flex items-center gap-2 px-3 py-1.5 text-[10px] opacity-60">
+                  <span className="w-[50px] truncate font-medium">{g.name}</span>
+                  <span className="w-[70px] text-gray-500">{g.graduated_at}</span>
+                  <span className="flex-1 truncate text-gray-400">{g.notes || "-"}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleActive(g)}
+                    className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-500"
+                  >
+                    비활성
+                  </button>
+                  <button type="button" onClick={() => handleDelete(g)} className="text-[9px] font-medium text-red-500">
+                    삭제
+                  </button>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <tbody>
+                {inactiveGraduates.map((g) => (
+                  <tr key={g.id} className="border-b border-gray-50 opacity-60 hover:bg-gray-50/50">
+                    <td className="px-4 py-2.5 font-medium">{g.name}</td>
+                    <td className="px-4 py-2.5 text-gray-500">{g.graduated_at}</td>
+                    <td className="max-w-[200px] truncate px-4 py-2.5 text-gray-400">{g.notes || "-"}</td>
+                    <td className="px-4 py-2.5 text-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleActive(g)}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-200"
+                      >
+                        비활성
+                      </button>
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <button type="button" onClick={() => handleDelete(g)} className="text-xs font-medium text-red-500 hover:text-red-700">
+                        삭제
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
     </div>

@@ -31,7 +31,7 @@ const LAYOUT = {
   mainHeaderPadding: "0 28px",
   mainHeaderPaddingMob: "8px 12px",
   mainContentPadding: 24,
-  mainContentPaddingMob: 12,
+  mainContentPaddingMob: 10,
   mainBg: "#f8f9fc",
   headerTitleFontSize: 24,
   headerTitleFontSizeMob: 18,
@@ -432,8 +432,8 @@ export function UnifiedPageLayout({
               overflowY: "hidden",
               borderBottom: "1px solid #e5e7eb",
               background: "#ffffff",
-              padding: "0 12px",
-              gap: 0,
+              padding: "6px 8px",
+              gap: 2,
               flexShrink: 0,
               WebkitOverflowScrolling: "touch",
               scrollbarWidth: "none",
@@ -450,8 +450,8 @@ export function UnifiedPageLayout({
                     onClick={() => onNav(item.id)}
                     style={{
                       flex: "0 0 auto",
-                      padding: "10px 14px",
-                      fontSize: 13,
+                      padding: "8px 10px",
+                      fontSize: 12,
                       fontWeight: isActive ? 700 : 500,
                       color: isActive ? accent : "#6b7280",
                       background: "none",
@@ -477,8 +477,8 @@ export function UnifiedPageLayout({
             width: "100%",
             overflowY: "auto",
             padding: mob ? LAYOUT.mainContentPaddingMob : LAYOUT.mainContentPadding,
-            fontSize: 15,
-            lineHeight: 1.6,
+            fontSize: mob ? 14 : 15,
+            lineHeight: 1.55,
           }}
         >
           {children}

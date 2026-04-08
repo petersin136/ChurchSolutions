@@ -740,4 +740,43 @@
     font-size: 14px !important;
     padding: 12px 14px !important;
   }
+  /* 목양 기도/메모 탭: 타입 선택 — 전역 select 규칙보다 우선 */
+  select.pastoral-notes-type-select.select-modern {
+    height: 32px !important;
+    font-size: 11px !important;
+    min-width: 80px !important;
+    width: auto !important;
+    padding: 0 24px 0 8px !important;
+  }
+  /* 성도 관리(MembersSub) 모바일 필터: 부서·전체 상태 — 검색창(32px)과 동일 높이 */
+  select.members-mob-filter-select {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    border-radius: 6px !important;
+    padding: 0 26px 0 8px !important;
+    border: 1px solid #e0e0e0 !important;
+    box-sizing: border-box !important;
+    background-color: #fff !important;
+    text-align: center !important;
+    width: 100% !important;
+    -webkit-text-size-adjust: 100% !important;
+  }
+}
+
+/* ── Mobile compact utilities (목양·향후 재사용) ── */
+@media (max-width: 768px) {
+  .mob-card { padding: 8px 10px !important; border-radius: 8px !important; }
+  .mob-card-sm { padding: 6px 8px !important; border-radius: 6px !important; }
+  .mob-input { height: 32px !important; font-size: 12px !important; border-radius: 8px !important; }
+  .mob-select { height: 32px !important; font-size: 11px !important; }
+  .mob-btn { height: 32px !important; font-size: 11px !important; padding: 0 10px !important; }
+  .mob-btn-sm { height: 24px !important; font-size: 10px !important; padding: 0 8px !important; }
+  .mob-text-xs { font-size: 10px !important; }
+  .mob-text-sm { font-size: 12px !important; }
+  .mob-text-base { font-size: 13px !important; }
+  .mob-gap-sm { gap: 6px !important; }
+  .mob-gap-xs { gap: 4px !important; }
 }

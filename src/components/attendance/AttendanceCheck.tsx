@@ -46,12 +46,24 @@ function getActiveMembers(members: Member[]) {
   return members.filter((m) => (m.member_status || m.status) === "활동" || !m.member_status);
 }
 
+function useIsMobile(bp = 768) {
+  const [mob, setMob] = useState(false);
+  useEffect(() => {
+    const q = () => setMob(window.innerWidth <= bp);
+    q();
+    window.addEventListener("resize", q);
+    return () => window.removeEventListener("resize", q);
+  }, [bp]);
+  return mob;
+}
+
 export function AttendanceCheck({
   members,
   toast,
   getCurrentUserId,
   onAttendanceSaved,
 }: AttendanceCheckProps) {
+  const mob = useIsMobile();
   const SERVICE_TYPE = "주일예배";
   const todaySunday = useMemo(() => toDateStr(getLastSunday(new Date())), []);
   const [selectedDate, setSelectedDate] = useState(todaySunday);
@@ -265,35 +277,62 @@ export function AttendanceCheck({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-3 bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4">
-        <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4">
-          <label className="flex items-center gap-2 shrink-0">
-            <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">날짜</span>
-            <div className="min-w-[160px] md:min-w-[180px]">
+    <div className="space-y-2 md:space-y-4">
+      <div
+        className={
+          mob
+            ? "space-y-1.5 bg-white rounded-xl shadow-sm border border-gray-100 p-2 -mx-3 px-2"
+            : "space-y-3 bg-white rounded-xl shadow-sm border border-gray-100 p-4 -mx-3 md:mx-0 px-2 md:px-4"
+        }
+      >
+        <div className={mob ? "flex flex-wrap items-center gap-1.5" : "flex flex-nowrap items-center gap-4"}>
+          <label className={mob ? "flex shrink-0 items-center gap-1.5" : "flex shrink-0 items-center gap-2"}>
+            <span className={mob ? "whitespace-nowrap text-[10px] text-gray-500" : "whitespace-nowrap text-sm text-gray-600"}>
+              날짜
+            </span>
+            <div className={mob ? "min-w-[130px]" : "min-w-[180px]"}>
               <CalendarDropdown
                 value={selectedDate}
                 onChange={handleDateChange}
                 compact
                 style={{ marginBottom: 0 }}
+                triggerStyle={
+                  mob
+                    ? { fontSize: 11, height: 28, minHeight: 28, padding: "4px 8px", borderRadius: 6 }
+                    : { fontSize: 14, minHeight: 40, padding: "8px 12px", borderRadius: 8 }
+                }
               />
             </div>
           </label>
-          <span className="text-xs md:text-sm text-[#1e3a5f] font-semibold px-3 py-2 bg-blue-50 rounded-lg">주일예배</span>
-          <label className="flex items-center gap-2 shrink-0">
-            <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">이름 검색</span>
+          <span
+            className={
+              mob
+                ? "rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#1e3a5f]"
+                : "rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-[#1e3a5f]"
+            }
+          >
+            주일예배
+          </span>
+          <label className={mob ? "flex shrink-0 items-center gap-1.5" : "flex shrink-0 items-center gap-2"}>
+            <span className={mob ? "whitespace-nowrap text-[10px] text-gray-500" : "whitespace-nowrap text-sm text-gray-600"}>
+              이름 검색
+            </span>
             <input
               type="search"
               placeholder="이름 검색"
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm w-28 md:w-40 min-h-[36px] md:min-h-0"
+              className={
+                mob
+                  ? "h-6 w-20 rounded border border-gray-200 px-1.5 py-0.5 text-[10px]"
+                  : "h-auto w-40 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              }
             />
           </label>
         </div>
         {/* 부서 탭 */}
         <div
-          className="flex overflow-x-auto gap-2 pb-2 [&::-webkit-scrollbar]:hidden"
+          className={mob ? "flex gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden" : "flex gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden"}
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {["전체", ...depts].map((dept) => (
@@ -301,7 +340,9 @@ export function AttendanceCheck({
               key={dept}
               type="button"
               onClick={() => setDeptFilter(dept === "전체" ? "" : dept)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`rounded-full font-medium whitespace-nowrap transition-colors ${
+                mob ? "px-2 py-0.5 text-[10px]" : "px-4 py-2 text-sm"
+              } ${
                 (dept === "전체" && !deptFilter) || deptFilter === dept
                   ? "bg-slate-800 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -318,16 +359,76 @@ export function AttendanceCheck({
           <span className="inline-block w-6 h-6 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
           <span className="ml-2 text-gray-500">출석 데이터 로딩 중...</span>
         </div>
+      ) : mob ? (
+        <div className="-mx-3 md:mx-0 px-2 md:px-0 bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="space-y-1">
+            <div className="flex items-center px-2 py-1 text-[10px] text-gray-400 font-medium border-b border-gray-100">
+              <span className="flex-1 min-w-0">교인</span>
+              <span className="w-[100px] shrink-0 text-center">출석</span>
+              <span className="w-[80px] shrink-0 text-center">사유</span>
+            </div>
+            {filteredMembers.length === 0 ? (
+              <div className="py-8 text-center text-gray-500 text-sm">교인 목록이 없거나 검색 결과가 없습니다.</div>
+            ) : (
+              filteredMembers.map((m) => {
+                const status = getStatus(m.id);
+                const isAbsent = status === "결석";
+                return (
+                  <div key={m.id} className="flex items-center px-2 py-1.5 border-b border-gray-50 gap-2">
+                    <div className="flex-1 min-w-0 flex items-center">
+                      <span className="text-[11px] font-medium text-gray-900 truncate">
+                        {m.name}
+                        {m.role && m.role !== "성도" ? (
+                          <span className="text-[9px] font-normal text-gray-400"> ({m.role})</span>
+                        ) : null}
+                      </span>
+                    </div>
+                    <div className="flex gap-1 w-[100px] shrink-0 justify-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleAttendance(m.id, "출석")}
+                        className={`h-6 px-2.5 text-[10px] rounded font-medium transition-colors ${
+                          status === "출석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        출석
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleAttendance(m.id, "결석")}
+                        className={`h-6 px-2.5 text-[10px] rounded font-medium transition-colors ${
+                          status === "결석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        결석
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="사유"
+                      value={noteMap[m.id] ?? ""}
+                      onChange={(e) => handleNoteChange(m.id, e.target.value)}
+                      disabled={!isAbsent}
+                      className={`w-[80px] shrink-0 h-6 px-1.5 text-[10px] border border-gray-200 rounded box-border ${
+                        isAbsent ? "bg-white text-gray-900 placeholder:text-gray-300" : "bg-gray-50 text-gray-400 placeholder:text-gray-200 cursor-not-allowed"
+                      }`}
+                    />
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       ) : (
-        <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="overflow-x-auto -mx-3 md:mx-0 px-2 md:px-0 bg-white rounded-xl shadow-sm border border-gray-100">
           <table className="w-full text-sm min-w-[320px]">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">교인</th>
-                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">직분</th>
-                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">목장</th>
-                <th className="text-center py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">출석 상태</th>
-                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">사유</th>
+                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">교인</th>
+                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">직분</th>
+                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">목장</th>
+                <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">출석 상태</th>
+                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">사유</th>
               </tr>
             </thead>
             <tbody>
@@ -339,41 +440,41 @@ export function AttendanceCheck({
                   const isAbsent = status === "결석";
                   return (
                     <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50/50 min-h-[48px]">
-                      <td className="py-3 px-3 md:px-4 flex items-center gap-2 md:gap-3 min-h-[48px]">
+                      <td className="py-3 px-4 flex items-center gap-3 min-h-[48px]">
                         <div
-                          className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-200 flex-shrink-0 bg-cover bg-center"
+                          className="w-9 h-9 rounded-full bg-gray-200 flex-shrink-0 bg-cover bg-center"
                           style={{ backgroundImage: m.photo ? `url(${m.photo})` : undefined }}
                         />
-                        <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] md:max-w-none">{m.name}</span>
+                        <span className="font-medium text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-none">{m.name}</span>
                       </td>
-                      <td className="py-3 px-3 md:px-4 text-gray-600 text-xs md:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[60px] md:max-w-none">{m.role || "-"}</td>
-                      <td className="py-3 px-3 md:px-4 text-gray-600 text-xs md:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[60px] md:max-w-none">{m.mokjang || m.group || "-"}</td>
-                      <td className="py-3 px-3 md:px-4">
+                      <td className="py-3 px-4 text-gray-600 text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-none">{m.role || "-"}</td>
+                      <td className="py-3 px-4 text-gray-600 text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-none">{m.mokjang || m.group || "-"}</td>
+                      <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-2 justify-center">
                           <button
                             type="button"
                             onClick={() => toggleAttendance(m.id, "출석")}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${status === "출석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                            className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${status === "출석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
                           >
                             출석
                           </button>
                           <button
                             type="button"
                             onClick={() => toggleAttendance(m.id, "결석")}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${status === "결석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                            className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors ${status === "결석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
                           >
                             결석
                           </button>
                         </div>
                       </td>
-                      <td className="py-3 px-3 md:px-4">
+                      <td className="py-3 px-4">
                         <input
                           type="text"
                           placeholder="사유 (선택)"
                           value={noteMap[m.id] ?? ""}
                           onChange={(e) => handleNoteChange(m.id, e.target.value)}
                           disabled={!isAbsent}
-                          className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg w-40 ${isAbsent ? "bg-white" : "bg-gray-50 text-gray-400"}`}
+                          className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg w-40 box-border ${isAbsent ? "bg-white" : "bg-gray-50 text-gray-400"}`}
                         />
                       </td>
                     </tr>
@@ -385,8 +486,8 @@ export function AttendanceCheck({
         </div>
       )}
 
-      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 shadow-lg rounded-t-xl p-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-4 text-sm text-gray-600">
+      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 shadow-lg rounded-t-xl p-2 md:p-4 flex flex-wrap items-center justify-between gap-2 md:gap-4">
+        <div className="flex gap-2 md:gap-4 text-xs md:text-sm text-gray-600">
           <span>출석 <strong className="text-slate-800">{count출석}명</strong></span>
           <span>결석 <strong className="text-slate-800">{count결석}명</strong></span>
           <span className="text-gray-400">/ 전체 {filteredMembers.length}명</span>

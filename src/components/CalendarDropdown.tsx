@@ -164,6 +164,8 @@ interface CalendarDropdownProps {
   style?: React.CSSProperties;
   /** 작은 트리거(출석부 등 행 내 배치용), 높이 36px */
   compact?: boolean;
+  /** 트리거 버튼에 병합 (모바일 전용 fontSize/height 등) */
+  triggerStyle?: React.CSSProperties;
 }
 
 export function CalendarDropdown({
@@ -177,6 +179,7 @@ export function CalendarDropdown({
   className,
   style,
   compact = false,
+  triggerStyle,
 }: CalendarDropdownProps) {
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState(() => (value ? parseYMD(value) : new Date()));
@@ -301,6 +304,15 @@ export function CalendarDropdown({
 
   const selYMD = toYMD(sel);
 
+  const triggerH = triggerStyle?.minHeight ?? triggerStyle?.height;
+  const triggerDense =
+    typeof triggerH === "number"
+      ? triggerH <= 28
+      : typeof triggerH === "string"
+        ? parseInt(triggerH, 10) <= 28
+        : false;
+  const calendarIconSize = triggerDense ? 16 : 20;
+
   return (
     <div ref={containerRef} style={{ position: "relative", ...style }} className={className}>
       {label && (
@@ -331,10 +343,11 @@ export function CalendarDropdown({
           textAlign: "left",
           opacity: disabled ? 0.7 : 1,
           minHeight: compact ? 36 : undefined,
+          ...triggerStyle,
         }}
       >
         <span style={{ flex: 1 }}>{value ? displayValue(value) : "날짜 선택"}</span>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width={calendarIconSize} height={calendarIconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
           <line x1="16" y1="2" x2="16" y2="6" />
           <line x1="8" y1="2" x2="8" y2="6" />

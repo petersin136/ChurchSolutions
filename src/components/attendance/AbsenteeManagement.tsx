@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAppData } from "@/contexts/AppDataContext";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
@@ -13,6 +13,17 @@ export interface AbsenteeManagementProps {
   consecutiveWeeks?: number;
   onAddVisit?: (memberId: string) => void;
   toast?: (msg: string, type?: "ok" | "err" | "warn") => void;
+}
+
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
 }
 
 function getActiveMembers(members: Member[]) {
@@ -50,6 +61,7 @@ export function AbsenteeManagement({
   onAddVisit,
   toast,
 }: AbsenteeManagementProps) {
+  const mob = useIsMobile();
   const { db, rawAttendance } = useAppData();
   const [nWeeks, setNWeeks] = useState(consecutiveWeeks);
 
@@ -108,14 +120,18 @@ export function AbsenteeManagement({
   }, [activeMembers, byWeekService, recentSundays, nWeeks]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <label className="flex items-center gap-2 shrink-0">
-          <span className="text-sm text-gray-600 whitespace-nowrap">연속 결석 주</span>
+    <div className={mob ? "space-y-2" : "space-y-4"}>
+      <div className={`flex flex-wrap items-center bg-white rounded-xl shadow-sm border border-gray-100 ${mob ? "p-2 gap-2" : "gap-4 p-4"}`}>
+        <label className={`flex items-center gap-2 shrink-0 ${mob ? "text-[11px] text-gray-600" : "text-sm text-gray-600"}`}>
+          <span className="whitespace-nowrap">연속 결석 주</span>
           <select
             value={nWeeks}
             onChange={(e) => setNWeeks(Number(e.target.value))}
-            className="rounded-lg border border-gray-200 pl-3 pr-9 py-2 text-sm min-w-[72px]"
+            className={
+              mob
+                ? "ml-1 h-6 min-w-[64px] rounded border border-gray-200 px-2 text-[11px]"
+                : "ml-3 min-w-[72px] rounded-lg border border-gray-200 py-2 pl-3 pr-9 text-sm"
+            }
           >
             {[2, 3, 4, 5, 6].map((n) => (
               <option key={n} value={n}>
@@ -126,84 +142,132 @@ export function AbsenteeManagement({
         </label>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto pr-4">
-        <table className="w-full text-sm">
-          <colgroup>
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
-            <col className="w-[1px]" />
-          </colgroup>
-          <thead>
-            <tr className="border-b border-gray-200 bg-gray-50/50">
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">이름</th>
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">부서</th>
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">목장</th>
-              <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">연속 결석</th>
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">마지막 출석일</th>
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">연락처</th>
-              <th className="text-left py-3 pl-4 pr-6 font-semibold text-[#1e3a5f] whitespace-nowrap">액션</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className={`bg-white rounded-xl shadow-sm border border-gray-100 ${mob ? "" : "overflow-x-auto pr-4"}`}>
+        {mob ? (
+          <div className="space-y-0">
+            <div className="flex items-center border-b border-gray-100 px-2 py-1 text-[9px] font-medium text-gray-400">
+              <span className="w-[52px] shrink-0">이름</span>
+              <span className="w-[40px] shrink-0 truncate">부서</span>
+              <span className="w-[36px] shrink-0 text-center">결석</span>
+              <span className="min-w-0 flex-1 truncate text-center">마지막출석</span>
+              <span className="w-[52px] shrink-0 text-center">액션</span>
+            </div>
             {absentees.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-gray-500">
-                  해당 조건의 연속 결석자가 없습니다.
-                </td>
-              </tr>
+              <div className="px-2 py-6 text-center text-[11px] text-gray-500">해당 조건의 연속 결석자가 없습니다.</div>
             ) : (
-              absentees.map(({ member, consecutiveWeeks: cw, lastPresentDate }) => (
-                <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50/50">
-                  <td className="py-3 px-4 font-medium">{member.name}</td>
-                  <td className="py-3 px-4 text-gray-600">{member.dept || "-"}</td>
-                  <td className="py-3 px-4 text-gray-600">{(member.mokjang ?? member.group) || "-"}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                      {cw}주
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-gray-600">{lastPresentDate || "-"}</td>
-                  <td className="py-3 px-4">
-                    {member.phone ? (
-                      <a href={`tel:${member.phone}`} className="text-[#1e3a5f] hover:underline">
-                        {member.phone}
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                  <td className="py-3 pl-4 pr-6 align-middle">
-                    <div className="flex items-center gap-2">
-                      <div className="w-[60px] shrink-0 flex items-center justify-start">
-                        {member.phone ? (
-                          <a
-                            href={`tel:${member.phone}`}
-                            className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-medium hover:bg-gray-50 whitespace-nowrap"
-                          >
-                            전화
-                          </a>
-                        ) : null}
-                      </div>
+              absentees.map(({ member, consecutiveWeeks: cw, lastPresentDate }) => {
+                const shortDate = lastPresentDate ? lastPresentDate.slice(5) : "-";
+                return (
+                  <div
+                    key={member.id}
+                    className="flex items-center border-b border-gray-50 px-2 py-1.5 text-[11px]"
+                  >
+                    <span className="w-[52px] shrink-0 truncate font-medium text-gray-900">{member.name}</span>
+                    <span className="w-[40px] shrink-0 truncate text-gray-500">{member.dept || "·"}</span>
+                    <span className="w-[36px] shrink-0 text-center font-semibold text-red-600">{cw}주</span>
+                    <span className="min-w-0 flex-1 truncate text-center text-[10px] text-gray-500">{shortDate}</span>
+                    <span className="flex w-[52px] shrink-0 items-center justify-center gap-1">
+                      {member.phone ? (
+                        <a href={`tel:${member.phone}`} className="text-[14px] leading-none" title="전화" aria-label="전화">
+                          📞
+                        </a>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
                       {onAddVisit ? (
                         <button
                           type="button"
                           onClick={() => onAddVisit(member.id)}
-                          className="inline-flex items-center justify-center shrink-0 px-3 py-1 rounded-lg bg-[#1e3a5f] text-white text-xs font-medium hover:opacity-90 whitespace-nowrap"
+                          className="h-6 shrink-0 rounded bg-[#1e3a5f] px-1.5 text-[9px] font-medium text-white"
                         >
-                          심방 등록
+                          심방
                         </button>
                       ) : null}
-                    </div>
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <colgroup>
+              <col />
+              <col />
+              <col />
+              <col />
+              <col />
+              <col />
+              <col className="w-[1px]" />
+            </colgroup>
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50/50">
+                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">이름</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">부서</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">목장</th>
+                <th className="px-4 py-3 text-center font-semibold text-[#1e3a5f]">연속 결석</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">마지막 출석일</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">연락처</th>
+                <th className="whitespace-nowrap py-3 pl-4 pr-6 text-left font-semibold text-[#1e3a5f]">액션</th>
+              </tr>
+            </thead>
+            <tbody>
+              {absentees.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-gray-500">
+                    해당 조건의 연속 결석자가 없습니다.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                absentees.map(({ member, consecutiveWeeks: cw, lastPresentDate }) => (
+                  <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                    <td className="px-4 py-3 font-medium">{member.name}</td>
+                    <td className="px-4 py-3 text-gray-600">{member.dept || "-"}</td>
+                    <td className="px-4 py-3 text-gray-600">{(member.mokjang ?? member.group) || "-"}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex items-center rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                        {cw}주
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{lastPresentDate || "-"}</td>
+                    <td className="px-4 py-3">
+                      {member.phone ? (
+                        <a href={`tel:${member.phone}`} className="text-[#1e3a5f] hover:underline">
+                          {member.phone}
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="py-3 pl-4 pr-6 align-middle">
+                      <div className="flex items-center gap-2">
+                        <div className="flex w-[60px] shrink-0 items-center justify-start">
+                          {member.phone ? (
+                            <a
+                              href={`tel:${member.phone}`}
+                              className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium whitespace-nowrap hover:bg-gray-50"
+                            >
+                              전화
+                            </a>
+                          ) : null}
+                        </div>
+                        {onAddVisit ? (
+                          <button
+                            type="button"
+                            onClick={() => onAddVisit(member.id)}
+                            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#1e3a5f] px-3 py-1 text-xs font-medium whitespace-nowrap text-white hover:opacity-90"
+                          >
+                            심방 등록
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
