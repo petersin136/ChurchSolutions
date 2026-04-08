@@ -22,6 +22,12 @@ export default function SegmentedControl({
   items, value, onChange, columns, size = "md", fullWidth = false,
 }: SegmentedControlProps) {
   const isGrid = columns != null && columns > 0;
+  const c = isGrid ? columns! : 0;
+  const n = items.length;
+  const rem = isGrid ? n % c : 0;
+  const lastRowCount = isGrid ? (rem === 0 ? c : rem) : 0;
+  /** 마지막 행에 버튼이 1개만 있을 때(예: 5개·2열 → 3행 단독) 전체 너비 */
+  const loneLastRow = isGrid && lastRowCount === 1 && n > 0;
   const sm = size === "sm";
 
   const btnStyle = (active: boolean): React.CSSProperties => ({
@@ -72,12 +78,15 @@ export default function SegmentedControl({
       width: fullWidth ? "100%" : undefined,
       minWidth: 0,
     }}>
-      {items.map((item) => (
+      {items.map((item, index) => (
         <button
           key={item.id}
           type="button"
           onClick={() => onChange(item.id)}
-          style={btnStyle(value === item.id)}
+          style={{
+            ...btnStyle(value === item.id),
+            ...(isGrid && loneLastRow && index === n - 1 ? { gridColumn: "1 / -1" as const } : {}),
+          }}
         >
           {item.icon && React.isValidElement(item.icon)
             ? (() => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { tokens } from "@/styles/tokens";
 import { useAppData } from "@/contexts/AppDataContext";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
@@ -120,8 +121,24 @@ export function AbsenteeManagement({
   }, [activeMembers, byWeekService, recentSundays, nWeeks]);
 
   return (
-    <div className={mob ? "space-y-2" : "space-y-4"}>
-      <div className={`flex flex-wrap items-center bg-white rounded-xl shadow-sm border border-gray-100 ${mob ? "p-2 gap-2" : "gap-4 p-4"}`}>
+    <div
+      className={mob ? undefined : "space-y-4"}
+      style={
+        mob
+          ? {
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              minHeight: tokens.layout.mobPastoralPanelMinHeight,
+              minWidth: 0,
+            }
+          : undefined
+      }
+    >
+      <div
+        className={`flex flex-wrap items-center bg-white rounded-xl shadow-sm border border-gray-100 ${mob ? "p-2 gap-2" : "gap-4 p-4"}`}
+        style={mob ? { flexShrink: 0 } : undefined}
+      >
         <label className={`flex items-center gap-2 shrink-0 ${mob ? "text-[11px] text-gray-600" : "text-sm text-gray-600"}`}>
           <span className="whitespace-nowrap">연속 결석 주</span>
           <select
@@ -142,7 +159,10 @@ export function AbsenteeManagement({
         </label>
       </div>
 
-      <div className={`bg-white rounded-xl shadow-sm border border-gray-100 ${mob ? "" : "overflow-x-auto pr-4"}`}>
+      <div
+        className={`bg-white rounded-xl shadow-sm border border-gray-100 ${mob ? "" : "overflow-x-auto pr-4"}`}
+        style={mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" } : undefined}
+      >
         {mob ? (
           <div className="space-y-0">
             <div className="flex items-center border-b border-gray-100 px-2 py-1 text-[9px] font-medium text-gray-400">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { tokens } from "@/styles/tokens";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import type { Member } from "@/types/db";
@@ -277,13 +278,27 @@ export function AttendanceCheck({
   };
 
   return (
-    <div className="space-y-2 md:space-y-4">
+    <div
+      className={mob ? undefined : "space-y-2 md:space-y-4"}
+      style={
+        mob
+          ? {
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              minHeight: tokens.layout.mobPastoralPanelMinHeight,
+              minWidth: 0,
+            }
+          : undefined
+      }
+    >
       <div
         className={
           mob
-            ? "space-y-1.5 bg-white rounded-xl shadow-sm border border-gray-100 p-2 -mx-3 px-2"
+            ? "space-y-1.5 bg-white rounded-xl shadow-sm border border-gray-100 p-2 -mx-3 px-2 shrink-0"
             : "space-y-3 bg-white rounded-xl shadow-sm border border-gray-100 p-4 -mx-3 md:mx-0 px-2 md:px-4"
         }
+        style={mob ? { flexShrink: 0 } : undefined}
       >
         <div className={mob ? "flex flex-wrap items-center gap-1.5" : "flex flex-nowrap items-center gap-4"}>
           <label className={mob ? "flex shrink-0 items-center gap-1.5" : "flex shrink-0 items-center gap-2"}>
@@ -355,13 +370,15 @@ export function AttendanceCheck({
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-100">
+        <div
+          className={`flex items-center justify-center py-12 bg-white rounded-xl border border-gray-100 ${mob ? "shrink-0" : ""}`}
+        >
           <span className="inline-block w-6 h-6 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
           <span className="ml-2 text-gray-500">출석 데이터 로딩 중...</span>
         </div>
       ) : mob ? (
-        <div className="-mx-3 md:mx-0 px-2 md:px-0 bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="space-y-1">
+        <div className="-mx-3 md:mx-0 px-2 md:px-0 bg-white rounded-xl shadow-sm border border-gray-100 min-h-0 flex-1 flex flex-col overflow-hidden">
+          <div className="space-y-1 min-h-0 flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
             <div className="flex items-center px-2 py-1 text-[10px] text-gray-400 font-medium border-b border-gray-100">
               <span className="flex-1 min-w-0">교인</span>
               <span className="w-[100px] shrink-0 text-center">출석</span>
@@ -486,7 +503,7 @@ export function AttendanceCheck({
         </div>
       )}
 
-      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 shadow-lg rounded-t-xl p-2 md:p-4 flex flex-wrap items-center justify-between gap-2 md:gap-4">
+      <div className={`${mob ? "mt-auto shrink-0" : "sticky bottom-0"} left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 shadow-lg rounded-t-xl p-2 md:p-4 flex flex-wrap items-center justify-between gap-2 md:gap-4`}>
         <div className="flex gap-2 md:gap-4 text-xs md:text-sm text-gray-600">
           <span>출석 <strong className="text-slate-800">{count출석}명</strong></span>
           <span>결석 <strong className="text-slate-800">{count결석}명</strong></span>

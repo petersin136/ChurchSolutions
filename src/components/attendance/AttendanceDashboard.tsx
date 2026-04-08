@@ -204,12 +204,12 @@ export function AttendanceDashboard({
     });
   }, [byWeekService, recentSundays, totalActive]);
 
-  const metricPad = mob ? "6px 8px" : ts.padding.desktopCard;
-  const metricMinH = mob ? 50 : th.desktopCardMin;
+  const metricPad = mob ? "10px 12px" : ts.padding.desktopCard;
+  const metricMinH = mob ? 56 : th.desktopCardMin;
   const chartH = mob ? 140 : th.desktopChart;
-  const mLabel = mob ? 9 : tf.desktop.label;
-  const mValue = mob ? 18 : tf.desktop.value;
-  const mSub = mob ? 8 : tf.desktop.sub;
+  const mLabel = mob ? 10 : tf.desktop.label;
+  const mValue = mob ? 20 : tf.desktop.value;
+  const mSub = mob ? 9 : tf.desktop.sub;
 
   return (
     <div className={mob ? "space-y-2" : "space-y-6"}>
@@ -308,36 +308,58 @@ export function AttendanceDashboard({
         <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: tc.navyEmphasis }}>
           월별 출석 히트맵 (최근 8주)
         </h4>
-        <div className={mob ? "grid w-full grid-cols-4 place-items-center gap-1" : "grid w-full grid-cols-4 place-items-center gap-2"}>
-          {heatmapData.map((row) => (
-            <div
-              key={row.date}
-              className={mob ? "rounded-md text-center font-medium text-white" : "rounded-lg px-3 py-2 text-center text-xs font-medium text-white min-w-[4rem]"}
-              style={{
-                width: mob ? 28 : undefined,
-                height: mob ? 28 : undefined,
-                fontSize: mob ? 8 : undefined,
-                lineHeight: mob ? 1.1 : undefined,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: mob ? 2 : undefined,
-                backgroundColor:
-                  row.rate >= 80
-                    ? tc.navyEmphasis
-                    : row.rate >= 50
-                      ? tc.heatMid
-                      : row.rate >= 20
-                        ? tc.heatLight
-                        : tc.heatFaint,
-              }}
-              title={`${row.date} ${row.rate}% (${row.present}/${row.total}명)`}
-            >
-              <span className="block leading-tight">{row.date}</span>
-              <span className="block leading-tight">{row.rate}%</span>
-            </div>
-          ))}
+        <div style={mob ? { padding: "12px", width: "100%", boxSizing: "border-box" } : undefined}>
+          <div
+            className={mob ? undefined : "grid w-full grid-cols-4 place-items-center gap-2"}
+            style={
+              mob
+                ? {
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: 8,
+                    width: "100%",
+                  }
+                : undefined
+            }
+          >
+            {heatmapData.map((row) => (
+              <div
+                key={row.date}
+                className={mob ? "text-center font-medium text-white" : "rounded-lg px-3 py-2 text-center text-xs font-medium text-white min-w-[4rem]"}
+                style={{
+                  width: mob ? "100%" : undefined,
+                  aspectRatio: mob ? "1" : undefined,
+                  borderRadius: mob ? 10 : undefined,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: mob ? 0 : undefined,
+                  backgroundColor:
+                    row.rate >= 80
+                      ? tc.navyEmphasis
+                      : row.rate >= 50
+                        ? tc.heatMid
+                        : row.rate >= 20
+                          ? tc.heatLight
+                          : tc.heatFaint,
+                }}
+                title={`${row.date} ${row.rate}% (${row.present}/${row.total}명)`}
+              >
+                {mob ? (
+                  <>
+                    <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.2 }}>{row.date}</span>
+                    <span style={{ fontSize: 10, lineHeight: 1.2 }}>{row.rate}%</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="block leading-tight">{row.date}</span>
+                    <span className="block leading-tight">{row.rate}%</span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -12,6 +12,8 @@ export interface PaginationProps {
   hideSummary?: boolean;
   /** 목양 성도 관리 등 모바일 리스트와 맞춤: 요약·버튼 글자 축소 */
   compact?: boolean;
+  /** 부모가 flex column일 때 하단 고정: marginTop auto + padding 8px 0, 요약 10px */
+  pinBottom?: boolean;
 }
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
@@ -24,6 +26,7 @@ export function Pagination({
   onPageChange,
   hideSummary = false,
   compact = false,
+  pinBottom = false,
 }: PaginationProps) {
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
@@ -34,24 +37,25 @@ export function Pagination({
   const prevDisabled = safePage <= 1;
   const nextDisabled = safePage >= totalPages;
 
+  const tight = compact || pinBottom;
   const btnBase: React.CSSProperties = {
-    padding: compact ? "4px 8px" : "8px 12px",
+    padding: tight ? "4px 8px" : "8px 12px",
     borderRadius: 6,
     border: "1px solid #d1d5db",
     background: "white",
     color: "#374151",
-    fontSize: compact ? 11 : 13,
+    fontSize: tight ? (pinBottom ? 10 : 11) : 13,
     fontWeight: 500,
     cursor: "pointer",
     fontFamily: "inherit",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: compact ? 30 : 36,
+    minWidth: tight ? (pinBottom ? 28 : 30) : 36,
   };
-  const summaryFs = compact ? 10 : 13;
-  const ellipsisFs = compact ? 10 : 13;
-  const chevSize = compact ? 16 : 18;
+  const summaryFs = tight ? 10 : 13;
+  const ellipsisFs = tight ? 10 : 13;
+  const chevSize = tight ? (pinBottom ? 14 : 16) : 18;
 
   const pageStart = totalPages <= MAX_VISIBLE_PAGES
     ? 1
@@ -66,10 +70,14 @@ export function Pagination({
   const showLeadingEllipsis = pageStart > 1;
   const showTrailingEllipsis = pageEnd < totalPages;
 
+  const wrapStyle: React.CSSProperties = pinBottom
+    ? { marginTop: "auto", padding: "8px 0", flexShrink: 0, width: "100%", boxSizing: "border-box" }
+    : { marginTop: 0 };
+
   return (
-    <div style={{ marginTop: 0 }}>
+    <div style={wrapStyle}>
       {!hideSummary && (
-        <div style={{ fontSize: summaryFs, color: "#6b7280", marginBottom: compact ? 6 : 8, textAlign: "center" }}>
+        <div style={{ fontSize: summaryFs, color: "#6b7280", marginBottom: tight ? 6 : 8, textAlign: "center" }}>
           총 {totalItems}건 중 {totalItems === 0 ? 0 : start}-{end} 표시
         </div>
       )}

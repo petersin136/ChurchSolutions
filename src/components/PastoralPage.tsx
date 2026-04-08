@@ -22,6 +22,8 @@ import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNot
 import SegmentedControl from "@/components/common/SegmentedControl";
 import { tokens } from "@/styles/tokens";
 
+const MOB_PANEL_MIN_H = tokens.layout.mobPastoralPanelMinHeight;
+
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
@@ -913,60 +915,216 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
           <p style={{ margin: "4px 0 0", fontSize: 13, color: C.textMuted }}>목양 대시보드</p>
         </div>
       )}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: mob ? 6 : 12,
-          width: "100%",
-          alignItems: "stretch",
-        }}
-      >
-        {summaryCards.map((card) => (
+      {mob ? (
+        <>
           <div
-            key={card.label}
             style={{
-              background: "#fff",
-              borderRadius: mob ? tokens.radius.md : tokens.radius.lg,
-              border: `1px solid ${C.border}`,
-              padding: mob ? "8px 10px" : "14px 18px",
-              minHeight: mob ? 56 : 90,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              cursor: "default",
-              boxSizing: "border-box",
-              position: "relative",
-              overflow: "hidden",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 6,
+              marginBottom: 6,
+              width: "100%",
+              alignItems: "stretch",
               minWidth: 0,
             }}
           >
-            <span style={{ fontSize: mob ? 10 : 12, color: tokens.color.sub, fontWeight: 500 }}>{card.label}</span>
-            <span style={{ fontSize: mob ? 20 : 28, fontWeight: 800, color: C.navy, lineHeight: 1.1 }}>{card.value}</span>
-            <span style={{ fontSize: mob ? 9 : 11, color: tokens.color.textFaint }}>{card.sub}</span>
+            {summaryCards.slice(0, 2).map((card) => (
+              <div
+                key={card.label}
+                style={{
+                  background: "#fff",
+                  borderRadius: 8,
+                  border: `1px solid ${C.border}`,
+                  padding: "8px 10px",
+                  minHeight: 56,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  cursor: "default",
+                  boxSizing: "border-box",
+                  position: "relative",
+                  overflow: "hidden",
+                  minWidth: 0,
+                }}
+              >
+                <span style={{ fontSize: 10, color: tokens.color.sub, fontWeight: 500 }}>{card.label}</span>
+                <span style={{ fontSize: 20, fontWeight: 800, color: C.navy, lineHeight: 1.1 }}>{card.value}</span>
+                <span style={{ fontSize: 9, color: tokens.color.textFaint }}>{card.sub}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 6,
+              width: "100%",
+              alignItems: "stretch",
+              minWidth: 0,
+            }}
+          >
+            {summaryCards.slice(2, 5).map((card) => (
+              <div
+                key={card.label}
+                style={{
+                  background: "#fff",
+                  borderRadius: 8,
+                  border: `1px solid ${C.border}`,
+                  padding: "6px 8px",
+                  minHeight: 48,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  cursor: "default",
+                  boxSizing: "border-box",
+                  position: "relative",
+                  overflow: "hidden",
+                  minWidth: 0,
+                }}
+              >
+                <span style={{ fontSize: 9, color: tokens.color.sub, fontWeight: 500 }}>{card.label}</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: C.navy, lineHeight: 1.1 }}>{card.value}</span>
+                <span style={{ fontSize: 8, color: tokens.color.textFaint }}>{card.sub}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: 12,
+            width: "100%",
+            alignItems: "stretch",
+          }}
+        >
+          {summaryCards.map((card) => (
+            <div
+              key={card.label}
+              style={{
+                background: "#fff",
+                borderRadius: tokens.radius.lg,
+                border: `1px solid ${C.border}`,
+                padding: "14px 18px",
+                minHeight: 90,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                cursor: "default",
+                boxSizing: "border-box",
+                position: "relative",
+                overflow: "hidden",
+                minWidth: 0,
+              }}
+            >
+              <span style={{ fontSize: 12, color: tokens.color.sub, fontWeight: 500 }}>{card.label}</span>
+              <span style={{ fontSize: 28, fontWeight: 800, color: C.navy, lineHeight: 1.1 }}>{card.value}</span>
+              <span style={{ fontSize: 11, color: tokens.color.textFaint }}>{card.sub}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: mob ? 12 : 16 }}>
         {/* minWidth: 0으로 그리드 셀이 주별 차트 너비에 의해 늘어나 옆 칸(상태별 현황)을 침범하지 않도록 함 */}
         <div style={{ minWidth: 0 }}>
         {/* overflow: visible so 연도 선택 드롭다운이 카드에 잘리지 않음 */}
         <Card style={{ padding: 0, overflow: "visible", minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: mob ? 6 : 8, padding: mob ? "8px 12px" : "16px 24px", borderBottom: `1px solid ${C.border}` }}>
-            <h4 style={{ margin: 0, fontSize: mob ? 13 : 16, fontWeight: 700, color: C.navy }}>출석 추이</h4>
-            <div style={{ display: "flex", alignItems: "center", gap: mob ? 4 : 6, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
-              <select value={attChartYear} onChange={e => setAttChartYear(Number(e.target.value))} className="select-modern" style={{ height: mob ? 28 : 36, minHeight: mob ? 28 : 36, padding: mob ? "4px 28px 4px 8px" : "8px 36px 8px 12px", width: "auto", minWidth: mob ? 72 : 80, fontSize: mob ? 12 : 14, lineHeight: 1.35, boxSizing: "border-box" }}>
-                {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
-              </select>
-              <SegmentedControl
-                items={periodSegmentItems}
-                value={attChartView}
-                onChange={(id) => setAttChartView(id as AttChartView)}
-                size={mob ? "sm" : "md"}
-              />
+          {mob ? (
+            <div style={{ padding: "8px 12px", borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A", marginBottom: 8 }}>
+                출석 추이
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  marginBottom: 12,
+                  minWidth: 0,
+                }}
+              >
+                <select
+                  value={attChartYear}
+                  onChange={e => setAttChartYear(Number(e.target.value))}
+                  style={{
+                    height: 28,
+                    width: 90,
+                    minWidth: 90,
+                    maxWidth: 90,
+                    flexShrink: 0,
+                    fontSize: 11,
+                    fontFamily: "inherit",
+                    color: C.navy,
+                    borderRadius: 6,
+                    border: "1px solid #e8ecf1",
+                    padding: "0 24px 0 8px",
+                    boxSizing: "border-box",
+                    background: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  {[currentYear, currentYear - 1, currentYear - 2].map(y => (
+                    <option key={y} value={y}>{y}년</option>
+                  ))}
+                </select>
+                <div
+                  style={{
+                    display: "flex",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid #e8ecf1",
+                    flexShrink: 0,
+                  }}
+                >
+                  {periodSegmentItems.map((item, i) => {
+                    const active = attChartView === item.id;
+                    const isLast = i === periodSegmentItems.length - 1;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setAttChartView(item.id as AttChartView)}
+                        style={{
+                          height: 28,
+                          padding: "0 10px",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          border: "none",
+                          borderRight: !isLast ? "1px solid #e8ecf1" : undefined,
+                          fontFamily: "inherit",
+                          cursor: "pointer",
+                          boxSizing: "border-box",
+                          background: active ? "#1B2A4A" : "#fff",
+                          color: active ? "#fff" : "#555",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
+              <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.navy }}>출석 추이</h4>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
+                <select value={attChartYear} onChange={e => setAttChartYear(Number(e.target.value))} className="select-modern" style={{ height: 36, minHeight: 36, padding: "8px 36px 8px 12px", width: "auto", minWidth: 80, fontSize: 14, lineHeight: 1.35, boxSizing: "border-box" }}>
+                  {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
+                </select>
+                <SegmentedControl
+                  items={periodSegmentItems}
+                  value={attChartView}
+                  onChange={(id) => setAttChartView(id as AttChartView)}
+                  size="md"
+                />
+              </div>
+            </div>
+          )}
           {/* 고정 높이: 연간/월별/주별 전환 시 카드 크기 변하지 않음 */}
           <div style={{ padding: mob ? "8px 10px" : "16px 20px", height: mob ? tokens.height.mobileChart : tokens.height.desktopChart, minHeight: mob ? tokens.height.mobileChart : tokens.height.desktopChart, boxSizing: "border-box", overflow: mob ? "auto" : "hidden" }}>
             {attChartView === "year" && (
@@ -1227,9 +1385,9 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const listMobAvatarInit = mob ? 11 : 14;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 20, width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box" }}>
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box", ...(mob ? { minHeight: MOB_PANEL_MIN_H, gap: 8 } : { gap: 20 }) }}>
       {/* ─── 필터 바 ─── */}
-      <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap", width: "100%", minWidth: 0 }}>
+      <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap", width: "100%", minWidth: 0, ...(mob ? { flexShrink: 0 } : {}) }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
           <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textMuted }}><Icons.Search /></div>
           <input value={search} onChange={e => { setSearch(e.target.value); setPageList(1); setPageGroup(1); }} placeholder="이름, 연락처 검색..." style={{ width: "100%", height: mob ? tokens.height.mobileInput : tokens.height.desktopInput, padding: mob ? tokens.space.padding.mobileInput : tokens.space.padding.desktopInput, fontFamily: "inherit", fontSize: mob ? 11 : tokens.fontSize.desktop.search, background: "#fff", border: `1px solid ${C.border}`, borderRadius: mob ? tokens.radius.sm : tokens.radius.lg, color: C.text, outline: "none", boxSizing: "border-box" }} />
@@ -1341,7 +1499,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       </div>
 
       {/* ─── 뷰 토글 — 모바일: 가로 전체 균등 분할(우측 빈 여백 방지) ─── */}
-      <div style={mob ? { display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: 6, width: "100%", minWidth: 0 } : { display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={mob ? { display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: 6, width: "100%", minWidth: 0, flexShrink: 0 } : { display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ position: "relative", width: "100%", minWidth: 0, ...(mob ? { flex: "1 1 100%" } : {}) }}>
           <SegmentedControl
             items={viewSegmentItems}
@@ -1357,12 +1515,13 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         )}
       </div>
 
+      <div style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : { width: "100%", minWidth: 0 }}>
       {/* ─── 목장별 뷰: 목장 이름만 진열 → 클릭 시 목장원 표시 (10명 단위 페이지) ─── */}
       {viewMode === "group" && (
         <>
           {selectedMokjang === null ? (
             /* 목장 이름 카드만 진열 */
-            <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, ...(mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const, alignContent: "start" } : {}) }}>
               {grouped.length === 0 ? (
                 <Card><div style={{ textAlign: "center", color: C.textMuted, padding: 24 }}>검색 결과가 없습니다</div></Card>
               ) : grouped.map(([gName, gMembers]) => (
@@ -1374,7 +1533,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             </div>
           ) : (
             /* 선택된 목장의 목장원 (10명 단위 페이지) — 테이블로 한눈에 */
-            <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
+            <div ref={listRef} style={mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const } : {}}><Card style={{ padding: 0, overflow: "hidden" }}>
               <div style={{ padding: "14px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                 <button type="button" onClick={() => { setSelectedMokjang(null); setPageGroup(1); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "none", background: "transparent", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 목장 목록</button>
                 <span style={{ color: C.navy, fontWeight: 700 }}>🏠 {selectedMokjang} ({selectedGroupMembers.length}명)</span>
@@ -1421,7 +1580,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             </Card></div>
           )}
           {viewMode === "group" && selectedMokjang && (
-            <Pagination compact={mob} totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroup(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            <Pagination pinBottom={mob} compact={mob} totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroup(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
           )}
         </>
       )}
@@ -1436,7 +1595,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
               .pastoral-list-table .member-avatar { width: 30px !important; height: 30px !important; }
             `}</style>
           )}
-          <div ref={listRef} style={{ width: "100%", maxWidth: "100%", minWidth: 0 }}><Card style={{ padding: 0, overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+          <div ref={listRef} style={mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const, width: "100%", maxWidth: "100%", minWidth: 0 } : { width: "100%", maxWidth: "100%", minWidth: 0 }}><Card style={{ padding: 0, overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
             <div style={{ overflowX: "auto", width: "100%", maxWidth: "100%", minWidth: 0 }}>
               <table className="pastoral-list-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? listMobCell : 14 }}>
                 <thead>
@@ -1495,10 +1654,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             </div>
           </Card></div>
           {viewMode === "list" && (
-            <Pagination compact={mob} totalItems={filtered.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageList} onPageChange={(p) => { setPageList(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            <Pagination pinBottom={mob} compact={mob} totalItems={filtered.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageList} onPageChange={(p) => { setPageList(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
           )}
         </>
       )}
+      </div>
     </div>
   );
 }
@@ -1630,12 +1790,12 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 20, ...(mob ? { minHeight: MOB_PANEL_MIN_H } : {}) }}>
       <Card
         style={{
           padding: mob ? "12px" : "16px 20px",
           borderRadius: mob ? 10 : 12,
-          ...(mob ? { border: "1px solid #e8ecf1", background: "#fff" } : {}),
+          ...(mob ? { border: "1px solid #e8ecf1", background: "#fff", flexShrink: 0 } : {}),
         }}
       >
         {mob ? (
@@ -1762,7 +1922,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
       )}
 
       {mob ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, alignItems: "stretch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, alignItems: "stretch", flexShrink: 0 }}>
           <div style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e8ecf1", background: "#fff", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 10, color: "#6b7b9e" }}>출석</span>
@@ -1789,7 +1949,8 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
         </div>
       )}
 
-      <div ref={listRefAtt}><Card style={{ padding: 0, overflow: "hidden" }}>
+      <div style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : {}}>
+      <div ref={listRefAtt} style={mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const, minWidth: 0 } : {}}><Card style={{ padding: 0, overflow: "hidden" }}>
         {mob ? (
           <div>
             {viewModeAtt === "group" ? (
@@ -1939,11 +2100,12 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
         </div>
         )}
       </Card>
+      </div>
       {viewModeAtt === "list" && (
-        <Pagination totalItems={m.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageAtt} onPageChange={(p) => { setPageAtt(p); listRefAtt.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+        <Pagination pinBottom={mob} compact={mob} totalItems={m.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageAtt} onPageChange={(p) => { setPageAtt(p); listRefAtt.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
       )}
       {viewModeAtt === "group" && selectedMokjangAtt && (
-        <Pagination totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroupAtt(p); listRefAtt.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+        <Pagination pinBottom={mob} compact={mob} totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroupAtt(p); listRefAtt.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
       )}
       </div>
       {absentReasonModal && (
@@ -2034,8 +2196,8 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
     ? { height: 32, fontSize: 11, padding: "0 10px", minHeight: 32 }
     : {};
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 20, background: "#f8f9fc", minHeight: "100%" }}>
-      <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 20, background: "#f8f9fc", ...(mob ? { minHeight: MOB_PANEL_MIN_H } : { minHeight: "100%" }) }}>
+      <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap", ...(mob ? { flexShrink: 0 } : {}) }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
           <div style={{ position: "absolute", left: mob ? 10 : 14, top: "50%", transform: "translateY(-50%)", color: "#9CA3AF", pointerEvents: "none" }}><Icons.Search /></div>
           <input
@@ -2077,7 +2239,7 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
         )}
         <Btn variant="primary" icon={<Icons.Plus />} onClick={() => openNoteModal()} style={btnPrayMob}>+ 기도</Btn>
       </div>
-      <div ref={listRefNotes}>
+      <div ref={listRefNotes} style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : {}}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: mob ? 24 : 48 }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><Heart size={mob ? 28 : 40} strokeWidth={1.5} style={{ color: C.textMuted }} /></div>
@@ -2086,22 +2248,24 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
           </div>
         ) : (
           <>
-            {paginatedNotes.map((n, i) => {
-              const key = getPrayerAnsweredKey(n);
-              const answered = n.type === "prayer" && answeredSet.has(key);
-              return (
-                <NoteCard
-                  key={`${n.mbrId}-${n.date}-${n.type}-${n.createdAt}-${i}`}
-                  n={n}
-                  mbrName={n.mbrName}
-                  mbrDept={n.mbrDept}
-                  onClick={() => openPrayerModal(n.mbrId)}
-                  answered={n.type === "prayer" ? answered : undefined}
-                  onToggleAnswered={n.type === "prayer" ? () => toggleAnswered(key) : undefined}
-                />
-              );
-            })}
-            <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRefNotes.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            <div style={mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const } : {}}>
+              {paginatedNotes.map((n, i) => {
+                const key = getPrayerAnsweredKey(n);
+                const answered = n.type === "prayer" && answeredSet.has(key);
+                return (
+                  <NoteCard
+                    key={`${n.mbrId}-${n.date}-${n.type}-${n.createdAt}-${i}`}
+                    n={n}
+                    mbrName={n.mbrName}
+                    mbrDept={n.mbrDept}
+                    onClick={() => openPrayerModal(n.mbrId)}
+                    answered={n.type === "prayer" ? answered : undefined}
+                    onToggleAnswered={n.type === "prayer" ? () => toggleAnswered(key) : undefined}
+                  />
+                );
+              })}
+            </div>
+            <Pagination pinBottom={mob} compact={mob} totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRefNotes.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
           </>
         )}
       </div>
@@ -2491,8 +2655,8 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 10 : 20 }}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 10 : 20, ...(mob ? { minHeight: MOB_PANEL_MIN_H } : {}) }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 4, ...(mob ? { flexShrink: 0 } : {}) }}>
         {([{ id: "list" as const, label: "새가족 정착" }, { id: "servant" as const, label: "섬김이 학교" }]).map(tab => (
           <button
             key={tab.id}
@@ -2513,8 +2677,9 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
 
       {nfSubTab === "servant" && <ServantSchoolManager members={db.members.map(m => ({ id: m.id, name: m.name || "", dept: m.dept, role: m.role }))} toast={toast} />}
 
-      {nfSubTab === "list" && <>
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: mob ? 6 : 12 }}>
+      {nfSubTab === "list" && (
+      <div style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : {}}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: mob ? 6 : 12, ...(mob ? { flexShrink: 0, marginBottom: 12 } : {}) }}>
         {[
           { label: "이번 달 새가족", value: `${thisMonthCount}명`, sub: thisMonth.replace("-", ".") },
           { label: "정착 진행중", value: `${inProgressCount}명`, sub: "프로그램" },
@@ -2539,8 +2704,8 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
         ))}
       </div>
 
-      <div ref={listRef}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: mob ? 4 : 8, marginBottom: mob ? 8 : 16 }}>
+      <div ref={listRef} style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : {}}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: mob ? 4 : 8, marginBottom: mob ? 8 : 16, ...(mob ? { flexShrink: 0 } : {}) }}>
           {(["all", "진행중", "수료", "중단", "no_mentor"] as const).map(f => (
             <button key={f} type="button" onClick={() => { setFilter(f); setCurrentPage(1); }} style={{
               padding: mob ? "4px 10px" : "8px 14px", borderRadius: 8, fontSize: mob ? 10 : 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box",
@@ -2554,7 +2719,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
         {filteredList.length === 0 ? (
           <Card style={{ padding: mob ? 24 : 48, textAlign: "center", color: C.textMuted }}>새가족이 없습니다. 상단 "+ 새가족 등록"으로 등록하세요.</Card>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 12, ...(mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const } : {}) }}>
             {paginated.map(({ member, program }) => {
               const mentor = program.mentor_id ? (db.members.find(m => m.id === program.mentor_id) ?? null) : null;
               const done = [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed].filter(Boolean).length;
@@ -2610,11 +2775,12 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
             })}
           </div>
         )}
-        {filteredList.length > 10 && (
-          <Pagination totalItems={filteredList.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+        {filteredList.length > 0 && (
+          <Pagination pinBottom={mob} compact={mob} totalItems={filteredList.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
         )}
       </div>
-      </>}
+      </div>
+      )}
     </div>
   );
 }
@@ -3164,7 +3330,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
   // 출결 Phase 3: 예배별 출결
   type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "weekly";
-  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "check", "absentee", "statistics", "weekly"];
+  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "statistics", "check", "absentee", "weekly"];
   const [attendanceSubTab, setAttendanceSubTabState] = useState<AttendanceSubTab>(() => {
     if (typeof window === "undefined") return "dashboard";
     const v = localStorage.getItem("pastoral_attendance_sub_tab");
@@ -3174,9 +3340,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const attendanceSegmentItems = useMemo(
     () => [
       { id: "dashboard", label: "대시보드" },
+      { id: "statistics", label: "출석 통계" },
       { id: "check", label: "출석 체크" },
       { id: "absentee", label: "결석자 관리" },
-      { id: "statistics", label: "출석 통계" },
       { id: "weekly", label: "52주 출석" },
     ],
     [],
@@ -3629,18 +3795,64 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                   marginBottom: mob ? 6 : 16,
                   paddingBottom: mob ? 8 : 12,
                   borderBottom: `1px solid ${C.border}`,
-                  minHeight: mob ? 72 : undefined,
                   boxSizing: "border-box",
                 }}
               >
-                <SegmentedControl
-                  items={attendanceSegmentItems}
-                  value={attendanceSubTab}
-                  onChange={(id) => setAttendanceSubTab(id as AttendanceSubTab)}
-                  columns={mob ? 3 : 5}
-                  size={mob ? "sm" : "md"}
-                  fullWidth
-                />
+                {mob ? (
+                  <>
+                    {([
+                      { gridTemplateColumns: "1fr 1fr", slice: [0, 2] as const },
+                      { gridTemplateColumns: "1fr 1fr 1fr", slice: [2, 5] as const },
+                    ] as const).map((row, rowIdx) => (
+                      <div
+                        key={rowIdx}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: row.gridTemplateColumns,
+                          gap: 4,
+                          marginBottom: 8,
+                          width: "100%",
+                          minWidth: 0,
+                        }}
+                      >
+                        {attendanceSegmentItems.slice(row.slice[0], row.slice[1]).map((item) => {
+                          const active = attendanceSubTab === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setAttendanceSubTab(item.id as AttendanceSubTab)}
+                              style={{
+                                width: "100%",
+                                height: 30,
+                                fontSize: 10,
+                                fontWeight: 600,
+                                borderRadius: 6,
+                                border: "none",
+                                fontFamily: "inherit",
+                                cursor: "pointer",
+                                boxSizing: "border-box",
+                                background: active ? "#1B2A4A" : "#f5f6f8",
+                                color: active ? "#fff" : "#555",
+                              }}
+                            >
+                              {item.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <SegmentedControl
+                    items={attendanceSegmentItems}
+                    value={attendanceSubTab}
+                    onChange={(id) => setAttendanceSubTab(id as AttendanceSubTab)}
+                    columns={5}
+                    size="md"
+                    fullWidth
+                  />
+                )}
               </div>
               {attendanceSubTab === "dashboard" && (
                 <div style={{ width: "100%", minHeight: mob ? undefined : 520 }}>

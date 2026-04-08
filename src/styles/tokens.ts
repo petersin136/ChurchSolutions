@@ -163,6 +163,11 @@ export const tokens = {
     "2xl": 16,
     pill: 20,
   },
+
+  /** 모바일 목양/출석: 하단 네비·헤더·서브탭 제외 — 리스트 스크롤 + 하단 페이지네이션 고정 */
+  layout: {
+    mobPastoralPanelMinHeight: "calc(100vh - 88px - 48px - 40px)",
+  },
 } as const;
 
 export type Tokens = typeof tokens;
