@@ -10,6 +10,8 @@ export interface PaginationProps {
   onPageChange: (page: number) => void;
   /** true이면 상단 "총 N건 중 X-Y 표시" 줄을 렌더링하지 않음 (버튼 행만) */
   hideSummary?: boolean;
+  /** 목양 성도 관리 등 모바일 리스트와 맞춤: 요약·버튼 글자 축소 */
+  compact?: boolean;
 }
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
@@ -21,6 +23,7 @@ export function Pagination({
   currentPage,
   onPageChange,
   hideSummary = false,
+  compact = false,
 }: PaginationProps) {
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
@@ -32,20 +35,23 @@ export function Pagination({
   const nextDisabled = safePage >= totalPages;
 
   const btnBase: React.CSSProperties = {
-    padding: "8px 12px",
+    padding: compact ? "4px 8px" : "8px 12px",
     borderRadius: 6,
     border: "1px solid #d1d5db",
     background: "white",
     color: "#374151",
-    fontSize: 13,
+    fontSize: compact ? 11 : 13,
     fontWeight: 500,
     cursor: "pointer",
     fontFamily: "inherit",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 36,
+    minWidth: compact ? 30 : 36,
   };
+  const summaryFs = compact ? 10 : 13;
+  const ellipsisFs = compact ? 10 : 13;
+  const chevSize = compact ? 16 : 18;
 
   const pageStart = totalPages <= MAX_VISIBLE_PAGES
     ? 1
@@ -63,7 +69,7 @@ export function Pagination({
   return (
     <div style={{ marginTop: 0 }}>
       {!hideSummary && (
-        <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 8, textAlign: "center" }}>
+        <div style={{ fontSize: summaryFs, color: "#6b7280", marginBottom: compact ? 6 : 8, textAlign: "center" }}>
           총 {totalItems}건 중 {totalItems === 0 ? 0 : start}-{end} 표시
         </div>
       )}
@@ -92,12 +98,12 @@ export function Pagination({
             ...(prevDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
           }}
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={chevSize} />
         </button>
         {showLeadingEllipsis && (
           <>
             <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(1)}>1</button>
-            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: 13, flexShrink: 0 }}>…</span>
+            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
           </>
         )}
         {visiblePages.map((p) => (
@@ -116,7 +122,7 @@ export function Pagination({
         ))}
         {showTrailingEllipsis && (
           <>
-            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: 13, flexShrink: 0 }}>…</span>
+            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
             <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
           </>
         )}
@@ -131,7 +137,7 @@ export function Pagination({
             ...(nextDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
           }}
         >
-          <ChevronRight size={18} />
+          <ChevronRight size={chevSize} />
         </button>
       </div>
     </div>

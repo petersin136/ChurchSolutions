@@ -150,7 +150,7 @@ function Card({ children, style, onClick }: { children: ReactNode; style?: CSSPr
   );
 }
 
-function SBadge({ children, variant = "gray" }: { children: ReactNode; variant?: string }) {
+function SBadge({ children, variant = "gray", style }: { children: ReactNode; variant?: string; style?: CSSProperties }) {
   const mob = useIsMobile();
   const [color, bg] = badgeBg[variant] || badgeBg.gray;
   return (
@@ -166,6 +166,7 @@ function SBadge({ children, variant = "gray" }: { children: ReactNode; variant?:
         color,
         background: bg,
         whiteSpace: "nowrap",
+        ...style,
       }}
     >
       {children}
@@ -1089,12 +1090,12 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 /* ====== Members ====== */
 const ROLE_PRIORITY: Record<string, number> = { "장로": 0, "안수집사": 1, "권사": 2, "집사": 3, "청년": 4, "성도": 5, "학생": 6, "새가족": 7, "영아": 8 };
 
-function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, openQuickNote, detailId, deleteMembers, churchId }: {
+function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, openQuickNote, deleteMembers, churchId }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
   toast: (m: string, t?: string) => void; currentWeek: number;
   openMemberModal: (id?: string) => void; openDetail: (id: string) => void; openNoteModal: (id: string) => void;
   openQuickNote: (memberId: string, memberName: string, type: "note" | "prayer") => void;
-  detailId: string | null; deleteMembers: (ids: string[]) => void;
+  deleteMembers: (ids: string[]) => void;
   churchId: string | null;
 }) {
   const mob = useIsMobile();
@@ -1107,22 +1108,18 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const [newFamilyOnly, setNewFamilyOnly] = useState(false);
   const [prospectOnly, setProspectOnly] = useState(false);
   const [baptismF, setBaptismF] = useState("all");
-  const [viewMode, setViewMode] = useState<"list" | "group" | "card">("list");
+  const [viewMode, setViewMode] = useState<"list" | "group">("list");
   const [selectedMokjang, setSelectedMokjang] = useState<string | null>(null);
   const [pageGroup, setPageGroup] = useState(1);
   const [pageList, setPageList] = useState(1);
-  const [printOpen, setPrintOpen] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
-  const printDropdownRef = useRef<HTMLDivElement>(null);
   const PAGE_SIZE_MEM = 10;
   const depts = getDepts(db);
 
   const viewSegmentItems = useMemo(
     () => [
       { id: "list", label: "테이블", icon: <span style={{ display: "flex" }}><Icons.Table /></span> },
-      { id: "card", label: "카드별", icon: <span style={{ display: "flex" }}><Icons.Card /></span> },
       { id: "group", label: "목장별", icon: <span style={{ display: "flex" }}><Icons.Mokjang /></span> },
-      { id: "print", label: "인쇄", icon: <span style={{ display: "flex" }}><Icons.Printer /></span> },
     ],
     [],
   );
@@ -1131,26 +1128,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       setViewMode("list");
       setSelectedMokjang(null);
       setPageList(1);
-    } else if (id === "card") {
-      setViewMode("card");
-      setSelectedMokjang(null);
-      setPageList(1);
     } else if (id === "group") {
       setViewMode("group");
       setSelectedMokjang(null);
     }
   }, []);
-  const onViewOrPrintSegmentChange = useCallback(
-    (id: string) => {
-      if (id === "print") {
-        setPrintOpen((p) => !p);
-        return;
-      }
-      setPrintOpen(false);
-      onViewSegmentChange(id);
-    },
-    [onViewSegmentChange],
-  );
 
   /* 성도 목록: churchId 없으면 쿼리하지 않음. churchId가 준비되면 그때 로드. (setDb는 ref로 넣어 의존성에서 제외해 불필요한 재실행 방지) */
   const setDbRef = useRef(setDb);
@@ -1172,11 +1154,6 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       });
   }, [churchId]);
 
-  useEffect(() => {
-    if (!printOpen) return;
-    const close = (e: MouseEvent) => { if (printDropdownRef.current && !printDropdownRef.current.contains(e.target as Node)) setPrintOpen(false); };
-    document.addEventListener("mousedown", close); return () => document.removeEventListener("mousedown", close);
-  }, [printOpen]);
   const toggleSelect = (id: string) => { setSelectedMemberIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; }); };
   const selectAllFiltered = () => setSelectedMemberIds(new Set(filtered.map(m => m.id)));
   const clearSelection = () => setSelectedMemberIds(new Set());
@@ -1243,15 +1220,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
     persist();
   };
 
-  const mobileFilterCell: CSSProperties = {
-    height: tokens.height.mobileSelect,
-    fontSize: tokens.fontSize.mobile.filter,
-    borderRadius: tokens.radius.sm,
-    border: `1px solid ${C.border}`,
-    boxSizing: "border-box",
-    padding: tokens.space.padding.mobileFilter,
-    minWidth: 0,
-  };
+  const listMobTh = mob ? 10 : 13;
+  const listMobCell = mob ? 10 : 13;
+  const listMobName = mob ? 11 : 14;
+  const listMobRole = mob ? 10 : 12;
+  const listMobAvatarInit = mob ? 11 : 14;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 20, width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box" }}>
@@ -1259,7 +1232,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap", width: "100%", minWidth: 0 }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
           <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textMuted }}><Icons.Search /></div>
-          <input value={search} onChange={e => { setSearch(e.target.value); setPageList(1); setPageGroup(1); }} placeholder="이름, 연락처 검색..." style={{ width: "100%", height: mob ? tokens.height.mobileInput : tokens.height.desktopInput, padding: mob ? tokens.space.padding.mobileInput : tokens.space.padding.desktopInput, fontFamily: "inherit", fontSize: mob ? tokens.fontSize.mobile.search : tokens.fontSize.desktop.search, background: "#fff", border: `1px solid ${C.border}`, borderRadius: mob ? tokens.radius.sm : tokens.radius.lg, color: C.text, outline: "none", boxSizing: "border-box" }} />
+          <input value={search} onChange={e => { setSearch(e.target.value); setPageList(1); setPageGroup(1); }} placeholder="이름, 연락처 검색..." style={{ width: "100%", height: mob ? tokens.height.mobileInput : tokens.height.desktopInput, padding: mob ? tokens.space.padding.mobileInput : tokens.space.padding.desktopInput, fontFamily: "inherit", fontSize: mob ? 11 : tokens.fontSize.desktop.search, background: "#fff", border: `1px solid ${C.border}`, borderRadius: mob ? tokens.radius.sm : tokens.radius.lg, color: C.text, outline: "none", boxSizing: "border-box" }} />
         </div>
         {mob ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%" }}>
@@ -1286,41 +1259,50 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             <div
               id="debug-checkbox-box"
               style={{
-                ...mobileFilterCell,
+                height: tokens.height.mobileSelect,
+                fontSize: 10,
+                borderRadius: tokens.radius.sm,
+                border: `1px solid ${C.border}`,
+                boxSizing: "border-box",
+                padding: tokens.space.padding.mobileFilter,
+                minWidth: 0,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 6,
                 background: "#fff",
-                padding: "0 10px",
               }}
             >
-              <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: mob ? 11 : 13, cursor: "pointer", whiteSpace: "nowrap" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: mob ? 10 : 13, cursor: "pointer", whiteSpace: "nowrap" }}>
                 <input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} />
                 새가족
               </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: mob ? 11 : 13, cursor: "pointer", whiteSpace: "nowrap" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: mob ? 10 : 13, cursor: "pointer", whiteSpace: "nowrap" }}>
                 <input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} />
                 관심성도
               </label>
-              <span style={{ marginLeft: "auto", color: "#3B5BDB", fontWeight: 700, fontSize: mob ? 11 : 13 }}>{filtered.length}명</span>
+              <span style={{ marginLeft: "auto", color: "#3B5BDB", fontWeight: 700, fontSize: mob ? 10 : 13 }}>{filtered.length}명</span>
             </div>
             <button
               id="debug-register-btn"
               type="button"
               onClick={() => openMemberModal()}
               style={{
-                ...mobileFilterCell,
+                height: tokens.height.mobileSelect,
+                borderRadius: tokens.radius.sm,
+                border: "none",
+                boxSizing: "border-box",
+                padding: tokens.space.padding.mobileFilter,
+                minWidth: 0,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 4,
                 background: C.navy,
                 color: "#fff",
-                border: "none",
                 fontWeight: 600,
                 fontFamily: "inherit",
-                fontSize: mob ? tokens.fontSize.mobile.button : tokens.fontSize.desktop.button,
+                fontSize: mob ? 10 : tokens.fontSize.desktop.button,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
               }}
@@ -1360,27 +1342,18 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
 
       {/* ─── 뷰 토글 — 모바일: 가로 전체 균등 분할(우측 빈 여백 방지) ─── */}
       <div style={mob ? { display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: 6, width: "100%", minWidth: 0 } : { display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-        <div ref={printDropdownRef} style={{ position: "relative", width: "100%", minWidth: 0, ...(mob ? { flex: "1 1 100%" } : {}) }}>
+        <div style={{ position: "relative", width: "100%", minWidth: 0, ...(mob ? { flex: "1 1 100%" } : {}) }}>
           <SegmentedControl
             items={viewSegmentItems}
             value={viewMode}
-            onChange={onViewOrPrintSegmentChange}
-            columns={4}
+            onChange={onViewSegmentChange}
+            columns={2}
             size={mob ? "sm" : "md"}
             fullWidth
           />
-          {printOpen && (
-            <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 50, minWidth: 160 }}>
-              <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; try { const { generateChurchRegisterPdf } = await import("@/components/print/ChurchRegisterPrint"); await generateChurchRegisterPdf(detailMember, db.settings.churchName ?? "", db.settings.denomination); toast("교적부 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>교적부 양식</button>
-              <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; const denom = db.settings.denomination?.trim(); const isChimrye = denom && denom.includes("침례"); const certLabel = isChimrye ? "침례증명서" : "세례증명서"; try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(detailMember, db.settings.churchName ?? "", null, db.settings.denomination); toast(`${certLabel} PDF 다운로드됨`, "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>{isChimrye ? "침례증명서" : "세례증명서"}</button>
-              <button type="button" disabled={!detailId} onClick={async () => { setPrintOpen(false); const detailMember = db.members.find(m => m.id === detailId); if (!detailMember) return; try { const { generateMemberCertificatePdf } = await import("@/components/print/MemberCertificate"); await generateMemberCertificatePdf(detailMember, db.settings.churchName ?? "", null); toast("교인증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: detailId ? C.text : C.textMuted, cursor: detailId ? "pointer" : "not-allowed" }}>교인증명서</button>
-              <button type="button" onClick={async () => { setPrintOpen(false); const list = selectedMemberIds.size > 0 ? filtered.filter(m => selectedMemberIds.has(m.id)) : filtered; if (list.length === 0) { toast("대상 교인이 없습니다", "warn"); return; } try { const { generateAddressLabelPdf } = await import("@/components/print/AddressLabelPrint"); await generateAddressLabelPdf(list.slice(0, 500)); toast("주소 라벨 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: C.text, cursor: "pointer" }}>주소 라벨</button>
-              <button type="button" onClick={async () => { setPrintOpen(false); const list = selectedMemberIds.size > 0 ? filtered.filter(m => selectedMemberIds.has(m.id)) : filtered; if (list.length === 0) { toast("대상 교인이 없습니다", "warn"); return; } try { const { generateCustomReportPdf } = await import("@/components/print/CustomReportPrint"); await generateCustomReportPdf(list.slice(0, 500)); toast("커스텀 보고서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast("PDF 생성 실패", "err"); } }} style={{ display: "block", width: "100%", padding: "8px 14px", textAlign: "left", border: "none", background: "none", fontSize: 13, fontFamily: "inherit", color: C.text, cursor: "pointer" }}>커스텀 보고서</button>
-            </div>
-          )}
         </div>
         {viewMode === "list" && selectedMemberIds.size > 0 && (
-          <button type="button" onClick={() => { deleteMembers(Array.from(selectedMemberIds)); setSelectedMemberIds(new Set()); }} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.danger}`, fontSize: 13, fontFamily: "inherit", background: C.dangerBg || "#fee2e2", color: C.danger, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, ...(mob ? { flex: "1 1 0", minWidth: 0 } : {}) }}><span style={{ display: "flex" }}><Icons.Trash2 /></span> 삭제 ({selectedMemberIds.size}명)</button>
+          <button type="button" onClick={() => { deleteMembers(Array.from(selectedMemberIds)); setSelectedMemberIds(new Set()); }} style={{ padding: mob ? "4px 8px" : "6px 12px", borderRadius: 8, border: `1px solid ${C.danger}`, fontSize: mob ? 10 : 13, fontFamily: "inherit", background: C.dangerBg || "#fee2e2", color: C.danger, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, ...(mob ? { flex: "1 1 0", minWidth: 0 } : {}) }}><span style={{ display: "flex" }}><Icons.Trash2 /></span> 삭제 ({selectedMemberIds.size}명)</button>
         )}
       </div>
 
@@ -1407,11 +1380,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                 <span style={{ color: C.navy, fontWeight: 700 }}>🏠 {selectedMokjang} ({selectedGroupMembers.length}명)</span>
               </div>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? listMobCell : 14 }}>
                   <thead>
                     <tr style={{ background: C.bg }}>
                       {["이름","부서","출석","기도제목","최근 심방"].map((h, i) => (
-                        <th key={i} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                        <th key={i} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, fontSize: listMobTh, color: C.navy, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -1429,16 +1402,16 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
                           <td style={{ padding: "10px 14px", minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                              <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, background: isLeader ? `linear-gradient(135deg, ${C.accent}, ${C.purple})` : `linear-gradient(135deg, ${C.accentBg}, ${C.tealBg})`, color: isLeader ? "#fff" : C.accent, overflow: "hidden", flexShrink: 0 }}>
+                              <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: isLeader ? `linear-gradient(135deg, ${C.accent}, ${C.purple})` : `linear-gradient(135deg, ${C.accentBg}, ${C.tealBg})`, color: isLeader ? "#fff" : C.accent, overflow: "hidden", flexShrink: 0 }}>
                                 {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
                               </div>
-                              <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ fontWeight: 700, fontSize: 14, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{m.name}</span>{isLeader && <span style={{ fontSize: 10, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>목자</span>}</div><div style={{ fontSize: 12, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
+                              <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ fontWeight: 700, fontSize: listMobName, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{m.name}</span>{isLeader && <span style={{ fontSize: mob ? 9 : 10, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>목자</span>}</div><div style={{ fontSize: listMobRole, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
                             </div>
                           </td>
-                          <td style={{ padding: "10px 14px" }}><SBadge variant="gray">{m.dept || "-"}</SBadge></td>
+                          <td style={{ padding: "10px 14px" }}><SBadge variant="gray" style={mob ? { fontSize: 9, padding: "1px 6px" } : undefined}>{m.dept || "-"}</SBadge></td>
                           <td style={{ padding: "10px 14px" }}><AttDot status={ws} onClick={() => cycleAtt(m.id)} /></td>
-                          <td style={{ padding: "10px 14px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, color: C.purple }}>{prayerSnip}</td>
-                          <td style={{ padding: "10px 14px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 10)}…` : "-"}</td>
+                          <td style={{ padding: "10px 14px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell, color: C.purple }}>{prayerSnip}</td>
+                          <td style={{ padding: "10px 14px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 10)}…` : "-"}</td>
                         </tr>
                       );
                     })}
@@ -1448,38 +1421,8 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             </Card></div>
           )}
           {viewMode === "group" && selectedMokjang && (
-            <Pagination totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroup(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            <Pagination compact={mob} totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroup(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
           )}
-        </>
-      )}
-
-      {/* ─── 카드 뷰 ─── */}
-      {viewMode === "card" && (
-        <>
-          <div ref={listRef} style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-            {filtered.length === 0 ? (
-              <Card><div style={{ textAlign: "center", color: C.textMuted, padding: 24 }}>검색 결과가 없습니다</div></Card>
-            ) : pageListMembers.map(m => {
-              const st = m.member_status ?? m.status;
-              const badgeColor = st === "활동" ? "#10B981" : st === "휴적" ? "#F59E0B" : st === "이적" || st === "제적" ? "#EF4444" : "#6B7280";
-              return (
-                <button key={m.id} type="button" onClick={() => openDetail(m.id)} style={{ textAlign: "left", padding: 16, background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, cursor: "pointer", fontFamily: "inherit", transition: "transform 0.15s, box-shadow 0.2s" }} onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; }} onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: C.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: C.accent }}>
-                      {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
-                    </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: C.navy, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name}</div>
-                      <div style={{ fontSize: 12, color: C.textMuted }}>{m.role || "-"} · {m.dept || "-"}</div>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>목장 {(m.mokjang ?? m.group) || "-"}</div>
-                  <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color: "#fff", background: badgeColor }}>{st || "활동"}</span>
-                </button>
-              );
-            })}
-          </div>
-          {viewMode === "card" && <Pagination totalItems={filtered.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageList} onPageChange={(p) => { setPageList(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />}
         </>
       )}
 
@@ -1495,12 +1438,12 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
           )}
           <div ref={listRef} style={{ width: "100%", maxWidth: "100%", minWidth: 0 }}><Card style={{ padding: 0, overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
             <div style={{ overflowX: "auto", width: "100%", maxWidth: "100%", minWidth: 0 }}>
-              <table className="pastoral-list-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? 12 : 14 }}>
+              <table className="pastoral-list-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? listMobCell : 14 }}>
                 <thead>
                   <tr style={{ background: C.bg }}>
-                    <th style={{ padding: "12px 8px", width: 40, textAlign: "center", fontWeight: 600, fontSize: 13, color: C.navy, borderBottom: `1px solid ${C.border}` }}><input type="checkbox" checked={filtered.length > 0 && selectedMemberIds.size === filtered.length} onChange={e => { if (e.target.checked) selectAllFiltered(); else clearSelection(); }} onClick={e => e.stopPropagation()} /></th>
+                    <th style={{ padding: "12px 8px", width: 40, textAlign: "center", fontWeight: 600, fontSize: listMobTh, color: C.navy, borderBottom: `1px solid ${C.border}` }}><input type="checkbox" checked={filtered.length > 0 && selectedMemberIds.size === filtered.length} onChange={e => { if (e.target.checked) selectAllFiltered(); else clearSelection(); }} onClick={e => e.stopPropagation()} /></th>
                     {["이름","부서","목장","출석","기도제목","최근 심방","최근 메모",""].map((h, i) => (
-                      <th key={i} style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                      <th key={i} style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: listMobTh, color: C.navy, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1529,19 +1472,19 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                         </td>
                         <td style={{ padding: "12px 16px", minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                            <div className="member-avatar" style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
+                            <div className="member-avatar" style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
                               {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
                             </div>
-                            <div style={{ minWidth: 0 }}><div style={{ fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div><div style={{ fontSize: 12, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
+                            <div style={{ minWidth: 0 }}><div style={{ fontWeight: 600, fontSize: listMobName, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div><div style={{ fontSize: listMobRole, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
                           </div>
                         </td>
-                        <td style={{ padding: "12px 16px" }}><SBadge variant="gray">{m.dept || "-"}</SBadge></td>
-                        <td style={{ padding: "12px 16px", whiteSpace: "nowrap", fontSize: 13 }}>{(m.mokjang ?? m.group) || "-"}</td>
+                        <td style={{ padding: "12px 16px" }}><SBadge variant="gray" style={mob ? { fontSize: 9, padding: "1px 6px" } : undefined}>{m.dept || "-"}</SBadge></td>
+                        <td style={{ padding: "12px 16px", whiteSpace: "nowrap", fontSize: listMobCell }}>{(m.mokjang ?? m.group) || "-"}</td>
                         <td style={{ padding: "12px 16px" }}><AttDot status={ws} onClick={() => cycleAtt(m.id)} /></td>
-                        <td style={{ padding: "12px 16px", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, color: C.purple, cursor: "pointer" }} onClick={e => { e.stopPropagation(); openQuickNote(m.id, m.name || "?", "prayer"); }}>{prayerSnip || <span style={{ color: C.textFaint, fontSize: 12 }}>+ 추가</span>}</td>
-                        <td style={{ padding: "12px 16px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 12)}…` : "-"}</td>
+                        <td style={{ padding: "12px 16px", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell, color: C.purple, cursor: "pointer" }} onClick={e => { e.stopPropagation(); openQuickNote(m.id, m.name || "?", "prayer"); }}>{prayerSnip || <span style={{ color: C.textFaint, fontSize: listMobCell }}>+ 추가</span>}</td>
+                        <td style={{ padding: "12px 16px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 12)}…` : "-"}</td>
                         <td style={{ padding: "12px 16px" }} onClick={e => e.stopPropagation()}>
-                          {memoSnip ? <button type="button" onClick={() => openQuickNote(m.id, m.name || "?", "note")} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, color: C.text, textAlign: "left", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{NOTE_ICONS.memo} {memoSnip}</button> : <button type="button" onClick={() => openQuickNote(m.id, m.name || "?", "note")} style={{ color: C.textFaint, fontSize: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}>+ 추가</button>}
+                          {memoSnip ? <button type="button" onClick={() => openQuickNote(m.id, m.name || "?", "note")} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: listMobCell, color: C.text, textAlign: "left", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{NOTE_ICONS.memo} {memoSnip}</button> : <button type="button" onClick={() => openQuickNote(m.id, m.name || "?", "note")} style={{ color: C.textFaint, fontSize: listMobCell, background: "none", border: "none", cursor: "pointer", padding: 0 }}>+ 추가</button>}
                         </td>
                         <td style={{ padding: "12px 16px" }}><Btn variant="soft" size="sm" icon={<FileText size={14} />} onClick={(e) => { e?.stopPropagation(); openNoteModal(m.id); }} /></td>
                       </tr>
@@ -1552,7 +1495,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             </div>
           </Card></div>
           {viewMode === "list" && (
-            <Pagination totalItems={filtered.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageList} onPageChange={(p) => { setPageList(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            <Pagination compact={mob} totalItems={filtered.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageList} onPageChange={(p) => { setPageList(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
           )}
         </>
       )}
@@ -3678,7 +3621,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       accentColor={tokens.color.navyEmphasis}
     >
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} />}
-          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} detailId={detailId} deleteMembers={deleteMembers} churchId={churchId} />}
+          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} deleteMembers={deleteMembers} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>
               <div
