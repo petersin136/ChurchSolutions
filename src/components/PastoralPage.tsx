@@ -2481,7 +2481,6 @@ function NewFamilySub({ db, setDb, openProgramDetail, openMemberModal, toast }: 
 
   const programs = db.newFamilyPrograms || [];
   const nfMembers = db.members.filter(m => m.is_new_family === true);
-  const memberById = (id: string) => db.members.find(x => x.id === id)!;
   const programByMember = (memberId: string) => programs.find(p => p.member_id === memberId);
 
   const thisMonth = useMemo(() => {
@@ -2615,8 +2614,23 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 12 }}>
             {paginated.map(({ member, program }) => {
-              const mentor = program.mentor_id ? memberById(program.mentor_id) : null;
+              const mentor = program.mentor_id ? (db.members.find(m => m.id === program.mentor_id) ?? null) : null;
               const done = [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed].filter(Boolean).length;
+              let nfBadgeLabel: string;
+              let nfBadgeColor: string;
+              if (program.status === "중단") {
+                nfBadgeLabel = "중단";
+                nfBadgeColor = "#999";
+              } else if (!mentor) {
+                nfBadgeLabel = "미배정";
+                nfBadgeColor = "#999";
+              } else if (program.status === "수료") {
+                nfBadgeLabel = "수료";
+                nfBadgeColor = "#1B2A4A";
+              } else {
+                nfBadgeLabel = "진행중";
+                nfBadgeColor = "#1B2A4A";
+              }
               return (
                 <Card key={member.id} onClick={() => openProgramDetail(member.id)} style={{ cursor: "pointer", padding: mob ? "10px 12px" : 16 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
@@ -2633,7 +2647,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
                         </div>
                       </div>
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "#1B2A4A", background: "#f0f2f5", padding: "2px 8px", borderRadius: 6, flexShrink: 0 }}>{program.status}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: nfBadgeColor, background: "#f0f2f5", padding: "2px 8px", borderRadius: 6, flexShrink: 0 }}>{nfBadgeLabel}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                     {mentor ? <span style={{ fontSize: mob ? 11 : 13, color: "#555" }}>섬김이: {mentor.name}</span> : <span style={{ fontSize: mob ? 11 : 13, fontWeight: 600, color: "#999" }}>섬김이 미배정</span>}
