@@ -1047,23 +1047,19 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                 }}
               >
                 <select
+                  className="dashboard-att-year-select"
                   value={attChartYear}
                   onChange={e => setAttChartYear(Number(e.target.value))}
                   style={{
-                    height: 28,
-                    width: 90,
-                    minWidth: 90,
-                    maxWidth: 90,
                     flexShrink: 0,
-                    fontSize: 11,
                     fontFamily: "inherit",
-                    color: C.navy,
-                    borderRadius: 6,
-                    border: "1px solid #e8ecf1",
-                    padding: "0 24px 0 8px",
-                    boxSizing: "border-box",
-                    background: "#fff",
                     cursor: "pointer",
+                    appearance: "none" as const,
+                    WebkitAppearance: "none" as const,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 8px center",
+                    backgroundSize: 12,
                   }}
                 >
                   {[currentYear, currentYear - 1, currentYear - 2].map(y => (

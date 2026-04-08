@@ -764,6 +764,25 @@
     width: 100% !important;
     -webkit-text-size-adjust: 100% !important;
   }
+  /* 목양 대시보드 출석 추이: 연도 select — 토글(28px)과 동일 줄·동일 높이, 전역 select 40px/100% 폭 무력화 */
+  select.dashboard-att-year-select {
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    border-radius: 6px !important;
+    padding: 0 24px 0 8px !important;
+    border: 1px solid #e8ecf1 !important;
+    box-sizing: border-box !important;
+    background-color: #fff !important;
+    color: #1b2a4a !important;
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    -webkit-text-size-adjust: 100% !important;
+  }
 }
 
 /* ── Mobile compact utilities (목양·향후 재사용) ── */
