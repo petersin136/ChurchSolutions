@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ReactNode, type ComponentType } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode, type ComponentType, type TouchEvent } from "react";
 import { Home, type LucideIcon } from "lucide-react";
 
 /** 사이드바 메뉴 아이콘 (LucideIcon, ComponentType<any> 등 모두 허용) */
@@ -147,6 +147,39 @@ export function UnifiedPageLayout({
   const [sideOpen, setSideOpen] = useState(false);
   const accent = accentColor?.trim() || DEFAULT_SIDEBAR_ACCENT;
   const sidebarBg = getSidebarBg(accent);
+
+  const flatTabs = useMemo(() => navSections.flatMap((sec) => sec.items), [navSections]);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const tabBtnRefs = useRef<Partial<Record<string, HTMLButtonElement | null>>>({});
+
+  useEffect(() => {
+    if (!mob || flatTabs.length === 0) return;
+    const el = tabBtnRefs.current[activeId];
+    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [activeId, mob, flatTabs.length]);
+
+  const handleSwipeTouchStart = (e: TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleSwipeTouchEnd = (e: TouchEvent) => {
+    if (!mob || flatTabs.length < 2) return;
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const dx = touchStartX.current - endX;
+    const dy = touchStartY.current - endY;
+    if (Math.abs(dx) < 50) return;
+    if (Math.abs(dx) < Math.abs(dy)) return;
+    const currentIndex = flatTabs.findIndex((t) => t.id === activeId);
+    if (currentIndex < 0) return;
+    if (dx > 50 && currentIndex < flatTabs.length - 1) {
+      onNav(flatTabs[currentIndex + 1].id);
+    } else if (dx < -50 && currentIndex > 0) {
+      onNav(flatTabs[currentIndex - 1].id);
+    }
+  };
 
   useEffect(() => {
     if (!mob) setSideOpen(true);
@@ -426,6 +459,8 @@ export function UnifiedPageLayout({
         {mob && navSections.length > 0 && (
           <div
             className="mobile-sub-tabs"
+            onTouchStart={handleSwipeTouchStart}
+            onTouchEnd={handleSwipeTouchEnd}
             style={{
               display: "flex",
               overflowX: "auto",
@@ -446,6 +481,9 @@ export function UnifiedPageLayout({
                 return (
                   <button
                     key={`${sec.sectionLabel}-${item.id}`}
+                    ref={(el) => {
+                      tabBtnRefs.current[item.id] = el;
+                    }}
                     type="button"
                     onClick={() => onNav(item.id)}
                     style={{
@@ -472,6 +510,8 @@ export function UnifiedPageLayout({
         )}
 
         <div
+          onTouchStart={mob ? handleSwipeTouchStart : undefined}
+          onTouchEnd={mob ? handleSwipeTouchEnd : undefined}
           style={{
             flex: 1,
             width: "100%",

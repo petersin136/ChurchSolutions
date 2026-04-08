@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance } from "@/types/db";
-import { DEFAULT_DB } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -2954,7 +2953,6 @@ function ReportsSub({ db, currentWeek, toast, churchId }: { db: DB; currentWeek:
 /* ====== Settings (목장그룹관리: 목양 탭 전용, 교회 전체 설정 제외) ====== */
 function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; toast: (m: string, t?: string) => void; saveDb: (d: DB) => Promise<void>; mokjangOnly?: boolean }) {
   const mob = useIsMobile();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [mokjangManage, setMokjangManage] = useState<string | null>(null);
   const [addMemberSelect, setAddMemberSelect] = useState("");
   const mokjangList = getMokjangList(db);
@@ -3012,32 +3010,6 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
     toast("목장에 추가되었습니다", "ok");
   };
 
-  const exportBackup = () => {
-    const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-    a.download = `슈퍼플래너_백업_${todayStr()}.json`; a.click();
-    toast("백업 완료", "ok");
-  };
-
-  const importBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const parsed = JSON.parse(ev.target?.result as string);
-        const merged = { ...DEFAULT_DB, ...parsed };
-        setDb(() => merged);
-        saveDb(merged).then(() => toast("복원 완료", "ok")).catch(() => toast("Supabase 저장 실패", "err"));
-      } catch { toast("파일 오류", "err"); }
-    };
-    reader.readAsText(file);
-  };
-
-  const clearAll = () => {
-    if (typeof window !== "undefined" && !window.confirm("모든 데이터를 삭제하시겠습니까?")) return;
-    if (typeof window !== "undefined") location.reload();
-  };
-
   const handleSaveSettings = () => {
     persist();
     saveDb(db).then(() => toast("저장되었습니다", "ok")).catch(() => toast("저장 실패", "err"));
@@ -3046,13 +3018,15 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
   const formInMob: CSSProperties | undefined = mob
     ? { height: 32, fontSize: 12, padding: "6px 10px", borderRadius: 8, boxSizing: "border-box" }
     : undefined;
-  const mokRowBtn: CSSProperties = { padding: mob ? "3px 8px" : "4px 10px", fontSize: mob ? 10 : 12, border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600 };
+  const mokRowBtnPrimary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "#1B2A4A", color: "#fff", boxSizing: "border-box" };
+  const mokRowBtnSecondary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "1px solid #e8ecf1", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "#f5f6f8", color: "#555", boxSizing: "border-box" };
+  const mokRowBtnMuted: CSSProperties = { ...mokRowBtnSecondary, color: "#999" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 16, maxWidth: mob ? "100%" : 960 }}>
       {!mokjangOnly && (
         <Card>
-          <h4 style={{ fontSize: mob ? 14 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 14 : 20 }}>⚙️ 교회 설정</h4>
+          <h4 style={{ fontSize: mob ? 14 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 14 : 20 }}>교회 설정</h4>
           <FormInput label="교회 이름" value={db.settings.churchName || ""} placeholder="○○교회"
             style={formInMob}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, churchName: e.target.value } })); persist(); }} />
@@ -3067,30 +3041,62 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
           </div>
         </Card>
       )}
-      <Card>
-        <h4 style={{ fontSize: mob ? 14 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 12 : 16, display: "flex", alignItems: "center", gap: 8 }}>
-          <Home size={mob ? 16 : 20} strokeWidth={2} style={{ flexShrink: 0, color: C.navy }} />
-          목장 관리
-        </h4>
-        <p style={{ fontSize: mob ? 11 : 13, color: C.textMuted, marginBottom: 12 }}>목장을 생성·이름 변경·삭제하고, 그룹원을 추가·제거할 수 있습니다.</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 10, marginBottom: 12 }}>
-          {mokjangList.map(g => {
+      <Card
+        style={
+          mob
+            ? { padding: "10px 12px", borderRadius: 8, border: "1px solid #e8ecf1", background: "#fff", boxShadow: "none" }
+            : { border: "1px solid #e8ecf1", background: "#fff", boxShadow: "none" }
+        }
+      >
+        <h4 style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#1B2A4A", margin: 0, marginBottom: mob ? 8 : 16 }}>목장 관리</h4>
+        <p style={{ fontSize: mob ? 11 : 13, color: "#999", margin: 0, marginBottom: mob ? 8 : 12, lineHeight: 1.45 }}>목장을 생성·이름 변경·삭제하고, 그룹원을 추가·제거할 수 있습니다.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 0, marginBottom: 12 }}>
+          {mokjangList.map((g, idx) => {
             const count = db.members.filter(m => ((m.mokjang ?? m.group) || "") === g).length;
             return (
-              <div key={g} style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: mob ? 6 : 8, background: C.bg, borderRadius: mob ? 8 : 10, padding: mob ? "8px 10px" : "12px 14px", border: `1px solid ${C.border}` }}>
-                <span style={{ fontWeight: 700, fontSize: mob ? 12 : 14, color: C.navy, display: "flex", alignItems: "center", gap: 6 }}>
-                  <Home size={mob ? 14 : 18} strokeWidth={2} style={{ flexShrink: 0, color: C.navy }} />
-                  {g}
-                </span>
-                <span style={{ fontSize: mob ? 10 : 12, color: C.textMuted }}>{count}명</span>
-                <button type="button" onClick={() => { setMokjangManage(g); setAddMemberSelect(""); }} style={{ ...mokRowBtn, background: C.navy, color: "#fff" }}>그룹원 관리</button>
-                <button type="button" onClick={() => renameMokjang(g)} style={{ ...mokRowBtn, background: C.accentBg, color: C.accent }}>이름 변경</button>
-                <button type="button" onClick={() => deleteMokjang(g)} style={{ ...mokRowBtn, background: C.dangerBg || "#fee", color: C.danger }}>삭제</button>
+              <div
+                key={g}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: mob ? 6 : 8,
+                  padding: mob ? "8px 0" : "12px 0",
+                  fontSize: mob ? 12 : 14,
+                  borderBottom: idx < mokjangList.length - 1 ? "1px solid #f0f2f5" : "none",
+                }}
+              >
+                <span style={{ fontWeight: 700, color: "#1B2A4A", flex: mob ? "1 1 100%" : undefined, minWidth: 0 }}>{g}</span>
+                <span style={{ fontSize: mob ? 11 : 12, color: "#999" }}>{count}명</span>
+                <button type="button" onClick={() => { setMokjangManage(g); setAddMemberSelect(""); }} style={mokRowBtnPrimary}>그룹원 관리</button>
+                <button type="button" onClick={() => renameMokjang(g)} style={mokRowBtnSecondary}>이름 변경</button>
+                <button type="button" onClick={() => deleteMokjang(g)} style={mokRowBtnMuted}>삭제</button>
               </div>
             );
           })}
         </div>
-        <Btn variant="accent" size="sm" onClick={addMokjang}>+ 목장 추가</Btn>
+        <button
+          type="button"
+          onClick={addMokjang}
+          style={{
+            height: mob ? 32 : 36,
+            fontSize: mob ? 12 : 13,
+            padding: mob ? "0 12px" : "0 14px",
+            borderRadius: mob ? 6 : 8,
+            background: "#1B2A4A",
+            color: "#fff",
+            border: "none",
+            fontWeight: 600,
+            fontFamily: "inherit",
+            cursor: "pointer",
+            boxSizing: "border-box",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          + 목장 추가
+        </button>
       </Card>
 
       {mokjangManage && (
@@ -3105,7 +3111,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
                   <li key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: `1px solid ${C.borderLight}`, fontSize: 14, minWidth: 0 }}>
                     <span style={{ fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span>
                     <span style={{ fontSize: 12, color: C.textMuted }}>{m.dept || ""} {m.role || ""}</span>
-                    <button type="button" onClick={() => removeMemberFromMokjang(m.id)} style={{ padding: "4px 10px", fontSize: 12, border: "none", background: C.dangerBg || "#fee", color: C.danger, borderRadius: 6, cursor: "pointer" }}>목장에서 제거</button>
+                    <button type="button" onClick={() => removeMemberFromMokjang(m.id)} style={{ padding: "4px 10px", fontSize: 12, border: "1px solid #e8ecf1", background: "#f5f6f8", color: "#999", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>목장에서 제거</button>
                   </li>
                 ))}
               </ul>
@@ -3126,15 +3132,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
           </div>
         </Modal>
       )}
-      <Card>
-        <h4 style={{ fontSize: mob ? 14 : 17, fontWeight: 700, color: C.navy, marginBottom: mob ? 12 : 16 }}>💾 데이터</h4>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Btn variant="ghost" onClick={exportBackup} style={mob ? { fontSize: 11 } : undefined}>{mob ? "📤 백업" : "📤 전체 백업 (JSON)"}</Btn>
-          <Btn variant="ghost" onClick={() => fileRef.current?.click()} style={mob ? { fontSize: 11 } : undefined}>{mob ? "📥 복원" : "📥 백업 복원"}</Btn>
-          <input ref={fileRef} type="file" accept=".json" style={{ display: "none" }} onChange={importBackup} />
-          <Btn variant="danger" size="sm" onClick={clearAll} style={mob ? { fontSize: 11 } : undefined}>🗑 전체 초기화</Btn>
-        </div>
-      </Card>
+      {/* 데이터(백업·복원·초기화): 향후 별도 설정 탭으로 이전 예정 — 목장그룹관리에서는 숨김 */}
     </div>
   );
 }
