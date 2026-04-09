@@ -12,6 +12,10 @@ export interface Settings {
   pastor?: string;
   /** 기부금 영수증용: 사업자등록번호(고유번호) */
   businessNumber?: string;
+  /** 결석 알림 기준 연속 주 수 (2~8, 기본 3). 알림 기능 연동용 */
+  absenteeAlertConsecutiveWeeks?: number;
+  /** 새가족 정착 미완료 알림 사용 여부 */
+  alertNewFamilyIncomplete?: boolean;
 }
 
 export interface Member {
@@ -500,6 +504,8 @@ export const DEFAULT_SETTINGS: Settings = {
   address: "",
   pastor: "",
   businessNumber: "",
+  absenteeAlertConsecutiveWeeks: 3,
+  alertNewFamilyIncomplete: true,
 };
 
 export const DEFAULT_DB: DB = {

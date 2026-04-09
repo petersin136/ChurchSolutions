@@ -436,7 +436,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3 bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4">
+      <div className="space-y-3 bg-white rounded-lg border p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4" style={{ borderColor: "#e8ecf1" }}>
         <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4">
           <label className="flex items-center gap-2 shrink-0">
             <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">날짜</span>
@@ -449,7 +449,12 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
               />
             </div>
           </label>
-          <span className="text-xs md:text-sm text-[#1e3a5f] font-semibold px-3 py-2 bg-blue-50 rounded-lg">주일예배</span>
+          <span
+            className="text-xs md:text-sm font-semibold px-3 py-2 rounded-md"
+            style={{ color: "#1B2A4A", background: "#f0f2f5" }}
+          >
+            주일예배
+          </span>
           {selectedDeptId && (
             <PortalSelect
               id="school-attendance-class"
@@ -474,41 +479,55 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
         {/* 부서 탭 - 목양과 동일한 스타일 */}
         <div
           className="flex overflow-x-auto gap-2 pb-2 [&::-webkit-scrollbar]:hidden"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          style={{ scrollbarWidth: "thin", msOverflowStyle: "none" }}
         >
-          {[{ id: null, name: "전체" }, ...departments].map((dept) => (
-            <button
-              key={dept.id ?? "전체"}
-              type="button"
-              onClick={() => { setSelectedDeptId(dept.id); setSelectedClassId(null); }}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                (!dept.id && !selectedDeptId) || selectedDeptId === dept.id
-                  ? "bg-slate-800 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {dept.name}
-            </button>
-          ))}
+          {[{ id: null, name: "전체" }, ...departments].map((dept) => {
+            const on = (!dept.id && !selectedDeptId) || selectedDeptId === dept.id;
+            return (
+              <button
+                key={dept.id ?? "전체"}
+                type="button"
+                onClick={() => { setSelectedDeptId(dept.id); setSelectedClassId(null); }}
+                style={{
+                  height: 28,
+                  padding: "0 12px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  borderRadius: 6,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                  border: on ? "none" : "1px solid #e8ecf1",
+                  background: on ? "#1B2A4A" : "#f5f6f8",
+                  color: on ? "#fff" : "#555",
+                  cursor: "pointer",
+                }}
+              >
+                {dept.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-100">
-          <span className="inline-block w-6 h-6 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
-          <span className="ml-2 text-gray-500">출석 데이터 로딩 중...</span>
+        <div className="flex items-center justify-center py-12 bg-white rounded-lg border" style={{ borderColor: "#e8ecf1" }}>
+          <span
+            className="inline-block w-6 h-6 rounded-full animate-spin"
+            style={{ border: "2px solid #e8ecf1", borderTopColor: "#1B2A4A" }}
+          />
+          <span className="ml-2" style={{ fontSize: 12, color: "#999" }}>출석 데이터 로딩 중...</span>
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 bg-white rounded-xl shadow-sm border border-gray-100">
-          <table className="w-full text-sm min-w-[320px]">
+        <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 bg-white rounded-lg border" style={{ borderColor: "#e8ecf1" }}>
+          <table className="w-full min-w-[320px]" style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr className="border-b border-gray-100">
-                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">교인</th>
-                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">역할</th>
-                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">반</th>
-                <th className="text-center py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">출석 상태</th>
-                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">사유</th>
-                <th className="text-left py-3 px-3 md:px-4 font-semibold text-[#1e3a5f] text-xs md:text-sm">연속출석</th>
+              <tr>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>교인</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>역할</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>반</th>
+                <th className="text-center py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>출석 상태</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>사유</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>연속출석</th>
               </tr>
             </thead>
             <tbody>
@@ -521,7 +540,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                   const photo = getMemberPhoto(e);
                   const streak = streakMap[e.member_id] ?? 0;
                   return (
-                    <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50/50 min-h-[48px]">
+                    <tr key={e.id} className="min-h-[48px]" style={{ borderBottom: "1px solid #f0f2f5" }}>
                       <td className="py-3 px-3 md:px-4 flex items-center gap-2 md:gap-3 min-h-[48px]">
                         <div
                           className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-200 flex-shrink-0 bg-cover bg-center"
@@ -536,14 +555,30 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                           <button
                             type="button"
                             onClick={() => toggleAttendance(e.member_id, "출석")}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${status === "출석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              border: status === "출석" ? "none" : "1px solid #e8ecf1",
+                              background: status === "출석" ? "#1B2A4A" : "#f5f6f8",
+                              color: status === "출석" ? "#fff" : "#555",
+                            }}
                           >
                             출석
                           </button>
                           <button
                             type="button"
                             onClick={() => toggleAttendance(e.member_id, "결석")}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${status === "결석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              border: status === "결석" ? "none" : "1px solid #e8ecf1",
+                              background: status === "결석" ? "#1B2A4A" : "#f5f6f8",
+                              color: status === "결석" ? "#fff" : "#555",
+                            }}
                           >
                             결석
                           </button>
@@ -556,11 +591,23 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                           value={noteMap[e.member_id] ?? ""}
                           onChange={(ev) => handleNoteChange(e.member_id, ev.target.value)}
                           disabled={!isAbsent}
-                          className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg w-40 ${isAbsent ? "bg-white" : "bg-gray-50 text-gray-400"}`}
+                          className="px-3 py-1.5 text-sm rounded-md w-40"
+                          style={{
+                            border: "1px solid #e8ecf1",
+                            background: isAbsent ? "#fff" : "#f5f6f8",
+                            color: isAbsent ? "#555" : "#999",
+                          }}
                         />
                       </td>
                       <td className="py-3 px-3 md:px-4 text-gray-600 text-xs md:text-sm">
-                        {streak > 0 ? <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">{streak}주 연속</span> : "-"}
+                        {streak > 0 ? (
+                          <span
+                            className="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold"
+                            style={{ background: "#f0f2f5", color: "#1B2A4A" }}
+                          >
+                            {streak}주 연속
+                          </span>
+                        ) : "-"}
                       </td>
                     </tr>
                   );
@@ -571,22 +618,22 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
         </div>
       )}
 
-      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 shadow-lg rounded-t-xl p-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-4 text-sm text-gray-600">
-          <span>출석 <strong className="text-slate-800">{count출석}명</strong></span>
-          <span>결석 <strong className="text-slate-800">{count결석}명</strong></span>
-          <span className="text-gray-400">/ 전체 {filteredEnrollments.length}명</span>
+      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 flex flex-wrap items-center justify-between gap-4 rounded-t-lg" style={{ borderColor: "#e8ecf1" }}>
+        <div className="flex gap-4 text-sm" style={{ color: "#555" }}>
+          <span>출석 <strong style={{ color: "#1B2A4A" }}>{count출석}명</strong></span>
+          <span>결석 <strong style={{ color: "#1B2A4A" }}>{count결석}명</strong></span>
+          <span style={{ color: "#999" }}>/ 전체 {filteredEnrollments.length}명</span>
         </div>
         <div className="text-sm">
           {saving ? (
-            <span className="flex items-center gap-1 text-gray-500">
-              <span className="inline-block w-3 h-3 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+            <span className="flex items-center gap-1" style={{ color: "#999" }}>
+              <span className="inline-block w-3 h-3 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#6b7b9e", borderTopColor: "transparent" }} />
               저장 중...
             </span>
           ) : saved ? (
-            <span className="text-green-600 font-medium">✓ 자동 저장됨</span>
+            <span style={{ color: "#1B2A4A", fontWeight: 600 }}>자동 저장됨</span>
           ) : saveError ? (
-            <span className="text-red-500">저장 실패 - 다시 시도해주세요</span>
+            <span style={{ color: "#555" }}>저장 실패 - 다시 시도해주세요</span>
           ) : null}
         </div>
       </div>

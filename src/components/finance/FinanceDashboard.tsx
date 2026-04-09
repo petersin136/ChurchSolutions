@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import {
   LineChart,
   Line,
@@ -10,16 +10,14 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
 } from "recharts";
 import LazyChart from "../common/LazyChart";
 
-const NAVY = "#1e3a5f";
-const CORAL = "#e74c3c";
+const NAVY = "#1B2A4A";
+const MUTED_LINE = "#6b7b9e";
+const BORDER = "#e8ecf1";
+const LABEL_SUB = "#6b7b9e";
+const LABEL_SMALL = "#999";
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 interface OfferingLike { date: string; amount: number; categoryId?: string; type?: string; }
@@ -41,13 +39,7 @@ export interface FinanceDashboardProps {
 export function FinanceDashboard({
   offerings,
   expenses,
-  incomeCategories = [],
-  expenseCategories = [],
   budgetByMonth,
-  onAddIncome,
-  onAddExpense,
-  onOpenCashJournal,
-  onOpenBudget,
 }: FinanceDashboardProps) {
   const thisYear = new Date().getFullYear().toString();
   const thisMonth = new Date().getMonth() + 1;
@@ -88,176 +80,60 @@ export function FinanceDashboard({
     });
   }, [offerings, expenses, thisYear]);
 
-  const incomeByCategory = useMemo(() => {
-    const map: Record<string, number> = {};
-    offerings.forEach((o) => {
-      const id = o.categoryId || o.type || "other";
-      map[id] = (map[id] || 0) + o.amount;
-    });
-    return incomeCategories.length
-      ? incomeCategories.map((c) => ({ name: c.name, value: map[c.id] || 0 })).filter((d) => d.value > 0)
-      : Object.entries(map).map(([k, v]) => ({ name: k, value: v }));
-  }, [offerings, incomeCategories]);
-
-  const expenseByCategory = useMemo(() => {
-    const map: Record<string, number> = {};
-    expenses.forEach((e) => {
-      const id = e.categoryId || e.category || "other";
-      map[id] = (map[id] || 0) + e.amount;
-    });
-    return expenseCategories.length
-      ? expenseCategories.map((c) => ({ name: c.name, value: map[c.id] || 0 })).filter((d) => d.value > 0)
-      : Object.entries(map).map(([k, v]) => ({ name: k, value: v }));
-  }, [expenses, expenseCategories]);
-
-  const COLORS = [NAVY, "#4361ee", "#7209b7", "#06d6a0", "#ffd166", "#8d99ae"];
+  const cardBase: CSSProperties = {
+    padding: "8px 10px",
+    minHeight: 56,
+    background: "#fff",
+    border: `1px solid ${BORDER}`,
+    borderRadius: 8,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+  };
 
   return (
-    <div className="space-y-6">
-      {/* 요약 카드 4개 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-5">
-          <div className="text-xs font-medium text-gray-500 mb-1">이번 달 총 수입</div>
-          <div className="text-xl md:text-2xl font-bold text-[#1e3a5f]">₩{fmt(monthIncome)}</div>
-          <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div style={cardBase}>
+          <div style={{ fontSize: 10, color: LABEL_SUB, fontWeight: 500 }}>이번 달 총 수입</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>₩{fmt(monthIncome)}</div>
+          <div style={{ fontSize: 9, color: LABEL_SMALL, marginTop: 2 }}>
             {incomeChange >= 0 ? "▲" : "▼"} 전월 대비 {Math.abs(incomeChange)}%
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-5">
-          <div className="text-xs font-medium text-gray-500 mb-1">이번 달 총 지출</div>
-          <div className="text-xl md:text-2xl font-bold text-[#e74c3c]">₩{fmt(monthExpense)}</div>
-          <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+        <div style={cardBase}>
+          <div style={{ fontSize: 10, color: LABEL_SUB, fontWeight: 500 }}>이번 달 총 지출</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>₩{fmt(monthExpense)}</div>
+          <div style={{ fontSize: 9, color: LABEL_SMALL, marginTop: 2 }}>
             {expenseChange >= 0 ? "▲" : "▼"} 전월 대비 {Math.abs(expenseChange)}%
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-5">
-          <div className="text-xs font-medium text-gray-500 mb-1">이번 달 순수익</div>
-          <div className={`text-xl md:text-2xl font-bold ${netProfit >= 0 ? "text-[#1e3a5f]" : "text-[#e74c3c]"}`}>
-            ₩{fmt(netProfit)}
-          </div>
+        <div style={{ ...cardBase, minHeight: 52 }}>
+          <div style={{ fontSize: 10, color: LABEL_SUB, fontWeight: 500 }}>이번 달 순수익</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>₩{fmt(netProfit)}</div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-5">
-          <div className="text-xs font-medium text-gray-500 mb-1">예산 집행률</div>
-          <div className="text-xl md:text-2xl font-bold text-[#1e3a5f]">{executionRate}%</div>
-          <div className="text-xs text-gray-500 mt-1">이번 달 지출 / 예산</div>
+        <div style={{ ...cardBase, minHeight: 52 }}>
+          <div style={{ fontSize: 10, color: LABEL_SUB, fontWeight: 500 }}>예산 집행률</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>{executionRate}%</div>
+          <div style={{ fontSize: 9, color: LABEL_SMALL, marginTop: 2 }}>이번 달 지출 / 예산</div>
         </div>
       </div>
 
-      {/* 빠른 액션 */}
-      <div className="flex flex-wrap gap-3">
-        {onAddIncome && (
-          <button type="button" onClick={onAddIncome} className="px-4 py-2 rounded-xl bg-[#1e3a5f] text-white text-sm font-semibold hover:opacity-90">
-            + 수입 등록
-          </button>
-        )}
-        {onAddExpense && (
-          <button type="button" onClick={onAddExpense} className="px-4 py-2 rounded-xl bg-[#e74c3c] text-white text-sm font-semibold hover:opacity-90">
-            + 지출 등록
-          </button>
-        )}
-        {onOpenCashJournal && (
-          <button type="button" onClick={onOpenCashJournal} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50">
-            현금출납장
-          </button>
-        )}
-        {onOpenBudget && (
-          <button type="button" onClick={onOpenBudget} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50">
-            예산 설정
-          </button>
-        )}
-      </div>
-
-      {/* 차트 2열 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h4 className="text-base font-semibold text-[#1e3a5f] mb-4">월별 수입/지출 추이</h4>
-          <LazyChart height={300}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
-                <Tooltip formatter={(v: any) => [`₩${fmt(v ?? 0)}`, ""]} labelFormatter={(l) => l} />
-                <Legend />
-                <Line type="monotone" dataKey="수입" stroke={NAVY} strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="지출" stroke={CORAL} strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </LazyChart>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h4 className="text-base font-semibold text-[#1e3a5f] mb-4">수입 카테고리별</h4>
-          <LazyChart height={300}>
-            {incomeByCategory.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={incomeByCategory}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={(e) => e.name}
-                  >
-                    {incomeByCategory.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v: any) => [`₩${fmt(v ?? 0)}`, ""]} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">데이터 없음</div>
-            )}
-          </LazyChart>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h4 className="text-base font-semibold text-[#1e3a5f] mb-4">지출 카테고리별</h4>
-          <LazyChart height={300}>
-            {expenseByCategory.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={expenseByCategory}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={(e) => e.name}
-                  >
-                    {expenseByCategory.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v: any) => [`₩${fmt(v ?? 0)}`, ""]} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">데이터 없음</div>
-            )}
-          </LazyChart>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h4 className="text-base font-semibold text-[#1e3a5f] mb-4">월별 수입/지출 막대</h4>
-          <LazyChart height={300}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyTrend} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
-                <Tooltip formatter={(v: any) => [`₩${fmt(v ?? 0)}`, ""]} />
-                <Legend />
-                <Bar dataKey="수입" fill={NAVY} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="지출" fill={CORAL} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </LazyChart>
-        </div>
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12 }}>
+        <h4 style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 700, color: NAVY }}>월별 수입/지출 추이</h4>
+        <LazyChart height={260}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={monthlyTrend} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e8ecf1" />
+              <XAxis dataKey="month" tick={{ fontSize: 9, fill: LABEL_SMALL }} />
+              <YAxis tick={{ fontSize: 9, fill: LABEL_SMALL }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
+              <Tooltip formatter={(value) => [`₩${fmt(Number(value))}`, ""]} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Line type="monotone" dataKey="수입" stroke={NAVY} strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="지출" stroke={MUTED_LINE} strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </LazyChart>
       </div>
     </div>
   );

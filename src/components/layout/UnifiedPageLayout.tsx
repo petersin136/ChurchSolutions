@@ -6,7 +6,7 @@ import { Home, type LucideIcon } from "lucide-react";
 /** 사이드바 메뉴 아이콘 (LucideIcon, ComponentType<any> 등 모두 허용) */
 export type NavItemIcon = ComponentType<any>;
 
-/* ---------- Visit 탭과 동일한 픽셀/색상 (VisitCounselPage.tsx 수정 금지) ---------- */
+/* ---------- 레이아웃 토큰 (심방·상담 등 서브페이지와 맞춤) ---------- */
 const LAYOUT = {
   sidebarWidth: 260,
   sidebarWidthCollapsed: 64,
@@ -79,8 +79,9 @@ function getSidebarBg(accent: string): string {
   const normalized = accent.trim().toLowerCase();
   const darkMap: Record<string, string> = {
     "#1e3a5f": "#152a4a", // 목양 - 네이비 (살짝 밝게)
+    "#1b2a4a": "#152a45", // 심방·상담·재정 - #1B2A4A 통일
     "#8b6f47": "#3d2e14", // 주보 - 브라운 (따뜻한 톤 강조)
-    "#166534": "#133a20", // 재정 - 그린 (녹색 강조)
+    "#166534": "#133a20", // 레거시 그린 (호환)
     "#1d4ed8": "#162c6b", // 출석 - 블루 (파랑 강조)
     "#6b7280": "#2d3039", // 설정 - 그레이 (중립)
     "#7c3aed": "#271354", // 학생 - 퍼플 (보라 강조)
@@ -131,6 +132,8 @@ export interface UnifiedPageLayoutProps {
   SidebarIcon?: LucideIcon;
   /** 페이지 강조색 — 사이드바 배경 톤(`getSidebarBg`)·앱 하단 탭 등에 사용. 미전달 시 #2563eb */
   accentColor?: string;
+  /** true면 모바일 상단 가로 서브탭 바를 숨김(재정 등 본문에서 자체 네비 사용) */
+  hideMobileSubTabs?: boolean;
 }
 
 export function UnifiedPageLayout({
@@ -146,6 +149,7 @@ export function UnifiedPageLayout({
   children,
   SidebarIcon,
   accentColor,
+  hideMobileSubTabs = false,
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
   const [sideOpen, setSideOpen] = useState(false);
@@ -498,7 +502,7 @@ export function UnifiedPageLayout({
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, alignSelf: "center" }}>{headerActions}</div>
         </header>
 
-        {mob && navSections.length > 0 && (
+        {mob && navSections.length > 0 && !hideMobileSubTabs && (
           <div
             className="mobile-sub-tabs"
             onTouchStart={handleSwipeTouchStart}

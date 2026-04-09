@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import * as XLSX from "xlsx";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { LayoutDashboard, Wallet, Users, Receipt, FileText, PieChart, Download, FileSignature, Church, Settings } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { SealSettingsSection } from "@/components/finance/SealSettingsSection";
@@ -43,43 +43,43 @@ const HALVES = ["상반기 (1-6월)","하반기 (7-12월)"];
 /* ---------- 기본 헌금 카테고리 (주일헌금, 십일조, 감사헌금, 건축헌금, 선교헌금, 기타) ---------- */
 interface Category { id: string; name: string; color: string; icon: string; }
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: "sunday", name: "주일헌금", color: "#ffd166", icon: "⛪" },
-  { id: "tithe", name: "십일조", color: "#4361ee", icon: "📘" },
-  { id: "thanks", name: "감사헌금", color: "#f72585", icon: "🙏" },
-  { id: "building", name: "건축헌금", color: "#3a0ca3", icon: "🏗️" },
-  { id: "mission", name: "선교헌금", color: "#7209b7", icon: "🌍" },
-  { id: "other", name: "기타", color: "#8d99ae", icon: "📋" },
+  { id: "sunday", name: "주일헌금", color: "#1B2A4A", icon: "" },
+  { id: "tithe", name: "십일조", color: "#1B2A4A", icon: "" },
+  { id: "thanks", name: "감사헌금", color: "#1B2A4A", icon: "" },
+  { id: "building", name: "건축헌금", color: "#1B2A4A", icon: "" },
+  { id: "mission", name: "선교헌금", color: "#1B2A4A", icon: "" },
+  { id: "other", name: "기타", color: "#1B2A4A", icon: "" },
 ];
 
 /* ---------- 기본 부서 ---------- */
 interface Department { id: string; name: string; color: string; }
 const DEFAULT_DEPARTMENTS: Department[] = [
-  { id: "worship", name: "예배부", color: "#4361ee" },
-  { id: "education", name: "교육부", color: "#f72585" },
-  { id: "mission_dept", name: "선교부", color: "#7209b7" },
-  { id: "youth_dept", name: "청년부", color: "#06d6a0" },
-  { id: "children_dept", name: "주일학교부", color: "#118ab2" },
-  { id: "facility", name: "시설관리부", color: "#3a0ca3" },
-  { id: "admin", name: "행정부", color: "#ffd166" },
-  { id: "social", name: "사회봉사부", color: "#ef476f" },
-  { id: "music", name: "찬양부", color: "#4cc9f0" },
-  { id: "general", name: "총무부", color: "#8d99ae" },
+  { id: "worship", name: "예배부", color: "#1B2A4A" },
+  { id: "education", name: "교육부", color: "#1B2A4A" },
+  { id: "mission_dept", name: "선교부", color: "#1B2A4A" },
+  { id: "youth_dept", name: "청년부", color: "#1B2A4A" },
+  { id: "children_dept", name: "주일학교부", color: "#1B2A4A" },
+  { id: "facility", name: "시설관리부", color: "#1B2A4A" },
+  { id: "admin", name: "행정부", color: "#1B2A4A" },
+  { id: "social", name: "사회봉사부", color: "#1B2A4A" },
+  { id: "music", name: "찬양부", color: "#1B2A4A" },
+  { id: "general", name: "총무부", color: "#1B2A4A" },
 ];
 
 /* ---------- 지출 카테고리 ---------- */
 interface ExpCategory { id: string; name: string; icon: string; }
 const EXPENSE_CATEGORIES: ExpCategory[] = [
-  { id: "salary", name: "인건비", icon: "💰" },
-  { id: "rent", name: "임대료/관리비", icon: "🏠" },
-  { id: "utility", name: "공과금", icon: "💡" },
-  { id: "supply", name: "비품/소모품", icon: "📦" },
-  { id: "event", name: "행사비", icon: "🎉" },
-  { id: "mission_exp", name: "선교비", icon: "✈️" },
-  { id: "education_exp", name: "교육비", icon: "📚" },
-  { id: "maintenance", name: "시설유지비", icon: "🔧" },
-  { id: "transport", name: "교통비", icon: "🚗" },
-  { id: "food", name: "식비/다과", icon: "🍚" },
-  { id: "other_exp", name: "기타지출", icon: "📋" },
+  { id: "salary", name: "인건비", icon: "" },
+  { id: "rent", name: "임대료/관리비", icon: "" },
+  { id: "utility", name: "공과금", icon: "" },
+  { id: "supply", name: "비품/소모품", icon: "" },
+  { id: "event", name: "행사비", icon: "" },
+  { id: "mission_exp", name: "선교비", icon: "" },
+  { id: "education_exp", name: "교육비", icon: "" },
+  { id: "maintenance", name: "시설유지비", icon: "" },
+  { id: "transport", name: "교통비", icon: "" },
+  { id: "food", name: "식비/다과", icon: "" },
+  { id: "other_exp", name: "기타지출", icon: "" },
 ];
 
 /* ---------- 데이터 타입 ---------- */
@@ -194,37 +194,169 @@ const Icons = {
   Plus: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>,
   Search: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
   X: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>,
-  TrendUp: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06d6a0" strokeWidth="2"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>,
-  TrendDown: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef476f" strokeWidth="2"><path d="M23 18l-9.5-9.5-5 5L1 6"/><path d="M17 18h6v-6"/></svg>,
+  TrendUp: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7b9e" strokeWidth="2"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>,
+  TrendDown: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M23 18l-9.5-9.5-5 5L1 6"/><path d="M17 18h6v-6"/></svg>,
   Church: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2v4M10 6h4M8 6v4l-5 3v9h18v-9l-5-3V6"/><rect x="10" y="16" width="4" height="6"/></svg>,
 };
 
 /* ---------- 스타일 ---------- */
 const C = {
-  bg: "#f8f7f4", card: "#ffffff", navy: "#1b2a4a", navyLight: "#2d4373",
-  text: "#1b2a4a", textMuted: "#6b7b9e", border: "#e8e6e1", borderLight: "#f0eeeb",
-  blue: "#4361ee", blueBg: "#eef0ff", accent: "#4361ee", accentLight: "#eef0ff", accentBg: "#eef0ff",
-  success: "#06d6a0", successLight: "#e6faf3",
-  danger: "#ef476f", dangerLight: "#fde8ed", warning: "#ffd166", warningLight: "#fff8e6",
-  purple: "#7209b7", purpleLight: "#f3e8ff",
+  bg: "#f5f6f8", card: "#ffffff", navy: "#1B2A4A", navyLight: "#2d4373",
+  text: "#555555", textMuted: "#6b7b9e", border: "#e8ecf1", borderLight: "#f0f2f5",
+  blue: "#1B2A4A", blueBg: "#f0f2f5", accent: "#1B2A4A", accentLight: "#f0f2f5", accentBg: "#f0f2f5",
+  success: "#1B2A4A", successLight: "#f0f2f5",
+  danger: "#555555", dangerLight: "#f5f6f8", warning: "#6b7b9e", warningLight: "#f5f6f8",
+  purple: "#1B2A4A", purpleLight: "#f0f2f5",
 };
+
+type FinanceCategoryId = "fin_income" | "fin_budget" | "fin_giving" | "fin_reports";
+
+const LEAF_TO_FINANCE_CATEGORY: Record<string, FinanceCategoryId> = {
+  dashboard: "fin_income",
+  offering: "fin_income",
+  expense: "fin_income",
+  cashJournal: "fin_income",
+  budgetManagement: "fin_budget",
+  budgetVsActual: "fin_budget",
+  budgetActual: "fin_budget",
+  budget: "fin_budget",
+  donorStatistics: "fin_giving",
+  givingStatus: "fin_giving",
+  donor: "fin_giving",
+  specialAccounts: "fin_giving",
+  report: "fin_reports",
+  export: "fin_reports",
+  receipt: "fin_reports",
+};
+
+const FINANCE_CATEGORY_FIRST_TAB: Record<FinanceCategoryId, string> = {
+  fin_income: "dashboard",
+  fin_budget: "budgetManagement",
+  fin_giving: "donorStatistics",
+  fin_reports: "report",
+};
+
+const FINANCE_CATEGORY_GRID: { id: FinanceCategoryId; label: string }[][] = [
+  [
+    { id: "fin_income", label: "수입/지출" },
+    { id: "fin_budget", label: "예산" },
+  ],
+  [
+    { id: "fin_giving", label: "헌금" },
+    { id: "fin_reports", label: "보고/설정" },
+  ],
+];
+
+const FINANCE_SUB_TABS_BY_CATEGORY: Record<FinanceCategoryId, { id: string; label: string }[]> = {
+  fin_income: [
+    { id: "dashboard", label: "대시보드" },
+    { id: "offering", label: "수입 관리" },
+    { id: "expense", label: "지출 관리" },
+    { id: "cashJournal", label: "현금출납장" },
+  ],
+  fin_budget: [
+    { id: "budgetManagement", label: "예산 관리" },
+    { id: "budgetVsActual", label: "예산 대비 실적" },
+    { id: "budgetActual", label: "예결산" },
+    { id: "budget", label: "예산 계획" },
+  ],
+  fin_giving: [
+    { id: "donorStatistics", label: "헌금자 통계" },
+    { id: "givingStatus", label: "헌금 현황" },
+    { id: "donor", label: "헌금자 관리" },
+    { id: "specialAccounts", label: "특별회계" },
+  ],
+  fin_reports: [
+    { id: "report", label: "보고서" },
+    { id: "export", label: "엑셀보내기" },
+    { id: "receipt", label: "기부금 영수증" },
+  ],
+};
+
+function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; onLeafChange: (id: string) => void }) {
+  const category = LEAF_TO_FINANCE_CATEGORY[activeTab] ?? "fin_income";
+  const gridBtn = (selected: boolean): CSSProperties => ({
+    height: 30,
+    fontSize: 10,
+    fontWeight: 600,
+    borderRadius: 6,
+    border: "none",
+    width: "100%",
+    cursor: "pointer",
+    background: selected ? "#1B2A4A" : "#f5f6f8",
+    color: selected ? "#fff" : "#555",
+  });
+  const pillBtn = (selected: boolean): CSSProperties => ({
+    height: 28,
+    fontSize: 10,
+    fontWeight: 600,
+    padding: "0 10px",
+    borderRadius: 6,
+    border: selected ? "none" : "1px solid #e8ecf1",
+    flexShrink: 0,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    background: selected ? "#1B2A4A" : "#f5f6f8",
+    color: selected ? "#fff" : "#555",
+  });
+  return (
+    <div>
+      <div style={{ marginBottom: 4 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+          {FINANCE_CATEGORY_GRID[0].map((c) => (
+            <button key={c.id} type="button" style={gridBtn(category === c.id)} onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+          {FINANCE_CATEGORY_GRID[1].map((c) => (
+            <button key={c.id} type="button" style={gridBtn(category === c.id)} onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div
+        className="finance-sub-pills scrollbar-hide"
+        style={{
+          display: "flex",
+          overflowX: "auto",
+          gap: 6,
+          marginBottom: 10,
+          whiteSpace: "nowrap",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+      >
+        {FINANCE_SUB_TABS_BY_CATEGORY[category].map((t) => (
+          <button key={t.id} type="button" style={pillBtn(activeTab === t.id)} onClick={() => onLeafChange(t.id)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ---------- 공통 컴포넌트 ---------- */
 function Card({ children, style, onClick }: { children: ReactNode; style?: CSSProperties; onClick?: () => void }) {
   return (
     <div onClick={onClick} style={{
-      background: C.card, borderRadius: 16, border: `1px solid ${C.border}`,
+      background: C.card, borderRadius: 8, border: `1px solid ${C.border}`,
       padding: 24, transition: "all 0.2s ease", cursor: onClick ? "pointer" : "default", ...style,
     }}>{children}</div>
   );
 }
 
-function Badge({ children, color = C.accent, bg }: { children: ReactNode; color?: string; bg?: string }) {
+function Badge({ children, color = C.navy, bg, fontSize = 10 }: { children: ReactNode; color?: string; bg?: string; fontSize?: number }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-      color, background: bg || `${color}15`, whiteSpace: "nowrap",
+      padding: "2px 6px", borderRadius: 4, fontSize, fontWeight: 600,
+      color, background: bg ?? "#f0f2f5", whiteSpace: "nowrap", border: "none",
     }}>{children}</span>
   );
 }
@@ -243,11 +375,11 @@ function Button({ children, onClick, variant = "primary", size = "md", icon, dis
   };
   const variants: Record<string, CSSProperties> = {
     primary: { background: C.navy, color: "#fff" },
-    accent: { background: C.accent, color: "#fff" },
-    success: { background: C.success, color: "#fff" },
-    danger: { background: C.danger, color: "#fff" },
+    accent: { background: C.navy, color: "#fff" },
+    success: { background: C.navy, color: "#fff" },
+    danger: { background: "#f5f6f8", color: "#555", border: `1px solid ${C.border}` },
     ghost: { background: "transparent", color: C.navy, border: `1px solid ${C.border}` },
-    soft: { background: C.accentLight, color: C.accent },
+    soft: { background: "#f5f6f8", color: "#555", border: `1px solid ${C.border}` },
   };
   return (
     <button type="button" onClick={onClick} disabled={disabled} style={{ ...base, ...(variants[variant] || variants.primary), ...extraStyle }}>
@@ -319,16 +451,15 @@ function Modal({ open, onClose, title, children, width = 520 }: {
   );
 }
 
-function StatCard({ label, value, sub, color = C.accent, trend }: {
+function StatCard({ label, value, sub, trend }: {
   label: string; value: string; sub?: string; icon?: ReactNode; color?: string; trend?: string;
 }) {
   return (
-    <Card style={{ display: "flex", flexDirection: "column", gap: 8, position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", top: -10, right: -10, width: 60, height: 60, borderRadius: "50%", background: `${color}10` }} />
-      <div style={{ fontSize: 13, color: C.textMuted, fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: C.navy, letterSpacing: "-0.5px" }}>{value}</div>
+    <Card style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px" }}>
+      <div style={{ fontSize: 10, color: "#6b7b9e", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>{value}</div>
       {sub && (
-        <div style={{ fontSize: 12, color: C.textMuted, display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ fontSize: 9, color: "#999", display: "flex", alignItems: "center", gap: 4 }}>
           {trend === "up" && <Icons.TrendUp />}
           {trend === "down" && <Icons.TrendDown />}
           {sub}
@@ -344,31 +475,32 @@ function Table({ columns, data, emptyMsg = "데이터가 없습니다" }: {
   columns: ColDef[]; data: Record<string, unknown>[]; emptyMsg?: string;
 }) {
   return (
-    <div style={{ overflowX: "auto", borderRadius: 12, border: `1px solid ${C.border}` }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+    <div style={{ overflowX: "auto", borderRadius: 8, border: `1px solid ${C.border}` }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
-          <tr style={{ background: C.bg }}>
+          <tr>
             {columns.map((col, i) => (
               <th key={i} style={{
-                padding: "12px 16px", textAlign: (col.align || "left") as "left"|"right"|"center",
-                fontWeight: 600, color: C.navy, fontSize: 13, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap",
+                padding: "6px 8px", textAlign: (col.align || "left") as "left"|"right"|"center",
+                fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}`, whiteSpace: "nowrap",
               }}>{col.label}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {data.length === 0 ? (
-            <tr><td colSpan={columns.length} style={{ padding: 40, textAlign: "center", color: C.textMuted }}>{emptyMsg}</td></tr>
+            <tr><td colSpan={columns.length} style={{ padding: 40, textAlign: "center", color: "#999", fontSize: 12 }}>{emptyMsg}</td></tr>
           ) : data.map((row, ri) => (
             <tr key={ri} style={{
-              borderBottom: ri < data.length - 1 ? `1px solid ${C.borderLight}` : "none", transition: "background 0.1s",
+              borderBottom: `1px solid ${C.borderLight}`,
+              background: ri % 2 === 1 ? "#fafbfc" : "#fff",
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.bg; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#f5f6f8"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ri % 2 === 1 ? "#fafbfc" : "#fff"; }}>
               {columns.map((col, ci) => (
                 <td key={ci} style={{
-                  padding: "12px 16px", textAlign: (col.align || "left") as "left"|"right"|"center",
-                  color: C.text, whiteSpace: "nowrap",
+                  padding: 8, textAlign: (col.align || "left") as "left"|"right"|"center",
+                  color: "#555", fontSize: 11, whiteSpace: "nowrap",
                 }}>{col.render ? col.render(row) : (row[col.key || ""] as ReactNode)}</td>
               ))}
             </tr>
@@ -605,33 +737,37 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
   };
   const filteredTotal = filtered.reduce((s, o) => s + o.amount, 0);
 
+  const compactSel: CSSProperties = { height: 32, fontSize: 11, padding: "0 8px", borderRadius: 6, border: `1px solid ${C.border}` };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ position: "relative" }}>
-            <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><Icons.Search /></div>
-            <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="헌금자 검색..."
-              style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", width: 200 }} />
-          </div>
-          <Select options={[{ value: "all", label: "전체 항목" }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
-            value={filterCat} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterCat(e.target.value); setCurrentPage(1); }} />
-          <Select options={[{ value: "all", label: "전체 월" }, ...MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }))]}
-            value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterMonth(e.target.value); setCurrentPage(1); }} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: 160 }}>
+          <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#6b7b9e" }}><Icons.Search /></div>
+          <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="헌금자 검색..."
+            style={{ width: "100%", boxSizing: "border-box", height: 32, padding: "0 12px 0 32px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontFamily: "inherit", outline: "none" }} />
         </div>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <Badge color={C.accent}>합계: ₩{fmt(filteredTotal)}</Badge>
-          <Button onClick={() => setShowAdd(true)} icon={<Icons.Plus />}>헌금 등록</Button>
-        </div>
+        <Select style={compactSel} options={[{ value: "all", label: "전체 항목" }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
+          value={filterCat} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterCat(e.target.value); setCurrentPage(1); }} />
+        <Select style={compactSel} options={[{ value: "all", label: "전체 월" }, ...MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }))]}
+          value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterMonth(e.target.value); setCurrentPage(1); }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.navy, whiteSpace: "nowrap" }}>합계: ₩{fmt(filteredTotal)}</span>
+        <button
+          type="button"
+          onClick={() => setShowAdd(true)}
+          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+        >
+          헌금 등록
+        </button>
       </div>
       <div ref={listRef}>
       <Table
         columns={[
           { label: "날짜", key: "date" },
           { label: "헌금자", render: (r) => <span style={{ fontWeight: 600 }}>{r.donorName as string}</span> },
-          { label: "항목", render: (r) => { const cat = categories.find(c => c.id === r.categoryId); return cat ? <Badge color={cat.color}>{cat.icon} {cat.name}</Badge> : (r.categoryId as string); }},
-          { label: "방법", render: (r) => <Badge color={C.textMuted}>{r.method as string}</Badge> },
-          { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.accent }}>₩{fmt(r.amount as number)}</span> },
+          { label: "항목", render: (r) => { const cat = categories.find(c => c.id === r.categoryId); return cat ? <Badge color={C.navy} bg="#f0f2f5">{cat.name}</Badge> : (r.categoryId as string); }},
+          { label: "방법", render: (r) => <Badge color="#555" bg="#f5f6f8">{r.method as string}</Badge> },
+          { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.navy }}>₩{fmt(r.amount as number)}</span> },
           { label: "", align: "center", render: (r) => <button onClick={() => handleDelete(r.id as string)} style={{ background: "none", border: "none", cursor: "pointer", color: C.textMuted, fontSize: 12, padding: 4 }}>삭제</button> },
         ]}
         data={filtered.slice((currentPage - 1) * 10, currentPage * 10) as unknown as Record<string, unknown>[]}
@@ -656,7 +792,7 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
             </datalist>
           </div>
           <Select label="헌금 항목" value={form.categoryId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, categoryId: e.target.value }))}
-            options={categories.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))} />
+            options={categories.map(c => ({ value: c.id, label: c.name }))} />
           <Input label="금액 (원)" type="number" value={form.amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="100000" />
           <CalendarDropdown label="날짜" value={form.date} onChange={(v) => setForm(f => ({ ...f, date: v }))} />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -670,9 +806,9 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
                   style={{
                     padding: "10px 18px",
                     borderRadius: 12,
-                    border: `2px solid ${form.method === m ? C.accent : C.border}`,
-                    background: form.method === m ? C.accentLight : "#fff",
-                    color: form.method === m ? C.accent : C.text,
+                    border: `2px solid ${form.method === m ? C.navy : C.border}`,
+                    background: form.method === m ? "#f0f2f5" : "#fff",
+                    color: form.method === m ? C.navy : C.text,
                     fontSize: 14,
                     fontWeight: 600,
                     fontFamily: "inherit",
@@ -733,26 +869,30 @@ function DonorTab({ donors, setDonors, offerings }: {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <div style={{ position: "relative" }}>
-          <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><Icons.Search /></div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+          <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#6b7b9e" }}><Icons.Search /></div>
           <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="이름 또는 연락처 검색..."
-            style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", width: 260 }} />
+            style={{ width: "100%", boxSizing: "border-box", height: 32, padding: "0 12px 0 32px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontFamily: "inherit", outline: "none" }} />
         </div>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <Badge color={C.purple}>총 {donors.length}명</Badge>
-          <Button onClick={() => setShowAdd(true)} icon={<Icons.Plus />}>헌금자 등록</Button>
-        </div>
+        <Badge color={C.navy} bg="#f0f2f5">총 {donors.length}명</Badge>
+        <button
+          type="button"
+          onClick={() => setShowAdd(true)}
+          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+        >
+          헌금자 등록
+        </button>
       </div>
       <div ref={listRef}>
       <Table
         columns={[
           { label: "이름", render: (r) => <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "inline-block", maxWidth: "100%" }} title={r.name as string}>{r.name as string}</span> },
           { label: "연락처", key: "phone" },
-          { label: "소속", render: (r) => (r.group as string) ? <Badge color={C.textMuted}>{r.group as string}</Badge> : <span>-</span> },
+          { label: "소속", render: (r) => (r.group as string) ? <Badge color={C.navy} bg="#f0f2f5">{r.group as string}</Badge> : <span>-</span> },
           { label: "등록일", key: "joinDate" },
           { label: "헌금 횟수", align: "center", render: (r) => <span>{donorStats[r.id as string]?.count || 0}회</span> },
-          { label: "헌금 합계", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.accent }}>₩{fmt(donorStats[r.id as string]?.total || 0)}</span> },
+          { label: "헌금 합계", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.navy }}>₩{fmt(donorStats[r.id as string]?.total || 0)}</span> },
           { label: "최근 헌금일", render: (r) => <span>{donorStats[r.id as string]?.lastDate || "-"}</span> },
           { label: "메모", render: (r) => (r.note as string) ? <span style={{ color: C.textMuted, fontSize: 12 }}>{r.note as string}</span> : <span>-</span> },
         ]}
@@ -865,7 +1005,7 @@ function GivingStatusTab({ donors, offerings, categories }: {
         <div style={{ position: "relative" }}>
           <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><Icons.Search /></div>
           <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="이름 검색..."
-            style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", outline: "none", width: 200 }} />
+            style={{ height: 32, padding: "0 12px 0 32px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontFamily: "inherit", outline: "none", width: 200 }} />
         </div>
       </div>
 
@@ -894,14 +1034,14 @@ function GivingStatusTab({ donors, offerings, categories }: {
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                       <div style={{
                         width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
-                        background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: C.textMuted,
+                        background: "#f0f2f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: C.navy,
                       }}>
                         {s.donor.photoUrl ? <img src={s.donor.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : s.donor.name.charAt(0)}
                       </div>
                       <span style={{ fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", minWidth: 0 }}>{s.donor.name}</span>
                     </div>
                   </td>
-                  <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: C.accent }}>₩{fmt(s.total)}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: C.navy }}>₩{fmt(s.total)}</td>
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>{s.lastDate || "-"}</td>
                   <td style={{ padding: "12px 16px", textAlign: "center", color: C.textMuted }}>{s.prevDate || "-"}</td>
                   <td style={{ padding: "12px 16px", textAlign: "right" }}>₩{fmt(s.thisMonth)}</td>
@@ -965,29 +1105,33 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
     }
   };
 
+  const expSel: CSSProperties = { height: 32, fontSize: 11, padding: "0 8px", borderRadius: 6, border: `1px solid ${C.border}` };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Select options={[{ value: "all", label: "전체 부서" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
-            value={filterDept} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterDept(e.target.value); setCurrentPage(1); }} />
-          <Select options={[{ value: "all", label: "전체 월" }, ...MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }))]}
-            value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterMonth(e.target.value); setCurrentPage(1); }} />
-        </div>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <Badge color={C.danger}>합계: ₩{fmt(filteredTotal)}</Badge>
-          <Button onClick={() => setShowAdd(true)} variant="accent" icon={<Icons.Plus />}>지출 등록</Button>
-        </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <Select style={expSel} options={[{ value: "all", label: "전체 부서" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
+          value={filterDept} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterDept(e.target.value); setCurrentPage(1); }} />
+        <Select style={expSel} options={[{ value: "all", label: "전체 월" }, ...MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }))]}
+          value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterMonth(e.target.value); setCurrentPage(1); }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.navy, whiteSpace: "nowrap" }}>합계: ₩{fmt(filteredTotal)}</span>
+        <button
+          type="button"
+          onClick={() => setShowAdd(true)}
+          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+        >
+          지출 등록
+        </button>
       </div>
       <div ref={listRef}>
       <Table
         columns={[
           { label: "날짜", key: "date" },
-          { label: "부서", render: (r) => { const d = departments.find(x => x.id === r.departmentId); return d ? <Badge color={d.color}>{d.name}</Badge> : <span>{r.departmentId as string}</span>; }},
-          { label: "항목", render: (r) => { const c = expenseCategories.find(x => x.id === r.categoryId); return c ? <span>{c.icon} {c.name}</span> : <span>{r.categoryId as string}</span>; }},
+          { label: "부서", render: (r) => { const d = departments.find(x => x.id === r.departmentId); return d ? <Badge color={C.navy} bg="#f0f2f5">{d.name}</Badge> : <span>{r.departmentId as string}</span>; }},
+          { label: "항목", render: (r) => { const c = expenseCategories.find(x => x.id === r.categoryId); return c ? <Badge color="#555" bg="#f5f6f8">{c.name}</Badge> : <span>{r.categoryId as string}</span>; }},
           { label: "내용", key: "description" },
-          { label: "영수증", align: "center", render: (r) => <span>{r.receipt ? "✅" : "❌"}</span> },
-          { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.danger }}>₩{fmt(r.amount as number)}</span> },
+          { label: "영수증", align: "center", render: (r) => <span>{r.receipt ? "있음" : "없음"}</span> },
+          { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.navy }}>₩{fmt(r.amount as number)}</span> },
         ]}
         data={filtered.slice((currentPage - 1) * 10, currentPage * 10) as unknown as Record<string, unknown>[]}
       />
@@ -998,7 +1142,7 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
           <Select label="부서" value={form.departmentId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, departmentId: e.target.value }))}
             options={departments.map(d => ({ value: d.id, label: d.name }))} />
           <Select label="지출 항목" value={form.categoryId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, categoryId: e.target.value }))}
-            options={expenseCategories.map(c => ({ value: c.id, label: `${c.icon} ${c.name}` }))} />
+            options={expenseCategories.map(c => ({ value: c.id, label: c.name }))} />
           <Input label="금액 (원)" type="number" value={form.amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="500000" />
           <CalendarDropdown label="날짜" value={form.date} onChange={(v) => setForm(f => ({ ...f, date: v }))} />
           <Input label="내용" value={form.description} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, description: e.target.value }))} placeholder="지출 내용" />
@@ -1009,7 +1153,7 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
           </div>
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
             <Button variant="ghost" onClick={() => setShowAdd(false)}>취소</Button>
-            <Button variant="accent" onClick={handleAdd}>등록</Button>
+            <Button onClick={handleAdd}>등록</Button>
           </div>
         </div>
       </Modal>
@@ -1092,15 +1236,15 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
                 <tr key={c.name}><td style={{ padding: "4px 0 4px 16px" }}>{c.icon} {c.name}</td><td style={{ padding: "4px 0", textAlign: "right" }}>₩{fmt(c.amount)}</td></tr>
               ))}
               {data.incomeByCat.length > 10 && <tr><td colSpan={2} style={{ padding: 8 }}><Pagination totalItems={data.incomeByCat.length} itemsPerPage={10} currentPage={pageIncome} onPageChange={setPageIncome} /></td></tr>}
-              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>수입 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.accent }}>₩{fmt(data.incomeTotal)}</td></tr>
+              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>수입 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.navy }}>₩{fmt(data.incomeTotal)}</td></tr>
               <tr><td colSpan={2} style={{ padding: "4px 0", borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textMuted }}>지출 항목별</td></tr>
               {paginatedExpense.map(c => (
                 <tr key={c.name}><td style={{ padding: "4px 0 4px 16px" }}>{c.icon} {c.name}</td><td style={{ padding: "4px 0", textAlign: "right" }}>₩{fmt(c.amount)}</td></tr>
               ))}
               {data.expenseByCat.length > 10 && <tr><td colSpan={2} style={{ padding: 8 }}><Pagination totalItems={data.expenseByCat.length} itemsPerPage={10} currentPage={pageExpense} onPageChange={setPageExpense} /></td></tr>}
-              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>지출 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.danger }}>₩{fmt(data.expenseTotal)}</td></tr>
+              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>지출 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: "#555" }}>₩{fmt(data.expenseTotal)}</td></tr>
               <tr><td colSpan={2} style={{ padding: "8px 0", borderTop: `2px solid ${C.border}` }}></td></tr>
-              <tr><td style={{ padding: "8px 0", fontWeight: 700, color: C.navy }}>잔액</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 800, color: data.balance >= 0 ? C.success : C.danger }}>₩{fmt(data.balance)}</td></tr>
+              <tr><td style={{ padding: "8px 0", fontWeight: 700, color: C.navy }}>잔액</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 800, color: C.navy }}>₩{fmt(data.balance)}</td></tr>
               <tr><td style={{ padding: "4px 0", fontSize: 12, color: C.textMuted }}>차월 이월금</td><td style={{ padding: "4px 0", textAlign: "right", fontWeight: 600 }}>₩{fmt(data.balance)}</td></tr>
             </tbody>
           </table>
@@ -1175,14 +1319,20 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-        <Button onClick={() => setShowSettlement(true)} icon={<Icons.Report />}>결산 보고서</Button>
+        <button
+          type="button"
+          onClick={() => setShowSettlement(true)}
+          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer" }}
+        >
+          결산 보고서
+        </button>
       </div>
       <Card>
         <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontWeight: 600, color: C.navy }}>보고서 유형:</span>
           {["weekly","monthly","quarterly","half","annual"].map(t => (
             <button key={t} onClick={() => { setReportType(t); setSelectedPeriod(t === "monthly" ? "01" : "0"); }}
-              style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: reportType === t ? C.navy : C.bg, color: reportType === t ? "#fff" : C.navy, fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+              style={{ height: 28, padding: "0 10px", borderRadius: 6, border: reportType === t ? "none" : `1px solid ${C.border}`, background: reportType === t ? C.navy : "#f5f6f8", color: reportType === t ? "#fff" : "#555", fontWeight: 600, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
               {reportTypeLabel[t]}
             </button>
           ))}
@@ -1192,9 +1342,9 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
         </div>
       </Card>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
-        <StatCard label="수입 합계" value={`₩${fmt(reportData.totalOff)}`} color={C.accent} />
-        <StatCard label="지출 합계" value={`₩${fmt(reportData.totalExp)}`} color={C.danger} />
-        <StatCard label="잔액" value={`₩${fmt(reportData.balance)}`} color={reportData.balance >= 0 ? C.success : C.danger} trend={reportData.balance >= 0 ? "up" : "down"} />
+        <StatCard label="수입 합계" value={`₩${fmt(reportData.totalOff)}`} />
+        <StatCard label="지출 합계" value={`₩${fmt(reportData.totalExp)}`} />
+        <StatCard label="잔액" value={`₩${fmt(reportData.balance)}`} trend={reportData.balance >= 0 ? "up" : "down"} sub={reportData.balance >= 0 ? "흑자" : "적자"} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
         <Card>
@@ -1354,25 +1504,15 @@ function BudgetActualTab({
     } else if (navigator.clipboard) navigator.clipboard.writeText(text);
   };
 
-  const pctColor = (pct: number, isExpense: boolean) => {
-    if (pct === 0) return C.textMuted;
-    if (isExpense) {
-      if (pct < 80) return C.success;
-      if (pct <= 100) return C.warning;
-      return C.danger;
-    }
-    if (pct < 80) return C.danger;
-    if (pct <= 100) return C.warning;
-    return C.success;
-  };
+  const pctColor = () => "#555";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
         <Select label="연도" options={[{ value: currentYear.toString(), label: `${currentYear}년` }, { value: (currentYear - 1).toString(), label: `${currentYear - 1}년` }, { value: (currentYear - 2).toString(), label: `${currentYear - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setYear(Number(e.target.value)); setCurrentPageCompare(1); }} />
-        <div style={{ display: "flex", gap: 4, background: C.bg, borderRadius: 10, padding: 4 }}>
+        <div style={{ display: "flex", gap: 4 }}>
           {(["input", "compare"] as const).map(m => (
-            <button key={m} type="button" onClick={() => setMode(m)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: mode === m ? C.navy : "transparent", color: mode === m ? "#fff" : C.textMuted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <button key={m} type="button" onClick={() => setMode(m)} style={{ height: 28, padding: "0 12px", borderRadius: 6, border: mode === m ? "none" : `1px solid ${C.border}`, background: mode === m ? C.navy : "#f5f6f8", color: mode === m ? "#fff" : "#555", fontWeight: 600, fontSize: 11, cursor: "pointer" }}>
               {m === "input" ? "예산 입력" : "비교 뷰"}
             </button>
           ))}
@@ -1384,13 +1524,13 @@ function BudgetActualTab({
           <h4 style={{ margin: "0 0 16px", color: C.navy }}>수입 항목 예산 ({year}년)</h4>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {incomeCategories.map(c => (
-              <BudgetInputRow key={c.id} label={`${c.icon} ${c.name}`} value={budgets.income[c.id] ?? ""} onSave={v => saveBudget("income", c.id, v)} />
+              <BudgetInputRow key={c.id} label={c.name} value={budgets.income[c.id] ?? ""} onSave={v => saveBudget("income", c.id, v)} />
             ))}
           </div>
           <h4 style={{ margin: "24px 0 16px", color: C.navy }}>지출 항목 예산 ({year}년)</h4>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {expenseCategoriesList.map(c => (
-              <BudgetInputRow key={c.id} label={`${c.icon} ${c.name}`} value={budgets.expense[c.id] ?? ""} onSave={v => saveBudget("expense", c.id, v)} />
+              <BudgetInputRow key={c.id} label={c.name} value={budgets.expense[c.id] ?? ""} onSave={v => saveBudget("expense", c.id, v)} />
             ))}
           </div>
         </Card>
@@ -1418,9 +1558,9 @@ function BudgetActualTab({
                       <td style={{ padding: "10px 12px" }}>{r.type}</td>
                       <td style={{ padding: "10px 12px", fontWeight: r.id.startsWith("_") ? 700 : 500 }}>{r.name}</td>
                       <td style={{ padding: "10px 12px", textAlign: "right" }}>₩{fmt(r.budget)}</td>
-                      <td style={{ padding: "10px 12px", textAlign: "right", color: r.type === "수입" ? C.accent : C.danger }}>₩{fmt(r.actual)}</td>
+                      <td style={{ padding: "10px 12px", textAlign: "right", color: C.navy }}>₩{fmt(r.actual)}</td>
                       <td style={{ padding: "10px 12px", textAlign: "right" }}>₩{fmt(r.diff)}</td>
-                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: r.id.startsWith("_") ? C.navy : pctColor(r.pct, r.type === "지출") }}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
+                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: r.id.startsWith("_") ? C.navy : pctColor() }}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1436,12 +1576,8 @@ function BudgetActualTab({
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 10000).toFixed(0)}만`} />
                     <Tooltip formatter={(value) => `₩${fmt(Number(value))}`} />
                     <Legend />
-                    <Bar dataKey="예산" fill="#9ca3af" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="실적" radius={[4, 4, 0, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={index} fill={entry.type === "수입" ? C.accent : C.danger} />
-                      ))}
-                    </Bar>
+                    <Bar dataKey="예산" fill="#6b7b9e" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="실적" fill="#1B2A4A" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </LazyChart>
@@ -1468,7 +1604,7 @@ function BudgetInputRow({ label, value, onSave }: { label: string; value: number
     <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <span style={{ minWidth: 140, fontWeight: 500, color: C.navy }}>{label}</span>
       <input type="number" value={input} onChange={e => setInput(e.target.value)} placeholder="0" min={0}
-        style={{ width: 140, padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit" }} />
+        style={{ width: 140, height: 28, padding: "0 8px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "inherit", textAlign: "center" }} />
       <Button size="sm" onClick={handleSave}>저장</Button>
     </div>
   );
@@ -1505,15 +1641,15 @@ function BudgetTab({ departments, expenses }: { departments: Department[]; expen
           <h3 style={{ margin: 0, color: C.navy }}>{year}년 예산 계획</h3>
           <Select options={[{ value: "2026", label: "2026년" }, { value: "2027", label: "2027년" }]} value={year} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value)} />
         </div>
-        <Badge color={C.accent}>총 예산: ₩{fmt(totalBudget)}</Badge>
+        <Badge color={C.navy} bg="#f0f2f5" fontSize={11}>총 예산: ₩{fmt(totalBudget)}</Badge>
       </div>
       <Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
-              <tr style={{ background: C.bg }}>
+              <tr style={{ background: "#fff" }}>
                 {["부서","전년 실적","1분기 예산","2분기 예산","3분기 예산","4분기 예산","연간 합계"].map((h,i) => (
-                  <th key={i} style={{ padding: "14px 16px", textAlign: i === 0 ? "left" : (i === 1 || i === 6) ? "right" : "center", fontWeight: 600, color: C.navy, borderBottom: `1px solid ${C.border}` }}>{h}</th>
+                  <th key={i} style={{ padding: "6px 8px", textAlign: i === 0 ? "left" : (i === 1 || i === 6) ? "right" : "center", fontWeight: 700, fontSize: 10, color: C.navy, borderBottom: `2px solid ${C.navy}` }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1522,33 +1658,33 @@ function BudgetTab({ departments, expenses }: { departments: Department[]; expen
                 const b = budgets[d.id] || {};
                 const annual = (parseInt(b.q1) || 0) + (parseInt(b.q2) || 0) + (parseInt(b.q3) || 0) + (parseInt(b.q4) || 0);
                 return (
-                  <tr key={d.id} style={{ borderBottom: i < departments.length - 1 ? `1px solid ${C.borderLight}` : "none" }}>
-                    <td style={{ padding: "12px 16px", minWidth: 0 }}>
+                  <tr key={d.id} style={{ borderBottom: i < departments.length - 1 ? `1px solid ${C.borderLight}` : "none", background: i % 2 === 1 ? "#fafbfc" : "#fff" }}>
+                    <td style={{ padding: 8, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: 4, background: d.color, flexShrink: 0 }} />
-                        <span style={{ fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
+                        <div style={{ width: 8, height: 8, borderRadius: 4, background: "#1B2A4A", flexShrink: 0 }} />
+                        <span style={{ fontWeight: 600, fontSize: 11, color: "#555", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 16px", textAlign: "right", color: C.textMuted }}>₩{fmt(actualByDept[d.id] || 0)}</td>
+                    <td style={{ padding: 8, textAlign: "right", color: "#555", fontSize: 11 }}>₩{fmt(actualByDept[d.id] || 0)}</td>
                     {(["q1","q2","q3","q4"] as const).map(q => (
-                      <td key={q} style={{ padding: "8px 10px", textAlign: "center" }}>
+                      <td key={q} style={{ padding: "4px 6px", textAlign: "center" }}>
                         <input type="number" value={b[q] || ""} placeholder="0"
                           onChange={e => handleBudgetChange(d.id, q, e.target.value)}
-                          style={{ width: 110, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, fontFamily: "inherit", textAlign: "right", outline: "none" }} />
+                          style={{ width: 110, height: 28, padding: "0 6px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "inherit", textAlign: "center", outline: "none" }} />
                       </td>
                     ))}
-                    <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 700, color: C.navy }}>₩{fmt(annual)}</td>
+                    <td style={{ padding: 8, textAlign: "right", fontWeight: 700, fontSize: 11, color: C.navy }}>₩{fmt(annual)}</td>
                   </tr>
                 );
               })}
-              <tr style={{ background: C.bg, fontWeight: 700 }}>
-                <td style={{ padding: "14px 16px", color: C.navy }}>합계</td>
-                <td style={{ padding: "14px 16px", textAlign: "right", color: C.navy }}>₩{fmt(Object.values(actualByDept).reduce((s, v) => s + v, 0))}</td>
+              <tr style={{ background: "#f0f2f5", fontWeight: 700 }}>
+                <td style={{ padding: 8, color: C.navy, fontSize: 11 }}>합계</td>
+                <td style={{ padding: 8, textAlign: "right", color: C.navy, fontSize: 11 }}>₩{fmt(Object.values(actualByDept).reduce((s, v) => s + v, 0))}</td>
                 {(["q1","q2","q3","q4"] as const).map(q => {
                   const qTotal = departments.reduce((s, d) => s + (parseInt(budgets[d.id]?.[q]) || 0), 0);
-                  return <td key={q} style={{ padding: "14px 16px", textAlign: "center", color: C.navy }}>₩{fmt(qTotal)}</td>;
+                  return <td key={q} style={{ padding: 8, textAlign: "center", color: C.navy, fontSize: 11 }}>₩{fmt(qTotal)}</td>;
                 })}
-                <td style={{ padding: "14px 16px", textAlign: "right", color: C.accent, fontSize: 16 }}>₩{fmt(totalBudget)}</td>
+                <td style={{ padding: 8, textAlign: "right", color: C.navy, fontSize: 11 }}>₩{fmt(totalBudget)}</td>
               </tr>
             </tbody>
           </table>
@@ -1647,34 +1783,31 @@ function ExportTab({ offerings, expenses, categories, departments, expenseCatego
   };
 
   const exports = [
-    { icon: "📘", title: "헌금 내역", desc: "전체 헌금 내역을 엑셀로 내보내기", color: C.accent, action: exportOfferings },
-    { icon: "💳", title: "지출 내역", desc: "전체 지출 내역을 엑셀로 내보내기", color: C.danger, action: exportExpenses },
-    { icon: "👥", title: "헌금자 목록", desc: "헌금자 정보 및 통계를 엑셀로 내보내기", color: C.purple, action: exportDonors },
-    { icon: "📊", title: "월간 보고서", desc: "12개월 월별 보고서 (시트별 분리)", color: C.success, action: exportMonthlyReport },
-    { icon: "📋", title: "연간 종합 보고서", desc: "연간요약, 항목별, 부서별 종합 보고서", color: C.navy, action: exportAnnualReport },
+    { initial: "헌", title: "헌금 내역", desc: "전체 헌금 내역을 엑셀로 보내기", action: exportOfferings },
+    { initial: "지", title: "지출 내역", desc: "전체 지출 내역을 엑셀로 보내기", action: exportExpenses },
+    { initial: "목", title: "헌금자 목록", desc: "헌금자 정보 및 통계를 엑셀로 보내기", action: exportDonors },
+    { initial: "월", title: "월간 보고서", desc: "12개월 월별 보고서 (시트별 분리)", action: exportMonthlyReport },
+    { initial: "연", title: "연간 종합 보고서", desc: "연간요약, 항목별, 부서별 종합 보고서", action: exportAnnualReport },
   ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <Card>
-        <p style={{ margin: 0, color: C.textMuted, fontSize: 14 }}>
-          원하는 보고서를 클릭하면 엑셀(.xlsx) 파일로 즉시 다운로드됩니다.
-          각 보고서는 항목별로 완벽히 분류되어 있어 교회 재정 보고에 바로 활용할 수 있습니다.
-        </p>
-      </Card>
+      <div style={{ background: "#f5f6f8", borderRadius: 8, fontSize: 12, color: "#555", padding: 12 }}>
+        원하는 보고서를 선택하면 엑셀(.xlsx) 파일로 바로 내려받을 수 있습니다. 항목별로 정리되어 재정 보고에 활용하기 좋습니다.
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
         {exports.map((item, i) => (
-          <Card key={i} onClick={item.action} style={{ cursor: "pointer", transition: "all 0.2s ease" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <Card key={i} onClick={item.action} style={{ cursor: "pointer", transition: "all 0.2s ease", padding: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{
-                width: 52, height: 52, borderRadius: 14, background: `${item.color}12`,
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
-              }}>{item.icon}</div>
+                width: 36, height: 36, borderRadius: "50%", background: "#f0f2f5", color: "#1B2A4A",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0,
+              }}>{item.initial}</div>
               <div>
-                <div style={{ fontWeight: 700, color: C.navy, fontSize: 16, marginBottom: 4 }}>{item.title}</div>
-                <div style={{ fontSize: 13, color: C.textMuted }}>{item.desc}</div>
+                <div style={{ fontWeight: 700, color: "#1B2A4A", fontSize: 13, marginBottom: 2 }}>{item.title}</div>
+                <div style={{ fontSize: 11, color: "#999" }}>{item.desc}</div>
               </div>
-              <div style={{ marginLeft: "auto" }}><Icons.Export /></div>
+              <div style={{ marginLeft: "auto", color: "#6b7b9e", display: "flex", alignItems: "center" }}><Icons.Export /></div>
             </div>
           </Card>
         ))}
@@ -2174,13 +2307,14 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             type="button"
             onClick={() => setReceiptSubTab(t.id)}
             style={{
-              padding: "10px 20px",
-              borderRadius: 10,
-              border: `2px solid ${receiptSubTab === t.id ? C.accent : C.border}`,
-              background: receiptSubTab === t.id ? C.accentLight : "#fff",
-              color: receiptSubTab === t.id ? C.accent : C.text,
+              height: 28,
+              padding: "0 12px",
+              borderRadius: 6,
+              border: receiptSubTab === t.id ? "none" : `1px solid ${C.border}`,
+              background: receiptSubTab === t.id ? C.navy : "#f5f6f8",
+              color: receiptSubTab === t.id ? "#fff" : "#555",
               fontWeight: 600,
-              fontSize: 14,
+              fontSize: 11,
               cursor: "pointer",
               fontFamily: "inherit",
             }}
@@ -2188,14 +2322,14 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             {t.label}
           </button>
         ))}
-        <button type="button" onClick={() => setSealSettingsOpen(true)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.card, color: C.text, fontSize: 13, cursor: "pointer" }} title="기부금영수증 설정"><Settings size={18} /> 설정</button>
+        <button type="button" onClick={() => setSealSettingsOpen(true)} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, height: 28, padding: "0 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: "#f5f6f8", color: "#555", fontSize: 11, fontWeight: 600, cursor: "pointer" }} title="기부금영수증 설정"><Settings size={16} /> 설정</button>
       </div>
 
       {(receiptSubTab === "individual" || receiptSubTab === "bulk") && receiptSettingsIncomplete && (
-        <div style={{ padding: "12px 16px", borderRadius: 10, border: "2px solid #f59e0b", background: "#fffbeb", color: "#92400e" }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>⚠️ 기부금영수증 설정이 완료되지 않았습니다.</p>
-          <p style={{ margin: "4px 0 8px", fontSize: 12 }}>교회 고유번호, 대표자, 소재지를 먼저 등록해주세요. 미등록 시 PDF에 해당 정보가 빈칸으로 나옵니다.</p>
-          <button type="button" onClick={() => setSealSettingsOpen(true)} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "#f59e0b", color: "#fff", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>설정하러 가기 →</button>
+        <div style={{ padding: "12px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#f5f6f8", color: "#555", fontSize: 11 }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 600 }}>기부금영수증 설정이 완료되지 않았습니다.</p>
+          <p style={{ margin: "4px 0 8px", fontSize: 11 }}>교회 고유번호, 대표자, 소재지를 먼저 등록해주세요. 미등록 시 PDF에 해당 정보가 빈칸으로 나옵니다.</p>
+          <button type="button" onClick={() => setSealSettingsOpen(true)} style={{ padding: 0, background: "none", border: "none", color: C.navy, fontWeight: 600, fontSize: 11, cursor: "pointer" }}>설정하러 가기 →</button>
         </div>
       )}
 
@@ -2402,9 +2536,9 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               </div>
               {selectedDonor && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ padding: "12px 14px", borderRadius: 10, border: "2px solid #dc2626", background: "#fef2f2", marginBottom: 4 }}>
-                    <p style={{ margin: 0, fontSize: 12, color: "#b91c1c", fontWeight: 600 }}>🔒 개인정보 보호</p>
-                    <p style={{ margin: "4px 0 0", fontSize: 12, color: "#991b1b" }}>⚠️ 주민등록번호는 서버에 저장되지 않으며, 영수증 PDF 생성 후 즉시 폐기됩니다.</p>
+                  <div style={{ padding: "12px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#f5f6f8", marginBottom: 4 }}>
+                    <p style={{ margin: 0, fontSize: 12, color: "#555", fontWeight: 600 }}>개인정보 보호</p>
+                    <p style={{ margin: "4px 0 0", fontSize: 11, color: "#999" }}>주민등록번호는 서버에 저장되지 않으며, 영수증 PDF 생성 후 즉시 폐기됩니다.</p>
                   </div>
                   <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.textMuted, marginBottom: 2 }}>주민등록번호 (13자리, - 제외)</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -2429,7 +2563,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     />
                   </div>
                   {selectedDonor && total > 0 && !residentValid && (
-                    <p style={{ fontSize: 13, color: "#c00", margin: "4px 0 0" }}>주민등록번호를 입력해주세요 (앞 6자리 + 뒷 7자리)</p>
+                    <p style={{ fontSize: 12, color: "#999", margin: "4px 0 0" }}>주민등록번호를 입력해주세요 (앞 6자리 + 뒷 7자리)</p>
                   )}
                 </div>
               )}
@@ -2833,9 +2967,9 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
 
       {receiptSubTab === "bulk" && (
         <Card style={{ padding: 24 }}>
-          <div style={{ padding: "12px 14px", borderRadius: 10, border: "2px solid #059669", background: "#ecfdf5", marginBottom: 20 }}>
-            <p style={{ margin: 0, fontSize: 13, color: "#047857", fontWeight: 600 }}>🔒 업로드된 엑셀 파일은 서버에 전송되지 않습니다.</p>
-            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#065f46" }}>모든 처리는 브라우저에서 이루어지며, 발급 완료 후 데이터는 즉시 폐기됩니다.</p>
+          <div style={{ padding: "12px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#f5f6f8", marginBottom: 20 }}>
+            <p style={{ margin: 0, fontSize: 12, color: "#555", fontWeight: 600 }}>업로드된 엑셀 파일은 서버에 전송되지 않습니다.</p>
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: "#999" }}>모든 처리는 브라우저에서 이루어지며, 발급 완료 후 데이터는 즉시 폐기됩니다.</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -2855,7 +2989,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     <thead><tr style={{ background: C.navy, color: "#fff" }}><th style={{ padding: "10px 12px", textAlign: "left" }}>이름</th><th style={{ padding: "10px 12px" }}>주민등록번호</th><th style={{ padding: "10px 12px", textAlign: "left" }}>주소</th></tr></thead>
                     <tbody>
                       {bulkFile.slice(0, 50).map((row, i) => (
-                        <tr key={i} style={{ borderBottom: `1px solid ${C.borderLight}`, background: donors.some(d => d.name.trim() === row.name) ? "transparent" : "#fef9c3" }}>
+                        <tr key={i} style={{ borderBottom: `1px solid ${C.borderLight}`, background: donors.some(d => d.name.trim() === row.name) ? "transparent" : "#f0f2f5" }}>
                           <td style={{ padding: "8px 12px" }}>{row.name}</td>
                           <td style={{ padding: "8px 12px" }}>{row.ssn ? "***-**-*******" : "-"}</td>
                           <td style={{ padding: "8px 12px" }}>{row.address || "-"}</td>
@@ -2869,7 +3003,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   <button type="button" disabled={bulkFile.length === 0} onClick={async () => { setBulkProgress({ current: 0, total: bulkFile.length, done: false }); const JSZip = (await import("jszip")).default; const { saveAs } = await import("file-saver"); const zip = new JSZip(); let churchId: string | null = null; try { churchId = getChurchId(); } catch (_) {} let sealBase64: string | null = null; if (churchId && churchSettings?.seal_image_url && supabase) { try { const path = churchSettings.seal_image_url.includes("/") ? churchSettings.seal_image_url : `${churchId}/seal.png`; const { data: sealData } = await supabase.storage.from("church-seals").download(path); if (sealData) { sealBase64 = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(sealData); }); } } catch (_) {} } for (let i = 0; i < bulkFile.length; i++) { const row = bulkFile[i]; const donor = donors.find(d => d.name.trim() === row.name); if (!donor || row.ssn.length !== 13) continue; const list = offerings.filter(o => o.donorId === donor.id && o.date.startsWith(String(year))); const total = list.reduce((s, o) => s + o.amount, 0); if (total === 0) continue; setBulkProgress({ current: i + 1, total: bulkFile.length, done: false }); await new Promise(r => setTimeout(r, 50)); const { jsPDF } = await import("jspdf"); const { registerKoreanFont } = await import("@/utils/fontLoader"); const pdf = new jsPDF({ unit: "mm", format: "a4" }); await registerKoreanFont(pdf); pdf.setFont("NanumGothic", "normal"); pdf.setFontSize(16); pdf.text("기부금 영수증", 105, 20, { align: "center" }); pdf.setFontSize(10); pdf.text(`기부자: ${donor.name}  주민등록번호: ${row.ssn.slice(0, 6)}-${row.ssn.slice(6)}  주소: ${row.address || "-"}`, 20, 35); const receiptNum = `DR-${year}-${String(i + 1).padStart(5, "0")}`; pdf.text(`단체: ${cfg.churchName}  총액: ₩${total.toLocaleString("ko-KR")}  귀속연도: ${year}`, 20, 42); pdf.text(`발급일: ${new Date().toISOString().slice(0, 10)}  발급번호: ${receiptNum}`, 20, 49); if (sealBase64) pdf.addImage(sealBase64, "PNG", 150, 85, 25, 25); const blob = pdf.output("blob"); zip.file(`기부금영수증_${donor.name}_${year}.pdf`, blob); if (churchId && supabase) { try { const { data: genNum } = await supabase.rpc("generate_receipt_number", { p_church_id: churchId, p_tax_year: year }); const details = list.reduce<{ category: string; amount: number }[]>((acc, o) => { const cat = DEFAULT_CATEGORIES.find(c => c.id === o.categoryId); const name = cat?.name ?? o.categoryId; const existing = acc.find(x => x.category === name); if (existing) existing.amount += o.amount; else acc.push({ category: name, amount: o.amount }); return acc; }, []); await supabase.from("donation_receipts").insert({ church_id: churchId, member_id: donor.id, member_name: donor.name, receipt_number: genNum ?? receiptNum, tax_year: year, issue_date: new Date().toISOString().slice(0, 10), total_amount: total, donation_details: details, church_name: cfg.churchName, church_address: cfg.churchAddress || null, church_representative: cfg.representativeName || null }); } catch (_) { /* ignore */ } } } setBulkProgress({ current: bulkFile.length, total: bulkFile.length, done: true }); const blob = await zip.generateAsync({ type: "blob" }); saveAs(blob, `기부금영수증_일괄_${year}.zip`); setBulkFile([]); setBulkMatched({}); }} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: C.accent, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>일괄 PDF 생성 (ZIP)</button>
                 )}
                 {bulkProgress.total > 0 && !bulkProgress.done && <p style={{ margin: 0, fontSize: 13, color: C.textMuted }}>처리 중... {bulkProgress.current}/{bulkProgress.total}</p>}
-                {bulkProgress.done && <p style={{ margin: 0, fontSize: 13, color: C.success }}>완료. ZIP이 다운로드되었습니다. 엑셀 데이터는 폐기되었습니다.</p>}
+                {bulkProgress.done && <p style={{ margin: 0, fontSize: 13, color: "#555" }}>완료. ZIP이 다운로드되었습니다. 엑셀 데이터는 폐기되었습니다.</p>}
               </>
             )}
           </div>
@@ -2896,12 +3030,12 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     <td style={{ padding: "10px 12px" }}>{r.tax_year}년</td>
                     <td style={{ padding: "10px 12px", textAlign: "right" }}>₩{r.total_amount.toLocaleString("ko-KR")}</td>
                     <td style={{ padding: "10px 12px" }}>{r.issue_date}</td>
-                    <td style={{ padding: "10px 12px" }}><span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: r.status === "발급완료" ? C.successLight : "#fde8ed", color: r.status === "발급완료" ? C.success : C.danger }}>{r.status}</span></td>
+                    <td style={{ padding: "10px 12px" }}><span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#f0f2f5", color: "#555" }}>{r.status}</span></td>
                     <td style={{ padding: "10px 12px" }}>
                       {r.status === "발급완료" && (
                         <>
                           <button type="button" onClick={() => setReprintModal({ receipt: r, ssnFirst: "", ssnLast: "" })} style={{ marginRight: 8, padding: "4px 10px", fontSize: 12, borderRadius: 6, border: `1px solid ${C.border}`, background: C.card, cursor: "pointer" }}>재출력</button>
-                          <button type="button" onClick={() => setCancelModal({ receipt: r, reason: "" })} style={{ padding: "4px 10px", fontSize: 12, borderRadius: 6, border: `1px solid ${C.danger}`, color: C.danger, background: "transparent", cursor: "pointer" }}>취소</button>
+                          <button type="button" onClick={() => setCancelModal({ receipt: r, reason: "" })} style={{ padding: "4px 10px", fontSize: 12, borderRadius: 6, border: `1px solid ${C.border}`, color: "#555", background: "#f5f6f8", cursor: "pointer" }}>취소</button>
                         </>
                       )}
                     </td>
@@ -2916,7 +3050,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               <div style={{ background: C.card, borderRadius: 16, padding: 24, maxWidth: 400, width: "100%" }} onClick={e => e.stopPropagation()}>
                 <h4 style={{ margin: "0 0 16px", fontSize: 16, color: C.navy }}>재출력 · 주민등록번호 입력</h4>
                 <p style={{ margin: "0 0 12px", fontSize: 13, color: C.textMuted }}>{reprintModal.receipt.member_name} / {reprintModal.receipt.receipt_number}</p>
-                <p style={{ margin: "0 0 12px", fontSize: 12, color: "#b91c1c" }}>⚠️ 주민등록번호는 서버에 저장되지 않으며, PDF 생성 후 즉시 폐기됩니다.</p>
+                <p style={{ margin: "0 0 12px", fontSize: 11, color: "#999" }}>주민등록번호는 서버에 저장되지 않으며, PDF 생성 후 즉시 폐기됩니다.</p>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
                   <input type="password" inputMode="numeric" maxLength={6} value={reprintModal.ssnFirst} onChange={e => setReprintModal(m => m ? { ...m, ssnFirst: e.target.value.replace(/\D/g, "").slice(0, 6) } : null)} placeholder="앞 6자리" style={{ width: 80, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}` }} />
                   <span>-</span>
@@ -2938,7 +3072,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 <input type="text" value={cancelModal.reason} onChange={e => setCancelModal(m => m ? { ...m, reason: e.target.value } : null)} placeholder="선택 입력" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 16 }} />
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                   <button type="button" onClick={() => setCancelModal(null)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer" }}>닫기</button>
-                  <button type="button" onClick={async () => { if (!cancelModal || !supabase || !churchId) return; await supabase.from("donation_receipts").update({ status: "취소", cancelled_at: new Date().toISOString(), cancel_reason: cancelModal.reason || null }).eq("church_id", churchId).eq("id", cancelModal.receipt.id); setReceiptHistory(prev => prev.map(r => r.id === cancelModal.receipt.id ? { ...r, status: "취소" } : r)); setCancelModal(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.danger, color: "#fff", fontWeight: 600, cursor: "pointer" }}>취소 처리</button>
+                  <button type="button" onClick={async () => { if (!cancelModal || !supabase || !churchId) return; await supabase.from("donation_receipts").update({ status: "취소", cancelled_at: new Date().toISOString(), cancel_reason: cancelModal.reason || null }).eq("church_id", churchId).eq("id", cancelModal.receipt.id); setReceiptHistory(prev => prev.map(r => r.id === cancelModal.receipt.id ? { ...r, status: "취소" } : r)); setCancelModal(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.navy, color: "#fff", fontWeight: 600, cursor: "pointer" }}>취소 처리</button>
                 </div>
               </div>
             </div>
@@ -3091,11 +3225,17 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     { id: "report", label: "보고서", Icon: FileText },
     { id: "budgetActual", label: "예결산", Icon: PieChart },
     { id: "budget", label: "예산 계획", Icon: PieChart },
-    { id: "export", label: "엑셀 내보내기", Icon: Download },
+    { id: "export", label: "엑셀보내기", Icon: Download },
     { id: "receipt", label: "기부금 영수증", Icon: FileSignature },
   ];
 
-  const handleNav = (id: string) => { setActiveTab(id); };
+  const handleNav = (id: string) => {
+    if (id in FINANCE_CATEGORY_FIRST_TAB) {
+      setActiveTab(FINANCE_CATEGORY_FIRST_TAB[id as FinanceCategoryId]);
+      return;
+    }
+    setActiveTab(id);
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined" && VALID_FINANCE_TABS.has(activeTab)) {
@@ -3103,7 +3243,14 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     }
   }, [activeTab]);
 
-  const navSections = [{ sectionLabel: "재정", items: tabs.map((t) => ({ id: t.id, label: t.label, Icon: t.Icon })) }];
+  const financeSidebarItems = [
+    { id: "fin_income" as const, label: "수입/지출", Icon: Wallet },
+    { id: "fin_budget" as const, label: "예산", Icon: PieChart },
+    { id: "fin_giving" as const, label: "헌금", Icon: Users },
+    { id: "fin_reports" as const, label: "보고/설정", Icon: Settings },
+  ];
+  const navSections = [{ sectionLabel: "재정", items: financeSidebarItems.map((t) => ({ id: t.id, label: t.label, Icon: t.Icon })) }];
+  const activeCategoryId = LEAF_TO_FINANCE_CATEGORY[activeTab] ?? "fin_income";
   const activeLabel = tabs.find(t => t.id === activeTab)?.label ?? "대시보드";
 
   return (
@@ -3111,25 +3258,23 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
       pageTitle="재정"
       pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
       navSections={navSections}
-      activeId={activeTab}
+      activeId={activeCategoryId}
       onNav={handleNav}
       versionText="재정 v1.0"
       headerTitle={activeLabel}
       headerDesc="교회 재정 관리 시스템"
-      headerActions={!mob ? <Badge color={C.success} bg={C.successLight}>● 정상 운영중</Badge> : undefined}
+      headerActions={!mob ? <Badge color={C.navy} bg="#f0f2f5">정상 운영중</Badge> : undefined}
       SidebarIcon={Church}
-      accentColor="#166534"
+      accentColor="#1B2A4A"
+      hideMobileSubTabs
     >
+          <FinanceCategoryNav activeTab={activeTab} onLeafChange={setActiveTab} />
           {activeTab === "dashboard" && (
             <FinanceDashboard
               offerings={offerings}
               expenses={expenses}
               incomeCategories={DEFAULT_CATEGORIES}
               expenseCategories={EXPENSE_CATEGORIES}
-              onAddIncome={() => setActiveTab("offering")}
-              onAddExpense={() => setActiveTab("expense")}
-              onOpenCashJournal={() => setActiveTab("cashJournal")}
-              onOpenBudget={() => setActiveTab("budgetManagement")}
             />
           )}
           {activeTab === "offering" && <OfferingTab offerings={offerings} setOfferings={setOfferings} donors={donors} categories={DEFAULT_CATEGORIES} onAddIncome={onAddIncome} onDeleteIncome={onDeleteIncome} />}

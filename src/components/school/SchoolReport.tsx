@@ -5,7 +5,8 @@ import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { useAppData } from "@/contexts/AppDataContext";
 
-const INDIGO = "#4F46E5";
+const NAVY = "#1B2A4A";
+const BORDER = "#e8ecf1";
 
 export interface SchoolReportProps {
   db: DB;
@@ -26,8 +27,8 @@ export function SchoolReport({ toast }: SchoolReportProps) {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold" style={{ color: INDIGO }}>반별 보고서</h3>
-      <div className="flex flex-wrap gap-4 items-center bg-white rounded-xl border border-gray-100 p-4">
+      <h3 className="text-lg font-semibold" style={{ color: NAVY }}>반별 보고서</h3>
+      <div className="flex flex-wrap gap-4 items-center bg-white rounded-lg border p-4" style={{ borderColor: BORDER }}>
         <label className="flex items-center gap-2">
           <span className="text-sm font-medium">부서</span>
           <select value={deptId ?? ""} onChange={(e) => { setDeptId(e.target.value || null); setClassId(null); }} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
@@ -47,9 +48,9 @@ export function SchoolReport({ toast }: SchoolReportProps) {
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" />
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" />
         </label>
-        <button type="button" className="px-4 py-2 rounded-xl text-white text-sm font-semibold" style={{ background: INDIGO }}>PDF 다운로드</button>
+        <button type="button" className="px-4 py-2 rounded-md text-white text-sm font-semibold" style={{ background: NAVY }}>PDF 다운로드</button>
       </div>
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
+      <div className="bg-white rounded-lg border p-6" style={{ borderColor: BORDER }}>
         <p className="text-gray-500 text-sm">출석 현황 테이블 · 학생 명단 · 개인별 출석률 — 기간·부서 선택 후 PDF/인쇄 연동 예정.</p>
       </div>
     </div>

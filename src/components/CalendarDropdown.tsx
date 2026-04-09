@@ -346,7 +346,16 @@ export function CalendarDropdown({
           ...triggerStyle,
         }}
       >
-        <span style={{ flex: 1 }}>{value ? displayValue(value) : "날짜 선택"}</span>
+        <span
+          style={{
+            flex: 1,
+            ...(compact
+              ? { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }
+              : {}),
+          }}
+        >
+          {value ? displayValue(value) : "날짜 선택"}
+        </span>
         <svg width={calendarIconSize} height={calendarIconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
           <line x1="16" y1="2" x2="16" y2="6" />

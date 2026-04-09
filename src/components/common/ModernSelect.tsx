@@ -32,6 +32,8 @@ export interface ModernSelectProps {
   uniform28?: boolean;
   /** compact와 함께: 높이 30px, 12px 글자, radius 6, padding 0 8px (52주 출석 필터 등) */
   uniform30?: boolean;
+  /** compact와 함께: 높이 32px, 보고서 필터 행(날짜 트리거와 동일) */
+  uniform32?: boolean;
 }
 
 export function ModernSelect({
@@ -47,17 +49,19 @@ export function ModernSelect({
   compact = false,
   uniform28 = false,
   uniform30 = false,
+  uniform32 = false,
 }: ModernSelectProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const u30 = compact && uniform30;
-  const u28 = compact && uniform28 && !u30;
+  const u32 = compact && uniform32 && !uniform30 && !uniform28;
+  const u30 = compact && uniform30 && !u32;
+  const u28 = compact && uniform28 && !u30 && !u32;
   const FILTER_BORDER = "#e8ecf1";
-  const pad = u30 ? "0 26px 0 8px" : u28 ? "0 22px 0 6px" : compact ? "4px 28px 4px 8px" : "10px 40px 10px 14px";
-  const fs = u30 ? 12 : compact ? 11 : 14;
-  const br = u30 || u28 ? 6 : compact ? 4 : RADIUS;
-  const chev = u30 ? 15 : compact ? 14 : 16;
-  const chevRight = u30 ? 8 : u28 ? 6 : compact ? 8 : 12;
+  const pad = u32 || u30 ? "0 26px 0 8px" : u28 ? "0 22px 0 6px" : compact ? "4px 28px 4px 8px" : "10px 40px 10px 14px";
+  const fs = u32 ? 11 : u30 ? 12 : compact ? 11 : 14;
+  const br = u32 || u30 || u28 ? 6 : compact ? 4 : RADIUS;
+  const chev = u32 || u30 ? 15 : compact ? 14 : 16;
+  const chevRight = u32 || u30 ? 8 : u28 ? 6 : compact ? 8 : 12;
   const optPad = u30 || compact ? "8px 10px" : "10px 14px";
   const optFs = u30 ? 12 : compact ? 12 : 14;
 
@@ -92,15 +96,15 @@ export function ModernSelect({
           alignItems: "center",
           justifyContent: "space-between",
           padding: pad,
-          minHeight: compact ? (u30 ? 30 : 28) : undefined,
-          height: u30 ? 30 : u28 ? 28 : undefined,
-          boxSizing: u30 || u28 ? "border-box" : undefined,
+          minHeight: compact ? (u32 ? 32 : u30 ? 30 : 28) : undefined,
+          height: u32 ? 32 : u30 ? 30 : u28 ? 28 : undefined,
+          boxSizing: u32 || u30 || u28 ? "border-box" : undefined,
           fontSize: fs,
           lineHeight: 1.4,
           fontFamily: "inherit",
           color: value ? TEXT : TEXT_MUTED,
           background: SURFACE,
-          border: u30 ? `1px solid ${FILTER_BORDER}` : `1px solid ${BORDER}`,
+          border: u32 || u30 ? `1px solid ${FILTER_BORDER}` : `1px solid ${BORDER}`,
           borderRadius: br,
           cursor: disabled ? "not-allowed" : "pointer",
           outline: "none",
@@ -112,7 +116,7 @@ export function ModernSelect({
           style={{
             textAlign: "left",
             whiteSpace: "nowrap",
-            ...(u28 || u30
+            ...(u28 || u30 || u32
               ? { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }
               : {}),
           }}

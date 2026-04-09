@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
@@ -8,7 +8,12 @@ import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAppData } from "@/contexts/AppDataContext";
 
-const INDIGO = "#4F46E5";
+const NAVY = "#1B2A4A";
+const BORDER = "#e8ecf1";
+const ROW_LINE = "#f0f2f5";
+const MUTED = "#999";
+const TEXT = "#555";
+const UNSEL_BG = "#f5f6f8";
 
 type MemberInfo = { id: string; name: string; phone?: string } | null;
 type EnrollmentRow = SchoolEnrollment & { members?: MemberInfo; member?: MemberInfo };
@@ -117,63 +122,117 @@ export function StudentManagement({ toast }: StudentManagementProps) {
     await refreshSchoolEnrollments();
   };
 
+  const pillBase: CSSProperties = {
+    height: 28,
+    fontSize: 11,
+    fontWeight: 600,
+    padding: "0 10px",
+    borderRadius: 6,
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    cursor: "pointer",
+    border: `1px solid ${BORDER}`,
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2 overflow-x-auto pb-2">
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          overflowX: "auto",
+          flexWrap: "nowrap",
+          paddingBottom: 4,
+          scrollbarWidth: "thin",
+        }}
+      >
         <button
           type="button"
           onClick={() => setSelectedDeptId(null)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${!selectedDeptId ? "text-white" : "bg-gray-100 text-gray-700"}`}
-          style={!selectedDeptId ? { background: INDIGO } : {}}
+          style={{
+            ...pillBase,
+            background: !selectedDeptId ? NAVY : UNSEL_BG,
+            color: !selectedDeptId ? "#fff" : TEXT,
+            border: !selectedDeptId ? "none" : `1px solid ${BORDER}`,
+          }}
         >
           전체
         </button>
-        {departments.map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            onClick={() => setSelectedDeptId(d.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${selectedDeptId === d.id ? "text-white" : "bg-gray-100 text-gray-700"}`}
-            style={selectedDeptId === d.id ? { background: INDIGO } : {}}
-          >
-            {d.name}
-          </button>
-        ))}
+        {departments.map((d) => {
+          const on = selectedDeptId === d.id;
+          return (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => setSelectedDeptId(d.id)}
+              style={{
+                ...pillBase,
+                background: on ? NAVY : UNSEL_BG,
+                color: on ? "#fff" : TEXT,
+                border: on ? "none" : `1px solid ${BORDER}`,
+              }}
+            >
+              {d.name}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="flex items-center gap-2">
-        <button type="button" onClick={() => setAddOpen(true)} className="px-4 py-2 rounded-lg text-white text-sm font-medium" style={{ background: INDIGO }}>+ 학생 등록</button>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          style={{
+            height: 30,
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "0 12px",
+            borderRadius: 6,
+            background: NAVY,
+            color: "#fff",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          학생 등록
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-        <table className="w-full text-sm">
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflowX: "auto" }}>
+        <table className="w-full" style={{ borderCollapse: "collapse" }}>
           <thead>
-            <tr className="border-b bg-gray-50">
-              <th className="text-left py-3 px-4 font-semibold">이름</th>
-              <th className="text-left py-3 px-4 font-semibold">반</th>
-              <th className="text-left py-3 px-4 font-semibold">역할</th>
-              <th className="text-left py-3 px-4 font-semibold">연락처</th>
-              <th className="text-left py-3 px-4 font-semibold">등록일</th>
-              <th className="text-left py-3 px-4 font-semibold">관리</th>
+            <tr>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>이름</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>반</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>역할</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>연락처</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>등록일</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>관리</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={6} className="py-8 text-center text-gray-500">등록된 학생이 없습니다.</td></tr>
+              <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", fontSize: 12, color: MUTED }}>등록된 학생이 없습니다.</td></tr>
             ) : (
-              filtered.map((e) => {
+              filtered.map((e, idx) => {
                 const m = getMember(e);
                 const cls = getClass(e.class_id);
                 return (
-                  <tr key={e.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">{m?.name ?? e.member_id}</td>
-                    <td className="py-3 px-4">{cls?.name ?? "-"}</td>
-                    <td className="py-3 px-4">{e.role}</td>
-                    <td className="py-3 px-4">{m?.phone ?? "-"}</td>
-                    <td className="py-3 px-4">{e.enrolled_date ?? "-"}</td>
-                    <td className="py-3 px-4">
-                      <button type="button" onClick={() => { setEditOpen(e); setEditClassId(e.class_id ?? ""); setEditRole(e.role); }} className="mr-2 text-blue-600 text-sm hover:underline">수정</button>
-                      <button type="button" onClick={() => handleDelete(e)} className="text-red-600 text-sm hover:underline">해제</button>
+                  <tr key={e.id} style={{ borderBottom: `1px solid ${ROW_LINE}`, background: idx % 2 === 1 ? "#fafbfc" : "#fff" }}>
+                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{m?.name ?? e.member_id}</td>
+                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{cls?.name ?? "-"}</td>
+                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{e.role}</td>
+                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{m?.phone ?? "-"}</td>
+                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{e.enrolled_date ?? "-"}</td>
+                    <td style={{ padding: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => { setEditOpen(e); setEditClassId(e.class_id ?? ""); setEditRole(e.role); }}
+                        style={{ marginRight: 8, fontSize: 10, color: NAVY, border: `1px solid ${BORDER}`, borderRadius: 4, padding: "2px 8px", background: "#fff", cursor: "pointer" }}
+                      >
+                        수정
+                      </button>
+                      <button type="button" onClick={() => handleDelete(e)} style={{ fontSize: 10, color: TEXT, background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}>해제</button>
                     </td>
                   </tr>
                 );
@@ -244,7 +303,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
               </select>
               <div className="flex gap-2">
                 <button type="button" onClick={() => setAddOpen(false)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-                <button type="button" onClick={handleRegister} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: INDIGO }}>등록</button>
+                <button type="button" onClick={handleRegister} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: NAVY }}>등록</button>
               </div>
             </div>
           </div>,
@@ -292,7 +351,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
               <div className="flex gap-2">
                 <button type="button" onClick={() => handleDelete(editOpen)} className="py-2 rounded-lg border border-red-200 text-red-600 text-sm">등록 해제</button>
                 <button type="button" onClick={() => setEditOpen(null)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-                <button type="button" onClick={handleUpdate} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: INDIGO }}>저장</button>
+                <button type="button" onClick={handleUpdate} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: NAVY }}>저장</button>
               </div>
             </div>
           </div>,

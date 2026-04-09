@@ -6,19 +6,15 @@ import type { Attendance } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, CalendarCheck, UserX, BarChart3, ListOrdered } from "lucide-react";
 import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard";
 import { AbsenteeManagement } from "@/components/attendance/AbsenteeManagement";
 import { AttendanceStatistics } from "@/components/attendance/AttendanceStatistics";
 import { SchoolAttendanceCheck } from "./SchoolAttendanceCheck";
 
-/* 목양 출석부와 동일한 색상/스타일 */
-const C = {
-  bg: "#f8f7f4",
-  navy: "#1b2a4a",
-  text: "#1b2a4a",
-  border: "#e8e6e1",
-};
+const NAVY = "#1B2A4A";
+const BORDER = "#e8ecf1";
+const UNSEL_BG = "#f5f6f8";
+const UNSEL_TEXT = "#555";
 
 type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "weekly";
 const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "check", "absentee", "statistics", "weekly"];
@@ -40,6 +36,40 @@ function getInitialSchoolAttSubTab(): AttendanceSubTab {
   if (typeof window === "undefined") return "dashboard";
   const v = sessionStorage.getItem("schoolAttSubTab");
   return (ATTENDANCE_SUB_IDS.includes(v as AttendanceSubTab) ? v : "dashboard") as AttendanceSubTab;
+}
+
+function SubTabButton({
+  active,
+  label,
+  onClick,
+  flex,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+  flex?: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: flex ?? 1,
+        minWidth: 0,
+        height: 30,
+        fontSize: 10,
+        fontWeight: 600,
+        borderRadius: 6,
+        border: active ? "none" : `1px solid ${BORDER}`,
+        padding: "0 8px",
+        cursor: "pointer",
+        background: active ? NAVY : UNSEL_BG,
+        color: active ? "#fff" : UNSEL_TEXT,
+      }}
+    >
+      {label}
+    </button>
+  );
 }
 
 export function SchoolAttendanceSub({ db, toast }: SchoolAttendanceSubProps) {
@@ -129,52 +159,18 @@ export function SchoolAttendanceSub({ db, toast }: SchoolAttendanceSubProps) {
 
   const attendanceListForDashboard = useMemo(() => dateBasedAttendance, [dateBasedAttendance]);
 
-  const tabs = [
-    { id: "dashboard" as const, label: "대시보드", Icon: LayoutDashboard },
-    { id: "check" as const, label: "출석 체크", Icon: CalendarCheck },
-    { id: "absentee" as const, label: "결석자 관리", Icon: UserX },
-    { id: "statistics" as const, label: "출석 통계", Icon: BarChart3 },
-    { id: "weekly" as const, label: "52주 출석", Icon: ListOrdered },
-  ];
-
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          marginBottom: 16,
-          paddingBottom: 12,
-          borderBottom: `1px solid ${C.border}`,
-        }}
-      >
-        {tabs.map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setAttendanceSubTab(id)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "8px 14px",
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: 600,
-              border: "none",
-              cursor: "pointer",
-              background: attendanceSubTab === id ? C.navy : "transparent",
-              color: attendanceSubTab === id ? "#fff" : C.text,
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderColor: attendanceSubTab === id ? C.navy : C.border,
-            }}
-          >
-            <Icon style={{ width: 18, height: 18 }} />
-            {label}
-          </button>
-        ))}
+      <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${BORDER}` }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <SubTabButton active={attendanceSubTab === "dashboard"} label="대시보드" onClick={() => setAttendanceSubTab("dashboard")} />
+          <SubTabButton active={attendanceSubTab === "statistics"} label="출석 통계" onClick={() => setAttendanceSubTab("statistics")} />
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <SubTabButton active={attendanceSubTab === "check"} label="출석 체크" onClick={() => setAttendanceSubTab("check")} />
+          <SubTabButton active={attendanceSubTab === "absentee"} label="결석자 관리" onClick={() => setAttendanceSubTab("absentee")} />
+          <SubTabButton active={attendanceSubTab === "weekly"} label="52주 출석" onClick={() => setAttendanceSubTab("weekly")} />
+        </div>
       </div>
 
       {attendanceSubTab === "dashboard" && (
@@ -195,7 +191,7 @@ export function SchoolAttendanceSub({ db, toast }: SchoolAttendanceSubProps) {
           attendanceList={attendanceListForDashboard}
           consecutiveWeeks={3}
           toast={toast}
-          onAddVisit={(memberId) => toast("심방 등록은 기도/메모에서 기록해 주세요", "ok")}
+          onAddVisit={() => toast("심방 등록은 기도/메모에서 기록해 주세요", "ok")}
         />
       )}
 
@@ -219,23 +215,23 @@ export function SchoolAttendanceSub({ db, toast }: SchoolAttendanceSubProps) {
       {attendanceSubTab === "weekly" && (
         <div
           style={{
-            padding: 32,
+            padding: 24,
             textAlign: "center",
-            color: C.text,
-            background: C.bg,
-            borderRadius: 16,
-            border: `1px solid ${C.border}`,
+            color: UNSEL_TEXT,
+            background: "#fff",
+            borderRadius: 8,
+            border: `1px solid ${BORDER}`,
           }}
         >
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>52주 출석 현황</p>
-          <p style={{ margin: "8px 0 0", fontSize: 13, color: "#6b7b9e" }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>52주 출석 현황</p>
+          <p style={{ margin: "8px 0 0", fontSize: 11, color: "#999" }}>
             등록된 학생·교사의 52주 출석 기록을 확인할 수 있습니다. (준비 중)
           </p>
         </div>
       )}
 
       {loading && attendanceSubTab === "dashboard" && (
-        <div style={{ padding: 24, textAlign: "center", color: "#6b7b9e" }}>출석 데이터 로딩 중...</div>
+        <div style={{ padding: 24, textAlign: "center", fontSize: 11, color: "#999" }}>출석 데이터 로딩 중...</div>
       )}
     </>
   );

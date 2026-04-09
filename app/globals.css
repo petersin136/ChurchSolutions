@@ -73,10 +73,10 @@
   }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-  /* 모던 드롭다운 공통 (네이티브 select) — 트리거·옵션 색 통일 */
-  select,
-  select.select-modern,
-  .select-modern {
+  /* 모던 드롭다운 공통 (네이티브 select) — compact-select(작은 인라인용)는 제외 */
+  select:not(.compact-select),
+  select.select-modern:not(.compact-select),
+  .select-modern:not(.compact-select) {
     appearance: none;
     -webkit-appearance: none;
     width: 100%;
@@ -96,17 +96,17 @@
     background-position: right 12px center;
     background-size: 16px;
   }
-  select.select-modern:hover,
-  .select-modern:hover {
+  select.select-modern:not(.compact-select):hover,
+  .select-modern:not(.compact-select):hover {
     border-color: var(--text3);
   }
-  select.select-modern:focus,
-  .select-modern:focus {
+  select.select-modern:not(.compact-select):focus,
+  .select-modern:not(.compact-select):focus {
     border-color: var(--blue);
     box-shadow: 0 0 0 3px var(--blue-light);
   }
-  select.select-modern option,
-  .select-modern option {
+  select.select-modern:not(.compact-select) option,
+  .select-modern:not(.compact-select) option {
     background: var(--surface);
     color: var(--text1);
     padding: 10px 14px;
@@ -145,15 +145,27 @@
   .tab-item .tab-label { line-height: 1; }
   .page { display: none; max-width: 960px; margin: 0 auto; padding: 16px; }
   .page.active { display: block; }
-  #page-finance.page { max-width: 100%; padding: 0; margin: 0; }
+  #page-finance.page { max-width: 100%; padding: 0; margin: 0; --finance-accent: #1b2a4a; }
+  #page-finance.page .finance-sub-pills { scrollbar-width: none; -ms-overflow-style: none; }
+  #page-finance.page .finance-sub-pills::-webkit-scrollbar { display: none; }
   #page-pastoral.page { max-width: 100%; padding: 0; margin: 0; }
   #page-planner.page { max-width: 100%; padding: 0; margin: 0; }
-  #page-visit.page { max-width: 100%; padding: 0; margin: 0; }
+  /* 심방·상담: 앱 인라인 스타일과 동일 팔레트(#1B2A4A 등). 레거시 파란 버튼 클래스가 붙는 경우만 보정 */
+  #page-visit.page { max-width: 100%; padding: 0; margin: 0; --visit-accent: #1b2a4a; }
+  #page-visit.page .btn-primary { background: #1b2a4a; color: #fff; box-shadow: none; }
+  #page-visit.page .btn-primary:hover { background: #152a45; }
+  #page-visit.page .btn-secondary { background: #f5f6f8; color: #555; border: 1px solid #e8ecf1; }
+  #page-visit.page .btn-ghost { color: #6b7b9e; }
   #page-bulletin.page { max-width: 100%; padding: 0; margin: 0; }
   #page-reports.page { max-width: 100%; padding: 0; margin: 0; }
   #page-statistics.page { max-width: 100%; padding: 0; margin: 0; }
   #page-messaging.page { max-width: 100%; padding: 0; margin: 0; }
-  #page-school.page { max-width: 100%; padding: 0; margin: 0; }
+  /* 교회학교: 목양과 동일 네이비 액센트 */
+  #page-school.page { max-width: 100%; padding: 0; margin: 0; --school-accent: #1b2a4a; }
+  #page-school.page .btn-primary { background: #1b2a4a; color: #fff; box-shadow: none; }
+  #page-school.page .btn-primary:hover { background: #152a45; }
+  #page-school.page .btn-secondary { background: #f5f6f8; color: #555; border: 1px solid #e8ecf1; }
+  #page-school.page .btn-ghost { color: #6b7b9e; }
   #page-settings.page { max-width: 100%; padding: 0; margin: 0; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -472,7 +484,7 @@
     padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0) + 12px);
   }
   input,
-  select,
+  select:not(.compact-select),
   textarea {
     font-size: 16px !important;
   }
@@ -724,9 +736,9 @@
 }
 
 @media (max-width: 768px) {
-  select,
-  select.select-modern,
-  .select-modern {
+  select:not(.compact-select),
+  select.select-modern:not(.compact-select),
+  .select-modern:not(.compact-select) {
     padding: 0 28px 0 10px !important;
     font-size: 14px !important;
     height: 40px !important;
@@ -734,11 +746,18 @@
     width: 100% !important;
     -webkit-text-size-adjust: 100% !important;
   }
-  select option,
-  select.select-modern option,
-  .select-modern option {
+  select:not(.compact-select) option,
+  select.select-modern:not(.compact-select) option,
+  .select-modern:not(.compact-select) option {
     font-size: 14px !important;
     padding: 12px 14px !important;
+  }
+  /* 네이티브 시스템 메뉴 사용 — 카드 overflow·커스텀 화살표와 충돌 방지 */
+  select.compact-select {
+    appearance: auto !important;
+    -webkit-appearance: menulist-button !important;
+    background-image: none !important;
+    background-color: #fff !important;
   }
   /* 목양 기도/메모 탭: 타입 선택 — 전역 select 규칙보다 우선 */
   select.pastoral-notes-type-select.select-modern {
@@ -762,25 +781,6 @@
     background-color: #fff !important;
     text-align: center !important;
     width: 100% !important;
-    -webkit-text-size-adjust: 100% !important;
-  }
-  /* 목양 대시보드 출석 추이: 연도 select — 토글(28px)과 동일 줄·동일 높이, 전역 select 40px/100% 폭 무력화 */
-  select.dashboard-att-year-select {
-    height: 28px !important;
-    min-height: 28px !important;
-    max-height: 28px !important;
-    font-size: 11px !important;
-    font-weight: 600 !important;
-    line-height: 1.2 !important;
-    border-radius: 6px !important;
-    padding: 0 24px 0 8px !important;
-    border: 1px solid #e8ecf1 !important;
-    box-sizing: border-box !important;
-    background-color: #fff !important;
-    color: #1b2a4a !important;
-    width: 90px !important;
-    min-width: 90px !important;
-    max-width: 90px !important;
     -webkit-text-size-adjust: 100% !important;
   }
 }

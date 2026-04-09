@@ -1,18 +1,46 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type CSSProperties } from "react";
 import type { DB } from "@/types/db";
-import type { SchoolDepartment, SchoolEnrollment, SchoolTransferHistory } from "@/types/db";
+import type { SchoolDepartment, SchoolTransferHistory } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAppData } from "@/contexts/AppDataContext";
 
-const INDIGO = "#4F46E5";
+const NAVY = "#1B2A4A";
+const BORDER = "#e8ecf1";
+const ROW_LINE = "#f0f2f5";
+const MUTED = "#999";
+const TEXT = "#555";
+const LABEL = "#6b7b9e";
 
 export interface DepartmentTransferProps {
   db: DB;
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
+
+const selectStyle: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  height: 32,
+  fontSize: 12,
+  borderRadius: 6,
+  border: `1px solid ${BORDER}`,
+  padding: "0 8px",
+  background: "#fff",
+  color: TEXT,
+};
+
+const inputStyle: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  height: 32,
+  fontSize: 12,
+  borderRadius: 6,
+  border: `1px solid ${BORDER}`,
+  padding: "0 10px",
+  color: TEXT,
+};
 
 export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
   const { db, schoolDepartments, schoolEnrollments, refreshSchoolEnrollments } = useAppData();
@@ -107,33 +135,83 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
 
   const getMember = (id: string) => db.members?.find((m) => m.id === id);
 
-  if (loading) return <div className="p-6 text-gray-500">로딩 중...</div>;
+  if (loading) return <div style={{ padding: 24, fontSize: 12, color: MUTED }}>로딩 중...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
-        <h4 className="font-semibold mb-3" style={{ color: INDIGO }}>부서 이동</h4>
-        <div className="flex flex-wrap gap-4 mb-3">
-          <label className="flex items-center gap-2">
-            <span className="text-sm">현재 부서</span>
-            <select value={fromDeptId ?? ""} onChange={(e) => { setFromDeptId(e.target.value || null); setSelectedIds(new Set()); }} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12 }}>
+        <h4 style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 700, color: NAVY }}>부서 이동</h4>
+
+        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "flex-end" }}>
+          <div style={{ flex: "1 1 140px", minWidth: 120 }}>
+            <div style={{ fontSize: 11, color: LABEL, marginBottom: 4 }}>현재 부서</div>
+            <select
+              value={fromDeptId ?? ""}
+              onChange={(e) => { setFromDeptId(e.target.value || null); setSelectedIds(new Set()); }}
+              style={{ ...selectStyle, width: "100%" }}
+            >
               <option value="">선택</option>
               {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
-          </label>
-          <label className="flex items-center gap-2">
-            <span className="text-sm">새 부서</span>
-            <select value={toDeptId ?? ""} onChange={(e) => setToDeptId(e.target.value || null)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
+          </div>
+          <div style={{ flex: "1 1 140px", minWidth: 120 }}>
+            <div style={{ fontSize: 11, color: LABEL, marginBottom: 4 }}>새 부서</div>
+            <select
+              value={toDeptId ?? ""}
+              onChange={(e) => setToDeptId(e.target.value || null)}
+              style={{ ...selectStyle, width: "100%" }}
+            >
               <option value="">선택</option>
               {departments.filter((d) => d.id !== fromDeptId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
-          </label>
-          <input type="text" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="이동 사유" className="rounded-lg border border-gray-200 px-3 py-2 text-sm w-48" />
-          <button type="button" onClick={handleTransfer} disabled={selectedIds.size === 0 || !toDeptId} className="px-4 py-2 rounded-xl text-white text-sm font-semibold disabled:opacity-50" style={{ background: INDIGO }}>이동 실행</button>
+          </div>
         </div>
-        <div className="max-h-48 overflow-y-auto border border-gray-100 rounded-lg">
+
+        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12, alignItems: "center" }}>
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="이동 사유"
+            style={inputStyle}
+          />
+          <button
+            type="button"
+            onClick={handleTransfer}
+            disabled={selectedIds.size === 0 || !toDeptId}
+            style={{
+              height: 32,
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "0 16px",
+              borderRadius: 6,
+              background: NAVY,
+              color: "#fff",
+              border: "none",
+              cursor: selectedIds.size === 0 || !toDeptId ? "not-allowed" : "pointer",
+              opacity: selectedIds.size === 0 || !toDeptId ? 0.5 : 1,
+              flexShrink: 0,
+            }}
+          >
+            이동 실행
+          </button>
+        </div>
+
+        <div style={{ maxHeight: 192, overflowY: "auto", border: `1px solid ${BORDER}`, borderRadius: 6 }}>
           {filtered.map((e) => (
-            <label key={e.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+            <label
+              key={e.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                borderBottom: `1px solid ${ROW_LINE}`,
+                cursor: "pointer",
+                fontSize: 11,
+                color: TEXT,
+              }}
+            >
               <input type="checkbox" checked={selectedIds.has(e.id)} onChange={() => toggle(e.id)} />
               <span>{getMember(e.member_id)?.name ?? e.member_id}</span>
             </label>
@@ -141,27 +219,27 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-        <h4 className="font-semibold p-4" style={{ color: INDIGO }}>이동 이력</h4>
-        <table className="w-full text-sm">
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflowX: "auto" }}>
+        <h4 style={{ margin: 0, padding: "12px 14px", fontSize: 13, fontWeight: 700, color: NAVY }}>이동 이력</h4>
+        <table className="w-full" style={{ borderCollapse: "collapse" }}>
           <thead>
-            <tr className="border-b bg-gray-50">
-              <th className="text-left py-2 px-4">이동일</th>
-              <th className="text-left py-2 px-4">구 부서</th>
-              <th className="text-left py-2 px-4">신 부서</th>
-              <th className="text-left py-2 px-4">사유</th>
+            <tr>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>이동일</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>구 부서</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>신 부서</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>사유</th>
             </tr>
           </thead>
           <tbody>
             {history.length === 0 ? (
-              <tr><td colSpan={4} className="py-6 text-center text-gray-500">이력이 없습니다.</td></tr>
+              <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", fontSize: 11, color: MUTED }}>이력이 없습니다.</td></tr>
             ) : (
               history.map((h) => (
-                <tr key={h.id} className="border-b">
-                  <td className="py-2 px-4">{h.transfer_date}</td>
-                  <td className="py-2 px-4">{h.from_department_name ?? "-"}</td>
-                  <td className="py-2 px-4">{h.to_department_name ?? "-"}</td>
-                  <td className="py-2 px-4">{h.reason ?? "-"}</td>
+                <tr key={h.id} style={{ borderBottom: `1px solid ${ROW_LINE}` }}>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{h.transfer_date}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{h.from_department_name ?? "-"}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{h.to_department_name ?? "-"}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{h.reason ?? "-"}</td>
                 </tr>
               ))
             )}

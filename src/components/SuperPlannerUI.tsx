@@ -35,8 +35,8 @@ const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[
 const PAGE_TAB_ACCENT: Record<PageId, string> = {
   pastoral: "#1e3a5f",
   visit: "#2563eb",
-  school: "#7c3aed",
-  finance: "#166534",
+  school: "#1B2A4A",
+  finance: "#1B2A4A",
   bulletin: "#8b6f47",
   reports: "#6b7280",
 };

@@ -15,7 +15,7 @@ type SchoolSubTab = "dashboard" | "departments" | "students" | "attendance" | "t
 const PAGE_INFO: Record<SchoolSubTab, { title: string; desc: string }> = {
   dashboard: { title: "대시보드", desc: "교회학교 현황을 한눈에 확인하세요" },
   departments: { title: "부서 관리", desc: "부서와 반을 관리합니다" },
-  students: { title: "학생 관리", desc: "학생 등록과 정보를 관리합니다" },
+  students: { title: "학생 명단", desc: "교육부서 학생을 관리합니다" },
   attendance: { title: "출석부", desc: "52주 출석 기록을 관리합니다" },
   transfer: { title: "부서 이동", desc: "학생 부서 이동을 처리합니다" },
 };
@@ -65,9 +65,9 @@ export function SchoolPage({ db, toast }: SchoolPageProps) {
       headerTitle={info.title}
       headerDesc={info.desc}
       SidebarIcon={LayoutDashboard}
-      accentColor="#7c3aed"
+      accentColor="#1B2A4A"
     >
-      {subTab === "dashboard" && <SchoolDashboard db={db} toast={toast} />}
+      {subTab === "dashboard" && <SchoolDashboard toast={toast} />}
       {subTab === "departments" && <DepartmentManagement db={db} toast={toast} />}
       {subTab === "students" && <StudentManagement db={db} toast={toast} />}
       {subTab === "attendance" && <SchoolAttendanceSub db={db} toast={toast} />}

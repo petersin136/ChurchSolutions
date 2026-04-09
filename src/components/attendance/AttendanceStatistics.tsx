@@ -242,19 +242,6 @@ export function AttendanceStatistics({
             style={{ marginBottom: 0, minWidth: mob ? 88 : 100 }}
           />
         </label>
-        {onExportExcel && (
-          <button
-            type="button"
-            onClick={handleExport}
-            className={
-              mob
-                ? "h-6 rounded-lg border border-[#1e3a5f] px-2 text-[10px] font-semibold text-[#1e3a5f] hover:bg-[#1e3a5f]/5"
-                : "rounded-xl border border-[#1e3a5f] px-4 py-2 text-sm font-semibold text-[#1e3a5f] hover:bg-[#1e3a5f]/5"
-            }
-          >
-            Excel 내보내기
-          </button>
-        )}
       </div>
 
       <div
@@ -404,7 +391,7 @@ export function AttendanceStatistics({
                     <XAxis dataKey="month" tick={{ fontSize: mob ? 9 : 11 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: mob ? 9 : 11 }} width={mob ? 28 : undefined} />
                     <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
-                    <Bar dataKey="rate" name="출석률" fill="#1e3a5f" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="rate" name="출석률" fill="#1b2a4a" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </LazyChart>

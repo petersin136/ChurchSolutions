@@ -1,14 +1,44 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, type CSSProperties } from "react";
 import { supabase } from "@/lib/supabase";
 import type { CashJournalEntry } from "@/types/db";
 import type { Income } from "@/types/db";
 import type { Expense } from "@/types/db";
 
-const NAVY = "#1e3a5f";
-const CORAL = "#e74c3c";
+const NAVY = "#1B2A4A";
+const BORDER = "#e8ecf1";
+const ROW = "#f0f2f5";
+const TEXT = "#555";
+const MUTED = "#999";
+const SUB = "#6b7b9e";
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
+
+/** DB 카테고리 코드 → 한글 (현금출납장 표시용) */
+const CATEGORY_KO: Record<string, string> = {
+  tithe: "십일조",
+  sunday: "주일헌금",
+  thanks: "감사헌금",
+  building: "건축헌금",
+  mission: "선교헌금",
+  other: "기타",
+  salary: "인건비",
+  rent: "임대료/관리비",
+  utility: "공과금",
+  supply: "비품/소모품",
+  event: "행사비",
+  mission_exp: "선교비",
+  education_exp: "교육비",
+  maintenance: "시설유지비",
+  transport: "교통비",
+  food: "식비/다과",
+  other_exp: "기타지출",
+};
+
+function displayCategory(c: string) {
+  if (!c) return "-";
+  return CATEGORY_KO[c] ?? c;
+}
 
 export interface CashJournalProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
@@ -43,7 +73,17 @@ function toEntryFromExpense(e: Expense): CashJournalEntry {
   };
 }
 
-export function CashJournal({ toast, typeFilter: typeFilterProp, onExportExcel, onExportPdf }: CashJournalProps) {
+const selStyle: CSSProperties = {
+  height: 32,
+  fontSize: 11,
+  borderRadius: 6,
+  border: `1px solid ${BORDER}`,
+  padding: "0 8px",
+  background: "#fff",
+  color: TEXT,
+};
+
+export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: CashJournalProps) {
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(1);
@@ -145,134 +185,108 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportExcel, 
   const categories = useMemo(() => Array.from(new Set(entries.map((e) => e.category).filter(Boolean))), [entries]);
   const paymentMethods = useMemo(() => Array.from(new Set(entries.map((e) => e.payment_method).filter(Boolean))), [entries]);
 
-  const handleExportExcel = () => {
-    const rows = withBalance.map((e) => ({
-      날짜: e.date,
-      유형: e.type,
-      카테고리: e.category,
-      적요: e.description,
-      수입: e.type === "수입" ? e.amount : "",
-      지출: e.type === "지출" ? e.amount : "",
-      잔액: e.balance,
-      결제수단: e.payment_method ?? "",
-    }));
-    if (onExportExcel) onExportExcel(filtered);
-    else {
-      const csv = ["날짜,유형,카테고리,적요,수입,지출,잔액,결제수단"].concat(
-        rows.map((r) => `"${r.날짜}","${r.유형}","${r.카테고리}","${(r.적요 as string).replace(/"/g, '""')}",${r.수입},${r.지출},${r.잔액},"${r.결제수단}"`)
-      ).join("\n");
-      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `현금출납장_${startDate}_${endDate}.csv`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
-        <span className="ml-3 text-gray-600">현금출납장 로딩 중...</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 48, color: MUTED, fontSize: 12 }}>
+        <span
+          className="inline-block w-8 h-8 rounded-full animate-spin"
+          style={{ border: `2px solid ${BORDER}`, borderTopColor: NAVY }}
+        />
+        <span style={{ marginLeft: 12 }}>현금출납장 로딩 중...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div className="flex flex-wrap items-center gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-600">시작일</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-600">종료일</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-          </div>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as "all" | "수입" | "지출")} className="px-3 py-2 rounded-lg border border-gray-200 text-sm">
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ ...selStyle, flex: "0 0 auto" }} />
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ ...selStyle, flex: "0 0 auto" }} />
+        </div>
+        <div style={{ marginBottom: 6 }}>
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as "all" | "수입" | "지출")} style={{ ...selStyle, width: "100%", maxWidth: 200 }}>
             <option value="all">전체</option>
             <option value="수입">수입</option>
             <option value="지출">지출</option>
           </select>
-          {categories.length > 0 && (
-            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm">
+        </div>
+        {categories.length > 0 && (
+          <div style={{ marginBottom: 6 }}>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ ...selStyle, width: "100%", maxWidth: 320 }}>
               <option value="">카테고리 전체</option>
               {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{displayCategory(c)}</option>
               ))}
             </select>
-          )}
-          {paymentMethods.length > 0 && (
-            <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm">
+          </div>
+        )}
+        {paymentMethods.length > 0 && (
+          <div style={{ marginBottom: 6 }}>
+            <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} style={{ ...selStyle, width: "100%", maxWidth: 320 }}>
               <option value="">결제수단 전체</option>
               {paymentMethods.map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
-          )}
-          <button type="button" onClick={handleExportExcel} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50">
-            Excel
+          </div>
+        )}
+        {onExportPdf && (
+          <button type="button" onClick={() => onExportPdf(filtered)} style={{ height: 32, fontSize: 11, padding: "0 12px", borderRadius: 6, border: `1px solid ${BORDER}`, background: "#f5f6f8", color: TEXT, cursor: "pointer" }}>
+            PDF
           </button>
-          {onExportPdf && (
-            <button type="button" onClick={() => onExportPdf(filtered)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50">
-              PDF
-            </button>
-          )}
-        </div>
+        )}
+      </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left py-3 px-3 font-semibold text-gray-700">날짜</th>
-                <th className="text-left py-3 px-3 font-semibold text-gray-700">유형</th>
-                <th className="text-left py-3 px-3 font-semibold text-gray-700">카테고리</th>
-                <th className="text-left py-3 px-3 font-semibold text-gray-700">적요</th>
-                <th className="text-right py-3 px-3 font-semibold text-gray-700">수입</th>
-                <th className="text-right py-3 px-3 font-semibold text-gray-700">지출</th>
-                <th className="text-right py-3 px-3 font-semibold text-gray-700">잔액</th>
-                <th className="text-left py-3 px-3 font-semibold text-gray-700">결제수단</th>
-              </tr>
-            </thead>
-            <tbody>
-              {withBalance.length === 0 ? (
-                <tr><td colSpan={8} className="py-12 text-center text-gray-500">해당 기간 데이터가 없습니다.</td></tr>
-              ) : (
-                withBalance.map((e) => (
-                  <tr key={e.id} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="py-2 px-3 whitespace-nowrap">{e.date}</td>
-                    <td className="py-2 px-3">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${e.type === "수입" ? "bg-blue-100 text-blue-800" : "bg-red-100 text-red-800"}`}>
-                        {e.type}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3">{e.category}</td>
-                    <td className="py-2 px-3 max-w-[200px] truncate" title={e.description}>{e.description}</td>
-                    <td className="py-2 px-3 text-right font-medium" style={{ color: e.type === "수입" ? NAVY : undefined }}>
-                      {e.type === "수입" ? `₩${fmt(e.amount)}` : "-"}
-                    </td>
-                    <td className="py-2 px-3 text-right font-medium" style={{ color: e.type === "지출" ? CORAL : undefined }}>
-                      {e.type === "지출" ? `₩${fmt(e.amount)}` : "-"}
-                    </td>
-                    <td className="py-2 px-3 text-right font-medium">{fmt(e.balance!)}</td>
-                    <td className="py-2 px-3 text-gray-600">{e.payment_method ?? "-"}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-            <tfoot>
-              <tr className="bg-gray-100 font-semibold border-t-2 border-gray-200">
-                <td colSpan={4} className="py-3 px-3">합계</td>
-                <td className="py-3 px-3 text-right" style={{ color: NAVY }}>₩{fmt(totalIncome)}</td>
-                <td className="py-3 px-3 text-right" style={{ color: CORAL }}>₩{fmt(totalExpense)}</td>
-                <td className="py-3 px-3 text-right">{fmt(finalBalance)}</td>
-                <td className="py-3 px-3" />
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+      <div style={{ overflowX: "auto", background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}` }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              {["날짜", "유형", "카테고리", "적요", "수입", "지출", "잔액", "결제수단"].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: h === "수입" || h === "지출" || h === "잔액" ? "right" : "left",
+                    padding: "6px 8px",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: NAVY,
+                    borderBottom: `2px solid ${NAVY}`,
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {withBalance.length === 0 ? (
+              <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: MUTED, fontSize: 12 }}>해당 기간 데이터가 없습니다.</td></tr>
+            ) : (
+              withBalance.map((e, ri) => (
+                <tr key={e.id} style={{ borderBottom: `1px solid ${ROW}`, background: ri % 2 === 1 ? "#fafbfc" : "#fff" }}>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT, whiteSpace: "nowrap" }}>{e.date}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{e.type}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{displayCategory(e.category)}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT, maxWidth: 200 }} title={e.description}>{e.description}</td>
+                  <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>{e.type === "수입" ? `₩${fmt(e.amount)}` : "-"}</td>
+                  <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>{e.type === "지출" ? `₩${fmt(e.amount)}` : "-"}</td>
+                  <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>{fmt(e.balance!)}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: MUTED }}>{e.payment_method ?? "-"}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+          <tfoot>
+            <tr style={{ background: "#f0f2f5", fontWeight: 700 }}>
+              <td colSpan={4} style={{ padding: 8, fontSize: 11, color: TEXT }}>합계</td>
+              <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>₩{fmt(totalIncome)}</td>
+              <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>₩{fmt(totalExpense)}</td>
+              <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: NAVY }}>{fmt(finalBalance)}</td>
+              <td style={{ padding: 8 }} />
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   );

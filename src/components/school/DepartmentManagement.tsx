@@ -5,7 +5,13 @@ import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
-import { C } from "@/styles/designTokens";
+const NAVY = "#1B2A4A";
+const BORDER = "#e8ecf1";
+const ROW_LINE = "#f0f2f5";
+const MUTED = "#999";
+const TEXT = "#555";
+const CARD = "#fff";
+const SELECT_BG = "#f0f2f5";
 
 type DeptCounts = Record<string, { teachers: number; students: number }>;
 
@@ -14,7 +20,7 @@ export interface DepartmentManagementProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
+export function DepartmentManagement({ db: _db, toast }: DepartmentManagementProps) {
   const [departments, setDepartments] = useState<SchoolDepartment[]>([]);
   const [deptCounts, setDeptCounts] = useState<DeptCounts>({});
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -206,7 +212,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
     await load();
   };
 
-  if (loading) return <div className="p-6 text-gray-500">로딩 중...</div>;
+  if (loading) return <div style={{ padding: 24, fontSize: 12, color: MUTED }}>로딩 중...</div>;
 
   if (!supabase) {
     return (
@@ -223,30 +229,39 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold" style={{ color: C.navy }}>부서 목록</h3>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>부서 목록</h3>
         <button
           type="button"
           onClick={() => setAddDeptOpen(true)}
-          className="px-4 py-2 rounded-xl text-white text-sm font-semibold"
-          style={{ background: C.navy }}
+          style={{
+            height: 30,
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "0 12px",
+            borderRadius: 6,
+            background: NAVY,
+            color: "#fff",
+            border: "none",
+            cursor: "pointer",
+          }}
         >
-          + 부서 추가
+          부서 추가
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-          <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+        <div style={{ background: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+          <table className="w-full" style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>이름</th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>연령대</th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>담당</th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>교사/학생</th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, fontSize: 13, color: C.navy }}>예배</th>
-                <th style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, fontSize: 13, color: C.navy }}>관리</th>
+              <tr>
+                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>이름</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>연령대</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>담당</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>교사/학생</th>
+                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>예배</th>
+                <th style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>관리</th>
               </tr>
             </thead>
             <tbody>
@@ -254,18 +269,38 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
                 <tr
                   key={d.id}
                   onClick={() => setSelectedDeptId(d.id)}
-                  style={{ borderBottom: `1px solid ${C.borderLight}`, cursor: "pointer", background: selectedDeptId === d.id ? C.accentBg : "transparent", transition: "background 0.1s" }}
-                  onMouseEnter={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = C.bg; }}
+                  style={{
+                    borderBottom: `1px solid ${ROW_LINE}`,
+                    cursor: "pointer",
+                    background: selectedDeptId === d.id ? SELECT_BG : "transparent",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = "#fafbfc"; }}
                   onMouseLeave={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = "transparent"; }}
                 >
-                  <td className="py-3 px-4 font-medium">{d.name}</td>
-                  <td className="py-3 px-4">{d.age_range ?? "-"}</td>
-                  <td className="py-3 px-4">{d.leader_name ?? "-"}</td>
-                  <td className="py-3 px-4">{deptCounts[d.id]?.teachers ?? 0} / {deptCounts[d.id]?.students ?? 0}</td>
-                  <td className="py-3 px-4">{d.meeting_time ?? "-"}</td>
-                  <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                    <button type="button" onClick={() => openEditDept(d)} className="mr-2 text-sm text-blue-600 hover:underline">수정</button>
-                    <button type="button" onClick={() => handleDeleteDepartment(d)} className="text-sm text-red-600 hover:underline">삭제</button>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT, fontWeight: 500 }}>{d.name}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{d.age_range ?? "-"}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{d.leader_name ?? "-"}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{deptCounts[d.id]?.teachers ?? 0} / {deptCounts[d.id]?.students ?? 0}</td>
+                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{d.meeting_time ?? "-"}</td>
+                  <td style={{ padding: 8, textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => openEditDept(d)}
+                      style={{
+                        marginRight: 8,
+                        fontSize: 10,
+                        color: NAVY,
+                        border: `1px solid ${BORDER}`,
+                        borderRadius: 4,
+                        padding: "2px 8px",
+                        background: "#fff",
+                        cursor: "pointer",
+                      }}
+                    >
+                      수정
+                    </button>
+                    <button type="button" onClick={() => handleDeleteDepartment(d)} style={{ fontSize: 10, color: TEXT, border: "none", background: "transparent", cursor: "pointer", textDecoration: "underline" }}>삭제</button>
                   </td>
                 </tr>
               ))}
@@ -273,24 +308,36 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
           </table>
         </div>
 
-        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div style={{ background: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: 16 }}>
           {selectedDept ? (
             <>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold" style={{ color: C.navy }}>{selectedDept.name} — 반 목록</h4>
-                <button type="button" onClick={() => setAddClassOpen(true)} className="px-3 py-1.5 rounded-lg text-white text-sm font-medium" style={{ background: C.navy }}>+ 반 추가</button>
+                <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>{selectedDept.name} — 반 목록</h4>
+                <button
+                  type="button"
+                  onClick={() => setAddClassOpen(true)}
+                  style={{ height: 30, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: NAVY, color: "#fff", border: "none", cursor: "pointer" }}
+                >
+                  반 추가
+                </button>
               </div>
               {deptClasses.length === 0 ? (
-                <p className="text-gray-500 text-sm">등록된 반이 없습니다.</p>
+                <p style={{ fontSize: 12, color: MUTED }}>등록된 반이 없습니다.</p>
               ) : (
-                <ul className="space-y-2">
+                <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                   {deptClasses.map((c) => (
-                    <li key={c.id} className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span>{c.name}</span>
-                      <span className="text-gray-500 text-sm">{c.teacher_name ?? "-"} · {c.current_students}명</span>
-                      <span className="flex gap-2">
-                        <button type="button" onClick={() => { setEditClassOpen(c); setEditClassName(c.name); }} className="text-sm text-blue-600 hover:underline">수정</button>
-                        <button type="button" onClick={() => handleDeleteClass(c)} className="text-sm text-red-600 hover:underline">삭제</button>
+                    <li key={c.id} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "10px 0", borderBottom: `1px solid ${ROW_LINE}` }}>
+                      <span style={{ fontSize: 11, color: TEXT }}>{c.name}</span>
+                      <span style={{ fontSize: 10, color: MUTED }}>{c.teacher_name ?? "-"} · {c.current_students}명</span>
+                      <span style={{ display: "flex", gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => { setEditClassOpen(c); setEditClassName(c.name); }}
+                          style={{ fontSize: 10, color: NAVY, border: `1px solid ${BORDER}`, borderRadius: 4, padding: "2px 8px", background: "#fff", cursor: "pointer" }}
+                        >
+                          수정
+                        </button>
+                        <button type="button" onClick={() => handleDeleteClass(c)} style={{ fontSize: 10, color: TEXT, background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}>삭제</button>
                       </span>
                     </li>
                   ))}
@@ -298,7 +345,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
               )}
             </>
           ) : (
-            <p className="text-gray-500">부서를 선택하세요.</p>
+            <p style={{ fontSize: 12, color: MUTED, padding: 16, textAlign: "center", margin: 0 }}>부서를 선택하세요</p>
           )}
         </div>
       </div>
@@ -323,7 +370,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
             />
             <div className="flex gap-2">
               <button type="button" onClick={() => setAddDeptOpen(false)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-              <button type="button" onClick={handleAddDepartment} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: C.navy }}>추가</button>
+              <button type="button" onClick={handleAddDepartment} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: NAVY }}>추가</button>
             </div>
           </div>
         </div>
@@ -350,7 +397,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
             <div className="flex gap-2">
               <button type="button" onClick={() => handleDeleteDepartment()} className="py-2 rounded-lg border border-red-200 text-red-600 text-sm">삭제</button>
               <button type="button" onClick={() => { setEditDeptOpen(false); setEditDeptId(null); }} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-              <button type="button" onClick={handleUpdateDepartment} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: C.navy }}>저장</button>
+              <button type="button" onClick={handleUpdateDepartment} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: NAVY }}>저장</button>
             </div>
           </div>
         </div>
@@ -369,7 +416,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
             />
             <div className="flex gap-2">
               <button type="button" onClick={() => setAddClassOpen(false)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-              <button type="button" onClick={handleAddClass} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: C.navy }}>추가</button>
+              <button type="button" onClick={handleAddClass} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: NAVY }}>추가</button>
             </div>
           </div>
         </div>
@@ -388,7 +435,7 @@ export function DepartmentManagement({ db, toast }: DepartmentManagementProps) {
             />
             <div className="flex gap-2">
               <button type="button" onClick={() => setEditClassOpen(null)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-              <button type="button" onClick={handleUpdateClass} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: C.navy }}>저장</button>
+              <button type="button" onClick={handleUpdateClass} className="flex-1 py-2 rounded-lg text-white text-sm font-semibold" style={{ background: NAVY }}>저장</button>
             </div>
           </div>
         </div>

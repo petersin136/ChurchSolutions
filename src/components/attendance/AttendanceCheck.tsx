@@ -350,22 +350,31 @@ export function AttendanceCheck({
           className={mob ? "flex gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden" : "flex gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden"}
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          {["전체", ...depts].map((dept) => (
+          {["전체", ...depts].map((dept) => {
+            const active = (dept === "전체" && !deptFilter) || deptFilter === dept;
+            return (
             <button
               key={dept}
               type="button"
               onClick={() => setDeptFilter(dept === "전체" ? "" : dept)}
-              className={`rounded-full font-medium whitespace-nowrap transition-colors ${
-                mob ? "px-2 py-0.5 text-[10px]" : "px-4 py-2 text-sm"
-              } ${
-                (dept === "전체" && !deptFilter) || deptFilter === dept
-                  ? "bg-slate-800 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              className="font-semibold whitespace-nowrap transition-colors"
+              style={{
+                padding: mob ? "4px 10px" : "8px 14px",
+                borderRadius: 8,
+                fontSize: mob ? 10 : 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                boxSizing: "border-box",
+                background: active ? "#1B2A4A" : "#fff",
+                color: active ? "#fff" : "#555",
+                border: active ? "1px solid #1B2A4A" : "1px solid #e8ecf1",
+              }}
             >
               {dept}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 

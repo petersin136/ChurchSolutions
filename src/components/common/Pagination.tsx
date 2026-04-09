@@ -41,9 +41,9 @@ export function Pagination({
   const btnBase: React.CSSProperties = {
     padding: tight ? "4px 8px" : "8px 12px",
     borderRadius: 6,
-    border: "1px solid #d1d5db",
-    background: "white",
-    color: "#374151",
+    border: "1px solid #e8ecf1",
+    background: "#f5f6f8",
+    color: "#555",
     fontSize: tight ? (pinBottom ? 10 : 11) : 13,
     fontWeight: 500,
     cursor: "pointer",
@@ -77,7 +77,7 @@ export function Pagination({
   return (
     <div style={wrapStyle}>
       {!hideSummary && (
-        <div style={{ fontSize: summaryFs, color: "#6b7280", marginBottom: tight ? 6 : 8, textAlign: "center" }}>
+        <div style={{ fontSize: summaryFs, color: "#999", marginBottom: tight ? 6 : 8, textAlign: "center" }}>
           총 {totalItems}건 중 {totalItems === 0 ? 0 : start}-{end} 표시
         </div>
       )}
@@ -111,7 +111,7 @@ export function Pagination({
         {showLeadingEllipsis && (
           <>
             <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(1)}>1</button>
-            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
+            <span style={{ padding: "0 4px", color: "#999", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
           </>
         )}
         {visiblePages.map((p) => (
@@ -122,7 +122,7 @@ export function Pagination({
             style={{
               ...btnBase,
               flexShrink: 0,
-              ...(p === safePage ? { background: "#4F46E5", color: "white", borderColor: "#4F46E5" } : {}),
+              ...(p === safePage ? { background: "#1B2A4A", color: "#fff", borderColor: "#1B2A4A" } : {}),
             }}
           >
             {p}
@@ -130,7 +130,7 @@ export function Pagination({
         ))}
         {showTrailingEllipsis && (
           <>
-            <span style={{ padding: "0 4px", color: "#6b7280", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
+            <span style={{ padding: "0 4px", color: "#999", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
             <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
           </>
         )}

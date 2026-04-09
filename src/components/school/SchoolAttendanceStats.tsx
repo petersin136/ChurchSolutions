@@ -6,7 +6,10 @@ import type { SchoolDepartment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 
-const INDIGO = "#4F46E5";
+const NAVY = "#1B2A4A";
+const BORDER = "#e8ecf1";
+const MUTED = "#999";
+const TEXT = "#555";
 
 type DeptStats = { department_id: string; name: string; 출석: number; 결석: number; 병결: number; 기타: number; total: number; rate: number };
 
@@ -121,28 +124,32 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
     load();
   }, [period]);
 
-  if (loading && stats.length === 0) return <div className="p-6 text-gray-500">로딩 중...</div>;
+  if (loading && stats.length === 0) return <div style={{ padding: 24, fontSize: 12, color: MUTED }}>로딩 중...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold" style={{ color: INDIGO }}>출석 통계</h3>
-        <select value={period} onChange={(e) => setPeriod(e.target.value as "week" | "month")} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>출석 통계</h3>
+        <select
+          value={period}
+          onChange={(e) => setPeriod(e.target.value as "week" | "month")}
+          style={{ height: 32, fontSize: 12, borderRadius: 6, border: `1px solid ${BORDER}`, padding: "0 8px", color: TEXT, background: "#fff" }}
+        >
           <option value="week">최근 7일</option>
           <option value="month">이번 달</option>
         </select>
       </div>
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 16 }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {stats.map((s) => (
-            <div key={s.department_id} className="p-3 rounded-lg bg-gray-50">
-              <div className="font-medium text-gray-800">{s.name}</div>
-              <div className="text-sm text-gray-500">출석 {s.출석} / 총 {s.total}명 · 출석률 {s.rate}%</div>
-              <div className="text-xs text-gray-400 mt-1">결석 {s.결석} · 병결 {s.병결} · 기타 {s.기타}</div>
+            <div key={s.department_id} style={{ padding: 10, borderRadius: 8, border: `1px solid ${BORDER}`, background: "#fff" }}>
+              <div style={{ fontWeight: 700, fontSize: 12, color: NAVY }}>{s.name}</div>
+              <div style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>출석 {s.출석} / 총 {s.total}명 · 출석률 {s.rate}%</div>
+              <div style={{ fontSize: 9, color: MUTED, marginTop: 2 }}>결석 {s.결석} · 병결 {s.병결} · 기타 {s.기타}</div>
             </div>
           ))}
         </div>
-        {stats.length === 0 && !loading && <p className="text-gray-500 text-sm">해당 기간 출석 데이터가 없습니다.</p>}
+        {stats.length === 0 && !loading && <p style={{ fontSize: 11, color: MUTED }}>해당 기간 출석 데이터가 없습니다.</p>}
       </div>
     </div>
   );
