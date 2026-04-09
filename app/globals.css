@@ -157,6 +157,9 @@
     box-shadow: none !important;
     -webkit-tap-highlight-color: transparent;
   }
+  #page-finance .receipt-form-input::placeholder {
+    color: #999;
+  }
   #page-pastoral.page { max-width: 100%; padding: 0; margin: 0; }
   #page-planner.page { max-width: 100%; padding: 0; margin: 0; }
   /* 심방·상담: 앱 인라인 스타일과 동일 팔레트(#1B2A4A 등). 레거시 파란 버튼 클래스가 붙는 경우만 보정 */
@@ -175,6 +178,9 @@
   #page-school.page .btn-primary:hover { background: #152a45; }
   #page-school.page .btn-secondary { background: #f5f6f8; color: #555; border: 1px solid #e8ecf1; }
   #page-school.page .btn-ghost { color: #6b7b9e; }
+  #page-school .school-transfer-reason::placeholder {
+    color: #999;
+  }
   #page-settings.page { max-width: 100%; padding: 0; margin: 0; }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;

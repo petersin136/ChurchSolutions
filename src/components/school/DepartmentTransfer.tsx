@@ -22,6 +22,7 @@ export interface DepartmentTransferProps {
 const selectStyle: CSSProperties = {
   flex: 1,
   minWidth: 0,
+  width: "100%",
   height: 32,
   fontSize: 12,
   borderRadius: 6,
@@ -29,6 +30,7 @@ const selectStyle: CSSProperties = {
   padding: "0 8px",
   background: "#fff",
   color: TEXT,
+  boxSizing: "border-box",
 };
 
 const inputStyle: CSSProperties = {
@@ -38,8 +40,9 @@ const inputStyle: CSSProperties = {
   fontSize: 12,
   borderRadius: 6,
   border: `1px solid ${BORDER}`,
-  padding: "0 10px",
+  padding: "0 8px",
   color: TEXT,
+  boxSizing: "border-box",
 };
 
 export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
@@ -135,31 +138,33 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
 
   const getMember = (id: string) => db.members?.find((m) => m.id === id);
 
-  if (loading) return <div style={{ padding: 24, fontSize: 12, color: MUTED }}>로딩 중...</div>;
+  if (loading) return <div style={{ padding: 16, fontSize: 11, color: MUTED }}>로딩 중...</div>;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12 }}>
-        <h4 style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 700, color: NAVY }}>부서 이동</h4>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12, marginBottom: 0 }}>
+        <h4 style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: NAVY }}>부서 이동</h4>
 
-        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10, alignItems: "flex-end" }}>
-          <div style={{ flex: "1 1 140px", minWidth: 120 }}>
-            <div style={{ fontSize: 11, color: LABEL, marginBottom: 4 }}>현재 부서</div>
+        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 400, color: LABEL, marginBottom: 4 }}>현재 부서</div>
             <select
+              className="compact-select"
               value={fromDeptId ?? ""}
               onChange={(e) => { setFromDeptId(e.target.value || null); setSelectedIds(new Set()); }}
-              style={{ ...selectStyle, width: "100%" }}
+              style={selectStyle}
             >
               <option value="">선택</option>
               {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
-          <div style={{ flex: "1 1 140px", minWidth: 120 }}>
-            <div style={{ fontSize: 11, color: LABEL, marginBottom: 4 }}>새 부서</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 400, color: LABEL, marginBottom: 4 }}>새 부서</div>
             <select
+              className="compact-select"
               value={toDeptId ?? ""}
               onChange={(e) => setToDeptId(e.target.value || null)}
-              style={{ ...selectStyle, width: "100%" }}
+              style={selectStyle}
             >
               <option value="">선택</option>
               {departments.filter((d) => d.id !== fromDeptId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -167,9 +172,10 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6, alignItems: "center" }}>
           <input
             type="text"
+            className="school-transfer-reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="이동 사유"
@@ -181,7 +187,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
             disabled={selectedIds.size === 0 || !toDeptId}
             style={{
               height: 32,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: 600,
               padding: "0 16px",
               borderRadius: 6,
@@ -191,13 +197,14 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
               cursor: selectedIds.size === 0 || !toDeptId ? "not-allowed" : "pointer",
               opacity: selectedIds.size === 0 || !toDeptId ? 0.5 : 1,
               flexShrink: 0,
+              boxSizing: "border-box",
             }}
           >
             이동 실행
           </button>
         </div>
 
-        <div style={{ maxHeight: 192, overflowY: "auto", border: `1px solid ${BORDER}`, borderRadius: 6 }}>
+        <div style={{ maxHeight: 192, overflowY: "auto", border: `1px solid ${BORDER}`, borderRadius: 6, marginTop: 8 }}>
           {filtered.map((e) => (
             <label
               key={e.id}
@@ -205,7 +212,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "8px 10px",
+                padding: "6px 8px",
                 borderBottom: `1px solid ${ROW_LINE}`,
                 cursor: "pointer",
                 fontSize: 11,
@@ -219,27 +226,27 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflowX: "auto" }}>
-        <h4 style={{ margin: 0, padding: "12px 14px", fontSize: 13, fontWeight: 700, color: NAVY }}>이동 이력</h4>
-        <table className="w-full" style={{ borderCollapse: "collapse" }}>
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12, overflowX: "auto" }}>
+        <h4 style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: NAVY }}>이동 이력</h4>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>이동일</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>구 부서</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>신 부서</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>사유</th>
+            <tr style={{ background: "transparent" }}>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>이동일</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>구 부서</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>신 부서</th>
+              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>사유</th>
             </tr>
           </thead>
           <tbody>
             {history.length === 0 ? (
-              <tr><td colSpan={4} style={{ padding: 24, textAlign: "center", fontSize: 11, color: MUTED }}>이력이 없습니다.</td></tr>
+              <tr><td colSpan={4} style={{ padding: "24px 0", textAlign: "center", fontSize: 12, color: MUTED }}>이력이 없습니다.</td></tr>
             ) : (
-              history.map((h) => (
-                <tr key={h.id} style={{ borderBottom: `1px solid ${ROW_LINE}` }}>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{h.transfer_date}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{h.from_department_name ?? "-"}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{h.to_department_name ?? "-"}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{h.reason ?? "-"}</td>
+              history.map((h, i) => (
+                <tr key={h.id} style={{ borderBottom: `1px solid ${ROW_LINE}`, background: i % 2 === 1 ? "#fafbfc" : "#fff" }}>
+                  <td style={{ padding: 8, fontSize: 11, fontWeight: 400, color: TEXT }}>{h.transfer_date}</td>
+                  <td style={{ padding: 8, fontSize: 11, fontWeight: 400, color: TEXT }}>{h.from_department_name ?? "-"}</td>
+                  <td style={{ padding: 8, fontSize: 11, fontWeight: 400, color: TEXT }}>{h.to_department_name ?? "-"}</td>
+                  <td style={{ padding: 8, fontSize: 11, fontWeight: 400, color: TEXT }}>{h.reason ?? "-"}</td>
                 </tr>
               ))
             )}

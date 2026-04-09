@@ -34,12 +34,14 @@ const bvaTd = (isEven: boolean, align: "left" | "right" | "center"): CSSProperti
 
 function togglePill(selected: boolean): CSSProperties {
   return {
+    flex: 1,
+    minWidth: 0,
     height: 28,
     minHeight: 28,
     maxHeight: 28,
     lineHeight: "28px",
-    padding: "0 12px",
-    fontSize: 11,
+    padding: "0 4px",
+    fontSize: 10,
     fontWeight: 600,
     borderRadius: 6,
     border: selected ? "none" : `1px solid ${BORDER}`,
@@ -49,6 +51,10 @@ function togglePill(selected: boolean): CSSProperties {
     outline: "none",
     boxShadow: "none",
     fontFamily: "inherit",
+    textAlign: "center",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   };
 }
 
@@ -214,22 +220,24 @@ export function BudgetVsActual({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
-          연도
-          <input type="text" value={year} readOnly style={{ ...selStyle, width: 72, fontSize: 12, cursor: "default" }} />
-        </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
-          월
-          <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} style={{ ...selStyle, minWidth: 88 }}>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>
-                {m}월
-              </option>
-            ))}
-          </select>
-        </label>
-        <div style={{ display: "flex", gap: 4 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
+            연도
+            <input type="text" value={year} readOnly style={{ ...selStyle, width: 72, fontSize: 12, cursor: "default" }} />
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
+            월
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} style={{ ...selStyle, minWidth: 88 }}>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>
+                  {m}월
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div style={{ display: "flex", gap: 4, width: "100%", alignItems: "stretch" }}>
           <button type="button" className="finance-nav-btn" onClick={() => setViewMode("monthly")} style={togglePill(viewMode === "monthly")}>
             월별
           </button>
