@@ -264,6 +264,35 @@ function visitToPayload(v: Visit): Record<string, unknown> {
   };
 }
 
+/** Supabase counsels 행 → Counsel (camelCase) */
+function mapCounselRow(row: Record<string, unknown>): Counsel {
+  return {
+    id: String(row.id ?? ""),
+    memberId: String(row.member_id ?? row.memberId ?? ""),
+    type: (row.type as CounselType) ?? "other",
+    date: String(row.date ?? ""),
+    summary: String(row.summary ?? ""),
+    confidential: Boolean(row.confidential),
+    followUpDate: String(row.follow_up_date ?? row.followUpDate ?? ""),
+    followUpNote: String(row.follow_up_note ?? row.followUpNote ?? ""),
+    followUpDone: Boolean(row.follow_up_done ?? row.followUpDone),
+  };
+}
+
+/** Counsel → Supabase insert/update 본문 (id·church_id 제외) */
+function counselToPayload(c: Counsel): Record<string, unknown> {
+  return {
+    member_id: c.memberId,
+    type: c.type,
+    date: c.date,
+    summary: c.summary ?? "",
+    confidential: c.confidential,
+    follow_up_date: c.followUpDate || null,
+    follow_up_note: c.followUpNote || null,
+    follow_up_done: c.followUpDone,
+  };
+}
+
 /* ---------- DB Load / Save ---------- */
 const VC_KEY = "visit_counsel_db";
 function loadVC(): VCDB {
@@ -1962,7 +1991,6 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   const [activeSub, setActiveSub] = useState<SubPage>("dash");
   const [visitsLoading, setVisitsLoading] = useState(false);
   const [visitSaving, setVisitSaving] = useState(false);
-
   const [toasts, setToasts] = useState<{ id: number; msg: string }[]>([]);
 
   useEffect(() => {
@@ -1996,9 +2024,26 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
     setVisitsLoading(false);
   }, []);
 
+  /* Supabase: 상담(counsels) 목록 로드 — 사용 가능 시 primary */
+  const loadCounsels = useCallback(async () => {
+    if (!supabase) return;
+    const { data, error } = await filterByChurch(supabase.from("counsels").select("*")).order("date", { ascending: false });
+    if (error) {
+      console.error(error);
+      setToasts(prev => [...prev.slice(-2), { id: Date.now(), msg: "상담 로드 실패: " + error.message }]);
+      setTimeout(() => setToasts(t => t.slice(0, -1)), 2500);
+    } else {
+      setDb(prev => ({ ...prev, counsels: (data ?? []).map((row) => mapCounselRow(row as Record<string, unknown>)) }));
+    }
+  }, []);
+
   useEffect(() => {
     if (supabase) loadVisits();
   }, [loadVisits]);
+
+  useEffect(() => {
+    if (supabase) loadCounsels();
+  }, [loadCounsels]);
 
   /* Modals */
   const [showVisitModal, setShowVisitModal] = useState(false);
@@ -2171,20 +2216,74 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
     setShowCounselModal(true);
   }, [db.counsels]);
 
-  const saveCounsel = () => {
+  const saveCounsel = async () => {
     if (!cMember) { toast("성도를 선택하세요"); return; }
-    const data: Counsel = { id: editCounselId || uid(), memberId: cMember, type: cType, date: cDate, summary: cSummary, confidential: cConf, followUpDate: cFUDate, followUpNote: cFUNote, followUpDone: cFUDone };
-    setDb(prev => {
-      if (editCounselId) return { ...prev, counsels: prev.counsels.map(c => c.id === editCounselId ? data : c) };
-      return { ...prev, counsels: [...prev.counsels, data] };
-    });
-    persist(); setShowCounselModal(false); toast(editCounselId ? "상담이 수정되었습니다" : "상담이 등록되었습니다");
+    const newId = editCounselId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : uid());
+    const data: Counsel = {
+      id: newId,
+      memberId: cMember,
+      type: cType,
+      date: cDate,
+      summary: cSummary,
+      confidential: cConf,
+      followUpDate: cFUDate,
+      followUpNote: cFUNote,
+      followUpDone: cFUDone,
+    };
+
+    if (supabase) {
+      try {
+        const churchId = getChurchId();
+        const payload = counselToPayload(data);
+        if (editCounselId) {
+          const { error } = await supabase.from("counsels").update(payload).eq("church_id", churchId).eq("id", editCounselId);
+          if (error) {
+            toast("저장 실패: " + error.message);
+            return;
+          }
+        } else {
+          const { error } = await supabase.from("counsels").insert({ ...payload, church_id: churchId });
+          if (error) {
+            toast("저장 실패: " + error.message);
+            return;
+          }
+        }
+        await loadCounsels();
+      } catch (e: unknown) {
+        toast("저장 실패: " + (e instanceof Error ? e.message : String(e)));
+        return;
+      }
+    } else {
+      setDb(prev => {
+        if (editCounselId) return { ...prev, counsels: prev.counsels.map(c => c.id === editCounselId ? data : c) };
+        return { ...prev, counsels: [...prev.counsels, data] };
+      });
+    }
+
+    setShowCounselModal(false);
+    toast(editCounselId ? "상담이 수정되었습니다" : "상담이 등록되었습니다");
   };
 
-  const delCounsel = (id: string) => {
+  const delCounsel = async (id: string) => {
     if (typeof window !== "undefined" && !window.confirm("삭제하시겠습니까?")) return;
-    setDb(prev => ({ ...prev, counsels: prev.counsels.filter(c => c.id !== id) }));
-    persist(); setShowCounselModal(false); toast("삭제되었습니다");
+    if (supabase) {
+      try {
+        const churchId = getChurchId();
+        const { error } = await supabase.from("counsels").delete().eq("church_id", churchId).eq("id", id);
+        if (error) {
+          toast("삭제 실패: " + error.message);
+          return;
+        }
+        await loadCounsels();
+      } catch (e: unknown) {
+        toast("삭제 실패: " + (e instanceof Error ? e.message : String(e)));
+        return;
+      }
+    } else {
+      setDb(prev => ({ ...prev, counsels: prev.counsels.filter(c => c.id !== id) }));
+    }
+    setShowCounselModal(false);
+    toast("삭제되었습니다");
   };
 
   /* Member detail modal */

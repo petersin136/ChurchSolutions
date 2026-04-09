@@ -503,6 +503,28 @@
   textarea {
     font-size: 16px !important;
   }
+  /* 교회학교 부서 이동: 전역 16px/min-height input 규칙보다 우선 (모바일 컴팩트 폼) */
+  #page-school .school-dept-transfer-control {
+    font-size: 12px !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    max-height: 32px !important;
+    padding: 0 8px !important;
+    box-sizing: border-box !important;
+    line-height: 1.2 !important;
+    -webkit-text-size-adjust: 100% !important;
+  }
+  #page-school button.school-dept-transfer-btn {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    max-height: 32px !important;
+    padding: 0 14px !important;
+    box-sizing: border-box !important;
+    line-height: 1.2 !important;
+    -webkit-text-size-adjust: 100% !important;
+  }
   .tab-bar {
     overflow-x: auto;
     overflow-y: hidden;
@@ -773,6 +795,17 @@
     -webkit-appearance: menulist-button !important;
     background-image: none !important;
     background-color: #fff !important;
+  }
+  /* ≤768px에서도 부서 이동 select가 40px 규칙에 잡히지 않도록 이중 고정 */
+  #page-school select.school-dept-transfer-control.compact-select {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    font-size: 12px !important;
+    padding: 0 8px !important;
+    line-height: 1.2 !important;
+    box-sizing: border-box !important;
+    -webkit-text-size-adjust: 100% !important;
   }
   /* 목양 기도/메모 탭: 타입 선택 — 전역 select 규칙보다 우선 */
   select.pastoral-notes-type-select.select-modern {

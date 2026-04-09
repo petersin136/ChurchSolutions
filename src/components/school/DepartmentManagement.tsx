@@ -23,6 +23,7 @@ export interface DepartmentManagementProps {
 export function DepartmentManagement({ db: _db, toast }: DepartmentManagementProps) {
   const [departments, setDepartments] = useState<SchoolDepartment[]>([]);
   const [deptCounts, setDeptCounts] = useState<DeptCounts>({});
+  const [classCounts, setClassCounts] = useState<Record<string, number>>({});
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,19 +70,33 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
 
       const { data: enrollmentsData } = await supabase
         .from("school_enrollments")
-        .select("member_id, department_id, role")
-        .eq("is_active", true)
-        .in("role", ["학생", "교사", "부교사"]);
-      const enrollments = (enrollmentsData ?? []) as { member_id: string; department_id: string; role: string }[];
+        .select("member_id, department_id, class_id, role")
+        .eq("is_active", true);
+      const enrollments = (enrollmentsData ?? []) as {
+        member_id: string;
+        department_id: string;
+        class_id: string | null;
+        role: string;
+      }[];
       const counts: DeptCounts = {};
       activeDepts.forEach((d) => {
         const deptEnrollments = enrollments.filter((e) => e.department_id === d.id);
         counts[d.id] = {
-          teachers: deptEnrollments.filter((e) => e.role === "교사" || e.role === "부교사").length,
+          teachers: deptEnrollments.filter((e) =>
+            e.role === "교사" || e.role === "부교사" || e.role === "부장" || e.role === "총무",
+          ).length,
           students: deptEnrollments.filter((e) => e.role === "학생").length,
         };
       });
       setDeptCounts(counts);
+
+      const cCounts: Record<string, number> = {};
+      enrollments.forEach((e) => {
+        if (e.class_id && e.role === "학생") {
+          cCounts[e.class_id] = (cCounts[e.class_id] || 0) + 1;
+        }
+      });
+      setClassCounts(cCounts);
 
       // 반 목록: RLS만 사용 (부서 관리와 동일 패턴)
       const { data: cls, error: clsError } = await supabase
@@ -328,7 +343,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                   {deptClasses.map((c) => (
                     <li key={c.id} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "10px 0", borderBottom: `1px solid ${ROW_LINE}` }}>
                       <span style={{ fontSize: 11, color: TEXT }}>{c.name}</span>
-                      <span style={{ fontSize: 10, color: MUTED }}>{c.teacher_name ?? "-"} · {c.current_students}명</span>
+                      <span style={{ fontSize: 10, color: MUTED }}>{c.teacher_name ?? "-"} · {classCounts[c.id] ?? 0}명</span>
                       <span style={{ display: "flex", gap: 8 }}>
                         <button
                           type="button"

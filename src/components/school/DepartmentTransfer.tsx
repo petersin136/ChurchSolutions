@@ -95,22 +95,42 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
     const toDept = departments.find((d) => d.id === toDeptId);
     const fromDept = fromDeptId ? departments.find((d) => d.id === fromDeptId) : null;
     const transferDate = new Date().toISOString().slice(0, 10);
+    let churchId: string;
+    try {
+      churchId = getChurchId();
+    } catch {
+      toast("church_id를 확인할 수 없습니다.", "err");
+      return;
+    }
     try {
       for (const enrollId of selectedIds) {
         const en = enrollments.find((e) => e.id === enrollId);
         if (!en) continue;
-        let churchId: string;
-        try {
-          churchId = getChurchId();
-        } catch (err) {
-          toast("church_id를 확인할 수 없습니다. 로그인 상태를 확인하세요.", "err");
+
+        const { error: deactivateErr } = await supabase
+          .from("school_enrollments")
+          .update({ is_active: false, left_date: transferDate })
+          .eq("church_id", churchId)
+          .eq("id", enrollId);
+        if (deactivateErr) {
+          toast("기존 등록 비활성화 실패: " + deactivateErr.message, "err");
           return;
         }
-        const { error: updErr } = await supabase.from("school_enrollments").update({ department_id: toDeptId, class_id: null }).eq("church_id", churchId).eq("id", enrollId);
-        if (updErr) {
-          toast("이동 실패: " + updErr.message, "err");
+
+        const { error: newEnrollErr } = await supabase.from("school_enrollments").insert({
+          member_id: en.member_id,
+          department_id: toDeptId,
+          class_id: null,
+          role: en.role,
+          enrolled_date: transferDate,
+          is_active: true,
+          church_id: churchId,
+        });
+        if (newEnrollErr) {
+          toast("새 부서 등록 실패: " + newEnrollErr.message, "err");
           return;
         }
+
         const { error: insErr } = await supabase.from("school_transfer_history").insert({
           member_id: en.member_id,
           from_department_id: fromDeptId ?? null,
@@ -149,7 +169,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 10, fontWeight: 400, color: LABEL, marginBottom: 4 }}>현재 부서</div>
             <select
-              className="compact-select"
+              className="compact-select school-dept-transfer-control"
               value={fromDeptId ?? ""}
               onChange={(e) => { setFromDeptId(e.target.value || null); setSelectedIds(new Set()); }}
               style={selectStyle}
@@ -161,7 +181,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 10, fontWeight: 400, color: LABEL, marginBottom: 4 }}>새 부서</div>
             <select
-              className="compact-select"
+              className="compact-select school-dept-transfer-control"
               value={toDeptId ?? ""}
               onChange={(e) => setToDeptId(e.target.value || null)}
               style={selectStyle}
@@ -175,7 +195,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
         <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6, alignItems: "center" }}>
           <input
             type="text"
-            className="school-transfer-reason"
+            className="school-transfer-reason school-dept-transfer-control"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="이동 사유"
@@ -183,6 +203,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
           />
           <button
             type="button"
+            className="school-dept-transfer-btn"
             onClick={handleTransfer}
             disabled={selectedIds.size === 0 || !toDeptId}
             style={{
