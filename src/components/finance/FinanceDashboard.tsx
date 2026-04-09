@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type CSSProperties } from "react";
+import { useState, useEffect, useMemo, type CSSProperties } from "react";
 import {
   LineChart,
   Line,
@@ -19,6 +19,17 @@ const BORDER = "#e8ecf1";
 const LABEL_SUB = "#6b7b9e";
 const LABEL_SMALL = "#999";
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
+
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
 
 interface OfferingLike { date: string; amount: number; categoryId?: string; type?: string; }
 interface ExpenseLike { date: string; amount: number; categoryId?: string; category?: string; }
@@ -41,6 +52,7 @@ export function FinanceDashboard({
   expenses,
   budgetByMonth,
 }: FinanceDashboardProps) {
+  const mob = useIsMobile();
   const thisYear = new Date().getFullYear().toString();
   const thisMonth = new Date().getMonth() + 1;
   const lastMonth = thisMonth === 1 ? 12 : thisMonth - 1;
@@ -81,46 +93,48 @@ export function FinanceDashboard({
   }, [offerings, expenses, thisYear]);
 
   const cardBase: CSSProperties = {
-    padding: "8px 10px",
-    minHeight: 56,
+    padding: mob ? "8px 10px" : "16px 20px",
+    minHeight: mob ? 56 : 90,
     background: "#fff",
     border: `1px solid ${BORDER}`,
-    borderRadius: 8,
+    borderRadius: mob ? 8 : 16,
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
+    position: "relative",
+    overflow: "hidden",
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: mob ? 8 : 16 }}>
         <div style={cardBase}>
-          <div style={{ fontSize: 10, color: LABEL_SUB, fontWeight: 500 }}>이번 달 총 수입</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>₩{fmt(monthIncome)}</div>
-          <div style={{ fontSize: 9, color: LABEL_SMALL, marginTop: 2 }}>
+          <div style={{ fontSize: mob ? 10 : 13, color: LABEL_SUB, fontWeight: 500 }}>이번 달 총 수입</div>
+          <div style={{ fontSize: mob ? 18 : 26, fontWeight: mob ? 800 : 700, color: NAVY, lineHeight: 1.2 }}>₩{fmt(monthIncome)}</div>
+          <div style={{ fontSize: mob ? 9 : 12, color: LABEL_SMALL, marginTop: 2 }}>
             {incomeChange >= 0 ? "▲" : "▼"} 전월 대비 {Math.abs(incomeChange)}%
           </div>
         </div>
         <div style={cardBase}>
-          <div style={{ fontSize: 10, color: LABEL_SUB, fontWeight: 500 }}>이번 달 총 지출</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>₩{fmt(monthExpense)}</div>
-          <div style={{ fontSize: 9, color: LABEL_SMALL, marginTop: 2 }}>
+          <div style={{ fontSize: mob ? 10 : 13, color: LABEL_SUB, fontWeight: 500 }}>이번 달 총 지출</div>
+          <div style={{ fontSize: mob ? 18 : 26, fontWeight: mob ? 800 : 700, color: NAVY, lineHeight: 1.2 }}>₩{fmt(monthExpense)}</div>
+          <div style={{ fontSize: mob ? 9 : 12, color: LABEL_SMALL, marginTop: 2 }}>
             {expenseChange >= 0 ? "▲" : "▼"} 전월 대비 {Math.abs(expenseChange)}%
           </div>
         </div>
-        <div style={{ ...cardBase, minHeight: 52 }}>
-          <div style={{ fontSize: 10, color: LABEL_SUB, fontWeight: 500 }}>이번 달 순수익</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>₩{fmt(netProfit)}</div>
+        <div style={{ ...cardBase, minHeight: mob ? 52 : 90 }}>
+          <div style={{ fontSize: mob ? 10 : 13, color: LABEL_SUB, fontWeight: 500 }}>이번 달 순수익</div>
+          <div style={{ fontSize: mob ? 16 : 22, fontWeight: mob ? 800 : 700, color: NAVY, lineHeight: 1.2 }}>₩{fmt(netProfit)}</div>
         </div>
-        <div style={{ ...cardBase, minHeight: 52 }}>
-          <div style={{ fontSize: 10, color: LABEL_SUB, fontWeight: 500 }}>예산 집행률</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>{executionRate}%</div>
-          <div style={{ fontSize: 9, color: LABEL_SMALL, marginTop: 2 }}>이번 달 지출 / 예산</div>
+        <div style={{ ...cardBase, minHeight: mob ? 52 : 90 }}>
+          <div style={{ fontSize: mob ? 10 : 13, color: LABEL_SUB, fontWeight: 500 }}>예산 집행률</div>
+          <div style={{ fontSize: mob ? 16 : 22, fontWeight: mob ? 800 : 700, color: NAVY, lineHeight: 1.2 }}>{executionRate}%</div>
+          <div style={{ fontSize: mob ? 9 : 12, color: LABEL_SMALL, marginTop: 2 }}>이번 달 지출 / 예산</div>
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12 }}>
-        <h4 style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 700, color: NAVY }}>월별 수입/지출 추이</h4>
+      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 24 }}>
+        <h4 style={{ margin: mob ? "0 0 10px" : "0 0 16px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>월별 수입/지출 추이</h4>
         <LazyChart height={260}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={monthlyTrend} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>

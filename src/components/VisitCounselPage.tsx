@@ -315,7 +315,7 @@ function Card({ children, style, onClick }: { children: ReactNode; style?: CSSPr
       onClick={onClick}
       style={{
         background: C.card,
-        borderRadius: mob ? 8 : 12,
+        borderRadius: mob ? 8 : 16,
         border: `1px solid ${C.border}`,
         overflow: "hidden",
         transition: "all 0.2s",
@@ -394,8 +394,8 @@ function StatCard({
   return (
     <div
       style={{
-        padding: compact ? "6px 8px" : mob ? "8px 10px" : "12px 14px",
-        minHeight: compact ? 48 : mob ? 56 : undefined,
+        padding: compact ? "6px 8px" : mob ? "8px 10px" : "16px 20px",
+        minHeight: compact ? 48 : mob ? 56 : 90,
         backgroundColor: "#fff",
         borderRadius: 8,
         border: "1px solid #e8ecf1",
@@ -403,9 +403,9 @@ function StatCard({
         transition: "all 0.2s",
       }}
     >
-      <p style={{ fontSize: compact ? 9 : 10, color: "#6b7b9e", margin: "0 0 4px" }}>{label}</p>
-      <p style={{ fontSize: compact ? 16 : mob ? 20 : 24, fontWeight: 800, color: "#1B2A4A", lineHeight: 1.1, margin: 0 }}>{value}</p>
-      {sub && <p style={{ fontSize: compact ? 8 : 9, color: "#999", margin: "6px 0 0" }}>{sub}</p>}
+      <p style={{ fontSize: compact ? 9 : mob ? 10 : 13, color: "#6b7b9e", margin: "0 0 4px" }}>{label}</p>
+      <p style={{ fontSize: compact ? 16 : mob ? 20 : 26, fontWeight: mob ? 800 : 700, color: "#1B2A4A", lineHeight: 1.1, margin: 0 }}>{value}</p>
+      {sub && <p style={{ fontSize: compact ? 8 : mob ? 9 : 12, color: "#999", margin: "6px 0 0" }}>{sub}</p>}
     </div>
   );
 }

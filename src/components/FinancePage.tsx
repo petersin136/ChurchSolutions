@@ -392,30 +392,49 @@ const FINANCE_SUB_TABS_BY_CATEGORY: Record<FinanceCategoryId, { id: string; labe
 };
 
 function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; onLeafChange: (id: string) => void }) {
+  const mob = useIsMobile();
   const category = LEAF_TO_FINANCE_CATEGORY[activeTab] ?? "fin_income";
   return (
     <div style={{ width: "100%", maxWidth: "100%" }}>
-      <div style={{ marginBottom: 4 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, width: "100%" }}>
+      <div style={{ marginBottom: mob ? 4 : 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: mob ? 4 : 8, width: "100%" }}>
           {FINANCE_CATEGORY_GRID[0].map((c) => (
-            <button key={c.id} type="button" className="finance-nav-btn" style={financeCategoryGridBtnStyle(category === c.id)} onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}>
+            <button
+              key={c.id}
+              type="button"
+              className="finance-nav-btn"
+              style={mob ? financeCategoryGridBtnStyle(category === c.id) : { ...financeCategoryGridBtnStyle(category === c.id), height: 40, fontSize: 14, borderRadius: 8 }}
+              onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}
+            >
               {c.label}
             </button>
           ))}
         </div>
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, width: "100%" }}>
+      <div style={{ marginBottom: mob ? 8 : 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: mob ? 4 : 8, width: "100%" }}>
           {FINANCE_CATEGORY_GRID[1].map((c) => (
-            <button key={c.id} type="button" className="finance-nav-btn" style={financeCategoryGridBtnStyle(category === c.id)} onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}>
+            <button
+              key={c.id}
+              type="button"
+              className="finance-nav-btn"
+              style={mob ? financeCategoryGridBtnStyle(category === c.id) : { ...financeCategoryGridBtnStyle(category === c.id), height: 40, fontSize: 14, borderRadius: 8 }}
+              onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}
+            >
               {c.label}
             </button>
           ))}
         </div>
       </div>
-      <div className="finance-sub-pills" style={financeSubTabRowStyle}>
+      <div className="finance-sub-pills" style={{ ...financeSubTabRowStyle, gap: mob ? 4 : 8, marginBottom: mob ? 10 : 16 }}>
         {FINANCE_SUB_TABS_BY_CATEGORY[category].map((t) => (
-          <button key={t.id} type="button" className="finance-nav-btn" style={financeSubTabStyle(activeTab === t.id)} onClick={() => onLeafChange(t.id)}>
+          <button
+            key={t.id}
+            type="button"
+            className="finance-nav-btn"
+            style={mob ? financeSubTabStyle(activeTab === t.id) : { ...financeSubTabStyle(activeTab === t.id), height: 36, fontSize: 13, borderRadius: 8, lineHeight: "36px", minHeight: 36, maxHeight: 36 }}
+            onClick={() => onLeafChange(t.id)}
+          >
             {t.label}
           </button>
         ))}
@@ -426,10 +445,11 @@ function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; on
 
 /* ---------- 공통 컴포넌트 ---------- */
 function Card({ children, style, onClick }: { children: ReactNode; style?: CSSProperties; onClick?: () => void }) {
+  const mob = useIsMobile();
   return (
     <div onClick={onClick} style={{
-      background: C.card, borderRadius: 8, border: `1px solid ${C.border}`,
-      padding: 24, transition: "all 0.2s ease", cursor: onClick ? "pointer" : "default", ...style,
+      background: C.card, borderRadius: mob ? 8 : 16, border: `1px solid ${C.border}`,
+      padding: mob ? "10px 12px" : 24, transition: "all 0.2s ease", cursor: onClick ? "pointer" : "default", ...style,
     }}>{children}</div>
   );
 }
@@ -534,20 +554,32 @@ function Modal({ open, onClose, title, children, width = 520 }: {
   );
 }
 
-function StatCard({ label, value, sub, trend }: {
+function StatCard({ label, value, sub, trend, color = C.accent }: {
   label: string; value: string; sub?: string; icon?: ReactNode; color?: string; trend?: string;
 }) {
+  const mob = useIsMobile();
   return (
-    <Card style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px" }}>
-      <div style={{ fontSize: 10, color: "#6b7b9e", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>{value}</div>
-      {sub && (
-        <div style={{ fontSize: 9, color: "#999", display: "flex", alignItems: "center", gap: 4 }}>
-          {trend === "up" && <Icons.TrendUp />}
-          {trend === "down" && <Icons.TrendDown />}
-          {sub}
-        </div>
-      )}
+    <Card style={{
+      display: "flex", flexDirection: "column", gap: mob ? 4 : 6,
+      padding: mob ? "10px 12px" : "16px 20px",
+      position: "relative", overflow: "hidden",
+    }}>
+      <div style={{
+        position: "absolute", top: mob ? -8 : -10, right: mob ? -8 : -10,
+        width: mob ? 28 : 60, height: mob ? 28 : 60, borderRadius: "50%",
+        background: `${color}15`,
+      }} />
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: mob ? 4 : 6 }}>
+        <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", fontWeight: 500 }}>{label}</div>
+        <div style={{ fontSize: mob ? 18 : 26, fontWeight: mob ? 800 : 700, color: "#1B2A4A", letterSpacing: "-0.02em" }}>{value}</div>
+        {sub && (
+          <div style={{ fontSize: mob ? 9 : 12, color: "#999", display: "flex", alignItems: "center", gap: 4 }}>
+            {trend === "up" && <Icons.TrendUp />}
+            {trend === "down" && <Icons.TrendDown />}
+            {sub}
+          </div>
+        )}
+      </div>
     </Card>
   );
 }
@@ -636,7 +668,7 @@ function DashboardTab({ offerings, expenses, categories, departments }: {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fit, minmax(220px, 1fr))", gap: mob ? 8 : 16 }}>
         <StatCard label="총 헌금액" value={`₩${fmt(totalOffering)}`} sub="2025년 누계" color={C.accent} />
         <StatCard label="총 지출액" value={`₩${fmt(totalExpense)}`} sub="2025년 누계" color={C.danger} />
         <StatCard label="잔액 (수입-지출)" value={`₩${fmt(balance)}`}

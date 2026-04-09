@@ -24,15 +24,15 @@ function useIsMobile(bp = 768) {
 }
 
 const C = {
-  navy: "#1a1f36", navyLight: "#252b48", navyHover: "#2d3460",
-  bg: "#f9fafb", card: "#fff", border: "#e5e7eb", borderLight: "#f3f4f6",
-  text: "#1f2937", textMuted: "#6b7280", textFaint: "#9ca3af",
-  blue: "#3b82f6", blueBg: "#dbeafe", blueDark: "#1d4ed8",
-  accent: "#3b82f6", accentLight: "#dbeafe", accentBg: "#dbeafe",
-  purple: "#8b5cf6", purpleBg: "#ede9fe", green: "#10b981", greenBg: "#d1fae5",
-  yellow: "#f59e0b", yellowBg: "#fef3c7", red: "#ef4444", redBg: "#fee2e2",
-  orange: "#f97316", orangeBg: "#ffedd5", pink: "#ec4899", pinkBg: "#fce7f3",
-  teal: "#14b8a6", tealBg: "#ccfbf1", indigo: "#6366f1", indigoBg: "#e0e7ff",
+  navy: "#1B2A4A", navyLight: "#2d4373", navyHover: "#152a45",
+  bg: "#f8f7f4", card: "#fff", border: "#e8e6e1", borderLight: "#f0efe9",
+  text: "#555", textMuted: "#6b7b9e", textFaint: "#999",
+  blue: "#1B2A4A", blueBg: "#f0f2f5", blueDark: "#1B2A4A",
+  accent: "#1B2A4A", accentLight: "#f0f2f5", accentBg: "#f0f2f5",
+  purple: "#1B2A4A", purpleBg: "#f0f2f5", green: "#1B2A4A", greenBg: "#f0f2f5",
+  yellow: "#555", yellowBg: "#f5f6f8", red: "#555", redBg: "#f0f2f5",
+  orange: "#1B2A4A", orangeBg: "#f0f2f5", pink: "#1B2A4A", pinkBg: "#f0f2f5",
+  teal: "#1B2A4A", tealBg: "#f0f2f5", indigo: "#1B2A4A", indigoBg: "#f0f2f5",
 };
 
 const TODAY = new Date();
@@ -430,7 +430,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style }: { c
     secondary: { background: C.borderLight, color: C.text, border: `1px solid ${C.border}` },
     ghost: { background: "transparent", color: C.textMuted },
     danger: { background: C.red, color: "#fff" },
-    accent: { background: C.orange, color: "#fff" },
+    accent: { background: "#1B2A4A", color: "#fff" },
   };
   return <button onClick={onClick} style={{ ...base, ...sizes[size], ...variants[variant], ...style }}>{children}</button>;
 }

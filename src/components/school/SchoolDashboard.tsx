@@ -129,16 +129,16 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
           background: BG,
           borderRadius: mob ? 8 : 8,
           border: `1px solid ${BORDER}`,
-          padding: "8px 10px",
-          minHeight: 56,
+          padding: mob ? "8px 10px" : "16px 20px",
+          minHeight: mob ? 56 : 90,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
         }}
       >
-        <div style={{ fontSize: 10, color: SUB, fontWeight: 500 }}>{label}</div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: NAVY, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{value}</div>
-        {sub != null && sub !== "" && <div style={{ fontSize: 9, color: MUTED, marginTop: 2 }}>{sub}</div>}
+        <div style={{ fontSize: mob ? 10 : 13, color: SUB, fontWeight: 500 }}>{label}</div>
+        <div style={{ fontSize: mob ? 20 : 26, fontWeight: mob ? 800 : 700, color: NAVY, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{value}</div>
+        {sub != null && sub !== "" && <div style={{ fontSize: mob ? 9 : 12, color: MUTED, marginTop: 2 }}>{sub}</div>}
       </div>
     );
   }
@@ -152,8 +152,8 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: mob ? 8 : 12,
+          gridTemplateColumns: mob ? "1fr 1fr" : "repeat(4, 1fr)",
+          gap: mob ? 8 : 16,
         }}
       >
         <StatCard label="전체 등록 학생" value={`${totalStudents}명`} sub="교회학교 등록" />
@@ -162,13 +162,13 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
         <StatCard label="이번 달 신규 등록" value={`${newThisMonth}명`} sub="신규 등록" />
       </div>
 
-      <div style={{ background: BG, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
-        <div style={{ padding: "12px 14px", borderBottom: `1px solid ${BORDER}` }}>
+      <div style={{ background: BG, borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <div style={{ padding: mob ? "12px 14px" : "16px 20px", borderBottom: `1px solid ${BORDER}` }}>
           <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>부서별 현황</h4>
         </div>
         <div
           style={{
-            padding: "12px 14px",
+            padding: mob ? "12px 14px" : "16px 20px",
             display: "grid",
             gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill, minmax(220px, 1fr))",
             gap: 10,
@@ -184,17 +184,17 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
                 key={d.id}
                 style={{
                   background: BG,
-                  borderRadius: 8,
+                  borderRadius: mob ? 8 : 16,
                   border: `1px solid ${BORDER}`,
                   borderLeft: `3px solid ${NAVY}`,
-                  padding: "10px 12px",
+                  padding: mob ? "10px 12px" : "16px 20px",
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 700, color: NAVY }}>{d.name}</div>
-                <div style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>
+                <div style={{ fontSize: mob ? 12 : 15, fontWeight: 700, color: NAVY }}>{d.name}</div>
+                <div style={{ fontSize: mob ? 10 : 13, color: MUTED, marginTop: 4 }}>
                   교사 {deptCounts[d.id]?.teachers ?? 0} · 학생 {deptCounts[d.id]?.students ?? 0}
                 </div>
-                <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>이번 주 출석률 —</div>
+                <div style={{ fontSize: mob ? 10 : 13, color: MUTED, marginTop: 2 }}>이번 주 출석률 —</div>
               </div>
             ))
           )}
