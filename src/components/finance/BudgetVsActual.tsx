@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, type CSSProperties } from "react";
 import { supabase } from "@/lib/supabase";
 import { filterByChurch } from "@/lib/tenant";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -9,8 +9,48 @@ import { useAppData } from "@/contexts/AppDataContext";
 import LazyChart from "../common/LazyChart";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
-const NAVY = "#1e3a5f";
-const CORAL = "#e74c3c";
+const NAVY = "#1B2A4A";
+const BORDER = "#e8ecf1";
+const ROW_LINE = "#f0f2f5";
+
+const bvaTh = (align: "left" | "right" | "center"): CSSProperties => ({
+  fontSize: 10,
+  fontWeight: 700,
+  color: NAVY,
+  padding: "6px 8px",
+  borderBottom: `2px solid ${NAVY}`,
+  background: "#fff",
+  textAlign: align,
+});
+
+const bvaTd = (isEven: boolean, align: "left" | "right" | "center"): CSSProperties => ({
+  fontSize: 11,
+  color: "#555",
+  padding: "8px",
+  borderBottom: `1px solid ${ROW_LINE}`,
+  background: isEven ? "#fafbfc" : "#fff",
+  textAlign: align,
+});
+
+function togglePill(selected: boolean): CSSProperties {
+  return {
+    height: 28,
+    minHeight: 28,
+    maxHeight: 28,
+    lineHeight: "28px",
+    padding: "0 12px",
+    fontSize: 11,
+    fontWeight: 600,
+    borderRadius: 6,
+    border: selected ? "none" : `1px solid ${BORDER}`,
+    background: selected ? NAVY : "#f5f6f8",
+    color: selected ? "#fff" : "#555",
+    cursor: "pointer",
+    outline: "none",
+    boxShadow: "none",
+    fontFamily: "inherit",
+  };
+}
 
 export interface BudgetVsActualProps {
   year: string;
@@ -34,13 +74,13 @@ export function BudgetVsActual({
   const incomes = useMemo(() => {
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year}-12-31`;
-    return db.income.filter(i => i.date >= yearStart && i.date <= yearEnd);
+    return db.income.filter((i) => i.date >= yearStart && i.date <= yearEnd);
   }, [db.income, year]);
 
   const expenses = useMemo(() => {
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year}-12-31`;
-    return db.expense.filter(e => e.date >= yearStart && e.date <= yearEnd);
+    return db.expense.filter((e) => e.date >= yearStart && e.date <= yearEnd);
   }, [db.expense, year]);
 
   const loadBudget = useCallback(async () => {
@@ -110,90 +150,124 @@ export function BudgetVsActual({
   );
 
   const incomeRows = useMemo(() => {
-    return incomeCats.map((name) => {
-      const bud = incomeBudget[name] ?? 0;
-      const act = incomeActual[name] ?? 0;
-      const diff = act - bud;
-      const pct = bud > 0 ? Math.round((act / bud) * 100) : 0;
-      return { name, 예산: bud, 실적: act, 차이: diff, 달성률: pct };
-    }).filter((r) => r.예산 > 0 || r.실적 > 0);
+    return incomeCats
+      .map((name) => {
+        const bud = incomeBudget[name] ?? 0;
+        const act = incomeActual[name] ?? 0;
+        const diff = act - bud;
+        const pct = bud > 0 ? Math.round((act / bud) * 100) : 0;
+        return { name, 예산: bud, 실적: act, 차이: diff, 달성률: pct };
+      })
+      .filter((r) => r.예산 > 0 || r.실적 > 0);
   }, [incomeCats, incomeBudget, incomeActual]);
 
   const expenseRows = useMemo(() => {
-    return expenseCats.map((name) => {
-      const bud = expenseBudget[name] ?? 0;
-      const act = expenseActual[name] ?? 0;
-      const diff = bud - act;
-      const pct = bud > 0 ? Math.round((act / bud) * 100) : 0;
-      return { name, 예산: bud, 실적: act, 차이: diff, 달성률: pct };
-    }).filter((r) => r.예산 > 0 || r.실적 > 0);
+    return expenseCats
+      .map((name) => {
+        const bud = expenseBudget[name] ?? 0;
+        const act = expenseActual[name] ?? 0;
+        const diff = bud - act;
+        const pct = bud > 0 ? Math.round((act / bud) * 100) : 0;
+        return { name, 예산: bud, 실적: act, 차이: diff, 달성률: pct };
+      })
+      .filter((r) => r.예산 > 0 || r.실적 > 0);
   }, [expenseCats, expenseBudget, expenseActual]);
 
-  const chartData = useMemo(() => [
-    ...incomeRows.map((r) => ({ name: r.name, 예산: r.예산, 실적: r.실적, type: "수입" })),
-    ...expenseRows.map((r) => ({ name: r.name, 예산: r.예산, 실적: r.실적, type: "지출" })),
-  ], [incomeRows, expenseRows]);
-
-  const pctBg = (pct: number, isExpense: boolean) => {
-    if (isExpense) {
-      if (pct > 100) return "bg-red-100";
-      if (pct >= 80) return "bg-green-50";
-      if (pct < 80) return "bg-red-50";
-    } else {
-      if (pct >= 100) return "bg-green-50";
-      if (pct >= 80) return "";
-      if (pct < 80) return "bg-red-50";
-    }
-    return "";
-  };
+  const chartData = useMemo(
+    () => [
+      ...incomeRows.map((r) => ({ name: r.name, 예산: r.예산, 실적: r.실적, type: "수입" })),
+      ...expenseRows.map((r) => ({ name: r.name, 예산: r.예산, 실적: r.실적, type: "지출" })),
+    ],
+    [incomeRows, expenseRows]
+  );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
-        <span className="ml-3 text-gray-600">예산/실적 로딩 중...</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", color: "#555" }}>
+        <span
+          style={{
+            display: "inline-block",
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            border: `2px solid ${NAVY}`,
+            borderTopColor: "transparent",
+            animation: "bva-spin 0.8s linear infinite",
+          }}
+        />
+        <span style={{ marginLeft: 12, fontSize: 13 }}>예산/실적 로딩 중...</span>
+        <style>{`@keyframes bva-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
+  const selStyle: CSSProperties = {
+    height: 32,
+    fontSize: 11,
+    borderRadius: 6,
+    border: `1px solid ${BORDER}`,
+    padding: "0 10px",
+    background: "#fff",
+    color: "#555",
+    cursor: "pointer",
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-4">
-        <label className="flex items-center gap-2">
-          <span className="text-sm font-medium">연도</span>
-          <input type="number" value={year} readOnly className="w-20 px-2 py-1 rounded border text-sm" />
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
+          연도
+          <input type="text" value={year} readOnly style={{ ...selStyle, width: 72, fontSize: 12, cursor: "default" }} />
         </label>
-        <label className="flex items-center gap-2">
-          <span className="text-sm font-medium">월</span>
-          <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} className="px-3 py-2 rounded-lg border border-gray-200 text-sm">
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
+          월
+          <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} style={{ ...selStyle, minWidth: 88 }}>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>{m}월</option>
+              <option key={m} value={m}>
+                {m}월
+              </option>
             ))}
           </select>
         </label>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setViewMode("monthly")} className={`px-3 py-1 rounded text-sm font-medium ${viewMode === "monthly" ? "bg-[#1e3a5f] text-white" : "bg-gray-100 text-gray-700"}`}>월별</button>
-          <button type="button" onClick={() => setViewMode("annual")} className={`px-3 py-1 rounded text-sm font-medium ${viewMode === "annual" ? "bg-[#1e3a5f] text-white" : "bg-gray-100 text-gray-700"}`}>연간 누적</button>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button type="button" className="finance-nav-btn" onClick={() => setViewMode("monthly")} style={togglePill(viewMode === "monthly")}>
+            월별
+          </button>
+          <button type="button" className="finance-nav-btn" onClick={() => setViewMode("annual")} style={togglePill(viewMode === "annual")}>
+            연간 누적
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <h4 className="px-5 py-3 bg-gray-50 font-semibold text-[#1e3a5f] border-b">수입 예산 vs 실적</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="bg-gray-50 border-b"><th className="text-left py-2 px-3">항목</th><th className="text-right py-2 px-3">예산</th><th className="text-right py-2 px-3">실적</th><th className="text-right py-2 px-3">차이</th><th className="text-right py-2 px-3">달성률</th></tr></thead>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20, maxWidth: "100%" }}>
+        <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+          <h4 style={{ margin: 0, padding: "10px 12px", fontSize: 13, fontWeight: 700, color: NAVY, borderBottom: `1px solid ${ROW_LINE}` }}>수입 예산 vs 실적</h4>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={bvaTh("left")}>항목</th>
+                  <th style={bvaTh("right")}>예산</th>
+                  <th style={bvaTh("right")}>실적</th>
+                  <th style={bvaTh("right")}>차이</th>
+                  <th style={bvaTh("right")}>달성률</th>
+                </tr>
+              </thead>
               <tbody>
                 {incomeRows.length === 0 ? (
-                  <tr><td colSpan={5} className="py-8 text-center text-gray-500">수입 예산/실적 데이터가 없습니다.</td></tr>
+                  <tr>
+                    <td colSpan={5} style={{ padding: 32, textAlign: "center", color: "#999", fontSize: 12 }}>
+                      수입 예산/실적 데이터가 없습니다.
+                    </td>
+                  </tr>
                 ) : (
-                  incomeRows.map((r) => (
-                    <tr key={r.name} className={`border-b ${pctBg(r.달성률, false)}`}>
-                      <td className="py-2 px-3">{r.name}</td>
-                      <td className="py-2 px-3 text-right">{fmt(r.예산)}</td>
-                      <td className="py-2 px-3 text-right">{fmt(r.실적)}</td>
-                      <td className="py-2 px-3 text-right">{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
-                      <td className="py-2 px-3 text-right font-medium">{r.달성률}%</td>
+                  incomeRows.map((r, i) => (
+                    <tr key={r.name}>
+                      <td style={bvaTd(i % 2 === 1, "left")}>{r.name}</td>
+                      <td style={bvaTd(i % 2 === 1, "right")}>{fmt(r.예산)}</td>
+                      <td style={{ ...bvaTd(i % 2 === 1, "right"), color: NAVY }}>{fmt(r.실적)}</td>
+                      <td style={bvaTd(i % 2 === 1, "right")}>{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
+                      <td style={{ ...bvaTd(i % 2 === 1, "right"), fontWeight: 600 }}>{r.달성률}%</td>
                     </tr>
                   ))
                 )}
@@ -201,22 +275,34 @@ export function BudgetVsActual({
             </table>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <h4 className="px-5 py-3 bg-gray-50 font-semibold text-[#1e3a5f] border-b">지출 예산 vs 실적</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="bg-gray-50 border-b"><th className="text-left py-2 px-3">항목</th><th className="text-right py-2 px-3">예산</th><th className="text-right py-2 px-3">실적</th><th className="text-right py-2 px-3">차이</th><th className="text-right py-2 px-3">달성률</th></tr></thead>
+        <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+          <h4 style={{ margin: 0, padding: "10px 12px", fontSize: 13, fontWeight: 700, color: NAVY, borderBottom: `1px solid ${ROW_LINE}` }}>지출 예산 vs 실적</h4>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={bvaTh("left")}>항목</th>
+                  <th style={bvaTh("right")}>예산</th>
+                  <th style={bvaTh("right")}>실적</th>
+                  <th style={bvaTh("right")}>차이</th>
+                  <th style={bvaTh("right")}>달성률</th>
+                </tr>
+              </thead>
               <tbody>
                 {expenseRows.length === 0 ? (
-                  <tr><td colSpan={5} className="py-8 text-center text-gray-500">지출 예산/실적 데이터가 없습니다.</td></tr>
+                  <tr>
+                    <td colSpan={5} style={{ padding: 32, textAlign: "center", color: "#999", fontSize: 12 }}>
+                      지출 예산/실적 데이터가 없습니다.
+                    </td>
+                  </tr>
                 ) : (
-                  expenseRows.map((r) => (
-                    <tr key={r.name} className={`border-b ${pctBg(r.달성률, true)}`}>
-                      <td className="py-2 px-3">{r.name}</td>
-                      <td className="py-2 px-3 text-right">{fmt(r.예산)}</td>
-                      <td className="py-2 px-3 text-right">{fmt(r.실적)}</td>
-                      <td className="py-2 px-3 text-right">{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
-                      <td className="py-2 px-3 text-right font-medium">{r.달성률}%</td>
+                  expenseRows.map((r, i) => (
+                    <tr key={r.name}>
+                      <td style={bvaTd(i % 2 === 1, "left")}>{r.name}</td>
+                      <td style={bvaTd(i % 2 === 1, "right")}>{fmt(r.예산)}</td>
+                      <td style={{ ...bvaTd(i % 2 === 1, "right"), color: NAVY }}>{fmt(r.실적)}</td>
+                      <td style={bvaTd(i % 2 === 1, "right")}>{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
+                      <td style={{ ...bvaTd(i % 2 === 1, "right"), fontWeight: 600 }}>{r.달성률}%</td>
                     </tr>
                   ))
                 )}
@@ -227,17 +313,17 @@ export function BudgetVsActual({
       </div>
 
       {chartData.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h4 className="font-semibold text-[#1e3a5f] mb-4">카테고리별 예산 vs 실적</h4>
+        <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 16 }}>
+          <h4 style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 700, color: NAVY }}>카테고리별 예산 vs 실적</h4>
           <LazyChart height={300}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 60, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis type="number" tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
-                <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: any) => [`₩${fmt(v ?? 0)}`, ""]} />
-                <Legend />
-                <Bar dataKey="예산" fill="#e5e7eb" radius={[0, 4, 4, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke={ROW_LINE} />
+                <XAxis type="number" tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} tick={{ fontSize: 10, fill: "#999" }} />
+                <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10, fill: "#555" }} />
+                <Tooltip formatter={(v) => [`₩${fmt(Number(v))}`, ""]} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="예산" fill="#6b7b9e" radius={[0, 4, 4, 0]} />
                 <Bar dataKey="실적" fill={NAVY} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>

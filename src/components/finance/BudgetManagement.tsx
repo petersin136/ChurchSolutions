@@ -1,12 +1,61 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import type { Budget } from "@/types/db";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
+
+const NAVY = "#1B2A4A";
+const BORDER = "#e8ecf1";
+const ROW_LINE = "#f0f2f5";
+
+const bmTh = (align: "left" | "right" | "center"): CSSProperties => ({
+  fontSize: 10,
+  fontWeight: 700,
+  color: NAVY,
+  padding: "6px 8px",
+  borderBottom: `2px solid ${NAVY}`,
+  background: "#fff",
+  textAlign: align,
+  whiteSpace: "nowrap",
+});
+
+const bmTd = (isEven: boolean, align: "left" | "right" | "center"): CSSProperties => ({
+  fontSize: 11,
+  color: "#555",
+  padding: "8px",
+  borderBottom: `1px solid ${ROW_LINE}`,
+  background: isEven ? "#fafbfc" : "#fff",
+  textAlign: align,
+});
+
+const bmTotalTd = (align: "left" | "right" | "center"): CSSProperties => ({
+  fontSize: 11,
+  fontWeight: 700,
+  color: NAVY,
+  padding: "8px",
+  background: "#f0f2f5",
+  borderBottom: `1px solid ${ROW_LINE}`,
+  textAlign: align,
+});
+
+const inputCompact: CSSProperties = {
+  width: "100%",
+  minWidth: 72,
+  height: 28,
+  padding: "0 6px",
+  fontSize: 11,
+  textAlign: "right",
+  borderRadius: 4,
+  border: `1px solid ${BORDER}`,
+  outline: "none",
+  boxShadow: "none",
+  background: "#fff",
+  color: "#555",
+};
 
 const DEFAULT_INCOME_CATEGORIES = ["십일조", "감사헌금", "주일헌금", "건축헌금", "선교헌금", "기타수입"];
 const DEFAULT_EXPENSE_CATEGORIES = ["인건비", "사역비", "관리비", "선교비", "교육비", "행사비", "기타지출"];
@@ -185,130 +234,192 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
     setSaving(false);
   };
 
-  const renderCell = (
-    key: number | string,
-    value: number,
-    onChange: (v: number) => void,
-    isTotal = false
-  ) => (
-    <td
-      key={key}
-      className={`py-2 px-1 border border-gray-200 ${isTotal ? "bg-gray-100 font-bold" : "hover:bg-blue-50/50"} text-right`}
-    >
-      {isTotal ? (
-        <span className="text-gray-800">{fmt(value)}</span>
-      ) : (
-        <input
-          type="number"
-          min={0}
-          value={value || ""}
-          onChange={(e) => onChange(Number(e.target.value) || 0)}
-          className="w-full min-w-[72px] px-2 py-1 text-right border-0 rounded bg-transparent focus:ring-2 focus:ring-blue-200"
-        />
-      )}
-    </td>
-  );
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
-        <span className="ml-3 text-gray-600">예산 데이터 로딩 중...</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", color: "#555", fontSize: 13 }}>
+        <span
+          style={{
+            display: "inline-block",
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            border: `2px solid ${NAVY}`,
+            borderTopColor: "transparent",
+            animation: "finance-spin 0.8s linear infinite",
+          }}
+        />
+        <span style={{ marginLeft: 12 }}>예산 데이터 로딩 중...</span>
+        <style>{`@keyframes finance-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
+  const yearOptions = Array.from({ length: 11 }, (_, i) => String(2020 + i));
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-4">
-        <label className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">연도</span>
-          <input
-            type="number"
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
+          연도
+          <select
             value={year}
             onChange={(e) => setYear(e.target.value)}
-            min={2020}
-            max={2030}
-            className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-sm"
-          />
+            style={{ height: 32, fontSize: 12, width: 90, borderRadius: 6, border: `1px solid ${BORDER}`, padding: "0 8px", background: "#fff", color: "#555", cursor: "pointer" }}
+          >
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>
+                {y}년
+              </option>
+            ))}
+          </select>
         </label>
-        <button type="button" onClick={copyFromLastYear} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50">
+        <button
+          type="button"
+          className="finance-nav-btn"
+          onClick={copyFromLastYear}
+          style={{
+            height: 32,
+            fontSize: 11,
+            padding: "0 12px",
+            borderRadius: 6,
+            background: "#f5f6f8",
+            color: "#555",
+            border: `1px solid ${BORDER}`,
+            cursor: "pointer",
+            outline: "none",
+            boxShadow: "none",
+            fontWeight: 600,
+          }}
+        >
           전년도 복사
         </button>
-        <button type="button" onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-lg bg-[#1e3a5f] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-60">
+        <button
+          type="button"
+          className="finance-nav-btn"
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            height: 32,
+            fontSize: 11,
+            padding: "0 12px",
+            borderRadius: 6,
+            background: NAVY,
+            color: "#fff",
+            border: "none",
+            cursor: saving ? "not-allowed" : "pointer",
+            outline: "none",
+            boxShadow: "none",
+            fontWeight: 600,
+            opacity: saving ? 0.65 : 1,
+          }}
+        >
           {saving ? "저장 중..." : "저장"}
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <h3 className="px-5 py-3 bg-gray-50 font-semibold text-[#1e3a5f] border-b border-gray-200">수입 예산</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <h3 style={{ margin: 0, padding: "10px 12px", fontSize: 13, fontWeight: 700, color: NAVY, borderBottom: `1px solid ${ROW_LINE}` }}>수입 예산</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr className="bg-gray-50">
-                <th className="py-2 px-3 text-left font-semibold text-gray-700 border border-gray-200 w-32">항목</th>
+              <tr>
+                <th style={{ ...bmTh("left"), minWidth: 96 }}>항목</th>
                 {MONTHS.map((m) => (
-                  <th key={m} className="py-2 px-1 text-right font-semibold text-gray-700 border border-gray-200 min-w-[72px]">{m}월</th>
+                  <th key={m} style={{ ...bmTh("right"), minWidth: 72 }}>
+                    {m}월
+                  </th>
                 ))}
-                <th className="py-2 px-3 text-right font-semibold text-gray-700 border border-gray-200 bg-gray-100">연간합계</th>
+                <th style={bmTh("right")}>연간합계</th>
               </tr>
             </thead>
             <tbody>
-              {incomeRows.map((row, ri) => (
-                <tr key={row.category}>
-                  <td className="py-2 px-3 font-medium border border-gray-200">{row.category}</td>
-                  {MONTHS.map((m) => renderCell(m, row.amounts[m] || 0, (v) => updateIncomeAmount(ri, m, v)))}
-                  {renderCell("sum", Object.values(row.amounts).reduce((s, v) => s + v, 0), () => {}, true)}
-                </tr>
-              ))}
-              <tr className="bg-gray-100 font-bold">
-                <td className="py-2 px-3 border border-gray-200">수입 합계</td>
+              {incomeRows.map((row, ri) => {
+                const even = ri % 2 === 1;
+                return (
+                  <tr key={row.category}>
+                    <td style={bmTd(even, "left")}>{row.category}</td>
+                    {MONTHS.map((m) => (
+                      <td key={m} style={bmTd(even, "right")}>
+                        <input
+                          type="number"
+                          min={0}
+                          value={row.amounts[m] || ""}
+                          onChange={(e) => updateIncomeAmount(ri, m, Number(e.target.value) || 0)}
+                          style={inputCompact}
+                        />
+                      </td>
+                    ))}
+                    <td style={bmTotalTd("right")}>{fmt(Object.values(row.amounts).reduce((s, v) => s + v, 0))}</td>
+                  </tr>
+                );
+              })}
+              <tr>
+                <td style={bmTotalTd("left")}>수입 합계</td>
                 {MONTHS.map((m) => (
-                  <td key={m} className="py-2 px-1 text-right border border-gray-200">{fmt(incomeTotals.byMonth[m])}</td>
+                  <td key={m} style={bmTotalTd("right")}>
+                    {fmt(incomeTotals.byMonth[m])}
+                  </td>
                 ))}
-                <td className="py-2 px-3 text-right border border-gray-200">{fmt(incomeTotals.annual)}</td>
+                <td style={bmTotalTd("right")}>{fmt(incomeTotals.annual)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <h3 className="px-5 py-3 bg-gray-50 font-semibold text-[#1e3a5f] border-b border-gray-200">지출 예산</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <h3 style={{ margin: 0, padding: "10px 12px", fontSize: 13, fontWeight: 700, color: NAVY, borderBottom: `1px solid ${ROW_LINE}` }}>지출 예산</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr className="bg-gray-50">
-                <th className="py-2 px-3 text-left font-semibold text-gray-700 border border-gray-200 w-32">항목</th>
+              <tr>
+                <th style={{ ...bmTh("left"), minWidth: 96 }}>항목</th>
                 {MONTHS.map((m) => (
-                  <th key={m} className="py-2 px-1 text-right font-semibold text-gray-700 border border-gray-200 min-w-[72px]">{m}월</th>
+                  <th key={m} style={{ ...bmTh("right"), minWidth: 72 }}>
+                    {m}월
+                  </th>
                 ))}
-                <th className="py-2 px-3 text-right font-semibold text-gray-700 border border-gray-200 bg-gray-100">연간합계</th>
+                <th style={bmTh("right")}>연간합계</th>
               </tr>
             </thead>
             <tbody>
-              {expenseRows.map((row, ri) => (
-                <tr key={row.category}>
-                  <td className="py-2 px-3 font-medium border border-gray-200">{row.category}</td>
-                  {MONTHS.map((m) => renderCell(m, row.amounts[m] || 0, (v) => updateExpenseAmount(ri, m, v)))}
-                  {renderCell("sum", Object.values(row.amounts).reduce((s, v) => s + v, 0), () => {}, true)}
-                </tr>
-              ))}
-              <tr className="bg-gray-100 font-bold">
-                <td className="py-2 px-3 border border-gray-200">지출 합계</td>
+              {expenseRows.map((row, ri) => {
+                const even = ri % 2 === 1;
+                return (
+                  <tr key={row.category}>
+                    <td style={bmTd(even, "left")}>{row.category}</td>
+                    {MONTHS.map((m) => (
+                      <td key={m} style={bmTd(even, "right")}>
+                        <input
+                          type="number"
+                          min={0}
+                          value={row.amounts[m] || ""}
+                          onChange={(e) => updateExpenseAmount(ri, m, Number(e.target.value) || 0)}
+                          style={inputCompact}
+                        />
+                      </td>
+                    ))}
+                    <td style={bmTotalTd("right")}>{fmt(Object.values(row.amounts).reduce((s, v) => s + v, 0))}</td>
+                  </tr>
+                );
+              })}
+              <tr>
+                <td style={bmTotalTd("left")}>지출 합계</td>
                 {MONTHS.map((m) => (
-                  <td key={m} className="py-2 px-1 text-right border border-gray-200">{fmt(expenseTotals.byMonth[m])}</td>
+                  <td key={m} style={bmTotalTd("right")}>
+                    {fmt(expenseTotals.byMonth[m])}
+                  </td>
                 ))}
-                <td className="py-2 px-3 text-right border border-gray-200">{fmt(expenseTotals.annual)}</td>
+                <td style={bmTotalTd("right")}>{fmt(expenseTotals.annual)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <div className="text-lg font-semibold text-[#1e3a5f]">
-          수지 차액 (수입 - 지출): <span className={balance >= 0 ? "text-[#1e3a5f]" : "text-[#e74c3c]"}>{fmt(balance)}</span>
+      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: "12px 14px" }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>
+          수지 차액 (수입 - 지출): <span style={{ color: NAVY }}>{fmt(balance)}</span>
         </div>
       </div>
     </div>

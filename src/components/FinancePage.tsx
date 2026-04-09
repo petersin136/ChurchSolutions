@@ -209,6 +209,83 @@ const C = {
   purple: "#1B2A4A", purpleLight: "#f0f2f5",
 };
 
+/** 재정 상·하위 탭 — 노란 포커스 링 제거, 크기 통일 */
+function financeCategoryGridBtnStyle(selected: boolean): CSSProperties {
+  return {
+    height: 30,
+    fontSize: 10,
+    fontWeight: 600,
+    borderRadius: 6,
+    border: "none",
+    outline: "none",
+    boxShadow: "none",
+    width: "100%",
+    cursor: "pointer",
+    background: selected ? "#1B2A4A" : "#f5f6f8",
+    color: selected ? "#fff" : "#555",
+    WebkitTapHighlightColor: "transparent",
+    fontFamily: "inherit",
+  };
+}
+
+function financeSubTabStyle(isSelected: boolean): CSSProperties {
+  return {
+    height: 28,
+    minHeight: 28,
+    maxHeight: 28,
+    fontSize: 10,
+    fontWeight: 600,
+    padding: "0 10px",
+    borderRadius: 6,
+    border: isSelected ? "none" : "1px solid #e8ecf1",
+    background: isSelected ? "#1B2A4A" : "#f5f6f8",
+    color: isSelected ? "#fff" : "#555",
+    whiteSpace: "nowrap",
+    lineHeight: "28px",
+    cursor: "pointer",
+    outline: "none",
+    boxShadow: "none",
+    WebkitTapHighlightColor: "transparent",
+    flexShrink: 0,
+    fontFamily: "inherit",
+  };
+}
+
+/** 토글(예결산·보고서 유형 등) — 높이 동일, 글자만 11px */
+function financeTogglePillStyle(isSelected: boolean): CSSProperties {
+  return { ...financeSubTabStyle(isSelected), fontSize: 11 };
+}
+
+const financeTableHeaderTh = (align: "left" | "right" | "center" = "left"): CSSProperties => ({
+  fontSize: 10,
+  fontWeight: 700,
+  color: "#1B2A4A",
+  padding: "6px 8px",
+  borderBottom: "2px solid #1B2A4A",
+  background: "#fff",
+  textAlign: align,
+  whiteSpace: "nowrap",
+});
+
+const financeTableCellTd = (isEven: boolean, align: "left" | "right" | "center" = "left"): CSSProperties => ({
+  fontSize: 11,
+  color: "#555",
+  padding: "8px",
+  borderBottom: "1px solid #f0f2f5",
+  background: isEven ? "#fafbfc" : "#fff",
+  textAlign: align,
+});
+
+const financeTableTotalRowTd = (align: "left" | "right" | "center" = "left"): CSSProperties => ({
+  fontSize: 11,
+  fontWeight: 700,
+  color: "#1B2A4A",
+  padding: "8px",
+  background: "#f0f2f5",
+  borderBottom: "1px solid #f0f2f5",
+  textAlign: align,
+});
+
 type FinanceCategoryId = "fin_income" | "fin_budget" | "fin_giving" | "fin_reports";
 
 const LEAF_TO_FINANCE_CATEGORY: Record<string, FinanceCategoryId> = {
@@ -275,36 +352,12 @@ const FINANCE_SUB_TABS_BY_CATEGORY: Record<FinanceCategoryId, { id: string; labe
 
 function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; onLeafChange: (id: string) => void }) {
   const category = LEAF_TO_FINANCE_CATEGORY[activeTab] ?? "fin_income";
-  const gridBtn = (selected: boolean): CSSProperties => ({
-    height: 30,
-    fontSize: 10,
-    fontWeight: 600,
-    borderRadius: 6,
-    border: "none",
-    width: "100%",
-    cursor: "pointer",
-    background: selected ? "#1B2A4A" : "#f5f6f8",
-    color: selected ? "#fff" : "#555",
-  });
-  const pillBtn = (selected: boolean): CSSProperties => ({
-    height: 28,
-    fontSize: 10,
-    fontWeight: 600,
-    padding: "0 10px",
-    borderRadius: 6,
-    border: selected ? "none" : "1px solid #e8ecf1",
-    flexShrink: 0,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    background: selected ? "#1B2A4A" : "#f5f6f8",
-    color: selected ? "#fff" : "#555",
-  });
   return (
     <div>
       <div style={{ marginBottom: 4 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
           {FINANCE_CATEGORY_GRID[0].map((c) => (
-            <button key={c.id} type="button" style={gridBtn(category === c.id)} onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}>
+            <button key={c.id} type="button" className="finance-nav-btn" style={financeCategoryGridBtnStyle(category === c.id)} onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}>
               {c.label}
             </button>
           ))}
@@ -313,7 +366,7 @@ function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; on
       <div style={{ marginBottom: 8 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
           {FINANCE_CATEGORY_GRID[1].map((c) => (
-            <button key={c.id} type="button" style={gridBtn(category === c.id)} onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}>
+            <button key={c.id} type="button" className="finance-nav-btn" style={financeCategoryGridBtnStyle(category === c.id)} onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}>
               {c.label}
             </button>
           ))}
@@ -332,7 +385,7 @@ function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; on
         }}
       >
         {FINANCE_SUB_TABS_BY_CATEGORY[category].map((t) => (
-          <button key={t.id} type="button" style={pillBtn(activeTab === t.id)} onClick={() => onLeafChange(t.id)}>
+          <button key={t.id} type="button" className="finance-nav-btn" style={financeSubTabStyle(activeTab === t.id)} onClick={() => onLeafChange(t.id)}>
             {t.label}
           </button>
         ))}
@@ -1303,13 +1356,13 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
     const totalExp = filteredExp.reduce((s, e) => s + e.amount, 0);
     const catMap: Record<string, number> = {};
     filteredOff.forEach(o => { catMap[o.categoryId] = (catMap[o.categoryId] || 0) + o.amount; });
-    const catBreakdown = categories.map(c => ({ name: `${c.icon} ${c.name}`, total: catMap[c.id] || 0, pct: totalOff > 0 ? ((catMap[c.id] || 0) / totalOff * 100).toFixed(1) : "0.0" })).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
+    const catBreakdown = categories.map(c => ({ name: c.name, total: catMap[c.id] || 0, pct: totalOff > 0 ? ((catMap[c.id] || 0) / totalOff * 100).toFixed(1) : "0.0" })).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
     const deptMap: Record<string, number> = {};
     filteredExp.forEach(e => { deptMap[e.departmentId] = (deptMap[e.departmentId] || 0) + e.amount; });
     const deptBreakdown = departments.map(d => ({ name: d.name, total: deptMap[d.id] || 0, pct: totalExp > 0 ? ((deptMap[d.id] || 0) / totalExp * 100).toFixed(1) : "0.0" })).filter(d => d.total > 0).sort((a, b) => b.total - a.total);
     const expCatMap: Record<string, number> = {};
     filteredExp.forEach(e => { expCatMap[e.categoryId] = (expCatMap[e.categoryId] || 0) + e.amount; });
-    const expCatBreakdown = expenseCategories.map(c => ({ name: `${c.icon} ${c.name}`, total: expCatMap[c.id] || 0, pct: totalExp > 0 ? ((expCatMap[c.id] || 0) / totalExp * 100).toFixed(1) : "0.0" })).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
+    const expCatBreakdown = expenseCategories.map(c => ({ name: c.name, total: expCatMap[c.id] || 0, pct: totalExp > 0 ? ((expCatMap[c.id] || 0) / totalExp * 100).toFixed(1) : "0.0" })).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
     return { totalOff, totalExp, balance: totalOff - totalExp, catBreakdown, deptBreakdown, expCatBreakdown };
   }, [offerings, expenses, categories, departments, expenseCategories, reportType, selectedPeriod]);
 
@@ -1321,30 +1374,62 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
         <button
           type="button"
+          className="finance-nav-btn"
           onClick={() => setShowSettlement(true)}
-          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer" }}
+          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer", boxShadow: "none", outline: "none" }}
         >
           결산 보고서
         </button>
       </div>
-      <Card>
-        <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 600, color: C.navy }}>보고서 유형:</span>
-          {["weekly","monthly","quarterly","half","annual"].map(t => (
-            <button key={t} onClick={() => { setReportType(t); setSelectedPeriod(t === "monthly" ? "01" : "0"); }}
-              style={{ height: 28, padding: "0 10px", borderRadius: 6, border: reportType === t ? "none" : `1px solid ${C.border}`, background: reportType === t ? C.navy : "#f5f6f8", color: reportType === t ? "#fff" : "#555", fontWeight: 600, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+      <Card style={{ padding: 12 }}>
+        <div
+          className="scrollbar-hide"
+          style={{ display: "flex", gap: 6, overflowX: "auto", whiteSpace: "nowrap", marginBottom: reportType !== "annual" ? 10 : 0, WebkitOverflowScrolling: "touch" }}
+        >
+          {["weekly", "monthly", "quarterly", "half", "annual"].map((t) => (
+            <button
+              key={t}
+              type="button"
+              className="finance-nav-btn"
+              onClick={() => {
+                setReportType(t);
+                setSelectedPeriod(t === "monthly" ? "01" : "0");
+              }}
+              style={financeTogglePillStyle(reportType === t)}
+            >
               {reportTypeLabel[t]}
             </button>
           ))}
-          {reportType !== "annual" && (
-            <Select options={periodOptions} value={selectedPeriod} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedPeriod(e.target.value)} />
-          )}
         </div>
+        {reportType !== "annual" && (
+          <div className="scrollbar-hide" style={{ display: "flex", gap: 6, overflowX: "auto", whiteSpace: "nowrap", WebkitOverflowScrolling: "touch" }}>
+            {periodOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className="finance-nav-btn"
+                onClick={() => setSelectedPeriod(opt.value)}
+                style={financeTogglePillStyle(selectedPeriod === opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
       </Card>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
-        <StatCard label="수입 합계" value={`₩${fmt(reportData.totalOff)}`} />
-        <StatCard label="지출 합계" value={`₩${fmt(reportData.totalExp)}`} />
-        <StatCard label="잔액" value={`₩${fmt(reportData.balance)}`} trend={reportData.balance >= 0 ? "up" : "down"} sub={reportData.balance >= 0 ? "흑자" : "적자"} />
+        <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff" }}>
+          <div style={{ fontSize: 10, color: "#6b7b9e", fontWeight: 500 }}>수입 합계</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>₩{fmt(reportData.totalOff)}</div>
+        </div>
+        <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff" }}>
+          <div style={{ fontSize: 10, color: "#6b7b9e", fontWeight: 500 }}>지출 합계</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>₩{fmt(reportData.totalExp)}</div>
+        </div>
+        <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff" }}>
+          <div style={{ fontSize: 10, color: "#6b7b9e", fontWeight: 500 }}>잔액</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>₩{fmt(reportData.balance)}</div>
+        </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
         <Card>
@@ -1508,11 +1593,25 @@ function BudgetActualTab({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-        <Select label="연도" options={[{ value: currentYear.toString(), label: `${currentYear}년` }, { value: (currentYear - 1).toString(), label: `${currentYear - 1}년` }, { value: (currentYear - 2).toString(), label: `${currentYear - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setYear(Number(e.target.value)); setCurrentPageCompare(1); }} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: C.navy }}>
+          연도
+          <select
+            value={String(year)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              setYear(Number(e.target.value));
+              setCurrentPageCompare(1);
+            }}
+            style={{ height: 32, fontSize: 12, width: 90, borderRadius: 6, border: `1px solid ${C.border}`, padding: "0 8px", color: C.navy, background: "#fff", cursor: "pointer" }}
+          >
+            {[currentYear, currentYear - 1, currentYear - 2].map((y) => (
+              <option key={y} value={String(y)}>{y}년</option>
+            ))}
+          </select>
+        </label>
         <div style={{ display: "flex", gap: 4 }}>
-          {(["input", "compare"] as const).map(m => (
-            <button key={m} type="button" onClick={() => setMode(m)} style={{ height: 28, padding: "0 12px", borderRadius: 6, border: mode === m ? "none" : `1px solid ${C.border}`, background: mode === m ? C.navy : "#f5f6f8", color: mode === m ? "#fff" : "#555", fontWeight: 600, fontSize: 11, cursor: "pointer" }}>
+          {(["input", "compare"] as const).map((m) => (
+            <button key={m} type="button" className="finance-nav-btn" onClick={() => setMode(m)} style={financeTogglePillStyle(mode === m)}>
               {m === "input" ? "예산 입력" : "비교 뷰"}
             </button>
           ))}
@@ -1541,28 +1640,44 @@ function BudgetActualTab({
           <div ref={listRefCompare}><div id="budget-actual-report-card" ref={reportCardRef} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
             <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: C.navy }}>{year}년 예산 vs 실적</h3>
             <div style={{ overflowX: "auto", marginBottom: 24 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: C.bg }}>
-                    <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: C.navy }}>구분</th>
-                    <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: C.navy }}>항목명</th>
-                    <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.navy }}>예산</th>
-                    <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.navy }}>실적</th>
-                    <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.navy }}>차이</th>
-                    <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.navy }}>집행률</th>
+                  <tr>
+                    <th style={financeTableHeaderTh("left")}>구분</th>
+                    <th style={financeTableHeaderTh("left")}>항목명</th>
+                    <th style={financeTableHeaderTh("right")}>예산</th>
+                    <th style={financeTableHeaderTh("right")}>실적</th>
+                    <th style={financeTableHeaderTh("right")}>차이</th>
+                    <th style={financeTableHeaderTh("right")}>집행률</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedCompareRows.map((r, i) => (
-                    <tr key={r.id} style={{ borderBottom: r.id.startsWith("_") ? `2px solid ${C.border}` : `1px solid ${C.borderLight}`, background: r.id.startsWith("_") ? C.bg : "transparent" }}>
-                      <td style={{ padding: "10px 12px" }}>{r.type}</td>
-                      <td style={{ padding: "10px 12px", fontWeight: r.id.startsWith("_") ? 700 : 500 }}>{r.name}</td>
-                      <td style={{ padding: "10px 12px", textAlign: "right" }}>₩{fmt(r.budget)}</td>
-                      <td style={{ padding: "10px 12px", textAlign: "right", color: C.navy }}>₩{fmt(r.actual)}</td>
-                      <td style={{ padding: "10px 12px", textAlign: "right" }}>₩{fmt(r.diff)}</td>
-                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: r.id.startsWith("_") ? C.navy : pctColor() }}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
-                    </tr>
-                  ))}
+                  {paginatedCompareRows.map((r, i) => {
+                    const gi = (currentPageCompare - 1) * 10 + i;
+                    const total = r.id.startsWith("_");
+                    if (total) {
+                      return (
+                        <tr key={r.id}>
+                          <td style={financeTableTotalRowTd("left")}>{r.type}</td>
+                          <td style={financeTableTotalRowTd("left")}>{r.name}</td>
+                          <td style={financeTableTotalRowTd("right")}>₩{fmt(r.budget)}</td>
+                          <td style={financeTableTotalRowTd("right")}>₩{fmt(r.actual)}</td>
+                          <td style={financeTableTotalRowTd("right")}>₩{fmt(r.diff)}</td>
+                          <td style={financeTableTotalRowTd("right")}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
+                        </tr>
+                      );
+                    }
+                    return (
+                      <tr key={r.id}>
+                        <td style={financeTableCellTd(gi % 2 === 1, "left")}>{r.type}</td>
+                        <td style={financeTableCellTd(gi % 2 === 1, "left")}>{r.name}</td>
+                        <td style={financeTableCellTd(gi % 2 === 1, "right")}>₩{fmt(r.budget)}</td>
+                        <td style={{ ...financeTableCellTd(gi % 2 === 1, "right"), color: C.navy }}>₩{fmt(r.actual)}</td>
+                        <td style={financeTableCellTd(gi % 2 === 1, "right")}>₩{fmt(r.diff)}</td>
+                        <td style={{ ...financeTableCellTd(gi % 2 === 1, "right"), fontWeight: 600, color: pctColor() }}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1636,20 +1751,25 @@ function BudgetTab({ departments, expenses }: { departments: Department[]; expen
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <h3 style={{ margin: 0, color: C.navy }}>{year}년 예산 계획</h3>
-          <Select options={[{ value: "2026", label: "2026년" }, { value: "2027", label: "2027년" }]} value={year} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value)} />
-        </div>
-        <Badge color={C.navy} bg="#f0f2f5" fontSize={11}>총 예산: ₩{fmt(totalBudget)}</Badge>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+        <select
+          value={year}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value)}
+          style={{ height: 32, fontSize: 12, width: 90, borderRadius: 6, border: `1px solid ${C.border}`, padding: "0 8px", color: C.navy, background: "#fff", cursor: "pointer" }}
+        >
+          <option value="2026">2026년</option>
+          <option value="2027">2027년</option>
+        </select>
+        <span style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{year}년 예산 계획</span>
+        <span style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, background: "#f0f2f5", color: C.navy, fontWeight: 600, fontSize: 11 }}>총 예산: ₩{fmt(totalBudget)}</span>
       </div>
       <Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#fff" }}>
-                {["부서","전년 실적","1분기 예산","2분기 예산","3분기 예산","4분기 예산","연간 합계"].map((h,i) => (
-                  <th key={i} style={{ padding: "6px 8px", textAlign: i === 0 ? "left" : (i === 1 || i === 6) ? "right" : "center", fontWeight: 700, fontSize: 10, color: C.navy, borderBottom: `2px solid ${C.navy}` }}>{h}</th>
+              <tr>
+                {["부서", "전년 실적", "1분기 예산", "2분기 예산", "3분기 예산", "4분기 예산", "연간 합계"].map((h, i) => (
+                  <th key={h} style={financeTableHeaderTh(i === 0 ? "left" : (i === 1 || i === 6) ? "right" : "center")}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1657,34 +1777,39 @@ function BudgetTab({ departments, expenses }: { departments: Department[]; expen
               {departments.map((d, i) => {
                 const b = budgets[d.id] || {};
                 const annual = (parseInt(b.q1) || 0) + (parseInt(b.q2) || 0) + (parseInt(b.q3) || 0) + (parseInt(b.q4) || 0);
+                const even = i % 2 === 1;
                 return (
-                  <tr key={d.id} style={{ borderBottom: i < departments.length - 1 ? `1px solid ${C.borderLight}` : "none", background: i % 2 === 1 ? "#fafbfc" : "#fff" }}>
-                    <td style={{ padding: 8, minWidth: 0 }}>
+                  <tr key={d.id}>
+                    <td style={{ ...financeTableCellTd(even, "left"), minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                         <div style={{ width: 8, height: 8, borderRadius: 4, background: "#1B2A4A", flexShrink: 0 }} />
-                        <span style={{ fontWeight: 600, fontSize: 11, color: "#555", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
+                        <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
                       </div>
                     </td>
-                    <td style={{ padding: 8, textAlign: "right", color: "#555", fontSize: 11 }}>₩{fmt(actualByDept[d.id] || 0)}</td>
-                    {(["q1","q2","q3","q4"] as const).map(q => (
-                      <td key={q} style={{ padding: "4px 6px", textAlign: "center" }}>
-                        <input type="number" value={b[q] || ""} placeholder="0"
-                          onChange={e => handleBudgetChange(d.id, q, e.target.value)}
-                          style={{ width: 110, height: 28, padding: "0 6px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "inherit", textAlign: "center", outline: "none" }} />
+                    <td style={financeTableCellTd(even, "right")}>₩{fmt(actualByDept[d.id] || 0)}</td>
+                    {(["q1", "q2", "q3", "q4"] as const).map((q) => (
+                      <td key={q} style={{ ...financeTableCellTd(even, "center"), verticalAlign: "middle" }}>
+                        <input
+                          type="number"
+                          value={b[q] || ""}
+                          placeholder="0"
+                          onChange={(e) => handleBudgetChange(d.id, q, e.target.value)}
+                          style={{ width: 110, height: 28, padding: "0 6px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "inherit", textAlign: "center", outline: "none", boxShadow: "none" }}
+                        />
                       </td>
                     ))}
-                    <td style={{ padding: 8, textAlign: "right", fontWeight: 700, fontSize: 11, color: C.navy }}>₩{fmt(annual)}</td>
+                    <td style={{ ...financeTableCellTd(even, "right"), fontWeight: 700, color: C.navy }}>₩{fmt(annual)}</td>
                   </tr>
                 );
               })}
-              <tr style={{ background: "#f0f2f5", fontWeight: 700 }}>
-                <td style={{ padding: 8, color: C.navy, fontSize: 11 }}>합계</td>
-                <td style={{ padding: 8, textAlign: "right", color: C.navy, fontSize: 11 }}>₩{fmt(Object.values(actualByDept).reduce((s, v) => s + v, 0))}</td>
-                {(["q1","q2","q3","q4"] as const).map(q => {
+              <tr>
+                <td style={financeTableTotalRowTd("left")}>합계</td>
+                <td style={financeTableTotalRowTd("right")}>₩{fmt(Object.values(actualByDept).reduce((s, v) => s + v, 0))}</td>
+                {(["q1", "q2", "q3", "q4"] as const).map((q) => {
                   const qTotal = departments.reduce((s, d) => s + (parseInt(budgets[d.id]?.[q]) || 0), 0);
-                  return <td key={q} style={{ padding: 8, textAlign: "center", color: C.navy, fontSize: 11 }}>₩{fmt(qTotal)}</td>;
+                  return <td key={q} style={financeTableTotalRowTd("center")}>₩{fmt(qTotal)}</td>;
                 })}
-                <td style={{ padding: 8, textAlign: "right", color: C.navy, fontSize: 11 }}>₩{fmt(totalBudget)}</td>
+                <td style={financeTableTotalRowTd("right")}>₩{fmt(totalBudget)}</td>
               </tr>
             </tbody>
           </table>

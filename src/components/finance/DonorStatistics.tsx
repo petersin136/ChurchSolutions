@@ -140,48 +140,61 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
       <div className={printDonor ? "no-print" : ""}>
         <div className="space-y-6">
       {/* TODO: 역할 기반 접근 제한 추가 예정 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="text-xs text-gray-500 mb-1">총 헌금자 수</div>
-          <div className="text-2xl font-bold text-[#1e3a5f]">{donorList.length}명</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e8ecf1", padding: "8px 10px", minHeight: 56, boxSizing: "border-box" }}>
+          <div style={{ fontSize: 10, color: "#6b7b9e", marginBottom: 4 }}>총 헌금자 수</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#1B2A4A", lineHeight: 1.2 }}>{donorList.length}명</div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="text-xs text-gray-500 mb-1">총 헌금 금액</div>
-          <div className="text-xl font-bold text-[#1e3a5f]">₩{fmt(totalAmount)}</div>
+        <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e8ecf1", padding: "8px 10px", minHeight: 56, boxSizing: "border-box", minWidth: 0 }}>
+          <div style={{ fontSize: 10, color: "#6b7b9e", marginBottom: 4 }}>총 헌금 금액</div>
+          <div
+            style={{
+              fontSize: 20,
+              fontWeight: 800,
+              color: "#1B2A4A",
+              lineHeight: 1.2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: "100%",
+            }}
+          >
+            ₩{fmt(totalAmount)}
+          </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="text-xs text-gray-500 mb-1">1인당 평균</div>
-          <div className="text-xl font-bold text-[#1e3a5f]">₩{fmt(avgPerDonor)}</div>
+        <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e8ecf1", padding: "6px 8px", minHeight: 48, boxSizing: "border-box", minWidth: 0 }}>
+          <div style={{ fontSize: 10, color: "#6b7b9e", marginBottom: 2 }}>1인당 평균</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#1B2A4A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>₩{fmt(avgPerDonor)}</div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="text-xs text-gray-500 mb-1">신규 헌금자 (올해)</div>
-          <div className="text-2xl font-bold text-[#1e3a5f]">{newDonorsThisYear}명</div>
+        <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e8ecf1", padding: "6px 8px", minHeight: 48, boxSizing: "border-box" }}>
+          <div style={{ fontSize: 10, color: "#6b7b9e", marginBottom: 2 }}>신규 헌금자 (올해)</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#1B2A4A" }}>{newDonorsThisYear}명</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h4 className="font-semibold text-[#1e3a5f] mb-4">월별 헌금자 수</h4>
+          <h4 className="font-semibold text-[#1B2A4A] mb-4">월별 헌금자 수</h4>
           <LazyChart height={280}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyDonorCount}>
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Bar dataKey="인원" fill="#1e3a5f" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="인원" fill="#1B2A4A" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </LazyChart>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h4 className="font-semibold text-[#1e3a5f] mb-4">헌금 구간별 분포</h4>
+          <h4 className="font-semibold text-[#1B2A4A] mb-4">헌금 구간별 분포</h4>
           <LazyChart height={280}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={bracketDist}>
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Bar dataKey="인원" fill="#d4a574" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="인원" fill="#6b7b9e" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </LazyChart>
@@ -190,7 +203,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between gap-4">
-          <h4 className="font-semibold text-[#1e3a5f]">헌금자 목록</h4>
+          <h4 className="font-semibold text-[#1B2A4A]">헌금자 목록</h4>
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="이름/부서 검색" className="px-3 py-2 rounded-lg border border-gray-200 text-sm w-48" />
         </div>
         <div className="overflow-x-auto">
@@ -215,7 +228,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
                     <td className="py-2 px-3 text-right font-semibold">₩{fmt(d.total)}</td>
                     <td className="py-2 px-3 text-right text-gray-600">{pct}%</td>
                     <td className="py-2 px-3 text-center no-print">
-                      <button type="button" onClick={() => setPrintDonor({ id: d.id, name: d.name, total: d.total, byCat: d.byCat ?? {} })} className="text-xs text-[#1e3a5f] hover:underline">
+                      <button type="button" onClick={() => setPrintDonor({ id: d.id, name: d.name, total: d.total, byCat: d.byCat ?? {} })} className="text-xs text-[#1B2A4A] hover:underline">
                         영수증 발행
                       </button>
                     </td>
