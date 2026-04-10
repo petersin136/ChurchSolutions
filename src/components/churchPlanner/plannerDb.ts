@@ -1,7 +1,12 @@
-/** Supabase 테이블명 (교회 플래너) */
+/** 교회 플래너 — 테이블명·시드·프리셋 (로직은 ChurchPlannerPage.tsx) */
+
 export const TB_DEPARTMENTS = "departments";
 export const TB_PLACES = "places";
 export const TB_EVENTS = "events";
+export const TB_CHURCH_CALENDAR = "church_calendar";
+
+export const ACCENT = "#4A90D9";
+export const NAVY = "#1B2A4A";
 
 export const COLOR_PRESETS = [
   "#1B2A4A",
@@ -18,7 +23,7 @@ export const COLOR_PRESETS = [
   "#8B6914",
 ] as const;
 
-export const DEFAULT_DEPARTMENT_SEED: { name: string; color: string; sort_order: number }[] = [
+export const DEFAULT_DEPARTMENT_ROWS: { name: string; color: string; sort_order: number }[] = [
   { name: "담임목사실", color: "#1B2A4A", sort_order: 0 },
   { name: "장로회", color: "#8B6914", sort_order: 1 },
   { name: "교육부", color: "#4A90D9", sort_order: 2 },
@@ -32,7 +37,7 @@ export const DEFAULT_DEPARTMENT_SEED: { name: string; color: string; sort_order:
   { name: "행정/재정", color: "#6B7280", sort_order: 10 },
 ];
 
-export const DEFAULT_PLACE_SEED: {
+export const DEFAULT_PLACE_ROWS: {
   name: string;
   capacity: number;
   equipment: string[];
