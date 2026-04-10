@@ -894,7 +894,14 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     <ChevronRight size={20} />
                   </button>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: mob ? 6 : 8,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => {
@@ -905,11 +912,12 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       background: selectMode ? "#FEF2F2" : "#fff",
                       color: selectMode ? "#EF4444" : "#64748b",
                       border: `1.5px solid ${selectMode ? "#FECACA" : "#e5e7eb"}`,
-                      fontSize: 13,
+                      fontSize: mob ? 11 : 13,
                       fontWeight: 600,
-                      borderRadius: 10,
-                      padding: "6px 14px",
+                      borderRadius: mob ? 8 : 10,
+                      padding: mob ? "4px 10px" : "6px 14px",
                       cursor: "pointer",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     선택 삭제
@@ -941,15 +949,15 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         toast("이 달의 일정이 삭제되었습니다.", "ok");
                       }}
                       style={{
-                        height: 36,
-                        padding: "0 14px",
-                        borderRadius: 10,
-                        fontSize: 13,
-                        fontWeight: 600,
                         background: "#fff",
                         color: "#EF4444",
                         border: "1.5px solid #FECACA",
+                        fontSize: mob ? 11 : 13,
+                        fontWeight: 600,
+                        borderRadius: mob ? 8 : 10,
+                        padding: mob ? "4px 10px" : "6px 14px",
                         cursor: "pointer",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       전체 삭제
@@ -959,21 +967,22 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     type="button"
                     onClick={() => openAddEvent(cursorY, cursorM, addEventDayForHeader)}
                     style={{
-                      background: ACCENT,
+                      background: "#4A90D9",
                       color: "#fff",
-                      height: 40,
-                      padding: "0 20px",
-                      borderRadius: 12,
-                      fontSize: 14,
-                      fontWeight: 700,
-                      cursor: "pointer",
                       border: "none",
-                      display: "inline-flex",
+                      fontSize: mob ? 11 : 14,
+                      fontWeight: 700,
+                      borderRadius: mob ? 8 : 10,
+                      padding: mob ? "4px 12px" : "6px 18px",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      display: "flex",
                       alignItems: "center",
-                      gap: 6,
+                      gap: 4,
                     }}
                   >
-                    <Plus size={18} strokeWidth={2.5} />+ 일정 추가
+                    <Plus size={mob ? 14 : 18} strokeWidth={2.5} />
+                    + 일정 추가
                   </button>
                 </div>
               </div>
@@ -1339,51 +1348,69 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
             {departments.length > 0 && (
               <div
                 style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  gap: mob ? 8 : 12,
-                  padding: mob ? "10px 4px" : "12px 8px",
-                  marginBottom: 8,
+                  background: "#f8f9fc",
+                  borderRadius: mob ? 10 : 12,
+                  padding: mob ? "10px 12px" : "12px 16px",
+                  marginBottom: mob ? 12 : 16,
                 }}
               >
-                <span
+                <div
                   style={{
-                    fontSize: mob ? 11 : 12,
-                    fontWeight: 700,
+                    fontSize: mob ? 10 : 11,
+                    fontWeight: 600,
                     color: "#94a3b8",
-                    marginRight: 4,
+                    marginBottom: mob ? 6 : 8,
+                    letterSpacing: "0.5px",
                   }}
                 >
                   부서 색상 안내
-                </span>
-                {departments
-                  .filter((d) => d.is_active !== false)
-                  .map((dept) => (
-                    <div key={dept.id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                      <span
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: mob
+                      ? "repeat(3, 1fr)"
+                      : `repeat(${Math.max(1, Math.min(departments.filter((d) => d.is_active !== false).length, 6))}, auto)`,
+                    gap: mob ? "4px 8px" : "6px 16px",
+                    alignItems: "center",
+                  }}
+                >
+                  {departments
+                    .filter((d) => d.is_active !== false)
+                    .map((dept) => (
+                      <div
+                        key={dept.id}
                         style={{
-                          width: mob ? 10 : 12,
-                          height: mob ? 10 : 12,
-                          borderRadius: "50%",
-                          background: dept.color || "#94a3b8",
-                          display: "inline-block",
-                          flexShrink: 0,
-                          border: "1.5px solid rgba(0,0,0,0.08)",
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontSize: mob ? 10 : 12,
-                          color: "#475569",
-                          fontWeight: 500,
-                          whiteSpace: "nowrap",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: mob ? 4 : 6,
                         }}
                       >
-                        {dept.name}
-                      </span>
-                    </div>
-                  ))}
+                        <span
+                          style={{
+                            width: mob ? 8 : 10,
+                            height: mob ? 8 : 10,
+                            borderRadius: "50%",
+                            background: dept.color || "#94a3b8",
+                            flexShrink: 0,
+                            display: "inline-block",
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: mob ? 10 : 12,
+                            color: "#475569",
+                            fontWeight: 500,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {dept.name}
+                        </span>
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
           </section>
