@@ -1,7 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
 
 export interface PaginationProps {
   totalItems: number;
@@ -12,12 +23,31 @@ export interface PaginationProps {
   hideSummary?: boolean;
   /** 목양 성도 관리 등 모바일 리스트와 맞춤: 요약·버튼 글자 축소 */
   compact?: boolean;
-  /** 부모가 flex column일 때 하단 고정: marginTop auto + padding 8px 0, 요약 10px */
+  /** compact와 함께 쓰면 버튼/요약을 더 촘촘하게(하단 바 전용). 레이아웃 고정은 부모 `PAGINATION_LIST_PARENT_STYLE` + 본 컴포넌트의 marginTop:auto로 처리 */
   pinBottom?: boolean;
 }
 
+/** 리스트+Pagination 부모: flex column + 최소 높이 — Pagination의 marginTop:auto가 이 영역 하단까지 밀어냄 */
+export const PAGINATION_LIST_PARENT_STYLE: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  minHeight: "calc(100vh - 300px)",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
 const DEFAULT_ITEMS_PER_PAGE = 10;
 const MAX_VISIBLE_PAGES = 5;
+
+function findScrollParent(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const s = window.getComputedStyle(node);
+    if ((s.overflowY === "auto" || s.overflowY === "scroll") && node.scrollHeight > node.clientHeight) return node;
+    node = node.parentElement;
+  }
+  return null;
+}
 
 export function Pagination({
   totalItems,
@@ -28,34 +58,49 @@ export function Pagination({
   compact = false,
   pinBottom = false,
 }: PaginationProps) {
+  const mob = useIsMobile();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const savedScrollRef = useRef<{ parent: HTMLElement; top: number } | null>(null);
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
   const start = totalItems === 0 ? 0 : (safePage - 1) * itemsPerPage + 1;
   const end = Math.min(safePage * itemsPerPage, totalItems);
 
-  const handlePageChange = (page: number) => onPageChange(page);
+  useLayoutEffect(() => {
+    if (savedScrollRef.current) {
+      savedScrollRef.current.parent.scrollTop = savedScrollRef.current.top;
+      savedScrollRef.current = null;
+    }
+  });
+
+  const handlePageChange = (page: number) => {
+    const sp = findScrollParent(wrapRef.current);
+    if (sp) savedScrollRef.current = { parent: sp, top: sp.scrollTop };
+    onPageChange(page);
+  };
   const prevDisabled = safePage <= 1;
   const nextDisabled = safePage >= totalPages;
 
   const tight = compact || pinBottom;
+  const desktopLoose = !tight && !mob;
   const btnBase: React.CSSProperties = {
-    padding: tight ? "4px 8px" : "8px 12px",
-    borderRadius: 6,
+    padding: tight ? "4px 8px" : desktopLoose ? "10px 14px" : "8px 12px",
+    borderRadius: tight ? 6 : desktopLoose ? 10 : 6,
     border: "1px solid #e8ecf1",
     background: "#f5f6f8",
     color: "#555",
-    fontSize: tight ? (pinBottom ? 10 : 11) : 13,
+    fontSize: tight ? (pinBottom ? 10 : 11) : desktopLoose ? 14 : 13,
     fontWeight: 500,
     cursor: "pointer",
     fontFamily: "inherit",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: tight ? (pinBottom ? 28 : 30) : 36,
+    minWidth: tight ? (pinBottom ? 28 : 30) : desktopLoose ? 40 : 36,
   };
-  const summaryFs = tight ? 10 : 13;
-  const ellipsisFs = tight ? 10 : 13;
-  const chevSize = tight ? (pinBottom ? 14 : 16) : 18;
+  const summaryFs = tight ? 10 : desktopLoose ? 14 : 13;
+  const ellipsisFs = tight ? 10 : desktopLoose ? 14 : 13;
+  const chevSize = tight ? (pinBottom ? 14 : 16) : desktopLoose ? 20 : 18;
 
   const pageStart = totalPages <= MAX_VISIBLE_PAGES
     ? 1
@@ -70,12 +115,17 @@ export function Pagination({
   const showLeadingEllipsis = pageStart > 1;
   const showTrailingEllipsis = pageEnd < totalPages;
 
-  const wrapStyle: React.CSSProperties = pinBottom
-    ? { marginTop: "auto", padding: "8px 0", flexShrink: 0, width: "100%", boxSizing: "border-box" }
-    : { marginTop: 0 };
+  const wrapStyle: React.CSSProperties = {
+    marginTop: "auto",
+    paddingTop: 24,
+    paddingBottom: 16,
+    flexShrink: 0,
+    width: "100%",
+    boxSizing: "border-box",
+  };
 
   return (
-    <div style={wrapStyle}>
+    <div ref={wrapRef} style={wrapStyle}>
       {!hideSummary && (
         <div style={{ fontSize: summaryFs, color: "#999", marginBottom: tight ? 6 : 8, textAlign: "center" }}>
           총 {totalItems}건 중 {totalItems === 0 ? 0 : start}-{end} 표시

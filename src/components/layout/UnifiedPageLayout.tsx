@@ -201,12 +201,15 @@ export function UnifiedPageLayout({
       style={{
         fontFamily: "'Inter','Noto Sans KR',-apple-system,sans-serif",
         background: LAYOUT.mainBg,
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         display: "flex",
         width: "100%",
-        height: "100vh",
         color: "#1f2937",
         overflow: "hidden",
-        position: "relative",
       }}
     >
       {mob && sideOpen && (
@@ -399,47 +402,56 @@ export function UnifiedPageLayout({
         style={{
           flex: 1,
           minWidth: 0,
+          minHeight: 0,
           width: "100%",
+          height: "100%",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
         }}
       >
-        <header
-          style={
-            mob
-              ? {
-                  flexShrink: 0,
-                  height: MOB_TOP_HEADER_H,
-                  minHeight: MOB_TOP_HEADER_H,
-                  maxHeight: MOB_TOP_HEADER_H,
-                  padding: "12px 16px 0",
-                  boxSizing: "border-box",
-                  overflow: "hidden",
-                  background: "#fff",
-                  borderBottom: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 8,
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 20,
-                }
-              : {
-                  minHeight: LAYOUT.mainHeaderHeight,
-                  padding: LAYOUT.mainHeaderPadding,
-                  background: "rgba(255,255,255,0.85)",
-                  backdropFilter: "blur(20px)",
-                  borderBottom: `1px solid ${LAYOUT.border}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexShrink: 0,
-                  gap: 8,
-                }
-          }
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            flex: 1,
+            minHeight: 0,
+            width: "100%",
+            overflow: "hidden",
+          }}
         >
+            <header
+              style={
+                mob
+                  ? {
+                      flexShrink: 0,
+                      height: MOB_TOP_HEADER_H,
+                      minHeight: MOB_TOP_HEADER_H,
+                      maxHeight: MOB_TOP_HEADER_H,
+                      padding: "12px 16px 0",
+                      boxSizing: "border-box",
+                      overflow: "hidden",
+                      background: "#fff",
+                      borderBottom: `1px solid ${LAYOUT.border}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 8,
+                    }
+                  : {
+                      minHeight: LAYOUT.mainHeaderHeight,
+                      padding: LAYOUT.mainHeaderPadding,
+                      background: "#ffffff",
+                      borderBottom: `1px solid ${LAYOUT.border}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexShrink: 0,
+                      gap: 8,
+                    }
+              }
+            >
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1, height: "100%", overflow: "hidden" }}>
             {mob && (
               <button
@@ -505,8 +517,6 @@ export function UnifiedPageLayout({
         {mob && navSections.length > 0 && !hideMobileSubTabs && (
           <div
             className="mobile-sub-tabs"
-            onTouchStart={handleSwipeTouchStart}
-            onTouchEnd={handleSwipeTouchEnd}
             style={{
               display: "flex",
               alignItems: "stretch",
@@ -523,9 +533,6 @@ export function UnifiedPageLayout({
               WebkitOverflowScrolling: "touch",
               scrollbarWidth: "none",
               msOverflowStyle: "none",
-              position: "sticky",
-              top: MOB_TOP_HEADER_H,
-              zIndex: 19,
               boxSizing: "border-box",
             }}
           >
@@ -568,19 +575,23 @@ export function UnifiedPageLayout({
           </div>
         )}
 
-        <div
-          onTouchStart={mob ? handleSwipeTouchStart : undefined}
-          onTouchEnd={mob ? handleSwipeTouchEnd : undefined}
-          style={{
-            flex: 1,
-            width: "100%",
-            overflowY: "auto",
-            padding: mob ? `8px ${LAYOUT.mainContentPaddingMob}px ${LAYOUT.mainContentPaddingMob}px` : LAYOUT.mainContentPadding,
-            fontSize: mob ? 14 : 15,
-            lineHeight: 1.55,
-          }}
-        >
-          {children}
+          <div
+            onTouchStart={mob ? handleSwipeTouchStart : undefined}
+            onTouchEnd={mob ? handleSwipeTouchEnd : undefined}
+            style={{
+              flex: 1,
+              minHeight: 0,
+              width: "100%",
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              padding: mob ? `8px ${LAYOUT.mainContentPaddingMob}px ${LAYOUT.mainContentPaddingMob}px` : LAYOUT.mainContentPadding,
+              ...(mob ? { paddingBottom: 100 } : {}),
+              fontSize: mob ? 14 : 15,
+              lineHeight: 1.55,
+            }}
+          >
+            {children}
+          </div>
         </div>
       </main>
     </div>
