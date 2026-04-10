@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, Fragment, type CSSPr
 import { createPortal } from "react-dom";
 import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown, Eye, Save, Archive, Edit3, type LucideIcon } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { Pagination } from "@/components/common/Pagination";
+import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import KakaoShareCard from "@/components/bulletin/KakaoShareCard";
 import { initKakao, shareTextToKakao } from "@/lib/kakao";
 import { downloadElementAsImage } from "@/utils/captureElement";
@@ -419,12 +419,32 @@ function saveBulletin(db: BulletinDB) {
 
 /* ---------- UI ---------- */
 function Card({ children, style, id }: { children: ReactNode; style?: CSSProperties; id?: string }) {
-  return <div id={id} style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden", marginBottom: 16, ...style }}>{children}</div>;
+  const mob = useIsMobile();
+  return (
+    <div
+      id={id}
+      style={{
+        background: C.card,
+        borderRadius: mob ? 8 : 16,
+        border: `1px solid ${C.border}`,
+        overflow: "hidden",
+        marginBottom: 16,
+        ...(mob ? {} : { padding: 24 }),
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 function Btn({ children, variant = "primary", size = "md", onClick, style }: { children?: ReactNode; variant?: "primary" | "secondary" | "ghost" | "danger" | "accent"; size?: "sm" | "md"; onClick?: () => void; style?: CSSProperties }) {
-  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap" };
-  const sizes: Record<string, CSSProperties> = { sm: { padding: "6px 12px", fontSize: 12 }, md: { padding: "8px 16px", fontSize: 13 } };
+  const mob = useIsMobile();
+  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: mob ? 8 : 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap" };
+  const sizes: Record<string, CSSProperties> = {
+    sm: { padding: mob ? "6px 12px" : "6px 14px", fontSize: mob ? 12 : 13, ...(mob ? {} : { minHeight: 34, boxSizing: "border-box" as const }) },
+    md: { padding: mob ? "8px 16px" : "10px 20px", fontSize: mob ? 13 : 14, ...(mob ? {} : { minHeight: 40, boxSizing: "border-box" as const }) },
+  };
   const variants: Record<string, CSSProperties> = {
     primary: { background: C.accent, color: "#fff" },
     secondary: { background: C.borderLight, color: C.text, border: `1px solid ${C.border}` },
@@ -436,19 +456,86 @@ function Btn({ children, variant = "primary", size = "md", onClick, style }: { c
 }
 
 function FormField({ label, children, labelStyle }: { label: string; children: ReactNode; labelStyle?: CSSProperties }) {
-  return <div style={{ marginBottom: 14 }}><label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 4, ...labelStyle }}>{label}</label>{children}</div>;
+  const mob = useIsMobile();
+  return (
+    <div style={{ marginBottom: mob ? 14 : 16 }}>
+      <label style={{ display: "block", fontSize: mob ? 12 : 13, fontWeight: 600, color: C.text, marginBottom: mob ? 4 : 6, ...labelStyle }}>{label}</label>
+      {children}
+    </div>
+  );
 }
 
 function FInput({ value, onChange, placeholder, type = "text", style, maxLength }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; style?: CSSProperties; maxLength?: number }) {
-  return <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} type={type} maxLength={maxLength} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", ...style }} />;
+  const mob = useIsMobile();
+  return (
+    <input
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      type={type}
+      maxLength={maxLength}
+      style={{
+        width: "100%",
+        padding: mob ? "9px 12px" : "10px 14px",
+        border: `1px solid ${C.border}`,
+        borderRadius: mob ? 8 : 10,
+        fontSize: mob ? 13 : 14,
+        fontFamily: "inherit",
+        background: C.bg,
+        outline: "none",
+        ...style,
+      }}
+    />
+  );
 }
 
 function FTextarea({ value, onChange, placeholder, style, maxLength }: { value: string; onChange: (v: string) => void; placeholder?: string; style?: CSSProperties; maxLength?: number }) {
-  return <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} maxLength={maxLength} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", resize: "vertical", minHeight: 70, ...style }} />;
+  const mob = useIsMobile();
+  return (
+    <textarea
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      style={{
+        width: "100%",
+        padding: mob ? "9px 12px" : "10px 14px",
+        border: `1px solid ${C.border}`,
+        borderRadius: mob ? 8 : 10,
+        fontSize: mob ? 13 : 14,
+        fontFamily: "inherit",
+        background: C.bg,
+        outline: "none",
+        resize: "vertical",
+        minHeight: mob ? 70 : 80,
+        ...style,
+      }}
+    />
+  );
 }
 
 function FSelect({ value, onChange, children, style }: { value: string; onChange: (v: string) => void; children: ReactNode; style?: CSSProperties }) {
-  return <select value={value} onChange={e => onChange(e.target.value)} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.bg, outline: "none", cursor: "pointer", ...style }}>{children}</select>;
+  const mob = useIsMobile();
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      style={{
+        width: "100%",
+        padding: mob ? "9px 12px" : "10px 14px",
+        border: `1px solid ${C.border}`,
+        borderRadius: mob ? 8 : 10,
+        fontSize: mob ? 13 : 14,
+        fontFamily: "inherit",
+        background: C.bg,
+        outline: "none",
+        cursor: "pointer",
+        ...style,
+      }}
+    >
+      {children}
+    </select>
+  );
 }
 
 /* ── 주보용 인라인 SVG 아이콘 (Lucide 스타일) ── */
@@ -3643,16 +3730,16 @@ export function BulletinPage() {
                     const desc = item.desc;
                     const keys = "keys" in item ? item.keys : undefined;
                     return (
-                      <div key={displayKey} style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #e5e7eb", overflow: "hidden" }}>
-                        <button type="button" onClick={() => toggleSection(displayKey)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>
+                      <div key={displayKey} style={{ background: "#fff", borderRadius: mob ? 12 : 16, marginBottom: mob ? 8 : 12, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                        <button type="button" onClick={() => toggleSection(displayKey)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: mob ? "14px 16px" : "16px 20px", background: "none", border: "none", cursor: "pointer", fontSize: mob ? 14 : 16, fontWeight: 700, color: "#1a1a1a" }}>
                           <span>{name}</span>
                           <span style={{ transform: (openSections[displayKey] ?? false) ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-flex" }}>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#999" }}><path d="m6 9 6 6 6-6"/></svg>
                           </span>
                         </button>
                         {(openSections[displayKey] ?? false) && (
-                          <div style={{ padding: "0 16px 16px" }}>
-                            <p style={{ fontSize: 11, color: "#888", marginBottom: 12 }}>{desc}</p>
+                          <div style={{ padding: mob ? "0 16px 16px" : "0 20px 20px" }}>
+                            <p style={{ fontSize: mob ? 11 : 14, color: "#888", marginBottom: 12, lineHeight: mob ? 1.4 : 1.6 }}>{desc}</p>
                             {keys ? keys.map((k, i) => <Fragment key={k}>{i > 0 && <hr style={hrStyle} />}{renderBulletinEditSectionContent(k)}</Fragment>) : renderBulletinEditSectionContent(displayKey as SectionKey)}
                           </div>
                         )}
@@ -3668,58 +3755,41 @@ export function BulletinPage() {
           )}
 
           {activeSub === "history" && (
-            <div ref={listRefHistory} style={{ width: "100%" }}>
-              <Card style={{ padding: 0, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 200px)" }}>
+            <div ref={listRefHistory} style={{ ...PAGINATION_LIST_PARENT_STYLE }}>
+              <Card style={{ padding: 0, display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%" }}>
                 {db.history.length === 0 ? (
                   <div style={{ color: "#9ca3af", textAlign: "center", padding: 40, fontSize: 14 }}>저장된 주보가 없습니다. 편집에서 저장하면 여기에 표시됩니다.</div>
                 ) : (
                   <>
-                    <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", padding: "12px 20px", borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>날짜</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>설교 제목</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", textAlign: "right" }}>관리</span>
+                    <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", padding: mob ? "12px 20px" : "14px 24px", borderBottom: "2px solid #e5e7eb", background: "#f9fafb", flexShrink: 0 }}>
+                      <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: "#6b7280" }}>날짜</span>
+                      <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: "#6b7280" }}>설교 제목</span>
+                      <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: "#6b7280", textAlign: "right" }}>관리</span>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ padding: 0, overflow: "hidden" }}>
-                        {db.history.slice().reverse().slice((historySafePage - 1) * HISTORY_PER_PAGE, historySafePage * HISTORY_PER_PAGE).map(h => (
-                          <div key={h.key} style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", alignItems: "center", padding: mob ? "14px 16px" : "14px 20px", borderBottom: "1px solid #f3f4f6" }}>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: "#374151" }}>{h.date || h.key}</div>
-                            <div style={{ fontSize: 13, color: "#6b7280" }}>{h.sermonTitle || "제목없음"} · 저장: {h.savedAt || ""}</div>
-                            <div style={{ textAlign: mob ? "left" : "right" }}>
-                              <button type="button" onClick={() => loadHistory(h.key)} style={{ padding: "8px 16px", minWidth: 70, fontSize: 13, fontWeight: 500, backgroundColor: "#111827", border: "none", borderRadius: 8, color: "#ffffff", cursor: "pointer", width: mob ? "100%" : undefined }}>불러오기</button>
-                            </div>
+                    <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+                      {db.history.slice().reverse().slice((historySafePage - 1) * HISTORY_PER_PAGE, historySafePage * HISTORY_PER_PAGE).map(h => (
+                        <div key={h.key} style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", alignItems: "center", padding: mob ? "14px 16px" : "16px 24px", borderBottom: "1px solid #f3f4f6" }}>
+                          <div style={{ fontSize: mob ? 12 : 15, fontWeight: 600, color: "#374151" }}>{h.date || h.key}</div>
+                          <div style={{ fontSize: mob ? 13 : 14, color: "#6b7280" }}>{h.sermonTitle || "제목없음"} · 저장: {h.savedAt || ""}</div>
+                          <div style={{ textAlign: mob ? "left" : "right" }}>
+                            <button type="button" onClick={() => loadHistory(h.key)} style={{ padding: mob ? "8px 16px" : "10px 20px", minWidth: 70, fontSize: mob ? 13 : 14, fontWeight: 500, backgroundColor: "#111827", border: "none", borderRadius: mob ? 8 : 10, color: "#ffffff", cursor: "pointer", width: mob ? "100%" : undefined }}>불러오기</button>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ borderTop: "1px solid #e5e7eb", padding: "12px 20px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
+                      <span style={{ fontSize: mob ? 13 : 14, color: "#6b7280" }}>
+                        총 {db.history.length}건 중 {historyRangeStart}–{historyRangeEnd} 표시
+                      </span>
+                      <Pagination
+                        hideSummary
+                        totalItems={db.history.length}
+                        itemsPerPage={HISTORY_PER_PAGE}
+                        currentPage={currentPageHistory}
+                        onPageChange={(p) => setCurrentPageHistory(p)}
+                      />
                     </div>
                   </>
-                )}
-                {db.history.length > 0 && (
-                  <div
-                    style={{
-                      borderTop: "1px solid #e5e7eb",
-                      padding: "12px 20px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span style={{ fontSize: 13, color: "#6b7280" }}>
-                      총 {db.history.length}건 중 {historyRangeStart}–{historyRangeEnd} 표시
-                    </span>
-                    <Pagination
-                      hideSummary
-                      totalItems={db.history.length}
-                      itemsPerPage={HISTORY_PER_PAGE}
-                      currentPage={currentPageHistory}
-                      onPageChange={(p) => {
-                        setCurrentPageHistory(p);
-                        listRefHistory.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }}
-                    />
-                  </div>
                 )}
               </Card>
             </div>

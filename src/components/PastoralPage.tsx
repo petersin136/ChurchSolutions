@@ -10,7 +10,7 @@ import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, Heart, Home, Gift } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { Pagination } from "@/components/common/Pagination";
+import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics } from "@/components/attendance";
@@ -890,8 +890,6 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 
   const deptColors = [C.accent, C.pink, C.purple, C.success, C.teal, C.orange, C.danger, C.warning];
 
-  const churchName = (db.settings.churchName || "").trim();
-
   const summaryCards = useMemo(
     () => [
       { label: "전체 성도", value: `${total}명`, sub: "활성 등록" },
@@ -909,12 +907,6 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 24 }}>
-      {churchName && !mob && (
-        <div style={{ padding: "12px 0 4px", borderBottom: `2px solid ${C.border}`, marginBottom: 4 }}>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: C.navy }}>{churchName}</h2>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: C.textMuted }}>목양 대시보드</p>
-        </div>
-      )}
       {mob ? (
         <>
           <div
@@ -1510,54 +1502,54 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             </div>
           ) : (
             /* 선택된 목장의 목장원 (10명 단위 페이지) — 테이블로 한눈에 */
-            <div ref={listRef} style={mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const } : {}}><Card style={{ padding: 0, overflow: "hidden" }}>
-              <div style={{ padding: "14px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                <button type="button" onClick={() => { setSelectedMokjang(null); setPageGroup(1); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "none", background: "transparent", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 목장 목록</button>
-                <span style={{ color: C.navy, fontWeight: 700 }}>🏠 {selectedMokjang} ({selectedGroupMembers.length}명)</span>
-              </div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? listMobCell : 14 }}>
-                  <thead>
-                    <tr style={{ background: C.bg }}>
-                      {["이름","부서","출석","기도제목","최근 심방"].map((h, i) => (
-                        <th key={i} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, fontSize: listMobTh, color: C.navy, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pageGroupMembers.map((m, idx) => {
-                      const ws = (db.attendance[m.id] || {})[currentWeek] || "n";
-                      const globalIdx = (currentPageGroup - 1) * PAGE_SIZE_MEM + idx;
-                      const isLeader = globalIdx === 0;
-                      const notes = (db.notes[m.id] || []).slice().reverse();
-                      const lastVisit = notes.find(n => n.type === "visit");
-                      const prayerSnip = m.prayer ? (m.prayer.length > 20 ? m.prayer.substring(0, 20) + "…" : m.prayer) : "-";
-                      return (
-                        <tr key={m.id} onClick={() => openDetail(m.id)} style={{ cursor: "pointer", borderBottom: `1px solid ${C.borderLight}`, transition: "background 0.1s" }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.bg; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                          <td style={{ padding: "10px 14px", minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                              <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: isLeader ? `linear-gradient(135deg, ${C.accent}, ${C.purple})` : `linear-gradient(135deg, ${C.accentBg}, ${C.tealBg})`, color: isLeader ? "#fff" : C.accent, overflow: "hidden", flexShrink: 0 }}>
-                                {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
+            <div style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { flex: 1, minHeight: 0, overflow: "hidden", minWidth: 0 } : {}) }}>
+              <div ref={listRef} style={{ flex: 1, minHeight: 0, ...(mob ? { overflowY: "auto", WebkitOverflowScrolling: "touch" as const } : {}) }}><Card style={{ padding: 0, overflow: "hidden" }}>
+                <div style={{ padding: "14px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                  <button type="button" onClick={() => { setSelectedMokjang(null); setPageGroup(1); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "none", background: "transparent", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 목장 목록</button>
+                  <span style={{ color: C.navy, fontWeight: 700 }}>🏠 {selectedMokjang} ({selectedGroupMembers.length}명)</span>
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? listMobCell : 14 }}>
+                    <thead>
+                      <tr style={{ background: C.bg }}>
+                        {["이름","부서","출석","기도제목","최근 심방"].map((h, i) => (
+                          <th key={i} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, fontSize: listMobTh, color: C.navy, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pageGroupMembers.map((m, idx) => {
+                        const ws = (db.attendance[m.id] || {})[currentWeek] || "n";
+                        const globalIdx = (currentPageGroup - 1) * PAGE_SIZE_MEM + idx;
+                        const isLeader = globalIdx === 0;
+                        const notes = (db.notes[m.id] || []).slice().reverse();
+                        const lastVisit = notes.find(n => n.type === "visit");
+                        const prayerSnip = m.prayer ? (m.prayer.length > 20 ? m.prayer.substring(0, 20) + "…" : m.prayer) : "-";
+                        return (
+                          <tr key={m.id} onClick={() => openDetail(m.id)} style={{ cursor: "pointer", borderBottom: `1px solid ${C.borderLight}`, transition: "background 0.1s" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.bg; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                            <td style={{ padding: "10px 14px", minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                                <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: isLeader ? `linear-gradient(135deg, ${C.accent}, ${C.purple})` : `linear-gradient(135deg, ${C.accentBg}, ${C.tealBg})`, color: isLeader ? "#fff" : C.accent, overflow: "hidden", flexShrink: 0 }}>
+                                  {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
+                                </div>
+                                <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ fontWeight: 700, fontSize: listMobName, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{m.name}</span>{isLeader && <span style={{ fontSize: mob ? 9 : 10, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>목자</span>}</div><div style={{ fontSize: listMobRole, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
                               </div>
-                              <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ fontWeight: 700, fontSize: listMobName, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{m.name}</span>{isLeader && <span style={{ fontSize: mob ? 9 : 10, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>목자</span>}</div><div style={{ fontSize: listMobRole, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
-                            </div>
-                          </td>
-                          <td style={{ padding: "10px 14px" }}><SBadge variant="gray" style={mob ? { fontSize: 9, padding: "1px 6px" } : undefined}>{m.dept || "-"}</SBadge></td>
-                          <td style={{ padding: "10px 14px" }}><AttDot status={ws} onClick={() => cycleAtt(m.id)} /></td>
-                          <td style={{ padding: "10px 14px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell, color: C.purple }}>{prayerSnip}</td>
-                          <td style={{ padding: "10px 14px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 10)}…` : "-"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </Card></div>
-          )}
-          {viewMode === "group" && selectedMokjang && (
-            <Pagination pinBottom={mob} compact={mob} totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroup(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+                            </td>
+                            <td style={{ padding: "10px 14px" }}><SBadge variant="gray" style={mob ? { fontSize: 9, padding: "1px 6px" } : undefined}>{m.dept || "-"}</SBadge></td>
+                            <td style={{ padding: "10px 14px" }}><AttDot status={ws} onClick={() => cycleAtt(m.id)} /></td>
+                            <td style={{ padding: "10px 14px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell, color: C.purple }}>{prayerSnip}</td>
+                            <td style={{ padding: "10px 14px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 10)}…` : "-"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card></div>
+              <Pagination compact={mob} totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageGroup} onPageChange={(p) => setPageGroup(p)} />
+            </div>
           )}
         </>
       )}
@@ -1572,7 +1564,8 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
               .pastoral-list-table .member-avatar { width: 30px !important; height: 30px !important; }
             `}</style>
           )}
-          <div ref={listRef} style={mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const, width: "100%", maxWidth: "100%", minWidth: 0 } : { width: "100%", maxWidth: "100%", minWidth: 0 }}><Card style={{ padding: 0, overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+          <div style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { flex: 1, minHeight: 0, overflow: "hidden", minWidth: 0 } : {}) }}>
+          <div ref={listRef} style={{ flex: 1, minHeight: 0, ...(mob ? { overflowY: "auto", WebkitOverflowScrolling: "touch" as const, width: "100%", maxWidth: "100%", minWidth: 0 } : { width: "100%", maxWidth: "100%", minWidth: 0 }) }}><Card style={{ padding: 0, overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
             <div style={{ overflowX: "auto", width: "100%", maxWidth: "100%", minWidth: 0 }}>
               <table className="pastoral-list-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? listMobCell : 14 }}>
                 <thead>
@@ -1631,8 +1624,9 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             </div>
           </Card></div>
           {viewMode === "list" && (
-            <Pagination pinBottom={mob} compact={mob} totalItems={filtered.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageList} onPageChange={(p) => { setPageList(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            <Pagination compact={mob} totalItems={filtered.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageList} onPageChange={(p) => setPageList(p)} />
           )}
+          </div>
         </>
       )}
       </div>
@@ -1926,8 +1920,8 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
         </div>
       )}
 
-      <div style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : {}}>
-      <div ref={listRefAtt} style={mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const, minWidth: 0 } : {}}><Card style={{ padding: 0, overflow: "hidden" }}>
+      <div style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { flex: 1, minHeight: 0, overflow: "hidden", minWidth: 0 } : {}) }}>
+      <div ref={listRefAtt} style={{ flex: 1, minHeight: 0, ...(mob ? { overflowY: "auto", WebkitOverflowScrolling: "touch" as const, minWidth: 0 } : {}) }}><Card style={{ padding: 0, overflow: "hidden" }}>
         {mob ? (
           <div>
             {viewModeAtt === "group" ? (
@@ -2079,10 +2073,10 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
       </Card>
       </div>
       {viewModeAtt === "list" && (
-        <Pagination pinBottom={mob} compact={mob} totalItems={m.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageAtt} onPageChange={(p) => { setPageAtt(p); listRefAtt.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+        <Pagination compact={mob} totalItems={m.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageAtt} onPageChange={(p) => setPageAtt(p)} />
       )}
       {viewModeAtt === "group" && selectedMokjangAtt && (
-        <Pagination pinBottom={mob} compact={mob} totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageGroup} onPageChange={(p) => { setPageGroupAtt(p); listRefAtt.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+        <Pagination compact={mob} totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_ATT} currentPage={currentPageGroup} onPageChange={(p) => setPageGroupAtt(p)} />
       )}
       </div>
       {absentReasonModal && (
@@ -2216,7 +2210,7 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
         )}
         <Btn variant="primary" icon={<Icons.Plus />} onClick={() => openNoteModal()} style={btnPrayMob}>+ 기도</Btn>
       </div>
-      <div ref={listRefNotes} style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : {}}>
+      <div ref={listRefNotes} style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { flex: 1, minHeight: 0, overflow: "hidden", minWidth: 0 } : {}) }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: mob ? 24 : 48 }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><Heart size={mob ? 28 : 40} strokeWidth={1.5} style={{ color: C.textMuted }} /></div>
@@ -2242,7 +2236,7 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
                 );
               })}
             </div>
-            <Pagination pinBottom={mob} compact={mob} totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRefNotes.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            <Pagination compact={mob} totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
           </>
         )}
       </div>
@@ -2633,7 +2627,24 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: mob ? 10 : 20, ...(mob ? { minHeight: MOB_PANEL_MIN_H } : {}) }}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 4, ...(mob ? { flexShrink: 0 } : {}) }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginBottom: 4,
+          ...(mob ? { flexShrink: 0 } : {}),
+          ...(mob
+            ? {}
+            : {
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                background: "#fff",
+                paddingTop: 8,
+                paddingBottom: 0,
+              }),
+        }}
+      >
         {([{ id: "list" as const, label: "새가족 정착" }, { id: "servant" as const, label: "섬김이 학교" }]).map(tab => (
           <button
             key={tab.id}
@@ -2681,7 +2692,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
         ))}
       </div>
 
-      <div ref={listRef} style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : {}}>
+      <div ref={listRef} style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { flex: 1, minHeight: 0, overflow: "hidden", minWidth: 0 } : {}) }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: mob ? 4 : 8, marginBottom: mob ? 8 : 16, ...(mob ? { flexShrink: 0 } : {}) }}>
           {(["all", "진행중", "수료", "중단", "no_mentor"] as const).map(f => (
             <button key={f} type="button" onClick={() => { setFilter(f); setCurrentPage(1); }} style={{
@@ -2753,7 +2764,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
           </div>
         )}
         {filteredList.length > 0 && (
-          <Pagination pinBottom={mob} compact={mob} totalItems={filteredList.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+          <Pagination compact={mob} totalItems={filteredList.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
         )}
       </div>
       </div>
@@ -3773,6 +3784,16 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                   paddingBottom: mob ? 8 : 12,
                   borderBottom: `1px solid ${C.border}`,
                   boxSizing: "border-box",
+                  ...(mob
+                    ? {}
+                    : {
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 10,
+                        background: "#fff",
+                        paddingTop: 8,
+                        paddingBottom: 0,
+                      }),
                 }}
               >
                 {mob ? (

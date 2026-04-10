@@ -7,43 +7,61 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import type { Budget } from "@/types/db";
 import { useAppData } from "@/contexts/AppDataContext";
 import LazyChart from "../common/LazyChart";
+import {
+  budgetYearToolbarRowStyle,
+  budgetYearLabelStyle,
+  budgetYearReadonlyStyle,
+  budgetMonthSelectStyle,
+} from "@/components/finance/budgetYearToolbarStyles";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 const NAVY = "#1B2A4A";
 const BORDER = "#e8ecf1";
 const ROW_LINE = "#f0f2f5";
 
-const bvaTh = (align: "left" | "right" | "center"): CSSProperties => ({
-  fontSize: 10,
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
+
+const bvaTh = (align: "left" | "right" | "center", mob = true): CSSProperties => ({
+  fontSize: mob ? 10 : 13,
   fontWeight: 700,
   color: NAVY,
-  padding: "6px 8px",
+  padding: mob ? "6px 8px" : "10px 14px",
   borderBottom: `2px solid ${NAVY}`,
   background: "#fff",
   textAlign: align,
 });
 
-const bvaTd = (isEven: boolean, align: "left" | "right" | "center"): CSSProperties => ({
-  fontSize: 11,
+const bvaTd = (isEven: boolean, align: "left" | "right" | "center", mob = true): CSSProperties => ({
+  fontSize: mob ? 11 : 14,
   color: "#555",
-  padding: "8px",
+  padding: mob ? "8px" : "12px 14px",
   borderBottom: `1px solid ${ROW_LINE}`,
   background: isEven ? "#fafbfc" : "#fff",
   textAlign: align,
 });
 
-function togglePill(selected: boolean): CSSProperties {
+function togglePill(selected: boolean, mob = true): CSSProperties {
+  const h = mob ? 28 : 36;
   return {
     flex: 1,
     minWidth: 0,
-    height: 28,
-    minHeight: 28,
-    maxHeight: 28,
-    lineHeight: "28px",
-    padding: "0 4px",
-    fontSize: 10,
+    height: h,
+    minHeight: h,
+    maxHeight: h,
+    lineHeight: `${h}px`,
+    padding: mob ? "0 4px" : "0 8px",
+    fontSize: mob ? 10 : 13,
     fontWeight: 600,
-    borderRadius: 6,
+    borderRadius: mob ? 6 : 8,
     border: selected ? "none" : `1px solid ${BORDER}`,
     background: selected ? NAVY : "#f5f6f8",
     color: selected ? "#fff" : "#555",
@@ -71,6 +89,7 @@ export function BudgetVsActual({
   toast,
   viewMode: viewModeProp = "monthly",
 }: BudgetVsActualProps) {
+  const mob = useIsMobile();
   const { db } = useAppData();
   const [viewMode, setViewMode] = useState<"monthly" | "annual">(viewModeProp);
   const [selectedMonth, setSelectedMonth] = useState(month ?? new Date().getMonth() + 1);
@@ -207,58 +226,54 @@ export function BudgetVsActual({
     );
   }
 
-  const selStyle: CSSProperties = {
-    height: 32,
-    fontSize: 11,
-    borderRadius: 6,
-    border: `1px solid ${BORDER}`,
-    padding: "0 10px",
-    background: "#fff",
-    color: "#555",
-    cursor: "pointer",
-  };
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
-            연도
-            <input type="text" value={year} readOnly style={{ ...selStyle, width: 72, fontSize: 12, cursor: "default" }} />
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
-            월
-            <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} style={{ ...selStyle, minWidth: 88 }}>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <option key={m} value={m}>
-                  {m}월
-                </option>
-              ))}
-            </select>
-          </label>
+        <div style={budgetYearToolbarRowStyle()}>
+          <span style={budgetYearLabelStyle(mob)}>연도</span>
+          <input type="text" value={`${year}년`} readOnly tabIndex={-1} style={budgetYearReadonlyStyle(mob)} />
+          <span style={budgetYearLabelStyle(mob)}>월</span>
+          <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} style={budgetMonthSelectStyle(mob)}>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              <option key={m} value={m}>
+                {m}월
+              </option>
+            ))}
+          </select>
         </div>
         <div style={{ display: "flex", gap: 4, width: "100%", alignItems: "stretch" }}>
-          <button type="button" className="finance-nav-btn" onClick={() => setViewMode("monthly")} style={togglePill(viewMode === "monthly")}>
+          <button type="button" className="finance-nav-btn" onClick={() => setViewMode("monthly")} style={togglePill(viewMode === "monthly", mob)}>
             월별
           </button>
-          <button type="button" className="finance-nav-btn" onClick={() => setViewMode("annual")} style={togglePill(viewMode === "annual")}>
+          <button type="button" className="finance-nav-btn" onClick={() => setViewMode("annual")} style={togglePill(viewMode === "annual", mob)}>
             연간 누적
           </button>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20, maxWidth: "100%" }}>
-        <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
-          <h4 style={{ margin: 0, padding: "10px 12px", fontSize: 13, fontWeight: 700, color: NAVY, borderBottom: `1px solid ${ROW_LINE}` }}>수입 예산 vs 실적</h4>
+        <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+          <h4
+            style={{
+              margin: 0,
+              padding: mob ? "10px 12px" : "14px 18px",
+              fontSize: mob ? 13 : 16,
+              fontWeight: 700,
+              color: NAVY,
+              borderBottom: `1px solid ${ROW_LINE}`,
+            }}
+          >
+            수입 예산 vs 실적
+          </h4>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={bvaTh("left")}>항목</th>
-                  <th style={bvaTh("right")}>예산</th>
-                  <th style={bvaTh("right")}>실적</th>
-                  <th style={bvaTh("right")}>차이</th>
-                  <th style={bvaTh("right")}>달성률</th>
+                  <th style={bvaTh("left", mob)}>항목</th>
+                  <th style={bvaTh("right", mob)}>예산</th>
+                  <th style={bvaTh("right", mob)}>실적</th>
+                  <th style={bvaTh("right", mob)}>차이</th>
+                  <th style={bvaTh("right", mob)}>달성률</th>
                 </tr>
               </thead>
               <tbody>
@@ -271,11 +286,11 @@ export function BudgetVsActual({
                 ) : (
                   incomeRows.map((r, i) => (
                     <tr key={r.name}>
-                      <td style={bvaTd(i % 2 === 1, "left")}>{r.name}</td>
-                      <td style={bvaTd(i % 2 === 1, "right")}>{fmt(r.예산)}</td>
-                      <td style={{ ...bvaTd(i % 2 === 1, "right"), color: NAVY }}>{fmt(r.실적)}</td>
-                      <td style={bvaTd(i % 2 === 1, "right")}>{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
-                      <td style={{ ...bvaTd(i % 2 === 1, "right"), fontWeight: 600 }}>{r.달성률}%</td>
+                      <td style={bvaTd(i % 2 === 1, "left", mob)}>{r.name}</td>
+                      <td style={bvaTd(i % 2 === 1, "right", mob)}>{fmt(r.예산)}</td>
+                      <td style={{ ...bvaTd(i % 2 === 1, "right", mob), color: NAVY }}>{fmt(r.실적)}</td>
+                      <td style={bvaTd(i % 2 === 1, "right", mob)}>{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
+                      <td style={{ ...bvaTd(i % 2 === 1, "right", mob), fontWeight: 600 }}>{r.달성률}%</td>
                     </tr>
                   ))
                 )}
@@ -283,17 +298,28 @@ export function BudgetVsActual({
             </table>
           </div>
         </div>
-        <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
-          <h4 style={{ margin: 0, padding: "10px 12px", fontSize: 13, fontWeight: 700, color: NAVY, borderBottom: `1px solid ${ROW_LINE}` }}>지출 예산 vs 실적</h4>
+        <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+          <h4
+            style={{
+              margin: 0,
+              padding: mob ? "10px 12px" : "14px 18px",
+              fontSize: mob ? 13 : 16,
+              fontWeight: 700,
+              color: NAVY,
+              borderBottom: `1px solid ${ROW_LINE}`,
+            }}
+          >
+            지출 예산 vs 실적
+          </h4>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={bvaTh("left")}>항목</th>
-                  <th style={bvaTh("right")}>예산</th>
-                  <th style={bvaTh("right")}>실적</th>
-                  <th style={bvaTh("right")}>차이</th>
-                  <th style={bvaTh("right")}>달성률</th>
+                  <th style={bvaTh("left", mob)}>항목</th>
+                  <th style={bvaTh("right", mob)}>예산</th>
+                  <th style={bvaTh("right", mob)}>실적</th>
+                  <th style={bvaTh("right", mob)}>차이</th>
+                  <th style={bvaTh("right", mob)}>달성률</th>
                 </tr>
               </thead>
               <tbody>
@@ -306,11 +332,11 @@ export function BudgetVsActual({
                 ) : (
                   expenseRows.map((r, i) => (
                     <tr key={r.name}>
-                      <td style={bvaTd(i % 2 === 1, "left")}>{r.name}</td>
-                      <td style={bvaTd(i % 2 === 1, "right")}>{fmt(r.예산)}</td>
-                      <td style={{ ...bvaTd(i % 2 === 1, "right"), color: NAVY }}>{fmt(r.실적)}</td>
-                      <td style={bvaTd(i % 2 === 1, "right")}>{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
-                      <td style={{ ...bvaTd(i % 2 === 1, "right"), fontWeight: 600 }}>{r.달성률}%</td>
+                      <td style={bvaTd(i % 2 === 1, "left", mob)}>{r.name}</td>
+                      <td style={bvaTd(i % 2 === 1, "right", mob)}>{fmt(r.예산)}</td>
+                      <td style={{ ...bvaTd(i % 2 === 1, "right", mob), color: NAVY }}>{fmt(r.실적)}</td>
+                      <td style={bvaTd(i % 2 === 1, "right", mob)}>{r.차이 >= 0 ? fmt(r.차이) : `(${fmt(-r.차이)})`}</td>
+                      <td style={{ ...bvaTd(i % 2 === 1, "right", mob), fontWeight: 600 }}>{r.달성률}%</td>
                     </tr>
                   ))
                 )}
@@ -321,16 +347,16 @@ export function BudgetVsActual({
       </div>
 
       {chartData.length > 0 && (
-        <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 16 }}>
-          <h4 style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 700, color: NAVY }}>카테고리별 예산 vs 실적</h4>
+        <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 16 : 24 }}>
+          <h4 style={{ margin: "0 0 12px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>카테고리별 예산 vs 실적</h4>
           <LazyChart height={300}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 60, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={ROW_LINE} />
-                <XAxis type="number" tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} tick={{ fontSize: 10, fill: "#999" }} />
-                <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10, fill: "#555" }} />
+                <XAxis type="number" tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} tick={{ fontSize: mob ? 10 : 12, fill: "#999" }} />
+                <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: mob ? 10 : 12, fill: "#555" }} />
                 <Tooltip formatter={(v) => [`₩${fmt(Number(v))}`, ""]} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Legend wrapperStyle={{ fontSize: mob ? 11 : 13 }} />
                 <Bar dataKey="예산" fill="#6b7b9e" radius={[0, 4, 4, 0]} />
                 <Bar dataKey="실적" fill={NAVY} radius={[0, 4, 4, 0]} />
               </BarChart>

@@ -19,33 +19,49 @@ export interface DepartmentTransferProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-const selectStyle: CSSProperties = {
-  flex: 1,
-  minWidth: 0,
-  width: "100%",
-  height: 32,
-  fontSize: 12,
-  borderRadius: 6,
-  border: `1px solid ${BORDER}`,
-  padding: "0 8px",
-  background: "#fff",
-  color: TEXT,
-  boxSizing: "border-box",
-};
-
-const inputStyle: CSSProperties = {
-  flex: 1,
-  minWidth: 0,
-  height: 32,
-  fontSize: 12,
-  borderRadius: 6,
-  border: `1px solid ${BORDER}`,
-  padding: "0 8px",
-  color: TEXT,
-  boxSizing: "border-box",
-};
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
 
 export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
+  const mob = useIsMobile();
+  const selectStyle: CSSProperties = useMemo(
+    () => ({
+      flex: 1,
+      minWidth: 0,
+      width: "100%",
+      height: mob ? 32 : 40,
+      fontSize: mob ? 12 : 14,
+      borderRadius: mob ? 6 : 10,
+      border: `1px solid ${BORDER}`,
+      padding: mob ? "0 8px" : "0 14px",
+      background: "#fff",
+      color: TEXT,
+      boxSizing: "border-box",
+    }),
+    [mob]
+  );
+  const inputStyle: CSSProperties = useMemo(
+    () => ({
+      flex: 1,
+      minWidth: 0,
+      height: mob ? 32 : 40,
+      fontSize: mob ? 12 : 14,
+      borderRadius: mob ? 6 : 10,
+      border: `1px solid ${BORDER}`,
+      padding: mob ? "0 8px" : "0 14px",
+      color: TEXT,
+      boxSizing: "border-box",
+    }),
+    [mob]
+  );
   const { db, schoolDepartments, schoolEnrollments, refreshSchoolEnrollments } = useAppData();
   const [history, setHistory] = useState<SchoolTransferHistory[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -158,16 +174,16 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
 
   const getMember = (id: string) => db.members?.find((m) => m.id === id);
 
-  if (loading) return <div style={{ padding: 16, fontSize: 11, color: MUTED }}>로딩 중...</div>;
+  if (loading) return <div style={{ padding: 16, fontSize: mob ? 11 : 14, color: MUTED }}>로딩 중...</div>;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12, marginBottom: 0 }}>
-        <h4 style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: NAVY }}>부서 이동</h4>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 16 }}>
+      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20, marginBottom: 0 }}>
+        <h4 style={{ margin: "0 0 8px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>부서 이동</h4>
 
-        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
+        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: mob ? 8 : 12, alignItems: "flex-end" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10, fontWeight: 400, color: LABEL, marginBottom: 4 }}>현재 부서</div>
+            <div style={{ fontSize: mob ? 10 : 13, fontWeight: 400, color: LABEL, marginBottom: 4 }}>현재 부서</div>
             <select
               className="compact-select school-dept-transfer-control"
               value={fromDeptId ?? ""}
@@ -179,7 +195,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
             </select>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10, fontWeight: 400, color: LABEL, marginBottom: 4 }}>새 부서</div>
+            <div style={{ fontSize: mob ? 10 : 13, fontWeight: 400, color: LABEL, marginBottom: 4 }}>새 부서</div>
             <select
               className="compact-select school-dept-transfer-control"
               value={toDeptId ?? ""}
@@ -192,7 +208,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6, alignItems: "center" }}>
+        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: mob ? 8 : 12, marginTop: mob ? 6 : 8, alignItems: "center" }}>
           <input
             type="text"
             className="school-transfer-reason school-dept-transfer-control"
@@ -207,11 +223,11 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
             onClick={handleTransfer}
             disabled={selectedIds.size === 0 || !toDeptId}
             style={{
-              height: 32,
-              fontSize: 11,
+              height: mob ? 32 : 40,
+              fontSize: mob ? 11 : 14,
               fontWeight: 600,
-              padding: "0 16px",
-              borderRadius: 6,
+              padding: mob ? "0 16px" : "0 22px",
+              borderRadius: mob ? 6 : 10,
               background: NAVY,
               color: "#fff",
               border: "none",
@@ -225,7 +241,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
           </button>
         </div>
 
-        <div style={{ maxHeight: 192, overflowY: "auto", border: `1px solid ${BORDER}`, borderRadius: 6, marginTop: 8 }}>
+        <div style={{ maxHeight: 192, overflowY: "auto", border: `1px solid ${BORDER}`, borderRadius: mob ? 6 : 10, marginTop: 8 }}>
           {filtered.map((e) => (
             <label
               key={e.id}
@@ -233,10 +249,10 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "6px 8px",
+                padding: mob ? "6px 8px" : "10px 14px",
                 borderBottom: `1px solid ${ROW_LINE}`,
                 cursor: "pointer",
-                fontSize: 11,
+                fontSize: mob ? 11 : 14,
                 color: TEXT,
               }}
             >
@@ -247,27 +263,27 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12, overflowX: "auto" }}>
-        <h4 style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: NAVY }}>이동 이력</h4>
+      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20, overflowX: "auto" }}>
+        <h4 style={{ margin: "0 0 8px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>이동 이력</h4>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "transparent" }}>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>이동일</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>구 부서</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>신 부서</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>사유</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>이동일</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>구 부서</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>신 부서</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}`, background: "transparent" }}>사유</th>
             </tr>
           </thead>
           <tbody>
             {history.length === 0 ? (
-              <tr><td colSpan={4} style={{ padding: "24px 0", textAlign: "center", fontSize: 12, color: MUTED }}>이력이 없습니다.</td></tr>
+              <tr><td colSpan={4} style={{ padding: "24px 0", textAlign: "center", fontSize: mob ? 12 : 14, color: MUTED }}>이력이 없습니다.</td></tr>
             ) : (
               history.map((h, i) => (
                 <tr key={h.id} style={{ borderBottom: `1px solid ${ROW_LINE}`, background: i % 2 === 1 ? "#fafbfc" : "#fff" }}>
-                  <td style={{ padding: 8, fontSize: 11, fontWeight: 400, color: TEXT }}>{h.transfer_date}</td>
-                  <td style={{ padding: 8, fontSize: 11, fontWeight: 400, color: TEXT }}>{h.from_department_name ?? "-"}</td>
-                  <td style={{ padding: 8, fontSize: 11, fontWeight: 400, color: TEXT }}>{h.to_department_name ?? "-"}</td>
-                  <td style={{ padding: 8, fontSize: 11, fontWeight: 400, color: TEXT }}>{h.reason ?? "-"}</td>
+                  <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, fontWeight: 400, color: TEXT }}>{h.transfer_date}</td>
+                  <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, fontWeight: 400, color: TEXT }}>{h.from_department_name ?? "-"}</td>
+                  <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, fontWeight: 400, color: TEXT }}>{h.to_department_name ?? "-"}</td>
+                  <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, fontWeight: 400, color: TEXT }}>{h.reason ?? "-"}</td>
                 </tr>
               ))
             )}

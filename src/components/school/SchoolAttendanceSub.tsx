@@ -43,11 +43,13 @@ function SubTabButton({
   label,
   onClick,
   flex,
+  mob,
 }: {
   active: boolean;
   label: string;
   onClick: () => void;
   flex?: number;
+  mob: boolean;
 }) {
   return (
     <button
@@ -56,12 +58,12 @@ function SubTabButton({
       style={{
         flex: flex ?? 1,
         minWidth: 0,
-        height: 30,
-        fontSize: 10,
+        height: mob ? 30 : 40,
+        fontSize: mob ? 10 : 14,
         fontWeight: 600,
-        borderRadius: 6,
+        borderRadius: mob ? 6 : 10,
         border: active ? "none" : `1px solid ${BORDER}`,
-        padding: "0 8px",
+        padding: mob ? "0 8px" : "0 16px",
         cursor: "pointer",
         background: active ? NAVY : UNSEL_BG,
         color: active ? "#fff" : UNSEL_TEXT,
@@ -72,7 +74,19 @@ function SubTabButton({
   );
 }
 
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
+
 export function SchoolAttendanceSub({ db, toast }: SchoolAttendanceSubProps) {
+  const mob = useIsMobile();
   const { churchId } = useAuth();
   const [attendanceSubTab, setAttendanceSubTabState] = useState<AttendanceSubTab>(getInitialSchoolAttSubTab);
   const [enrolledMemberIds, setEnrolledMemberIds] = useState<Set<string>>(new Set());
@@ -161,15 +175,15 @@ export function SchoolAttendanceSub({ db, toast }: SchoolAttendanceSubProps) {
 
   return (
     <>
-      <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${BORDER}` }}>
-        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <SubTabButton active={attendanceSubTab === "dashboard"} label="대시보드" onClick={() => setAttendanceSubTab("dashboard")} />
-          <SubTabButton active={attendanceSubTab === "statistics"} label="출석 통계" onClick={() => setAttendanceSubTab("statistics")} />
+      <div style={{ marginBottom: mob ? 16 : 20, paddingBottom: mob ? 12 : 16, borderBottom: `1px solid ${BORDER}` }}>
+        <div style={{ display: "flex", gap: mob ? 8 : 12, marginBottom: mob ? 8 : 10 }}>
+          <SubTabButton mob={mob} active={attendanceSubTab === "dashboard"} label="대시보드" onClick={() => setAttendanceSubTab("dashboard")} />
+          <SubTabButton mob={mob} active={attendanceSubTab === "statistics"} label="출석 통계" onClick={() => setAttendanceSubTab("statistics")} />
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <SubTabButton active={attendanceSubTab === "check"} label="출석 체크" onClick={() => setAttendanceSubTab("check")} />
-          <SubTabButton active={attendanceSubTab === "absentee"} label="결석자 관리" onClick={() => setAttendanceSubTab("absentee")} />
-          <SubTabButton active={attendanceSubTab === "weekly"} label="52주 출석" onClick={() => setAttendanceSubTab("weekly")} />
+        <div style={{ display: "flex", gap: mob ? 8 : 12 }}>
+          <SubTabButton mob={mob} active={attendanceSubTab === "check"} label="출석 체크" onClick={() => setAttendanceSubTab("check")} />
+          <SubTabButton mob={mob} active={attendanceSubTab === "absentee"} label="결석자 관리" onClick={() => setAttendanceSubTab("absentee")} />
+          <SubTabButton mob={mob} active={attendanceSubTab === "weekly"} label="52주 출석" onClick={() => setAttendanceSubTab("weekly")} />
         </div>
       </div>
 
@@ -215,23 +229,23 @@ export function SchoolAttendanceSub({ db, toast }: SchoolAttendanceSubProps) {
       {attendanceSubTab === "weekly" && (
         <div
           style={{
-            padding: 24,
+            padding: mob ? 24 : 28,
             textAlign: "center",
             color: UNSEL_TEXT,
             background: "#fff",
-            borderRadius: 8,
+            borderRadius: mob ? 8 : 16,
             border: `1px solid ${BORDER}`,
           }}
         >
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>52주 출석 현황</p>
-          <p style={{ margin: "8px 0 0", fontSize: 11, color: "#999" }}>
+          <p style={{ margin: 0, fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>52주 출석 현황</p>
+          <p style={{ margin: "8px 0 0", fontSize: mob ? 11 : 14, color: "#999", lineHeight: mob ? 1.4 : 1.6 }}>
             등록된 학생·교사의 52주 출석 기록을 확인할 수 있습니다. (준비 중)
           </p>
         </div>
       )}
 
       {loading && attendanceSubTab === "dashboard" && (
-        <div style={{ padding: 24, textAlign: "center", fontSize: 11, color: "#999" }}>출석 데이터 로딩 중...</div>
+        <div style={{ padding: 24, textAlign: "center", fontSize: mob ? 11 : 14, color: "#999" }}>출석 데이터 로딩 중...</div>
       )}
     </>
   );

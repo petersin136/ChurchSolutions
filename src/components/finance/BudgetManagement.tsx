@@ -1,61 +1,185 @@
 "use client";
 
-import { useState, useMemo, useEffect, type CSSProperties } from "react";
+import { useState, useMemo, useEffect, type CSSProperties, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import type { Budget } from "@/types/db";
+import {
+  budgetYearToolbarRowStyle,
+  budgetYearLabelStyle,
+  budgetYearSelectStyle,
+} from "@/components/finance/budgetYearToolbarStyles";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
+
+/** 월별 입력: 숫자만 state, 화면은 천 단위 콤마 */
+function parseBudgetAmountInput(raw: string): number {
+  const digits = raw.replace(/\D/g, "");
+  if (digits === "") return 0;
+  const n = Number.parseInt(digits, 10);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return n;
+}
+
+function formatBudgetAmountInput(n: number): string {
+  return n.toLocaleString("ko-KR");
+}
+
+const BUDGET_COL_ITEM_PX = 80;
+const BUDGET_COL_ANNUAL_PX = 130;
+const BUDGET_TABLE_COLGROUP = (
+  <colgroup>
+    <col style={{ width: BUDGET_COL_ITEM_PX }} />
+    <col span={12} />
+    <col style={{ width: BUDGET_COL_ANNUAL_PX }} />
+  </colgroup>
+);
 
 const NAVY = "#1B2A4A";
 const BORDER = "#e8ecf1";
 const ROW_LINE = "#f0f2f5";
 
-const bmTh = (align: "left" | "right" | "center"): CSSProperties => ({
-  fontSize: 10,
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
+
+const bmTh = (align: "left" | "right" | "center", mob = true): CSSProperties => ({
+  fontSize: mob ? 10 : 13,
   fontWeight: 700,
   color: NAVY,
-  padding: "6px 8px",
+  padding: mob ? "6px 8px" : "10px 14px",
   borderBottom: `2px solid ${NAVY}`,
   background: "#fff",
   textAlign: align,
   whiteSpace: "nowrap",
 });
 
-const bmTd = (isEven: boolean, align: "left" | "right" | "center"): CSSProperties => ({
-  fontSize: 11,
+const bmTd = (isEven: boolean, align: "left" | "right" | "center", mob = true): CSSProperties => ({
+  fontSize: mob ? 11 : 14,
   color: "#555",
-  padding: "8px",
+  padding: mob ? "8px" : "12px 14px",
   borderBottom: `1px solid ${ROW_LINE}`,
   background: isEven ? "#fafbfc" : "#fff",
   textAlign: align,
 });
 
-const bmTotalTd = (align: "left" | "right" | "center"): CSSProperties => ({
-  fontSize: 11,
+const bmTotalTd = (align: "left" | "right" | "center", mob = true): CSSProperties => ({
+  fontSize: mob ? 11 : 14,
   fontWeight: 700,
   color: NAVY,
-  padding: "8px",
+  padding: mob ? "8px" : "12px 14px",
   background: "#f0f2f5",
   borderBottom: `1px solid ${ROW_LINE}`,
   textAlign: align,
 });
 
-const inputCompact: CSSProperties = {
-  width: "100%",
-  minWidth: 72,
-  height: 28,
-  padding: "0 6px",
-  fontSize: 11,
+const BM_STICKY_HEADER_BG = "#f1f3f5";
+
+/** 첫 열(항목) — sticky 좌측 */
+const bmThStickyItem = (mob: boolean): CSSProperties => ({
+  ...bmTh("left", mob),
+  minWidth: BUDGET_COL_ITEM_PX,
+  width: BUDGET_COL_ITEM_PX,
+  position: "sticky",
+  left: 0,
+  background: BM_STICKY_HEADER_BG,
+  zIndex: 2,
+});
+
+const bmTdStickyItem = (isEven: boolean, mob: boolean): CSSProperties => ({
+  ...bmTd(isEven, "left", mob),
+  minWidth: BUDGET_COL_ITEM_PX,
+  width: BUDGET_COL_ITEM_PX,
+  position: "sticky",
+  left: 0,
+  background: isEven ? "#fafbfc" : "#fff",
+  zIndex: 2,
+});
+
+const bmTotalTdStickyItem = (mob: boolean): CSSProperties => ({
+  ...bmTotalTd("left", mob),
+  minWidth: BUDGET_COL_ITEM_PX,
+  width: BUDGET_COL_ITEM_PX,
+  position: "sticky",
+  left: 0,
+  zIndex: 2,
+});
+
+/** 연간합계 열 — sticky 우측 */
+const bmThStickyAnnual = (mob: boolean): CSSProperties => ({
+  ...bmTh("right", mob),
+  minWidth: BUDGET_COL_ANNUAL_PX,
+  width: BUDGET_COL_ANNUAL_PX,
   textAlign: "right",
-  borderRadius: 4,
+  whiteSpace: "nowrap",
+  position: "sticky",
+  right: 0,
+  background: BM_STICKY_HEADER_BG,
+  zIndex: 2,
+  boxShadow: "-2px 0 4px rgba(0,0,0,0.05)",
+});
+
+const bmTdStickyAnnual = (isEven: boolean, mob: boolean): CSSProperties => ({
+  ...bmTd(isEven, "right", mob),
+  minWidth: BUDGET_COL_ANNUAL_PX,
+  width: BUDGET_COL_ANNUAL_PX,
+  textAlign: "right",
+  whiteSpace: "nowrap",
+  position: "sticky",
+  right: 0,
+  background: isEven ? "#fafbfc" : "#fff",
+  zIndex: 2,
+  boxShadow: "-2px 0 4px rgba(0,0,0,0.05)",
+});
+
+const bmTotalTdStickyAnnual = (mob: boolean): CSSProperties => ({
+  ...bmTotalTd("right", mob),
+  minWidth: BUDGET_COL_ANNUAL_PX,
+  width: BUDGET_COL_ANNUAL_PX,
+  whiteSpace: "nowrap",
+  position: "sticky",
+  right: 0,
+  zIndex: 2,
+  boxShadow: "-2px 0 4px rgba(0,0,0,0.05)",
+});
+
+const bmThMonth = (mob: boolean): CSSProperties => ({
+  ...bmTh("right", mob),
+  overflow: "hidden",
+});
+
+const bmTdMonth = (isEven: boolean, mob: boolean): CSSProperties => ({
+  ...bmTd(isEven, "right", mob),
+  overflow: "hidden",
+  verticalAlign: "middle",
+});
+
+const inputCompactStyle = (mob: boolean): CSSProperties => ({
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+  boxSizing: "border-box",
+  height: mob ? 28 : 36,
+  padding: mob ? "0 6px" : "0 10px",
+  fontSize: mob ? 11 : 13,
+  textAlign: "right",
+  borderRadius: mob ? 4 : 6,
   border: `1px solid ${BORDER}`,
   outline: "none",
   boxShadow: "none",
   background: "#fff",
   color: "#555",
-};
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+});
 
 const DEFAULT_INCOME_CATEGORIES = ["십일조", "감사헌금", "주일헌금", "건축헌금", "선교헌금", "기타수입"];
 const DEFAULT_EXPENSE_CATEGORIES = ["인건비", "사역비", "관리비", "선교비", "교육비", "행사비", "기타지출"];
@@ -65,6 +189,8 @@ export interface BudgetManagementProps {
   fiscalYear?: string;
   /** 토스트 메시지 */
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
+  /** 재정 탭과 같은 sticky 밴드에 연도/저장 줄을 넣을 때 (로딩 중에는 null) */
+  stickyNavBand?: (toolbar: ReactNode) => ReactNode;
 }
 
 function toAmounts(monthly_amounts: Record<string, number> | null | undefined): Record<number, number> {
@@ -74,20 +200,25 @@ function toAmounts(monthly_amounts: Record<string, number> | null | undefined): 
   }, {} as Record<number, number>);
 }
 
-export function BudgetManagement({ fiscalYear = String(new Date().getFullYear()), toast }: BudgetManagementProps) {
+export function BudgetManagement({ fiscalYear = String(new Date().getFullYear()), toast, stickyNavBand }: BudgetManagementProps) {
+  const mob = useIsMobile();
   const [year, setYear] = useState(fiscalYear);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [incomeRows, setIncomeRows] = useState<{ category: string; amounts: Record<number, number> }[]>([]);
   const [expenseRows, setExpenseRows] = useState<{ category: string; amounts: Record<number, number> }[]>([]);
 
-  const loadBudget = async (selectedYear: string) => {
+  const loadBudget = async (selectedYear: string, isCancelled: () => boolean) => {
+    const aborted = () => isCancelled();
+
     if (!supabase) {
+      if (aborted()) return;
       setLoading(false);
       setIncomeRows(DEFAULT_INCOME_CATEGORIES.map((cat) => ({ category: cat, amounts: MONTHS.reduce((acc, m) => ({ ...acc, [m]: 0 }), {} as Record<number, number>) })));
       setExpenseRows(DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: MONTHS.reduce((acc, m) => ({ ...acc, [m]: 0 }), {} as Record<number, number>) })));
       return;
     }
+    if (aborted()) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("budget")
@@ -96,14 +227,17 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
       .eq("fiscal_year", selectedYear)
       .order("category_type", { ascending: true })
       .order("category", { ascending: true });
+    if (aborted()) return;
     if (error) {
       console.error(error);
+      if (aborted()) return;
       toast("데이터 로드 실패: " + error.message, "err");
       setIncomeRows(DEFAULT_INCOME_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) })));
       setExpenseRows(DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) })));
       setLoading(false);
       return;
     }
+    if (aborted()) return;
     const budgets = (data ?? []) as Budget[];
     const inc = budgets.filter((b) => b.category_type === "수입");
     const exp = budgets.filter((b) => b.category_type === "지출");
@@ -117,11 +251,16 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
         ? exp.map((b) => ({ category: b.category, amounts: toAmounts(b.monthly_amounts) }))
         : DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) }))
     );
-    setLoading(false);
+    if (!aborted()) setLoading(false);
   };
 
   useEffect(() => {
-    loadBudget(year);
+    let cancelled = false;
+    const isCancelled = () => cancelled;
+    void loadBudget(year, isCancelled);
+    return () => {
+      cancelled = true;
+    };
   }, [year]);
 
   const incomeTotals = useMemo(() => {
@@ -235,7 +374,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
   };
 
   if (loading) {
-    return (
+    const loadingBody = (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", color: "#555", fontSize: 13 }}>
         <span
           style={{
@@ -252,84 +391,126 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
         <style>{`@keyframes finance-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
+    if (stickyNavBand) {
+      return (
+        <>
+          {stickyNavBand(null)}
+          {loadingBody}
+        </>
+      );
+    }
+    return loadingBody;
   }
 
   const yearOptions = Array.from({ length: 11 }, (_, i) => String(2020 + i));
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: NAVY }}>
-          연도
-          <select
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            style={{ height: 32, fontSize: 12, width: 90, borderRadius: 6, border: `1px solid ${BORDER}`, padding: "0 8px", background: "#fff", color: "#555", cursor: "pointer" }}
-          >
-            {yearOptions.map((y) => (
-              <option key={y} value={y}>
-                {y}년
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className="finance-nav-btn"
-          onClick={copyFromLastYear}
-          style={{
-            height: 32,
-            fontSize: 11,
-            padding: "0 12px",
-            borderRadius: 6,
-            background: "#f5f6f8",
-            color: "#555",
-            border: `1px solid ${BORDER}`,
-            cursor: "pointer",
-            outline: "none",
-            boxShadow: "none",
-            fontWeight: 600,
-          }}
-        >
-          전년도 복사
-        </button>
-        <button
-          type="button"
-          className="finance-nav-btn"
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            height: 32,
-            fontSize: 11,
-            padding: "0 12px",
-            borderRadius: 6,
-            background: NAVY,
-            color: "#fff",
-            border: "none",
-            cursor: saving ? "not-allowed" : "pointer",
-            outline: "none",
-            boxShadow: "none",
-            fontWeight: 600,
-            opacity: saving ? 0.65 : 1,
-          }}
-        >
-          {saving ? "저장 중..." : "저장"}
-        </button>
-      </div>
+  const btnH = mob ? 34 : 38;
+  const btnFs = mob ? 13 : 14;
+  const btnBr = mob ? 8 : 10;
+  const toolbarRow = (
+    <div
+      style={{
+        ...budgetYearToolbarRowStyle(),
+        width: "100%",
+        alignItems: "center",
+        alignContent: "flex-start",
+        ...(stickyNavBand ? { marginTop: mob ? 6 : 8 } : {}),
+      }}
+    >
+      <span style={budgetYearLabelStyle(mob)}>연도</span>
+      <select value={year} onChange={(e) => setYear(e.target.value)} style={budgetYearSelectStyle(mob)}>
+        {yearOptions.map((y) => (
+          <option key={y} value={y}>
+            {y}년
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="finance-nav-btn"
+        onClick={copyFromLastYear}
+        style={{
+          height: btnH,
+          fontSize: btnFs,
+          padding: mob ? "0 10px" : "0 14px",
+          borderRadius: btnBr,
+          background: "#f5f6f8",
+          color: "#555",
+          border: "1.5px solid #e0e3ea",
+          cursor: "pointer",
+          outline: "none",
+          boxShadow: "none",
+          fontWeight: 600,
+          fontFamily: "inherit",
+          boxSizing: "border-box",
+          flexShrink: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          whiteSpace: "nowrap",
+        }}
+      >
+        전년도 복사
+      </button>
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving}
+        style={{
+          height: 38,
+          fontSize: 14,
+          padding: "0 20px",
+          borderRadius: 10,
+          background: "#1B2A4A",
+          color: "#fff",
+          border: "none",
+          cursor: saving ? "not-allowed" : "pointer",
+          outline: "none",
+          boxShadow: "none",
+          fontWeight: 600,
+          fontFamily: "inherit",
+          boxSizing: "border-box",
+          opacity: saving ? 0.65 : 1,
+          flexShrink: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          whiteSpace: "nowrap",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        {saving ? "저장 중..." : "저장"}
+      </button>
+    </div>
+  );
 
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
-        <h3 style={{ margin: 0, padding: "10px 12px", fontSize: 13, fontWeight: 700, color: NAVY, borderBottom: `1px solid ${ROW_LINE}` }}>수입 예산</h3>
+  const bodyBlocks = (
+    <>
+      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <h3
+          style={{
+            margin: 0,
+            padding: mob ? "10px 12px" : "14px 18px",
+            fontSize: mob ? 13 : 16,
+            fontWeight: 700,
+            color: NAVY,
+            borderBottom: `1px solid ${ROW_LINE}`,
+          }}
+        >
+          수입 예산
+        </h3>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
+            {BUDGET_TABLE_COLGROUP}
             <thead>
               <tr>
-                <th style={{ ...bmTh("left"), minWidth: 96 }}>항목</th>
+                <th style={bmThStickyItem(mob)}>항목</th>
                 {MONTHS.map((m) => (
-                  <th key={m} style={{ ...bmTh("right"), minWidth: 72 }}>
+                  <th key={m} style={bmThMonth(mob)}>
                     {m}월
                   </th>
                 ))}
-                <th style={bmTh("right")}>연간합계</th>
+                <th style={bmThStickyAnnual(mob)}>연간합계</th>
               </tr>
             </thead>
             <tbody>
@@ -337,49 +518,62 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
                 const even = ri % 2 === 1;
                 return (
                   <tr key={row.category}>
-                    <td style={bmTd(even, "left")}>{row.category}</td>
+                    <td style={bmTdStickyItem(even, mob)}>{row.category}</td>
                     {MONTHS.map((m) => (
-                      <td key={m} style={bmTd(even, "right")}>
+                      <td key={m} style={bmTdMonth(even, mob)}>
                         <input
-                          type="number"
-                          min={0}
-                          value={row.amounts[m] || ""}
-                          onChange={(e) => updateIncomeAmount(ri, m, Number(e.target.value) || 0)}
-                          style={inputCompact}
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          value={formatBudgetAmountInput(row.amounts[m] ?? 0)}
+                          onChange={(e) => updateIncomeAmount(ri, m, parseBudgetAmountInput(e.target.value))}
+                          style={inputCompactStyle(mob)}
                         />
                       </td>
                     ))}
-                    <td style={bmTotalTd("right")}>{fmt(Object.values(row.amounts).reduce((s, v) => s + v, 0))}</td>
+                    <td style={bmTdStickyAnnual(even, mob)}>{fmt(Object.values(row.amounts).reduce((s, v) => s + v, 0))}</td>
                   </tr>
                 );
               })}
               <tr>
-                <td style={bmTotalTd("left")}>수입 합계</td>
+                <td style={bmTotalTdStickyItem(mob)}>수입 합계</td>
                 {MONTHS.map((m) => (
-                  <td key={m} style={bmTotalTd("right")}>
+                  <td key={m} style={{ ...bmTotalTd("right", mob), overflow: "hidden" }}>
                     {fmt(incomeTotals.byMonth[m])}
                   </td>
                 ))}
-                <td style={bmTotalTd("right")}>{fmt(incomeTotals.annual)}</td>
+                <td style={bmTotalTdStickyAnnual(mob)}>{fmt(incomeTotals.annual)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
-        <h3 style={{ margin: 0, padding: "10px 12px", fontSize: 13, fontWeight: 700, color: NAVY, borderBottom: `1px solid ${ROW_LINE}` }}>지출 예산</h3>
+      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <h3
+          style={{
+            margin: 0,
+            padding: mob ? "10px 12px" : "14px 18px",
+            fontSize: mob ? 13 : 16,
+            fontWeight: 700,
+            color: NAVY,
+            borderBottom: `1px solid ${ROW_LINE}`,
+          }}
+        >
+          지출 예산
+        </h3>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
+            {BUDGET_TABLE_COLGROUP}
             <thead>
               <tr>
-                <th style={{ ...bmTh("left"), minWidth: 96 }}>항목</th>
+                <th style={bmThStickyItem(mob)}>항목</th>
                 {MONTHS.map((m) => (
-                  <th key={m} style={{ ...bmTh("right"), minWidth: 72 }}>
+                  <th key={m} style={bmThMonth(mob)}>
                     {m}월
                   </th>
                 ))}
-                <th style={bmTh("right")}>연간합계</th>
+                <th style={bmThStickyAnnual(mob)}>연간합계</th>
               </tr>
             </thead>
             <tbody>
@@ -387,41 +581,58 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
                 const even = ri % 2 === 1;
                 return (
                   <tr key={row.category}>
-                    <td style={bmTd(even, "left")}>{row.category}</td>
+                    <td style={bmTdStickyItem(even, mob)}>{row.category}</td>
                     {MONTHS.map((m) => (
-                      <td key={m} style={bmTd(even, "right")}>
+                      <td key={m} style={bmTdMonth(even, mob)}>
                         <input
-                          type="number"
-                          min={0}
-                          value={row.amounts[m] || ""}
-                          onChange={(e) => updateExpenseAmount(ri, m, Number(e.target.value) || 0)}
-                          style={inputCompact}
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          value={formatBudgetAmountInput(row.amounts[m] ?? 0)}
+                          onChange={(e) => updateExpenseAmount(ri, m, parseBudgetAmountInput(e.target.value))}
+                          style={inputCompactStyle(mob)}
                         />
                       </td>
                     ))}
-                    <td style={bmTotalTd("right")}>{fmt(Object.values(row.amounts).reduce((s, v) => s + v, 0))}</td>
+                    <td style={bmTdStickyAnnual(even, mob)}>{fmt(Object.values(row.amounts).reduce((s, v) => s + v, 0))}</td>
                   </tr>
                 );
               })}
               <tr>
-                <td style={bmTotalTd("left")}>지출 합계</td>
+                <td style={bmTotalTdStickyItem(mob)}>지출 합계</td>
                 {MONTHS.map((m) => (
-                  <td key={m} style={bmTotalTd("right")}>
+                  <td key={m} style={{ ...bmTotalTd("right", mob), overflow: "hidden" }}>
                     {fmt(expenseTotals.byMonth[m])}
                   </td>
                 ))}
-                <td style={bmTotalTd("right")}>{fmt(expenseTotals.annual)}</td>
+                <td style={bmTotalTdStickyAnnual(mob)}>{fmt(expenseTotals.annual)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: "12px 14px" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>
+      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? "12px 14px" : "18px 24px" }}>
+        <div style={{ fontSize: mob ? 14 : 18, fontWeight: 700, color: NAVY }}>
           수지 차액 (수입 - 지출): <span style={{ color: NAVY }}>{fmt(balance)}</span>
         </div>
       </div>
+    </>
+  );
+
+  if (stickyNavBand) {
+    return (
+      <>
+        {stickyNavBand(toolbarRow)}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>{bodyBlocks}</div>
+      </>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {toolbarRow}
+      {bodyBlocks}
     </div>
   );
 }

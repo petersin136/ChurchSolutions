@@ -1,12 +1,23 @@
 "use client";
 
-import { useState, useMemo, type CSSProperties } from "react";
+import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAppData } from "@/contexts/AppDataContext";
+
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
 
 const NAVY = "#1B2A4A";
 const BORDER = "#e8ecf1";
@@ -24,6 +35,7 @@ export interface StudentManagementProps {
 }
 
 export function StudentManagement({ toast }: StudentManagementProps) {
+  const mob = useIsMobile();
   const { db, schoolDepartments, schoolClasses, schoolEnrollments, refreshSchoolEnrollments } = useAppData();
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -123,11 +135,11 @@ export function StudentManagement({ toast }: StudentManagementProps) {
   };
 
   const pillBase: CSSProperties = {
-    height: 28,
-    fontSize: 11,
+    height: mob ? 28 : 36,
+    fontSize: mob ? 11 : 13,
     fontWeight: 600,
-    padding: "0 10px",
-    borderRadius: 6,
+    padding: mob ? "0 10px" : "0 14px",
+    borderRadius: mob ? 6 : 10,
     whiteSpace: "nowrap",
     flexShrink: 0,
     cursor: "pointer",
@@ -135,7 +147,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 20 }}>
       <div
         style={{
           display: "flex",
@@ -183,11 +195,11 @@ export function StudentManagement({ toast }: StudentManagementProps) {
           type="button"
           onClick={() => setAddOpen(true)}
           style={{
-            height: 30,
-            fontSize: 11,
+            height: mob ? 30 : 40,
+            fontSize: mob ? 11 : 14,
             fontWeight: 600,
-            padding: "0 12px",
-            borderRadius: 6,
+            padding: mob ? "0 12px" : "0 20px",
+            borderRadius: mob ? 6 : 10,
             background: NAVY,
             color: "#fff",
             border: "none",
@@ -198,41 +210,41 @@ export function StudentManagement({ toast }: StudentManagementProps) {
         </button>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, overflowX: "auto" }}>
+      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflowX: "auto" }}>
         <table className="w-full" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>이름</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>반</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>역할</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>연락처</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>등록일</th>
-              <th style={{ textAlign: "left", padding: "6px 8px", fontSize: 10, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>관리</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>이름</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>반</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>역할</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>연락처</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>등록일</th>
+              <th style={{ textAlign: "left", padding: mob ? "6px 8px" : "10px 14px", fontSize: mob ? 10 : 13, fontWeight: 700, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>관리</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", fontSize: 12, color: MUTED }}>등록된 학생이 없습니다.</td></tr>
+              <tr><td colSpan={6} style={{ padding: mob ? 32 : 48, textAlign: "center", fontSize: mob ? 12 : 14, color: MUTED }}>등록된 학생이 없습니다.</td></tr>
             ) : (
               filtered.map((e, idx) => {
                 const m = getMember(e);
                 const cls = getClass(e.class_id);
                 return (
                   <tr key={e.id} style={{ borderBottom: `1px solid ${ROW_LINE}`, background: idx % 2 === 1 ? "#fafbfc" : "#fff" }}>
-                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{m?.name ?? e.member_id}</td>
-                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{cls?.name ?? "-"}</td>
-                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{e.role}</td>
-                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{m?.phone ?? "-"}</td>
-                    <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{e.enrolled_date ?? "-"}</td>
-                    <td style={{ padding: 8 }}>
+                    <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, color: TEXT }}>{m?.name ?? e.member_id}</td>
+                    <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, color: TEXT }}>{cls?.name ?? "-"}</td>
+                    <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, color: TEXT }}>{e.role}</td>
+                    <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, color: TEXT }}>{m?.phone ?? "-"}</td>
+                    <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, color: TEXT }}>{e.enrolled_date ?? "-"}</td>
+                    <td style={{ padding: mob ? 8 : "12px 14px" }}>
                       <button
                         type="button"
                         onClick={() => { setEditOpen(e); setEditClassId(e.class_id ?? ""); setEditRole(e.role); }}
-                        style={{ marginRight: 8, fontSize: 10, color: NAVY, border: `1px solid ${BORDER}`, borderRadius: 4, padding: "2px 8px", background: "#fff", cursor: "pointer" }}
+                        style={{ marginRight: 8, fontSize: mob ? 10 : 13, color: NAVY, border: `1px solid ${BORDER}`, borderRadius: mob ? 4 : 8, padding: mob ? "2px 8px" : "6px 12px", background: "#fff", cursor: "pointer" }}
                       >
                         수정
                       </button>
-                      <button type="button" onClick={() => handleDelete(e)} style={{ fontSize: 10, color: TEXT, background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}>해제</button>
+                      <button type="button" onClick={() => handleDelete(e)} style={{ fontSize: mob ? 10 : 13, color: TEXT, background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}>해제</button>
                     </td>
                   </tr>
                 );

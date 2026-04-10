@@ -39,7 +39,7 @@ const Icons = {
   Save: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
   Trash: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" {...iconStyle}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
 };
-import { Pagination } from "@/components/common/Pagination";
+import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { UnifiedPageLayout, type NavSection } from "@/components/layout/UnifiedPageLayout";
 
@@ -48,6 +48,19 @@ function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
   useEffect(() => { const c = () => setM(window.innerWidth <= bp); c(); window.addEventListener("resize", c); return () => window.removeEventListener("resize", c); }, [bp]);
   return m;
+}
+
+function desktopStickyTabNavStyles(mob: boolean): CSSProperties {
+  return mob
+    ? {}
+    : {
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
+        background: "#fff",
+        paddingTop: 8,
+        paddingBottom: 0,
+      };
 }
 
 /* ============================================================
@@ -331,8 +344,12 @@ function Btn({ children, variant = "primary", size = "md", onClick, style, icon,
   children?: ReactNode; variant?: "primary" | "secondary" | "ghost" | "danger" | "accent"; size?: "sm" | "md";
   onClick?: (e?: React.MouseEvent) => void; style?: CSSProperties; icon?: ReactNode; disabled?: boolean;
 }) {
-  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 8, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap", opacity: disabled ? 0.6 : 1 };
-  const sizes: Record<string, CSSProperties> = { sm: { padding: "6px 12px", fontSize: 12 }, md: { padding: "8px 16px", fontSize: 13 } };
+  const mob = useIsMobile();
+  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: mob ? 8 : 10, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap", opacity: disabled ? 0.6 : 1 };
+  const sizes: Record<string, CSSProperties> = {
+    sm: { padding: mob ? "6px 12px" : "6px 14px", fontSize: mob ? 12 : 13 },
+    md: { padding: mob ? "8px 16px" : "10px 20px", fontSize: mob ? 13 : 14 },
+  };
   const variants: Record<string, CSSProperties> = {
     primary: { background: "#1B2A4A", color: "#fff" },
     secondary: { background: "#f5f6f8", color: "#555", border: `1px solid ${C.border}` },
@@ -367,15 +384,74 @@ function FormField({ label, children }: { label: React.ReactNode; children: Reac
 }
 
 function FInput({ value, onChange, placeholder, type = "text", style }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; style?: CSSProperties }) {
-  return <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} type={type} style={{ width: "100%", padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", background: C.bg, outline: "none", ...style }} />;
+  const mob = useIsMobile();
+  return (
+    <input
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      type={type}
+      style={{
+        width: "100%",
+        padding: "10px 14px",
+        border: `1px solid ${C.border}`,
+        borderRadius: mob ? 8 : 10,
+        fontSize: 14,
+        fontFamily: "inherit",
+        background: C.bg,
+        outline: "none",
+        ...style,
+      }}
+    />
+  );
 }
 
 function FSelect({ value, onChange, children, style }: { value: string; onChange: (v: string) => void; children: ReactNode; style?: CSSProperties }) {
-  return <select value={value} onChange={e => onChange(e.target.value)} style={{ width: "100%", padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", background: C.bg, outline: "none", cursor: "pointer", ...style }}>{children}</select>;
+  const mob = useIsMobile();
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      style={{
+        width: "100%",
+        padding: "10px 14px",
+        border: `1px solid ${C.border}`,
+        borderRadius: mob ? 8 : 10,
+        fontSize: 14,
+        fontFamily: "inherit",
+        background: C.bg,
+        outline: "none",
+        cursor: "pointer",
+        ...style,
+      }}
+    >
+      {children}
+    </select>
+  );
 }
 
 function FTextarea({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder?: string; style?: CSSProperties }) {
-  return <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "inherit", background: C.bg, outline: "none", resize: "vertical", minHeight: 80, ...style }} />;
+  const mob = useIsMobile();
+  return (
+    <textarea
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      style={{
+        width: "100%",
+        padding: "10px 14px",
+        border: `1px solid ${C.border}`,
+        borderRadius: mob ? 8 : 10,
+        fontSize: 14,
+        fontFamily: "inherit",
+        background: C.bg,
+        outline: "none",
+        resize: "vertical",
+        minHeight: 80,
+        ...style,
+      }}
+    />
+  );
 }
 
 function StatCard({
@@ -411,15 +487,16 @@ function StatCard({
 }
 
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void; icon?: ReactNode }) {
+  const mob = useIsMobile();
   return (
     <button
       type="button"
       onClick={onClick}
       style={{
-        height: 26,
-        padding: "0 8px",
-        borderRadius: 6,
-        fontSize: 10,
+        height: mob ? 26 : 34,
+        padding: mob ? "0 8px" : "0 14px",
+        borderRadius: mob ? 6 : 10,
+        fontSize: mob ? 10 : 13,
         fontWeight: 600,
         cursor: "pointer",
         border: `1px solid ${active ? "#1B2A4A" : "#e8ecf1"}`,
@@ -450,6 +527,7 @@ function ListViewToggle({
   onList: () => void;
   onGroup: () => void;
 }) {
+  const mob = useIsMobile();
   return (
     <div
       style={{
@@ -465,8 +543,8 @@ function ListViewToggle({
         onClick={onList}
         style={{
           flex: 1,
-          height: 28,
-          fontSize: 11,
+          height: mob ? 28 : 36,
+          fontSize: mob ? 11 : 13,
           fontWeight: 600,
           border: "none",
           background: mode === "list" ? "#1B2A4A" : "#f5f6f8",
@@ -482,8 +560,8 @@ function ListViewToggle({
         onClick={onGroup}
         style={{
           flex: 1,
-          height: 28,
-          fontSize: 11,
+          height: mob ? 28 : 36,
+          fontSize: mob ? 11 : 13,
           fontWeight: 600,
           border: "none",
           borderLeft: "1px solid #e8ecf1",
@@ -557,22 +635,22 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
       {mob ? (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <StatCard label="이번 달 심방" value={String(mv.length)} sub={`${vDiff > 0 ? "↑" : vDiff < 0 ? "↓" : "—"} 전월 대비 ${Math.abs(vDiff)}건`} />
-            <StatCard label="이번 달 상담" value={String(mc.length)} sub={`${cDiff > 0 ? "↑" : cDiff < 0 ? "↓" : "—"} 전월 대비 ${Math.abs(cDiff)}건`} />
+            <StatCard label="이번 달 심방" value={`${mv.length}건`} sub={`${vDiff > 0 ? "↑" : vDiff < 0 ? "↓" : "—"} 전월 대비 ${Math.abs(vDiff)}건`} />
+            <StatCard label="이번 달 상담" value={`${mc.length}건`} sub={`${cDiff > 0 ? "↑" : cDiff < 0 ? "↓" : "—"} 전월 대비 ${Math.abs(cDiff)}건`} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-            <StatCard size="compact" label="완료 심방" value={String(completed)} sub={`예정 ${scheduled}건`} />
-            <StatCard size="compact" label="기한 초과 조치" value={String(overdueFU.length)} sub={`${allFU.length}건 대기`} />
-            <StatCard size="compact" label="활성 기도제목" value={String(activePrayers.length)} sub={`${activePrayers.length}건`} />
+            <StatCard size="compact" label="완료 심방" value={`${completed}건`} sub={`예정 ${scheduled}건`} />
+            <StatCard size="compact" label="기한 초과 조치" value={`${overdueFU.length}건`} sub={`${allFU.length}건 대기`} />
+            <StatCard size="compact" label="활성 기도제목" value={`${activePrayers.length}건`} sub={`${activePrayers.length}건`} />
           </div>
         </>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16 }}>
-          <StatCard label="이번 달 심방" value={String(mv.length)} sub={`${vDiff > 0 ? "↑" : vDiff < 0 ? "↓" : "—"} 전월 대비 ${Math.abs(vDiff)}건`} />
-          <StatCard label="이번 달 상담" value={String(mc.length)} sub={`${cDiff > 0 ? "↑" : cDiff < 0 ? "↓" : "—"} 전월 대비 ${Math.abs(cDiff)}건`} />
-          <StatCard label="완료 심방" value={String(completed)} sub={`예정 ${scheduled}건`} />
-          <StatCard label="기한 초과 조치" value={String(overdueFU.length)} sub={`${allFU.length}건 대기`} />
-          <StatCard label="활성 기도제목" value={String(activePrayers.length)} sub={`${activePrayers.length}건`} />
+          <StatCard label="이번 달 심방" value={`${mv.length}건`} sub={`${vDiff > 0 ? "↑" : vDiff < 0 ? "↓" : "—"} 전월 대비 ${Math.abs(vDiff)}건`} />
+          <StatCard label="이번 달 상담" value={`${mc.length}건`} sub={`${cDiff > 0 ? "↑" : cDiff < 0 ? "↓" : "—"} 전월 대비 ${Math.abs(cDiff)}건`} />
+          <StatCard label="완료 심방" value={`${completed}건`} sub={`예정 ${scheduled}건`} />
+          <StatCard label="기한 초과 조치" value={`${overdueFU.length}건`} sub={`${allFU.length}건 대기`} />
+          <StatCard label="활성 기도제목" value={`${activePrayers.length}건`} sub={`${activePrayers.length}건`} />
         </div>
       )}
 
@@ -588,12 +666,12 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
               justifyContent: "space-between",
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A" }}>후속 조치 필요</span>
+            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#1B2A4A" }}>후속 조치 필요</span>
             <button
               type="button"
               onClick={() => goPage("followup")}
               style={{
-                fontSize: 11,
+                fontSize: mob ? 11 : 13,
                 color: "#6b7b9e",
                 background: "none",
                 border: "none",
@@ -629,10 +707,10 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div>
-                      <div style={{ fontSize: 11, color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.note || f.originType}</div>
+                      <div style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div>
+                      <div style={{ fontSize: mob ? 11 : 13, color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.note || f.originType}</div>
                     </div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7b9e", flexShrink: 0 }}>{subText}</div>
+                    <div style={{ fontSize: mob ? 11 : 13, fontWeight: 600, color: "#6b7b9e", flexShrink: 0 }}>{subText}</div>
                   </div>
                 );
               })
@@ -643,7 +721,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
         {/* Chart */}
         <Card>
           <div style={{ padding: mob ? "10px 12px" : "18px 22px", borderBottom: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A" }}>이번 달 유형별</span>
+            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#1B2A4A" }}>이번 달 유형별</span>
           </div>
           <div style={{ padding: mob ? 12 : 22 }}>
             {Object.keys(typeCounts).length === 0 ? (
@@ -653,7 +731,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                 <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <span
                     style={{
-                      fontSize: 11,
+                      fontSize: mob ? 11 : 13,
                       color: "#555",
                       width: 72,
                       textAlign: "right",
@@ -676,7 +754,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                       }}
                     />
                   </div>
-                  <span style={{ fontSize: 11, color: "#555", width: 28, flexShrink: 0, textAlign: "right" }}>{v.count}</span>
+                  <span style={{ fontSize: mob ? 11 : 13, color: "#555", width: 28, flexShrink: 0, textAlign: "right" }}>{v.count}</span>
                 </div>
               ))
             )}
@@ -688,11 +766,11 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
         {/* Recent visits */}
         <Card>
           <div style={{ padding: mob ? "10px 12px" : "18px 22px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A" }}>최근 심방</span>
+            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#1B2A4A" }}>최근 심방</span>
             <button
               type="button"
               onClick={() => goPage("visits")}
-              style={{ fontSize: 11, color: "#6b7b9e", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: 0 }}
+              style={{ fontSize: mob ? 11 : 13, color: "#6b7b9e", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: 0 }}
             >
               전체 →
             </button>
@@ -739,19 +817,19 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                        <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "#f0f2f5", color: "#1B2A4A", flexShrink: 0 }}>{vt.label}</span>
+                        <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: "#1B2A4A", flexShrink: 0 }}>{vt.label}</span>
                       </div>
-                      <div style={{ fontSize: 11, color: "#999" }}>
+                      <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>
                         {fmtDate(v.date)} {v.time || ""} · {v.location || ""}
                       </div>
                       {v.summary && (
-                        <div style={{ fontSize: 11, color: "#555", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.summary}</div>
+                        <div style={{ fontSize: mob ? 11 : 13, color: "#555", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.summary}</div>
                       )}
                     </div>
                     <div style={{ flexShrink: 0, textAlign: "right" }}>
-                      <div style={{ fontSize: 11, color: "#999", fontWeight: 600 }}>{relDate(v.date)}</div>
-                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: "#f5f6f8", color: "#555", marginTop: 4, display: "inline-block" }}>{STATUS_LABELS[v.status]}</span>
+                      <div style={{ fontSize: mob ? 11 : 13, color: "#999", fontWeight: 600 }}>{relDate(v.date)}</div>
+                      <span style={{ fontSize: mob ? 10 : 12, fontWeight: 600, padding: mob ? "2px 8px" : "3px 10px", borderRadius: 6, background: "#f5f6f8", color: "#555", marginTop: 4, display: "inline-block" }}>{STATUS_LABELS[v.status]}</span>
                     </div>
                   </div>
                 );
@@ -763,11 +841,11 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
         {/* Recent counsels */}
         <Card>
           <div style={{ padding: mob ? "10px 12px" : "18px 22px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A" }}>최근 상담</span>
+            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#1B2A4A" }}>최근 상담</span>
             <button
               type="button"
               onClick={() => goPage("counsels")}
-              style={{ fontSize: 11, color: "#6b7b9e", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: 0 }}
+              style={{ fontSize: mob ? 11 : 13, color: "#6b7b9e", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: 0 }}
             >
               전체 →
             </button>
@@ -814,19 +892,19 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                        <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "#f0f2f5", color: "#1B2A4A", flexShrink: 0 }}>{ct.label}</span>
+                        <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: "#1B2A4A", flexShrink: 0 }}>{ct.label}</span>
                         {c.confidential && (
-                          <span style={{ fontSize: 10, color: "#555", fontWeight: 600, flexShrink: 0 }}>비공개</span>
+                          <span style={{ fontSize: mob ? 10 : 12, color: "#555", fontWeight: 600, flexShrink: 0 }}>비공개</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 11, color: "#999" }}>{fmtDate(c.date)}</div>
+                      <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>{fmtDate(c.date)}</div>
                       {c.summary && (
-                        <div style={{ fontSize: 11, color: "#555", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.summary}</div>
+                        <div style={{ fontSize: mob ? 11 : 13, color: "#555", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.summary}</div>
                       )}
                     </div>
                     <div style={{ flexShrink: 0 }}>
-                      <div style={{ fontSize: 11, color: "#999", fontWeight: 600 }}>{relDate(c.date)}</div>
+                      <div style={{ fontSize: mob ? 11 : 13, color: "#999", fontWeight: 600 }}>{relDate(c.date)}</div>
                     </div>
                   </div>
                 );
@@ -839,20 +917,20 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
       {/* 최근 기도제목 요약 */}
       <Card style={{ padding: mob ? 12 : 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <p style={{ fontWeight: 700, fontSize: 13, margin: 0, color: "#1B2A4A" }}>최근 기도제목</p>
-          <span style={{ fontSize: 11, color: "#6b7b9e" }}>목양 탭에서 관리</span>
+          <p style={{ fontWeight: 700, fontSize: mob ? 13 : 16, margin: 0, color: "#1B2A4A" }}>최근 기도제목</p>
+          <span style={{ fontSize: mob ? 11 : 13, color: "#6b7b9e" }}>목양 탭에서 관리</span>
         </div>
         {(mergedPrayers || []).filter(p => p.status === "active").slice(0, 5).map((p, i) => {
           const memberName = (db.members || []).find(m => m.id === p.memberId)?.name || "?";
           return (
             <div key={p.id || i} style={{ padding: "8px 0", borderTop: i > 0 ? `1px solid ${C.border}` : "none" }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#1B2A4A" }}>{memberName}</span>
-              <p style={{ fontSize: 11, color: "#555", margin: "4px 0 0" }}>{p.text?.slice(0, 60)}{(p.text?.length || 0) > 60 ? "..." : ""}</p>
+              <span style={{ fontSize: mob ? 12 : 15, fontWeight: 600, color: "#1B2A4A" }}>{memberName}</span>
+              <p style={{ fontSize: mob ? 11 : 13, color: "#555", margin: "4px 0 0" }}>{p.text?.slice(0, 60)}{(p.text?.length || 0) > 60 ? "..." : ""}</p>
             </div>
           );
         })}
         {(!mergedPrayers || mergedPrayers.filter(p => p.status === "active").length === 0) && (
-          <p style={{ fontSize: 12, color: "#999", margin: 0 }}>활성 기도제목이 없습니다</p>
+          <p style={{ fontSize: mob ? 12 : 13, color: "#999", margin: 0 }}>활성 기도제목이 없습니다</p>
         )}
       </Card>
     </div>
@@ -883,8 +961,16 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "nowrap" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 20 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: mob ? 12 : 20,
+          ...desktopStickyTabNavStyles(mob),
+        }}
+      >
+        <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "nowrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
           <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex", pointerEvents: "none" }}>
             <Icons.Search />
@@ -895,13 +981,13 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
             placeholder="이름, 사유, 내용 검색..."
             style={{
               width: "100%",
-              height: 32,
-              padding: "0 10px 0 34px",
+              height: mob ? 32 : 40,
+              padding: mob ? "0 10px 0 34px" : "0 14px 0 38px",
               fontFamily: "inherit",
-              fontSize: 12,
+              fontSize: mob ? 12 : 14,
               background: "#fff",
               border: `1px solid ${C.border}`,
-              borderRadius: 6,
+              borderRadius: mob ? 6 : 10,
               outline: "none",
               color: C.text,
               boxSizing: "border-box",
@@ -912,11 +998,11 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
           type="button"
           onClick={() => openVisitModal()}
           style={{
-            height: 32,
-            padding: "0 12px",
-            fontSize: 11,
+            height: mob ? 32 : 40,
+            padding: mob ? "0 12px" : "0 20px",
+            fontSize: mob ? 11 : 14,
             fontWeight: 600,
-            borderRadius: 6,
+            borderRadius: mob ? 6 : 10,
             background: "#1B2A4A",
             color: "#fff",
             border: "none",
@@ -935,10 +1021,11 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
           <Chip key={k} label={v.label} active={filter === k} onClick={() => setFilter(k)} />
         ))}
       </div>
+      </div>
       <Card>
         <div style={{ padding: mob ? 12 : 22 }}>
           {list.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 32, color: "#999", fontSize: 12 }}>심방 기록이 없습니다</div>
+            <div style={{ textAlign: "center", padding: mob ? 32 : 48, color: "#999", fontSize: mob ? 12 : 14 }}>심방 기록이 없습니다</div>
           ) : (
             list.map((v) => {
               const m = getMember(v.memberId);
@@ -951,10 +1038,10 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
-                    gap: 10,
-                    padding: "10px 12px",
+                    gap: mob ? 10 : 14,
+                    padding: mob ? "10px 12px" : "16px 20px",
                     marginBottom: 8,
-                    borderRadius: 8,
+                    borderRadius: mob ? 8 : 14,
                     border: `1px solid ${C.border}`,
                     background: "#fff",
                     cursor: "pointer",
@@ -962,15 +1049,15 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                 >
                   <div
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: mob ? 36 : 44,
+                      height: mob ? 36 : 44,
                       borderRadius: "50%",
                       background: "#f0f2f5",
                       color: "#1B2A4A",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 13,
+                      fontSize: mob ? 13 : 16,
                       fontWeight: 700,
                       flexShrink: 0,
                     }}
@@ -979,20 +1066,20 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "#f0f2f5", color: "#1B2A4A", flexShrink: 0 }}>{vt.label}</span>
+                      <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: "#1B2A4A", flexShrink: 0 }}>{vt.label}</span>
                     </div>
-                    <div style={{ fontSize: 11, color: "#999" }}>
+                    <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>
                       {fmtDateFull(v.date)} {v.time || ""} · {v.location || ""}
                     </div>
                     {v.summary && (
-                      <div style={{ fontSize: 11, color: "#555", marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.summary}</div>
+                      <div style={{ fontSize: mob ? 11 : 14, color: "#555", marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{v.summary}</div>
                     )}
-                    {v.prayerNote && <div style={{ fontSize: 11, color: "#6b7b9e", marginTop: 4 }}>기도: {v.prayerNote}</div>}
+                    {v.prayerNote && <div style={{ fontSize: mob ? 11 : 14, color: "#6b7b9e", marginTop: 4 }}>기도: {v.prayerNote}</div>}
                   </div>
                   <div style={{ flexShrink: 0, textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "#999", fontWeight: 600 }}>{relDate(v.date)}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: st.bg, color: st.color, marginTop: 4, display: "inline-block" }}>{STATUS_LABELS[v.status]}</span>
+                    <div style={{ fontSize: mob ? 11 : 13, color: "#999", fontWeight: 600 }}>{relDate(v.date)}</div>
+                    <span style={{ fontSize: mob ? 10 : 13, fontWeight: 600, padding: mob ? "2px 8px" : "3px 10px", borderRadius: mob ? 6 : 8, background: st.bg, color: st.color, marginTop: 4, display: "inline-block" }}>{STATUS_LABELS[v.status]}</span>
                   </div>
                 </div>
               );
@@ -1123,7 +1210,8 @@ function MainDBVisitList({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: mob ? "calc(100vh - 200px)" : undefined }}>
+    <div style={{ ...PAGINATION_LIST_PARENT_STYLE, gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, ...desktopStickyTabNavStyles(mob) }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "nowrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
           <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex", pointerEvents: "none" }}>
@@ -1180,9 +1268,10 @@ function MainDBVisitList({
           <Chip key={t} label={t} active={filterType === t} onClick={() => { setFilterType(t); setPage(1); }} />
         ))}
       </div>
-      <div ref={listRef} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-        <Card style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-          <div style={{ padding: mob ? 12 : 22, display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+      </div>
+      <div ref={listRef} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%" }}>
+        <Card style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%" }}>
+          <div style={{ padding: mob ? 12 : 22, display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%" }}>
             {filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: 32, color: "#999", fontSize: 12 }}>심방 기록이 없습니다</div>
             ) : viewMode === "byGroup" ? (
@@ -1202,12 +1291,8 @@ function MainDBVisitList({
                     totalItems={filtered.length}
                     itemsPerPage={PAGE_SIZE}
                     currentPage={currentPage}
-                    pinBottom
-                    compact
-                    onPageChange={(p) => {
-                      setPage(p);
-                      listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}
+                    compact={mob}
+                    onPageChange={setPage}
                   />
                 )}
               </>
@@ -1259,8 +1344,16 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
   }, [db.counsels, search, filter]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "nowrap" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 20 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: mob ? 12 : 20,
+          ...desktopStickyTabNavStyles(mob),
+        }}
+      >
+        <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "nowrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
           <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex", pointerEvents: "none" }}>
             <Icons.Search />
@@ -1271,13 +1364,13 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
             placeholder="이름, 유형, 내용 검색..."
             style={{
               width: "100%",
-              height: 32,
-              padding: "0 10px 0 34px",
+              height: mob ? 32 : 40,
+              padding: mob ? "0 10px 0 34px" : "0 14px 0 38px",
               fontFamily: "inherit",
-              fontSize: 12,
+              fontSize: mob ? 12 : 14,
               background: "#fff",
               border: `1px solid ${C.border}`,
-              borderRadius: 6,
+              borderRadius: mob ? 6 : 10,
               outline: "none",
               color: C.text,
               boxSizing: "border-box",
@@ -1288,11 +1381,11 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
           type="button"
           onClick={() => openCounselModal()}
           style={{
-            height: 32,
-            padding: "0 12px",
-            fontSize: 11,
+            height: mob ? 32 : 40,
+            padding: mob ? "0 12px" : "0 20px",
+            fontSize: mob ? 11 : 14,
             fontWeight: 600,
-            borderRadius: 6,
+            borderRadius: mob ? 6 : 10,
             background: "#1B2A4A",
             color: "#fff",
             border: "none",
@@ -1311,10 +1404,11 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
           <Chip key={k} label={v.label} active={filter === k} onClick={() => setFilter(k)} />
         ))}
       </div>
+      </div>
       <Card>
         <div style={{ padding: mob ? 12 : 22 }}>
           {list.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 32, color: "#999", fontSize: 12 }}>상담 기록이 없습니다</div>
+            <div style={{ textAlign: "center", padding: mob ? 32 : 48, color: "#999", fontSize: mob ? 12 : 14 }}>상담 기록이 없습니다</div>
           ) : (
             list.map((c) => {
               const m = getMember(c.memberId);
@@ -1326,10 +1420,10 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
-                    gap: 10,
-                    padding: "10px 12px",
+                    gap: mob ? 10 : 14,
+                    padding: mob ? "10px 12px" : "16px 20px",
                     marginBottom: 8,
-                    borderRadius: 8,
+                    borderRadius: mob ? 8 : 14,
                     border: `1px solid ${C.border}`,
                     background: "#fff",
                     cursor: "pointer",
@@ -1337,15 +1431,15 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                 >
                   <div
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: mob ? 36 : 44,
+                      height: mob ? 36 : 44,
                       borderRadius: "50%",
                       background: "#f0f2f5",
                       color: "#1B2A4A",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 13,
+                      fontSize: mob ? 13 : 16,
                       fontWeight: 700,
                       flexShrink: 0,
                     }}
@@ -1354,24 +1448,24 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "#f0f2f5", color: "#1B2A4A", flexShrink: 0 }}>{ct.label}</span>
-                      {c.confidential && <span style={{ fontSize: 10, color: "#555", fontWeight: 600, flexShrink: 0 }}>비공개</span>}
+                      <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#1B2A4A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: "#1B2A4A", flexShrink: 0 }}>{ct.label}</span>
+                      {c.confidential && <span style={{ fontSize: mob ? 10 : 13, color: "#555", fontWeight: 600, flexShrink: 0 }}>비공개</span>}
                     </div>
-                    <div style={{ fontSize: 11, color: "#999" }}>{fmtDateFull(c.date)}</div>
+                    <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>{fmtDateFull(c.date)}</div>
                     {c.summary && (
-                      <div style={{ fontSize: 11, color: "#555", marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{c.summary}</div>
+                      <div style={{ fontSize: mob ? 11 : 14, color: "#555", marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{c.summary}</div>
                     )}
                   </div>
                   <div style={{ flexShrink: 0, textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "#999", fontWeight: 600 }}>{relDate(c.date)}</div>
+                    <div style={{ fontSize: mob ? 11 : 13, color: "#999", fontWeight: 600 }}>{relDate(c.date)}</div>
                     {c.followUpDate && !c.followUpDone && (
                       <span
                         style={{
-                          fontSize: 10,
+                          fontSize: mob ? 10 : 13,
                           fontWeight: 600,
-                          padding: "2px 8px",
-                          borderRadius: 6,
+                          padding: mob ? "2px 8px" : "3px 10px",
+                          borderRadius: mob ? 6 : 8,
                           background: "#f5f6f8",
                           color: daysFromNow(c.followUpDate) < 0 ? "#1B2A4A" : "#555",
                           marginTop: 4,
@@ -1426,7 +1520,17 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", gap: 4, width: "100%", overflowX: "auto", flexWrap: "nowrap", WebkitOverflowScrolling: "touch" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 4,
+          width: "100%",
+          overflowX: "auto",
+          flexWrap: "nowrap",
+          WebkitOverflowScrolling: "touch",
+          ...desktopStickyTabNavStyles(mob),
+        }}
+      >
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -1769,10 +1873,10 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
           </div>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: "#1B2A4A" }}>월간 요약</div>
           <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(4, 1fr)", gap: mob ? 10 : 16, marginBottom: 24 }}>
-            <StatCard label="심방 건수" value={String(mv.length)} />
-            <StatCard label="완료" value={String(completed.length)} />
-            <StatCard label="상담 건수" value={String(mc.length)} />
-            <StatCard label="후속 조치 대기" value={String(allFU.length)} />
+            <StatCard label="심방 건수" value={`${mv.length}건`} />
+            <StatCard label="완료" value={`${completed.length}건`} />
+            <StatCard label="상담 건수" value={`${mc.length}건`} />
+            <StatCard label="후속 조치 대기" value={`${allFU.length}건`} />
           </div>
 
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: "#1B2A4A" }}>심방 유형별 현황</div>

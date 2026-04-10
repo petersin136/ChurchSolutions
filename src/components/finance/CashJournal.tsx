@@ -14,6 +14,17 @@ const MUTED = "#999";
 const SUB = "#6b7b9e";
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth <= bp);
+    c();
+    window.addEventListener("resize", c);
+    return () => window.removeEventListener("resize", c);
+  }, [bp]);
+  return m;
+}
+
 /** DB 카테고리 코드 → 한글 (현금출납장 표시용) */
 const CATEGORY_KO: Record<string, string> = {
   tithe: "십일조",
@@ -73,17 +84,18 @@ function toEntryFromExpense(e: Expense): CashJournalEntry {
   };
 }
 
-const selStyle: CSSProperties = {
-  height: 32,
-  fontSize: 11,
-  borderRadius: 6,
+const selStyle = (mob: boolean): CSSProperties => ({
+  height: mob ? 32 : 40,
+  fontSize: mob ? 11 : 14,
+  borderRadius: mob ? 6 : 10,
   border: `1px solid ${BORDER}`,
-  padding: "0 8px",
+  padding: mob ? "0 8px" : "0 14px",
   background: "#fff",
   color: TEXT,
-};
+});
 
 export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: CashJournalProps) {
+  const mob = useIsMobile();
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(1);
@@ -197,15 +209,20 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
     );
   }
 
+  const thPad = mob ? "6px 8px" : "10px 14px";
+  const thFs = mob ? 10 : 13;
+  const tdPad = mob ? 8 : "12px 14px";
+  const tdFs = mob ? 11 : 14;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12 }}>
+      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20 }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ ...selStyle, flex: "0 0 auto" }} />
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ ...selStyle, flex: "0 0 auto" }} />
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ ...selStyle(mob), flex: "0 0 auto" }} />
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ ...selStyle(mob), flex: "0 0 auto" }} />
         </div>
         <div style={{ marginBottom: 6 }}>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as "all" | "수입" | "지출")} style={{ ...selStyle, width: "100%", maxWidth: 200 }}>
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as "all" | "수입" | "지출")} style={{ ...selStyle(mob), width: "100%", maxWidth: 200 }}>
             <option value="all">전체</option>
             <option value="수입">수입</option>
             <option value="지출">지출</option>
@@ -213,7 +230,7 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
         </div>
         {categories.length > 0 && (
           <div style={{ marginBottom: 6 }}>
-            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ ...selStyle, width: "100%", maxWidth: 320 }}>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ ...selStyle(mob), width: "100%", maxWidth: 320 }}>
               <option value="">카테고리 전체</option>
               {categories.map((c) => (
                 <option key={c} value={c}>{displayCategory(c)}</option>
@@ -223,7 +240,7 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
         )}
         {paymentMethods.length > 0 && (
           <div style={{ marginBottom: 6 }}>
-            <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} style={{ ...selStyle, width: "100%", maxWidth: 320 }}>
+            <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} style={{ ...selStyle(mob), width: "100%", maxWidth: 320 }}>
               <option value="">결제수단 전체</option>
               {paymentMethods.map((p) => (
                 <option key={p} value={p}>{p}</option>
@@ -232,13 +249,13 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
           </div>
         )}
         {onExportPdf && (
-          <button type="button" onClick={() => onExportPdf(filtered)} style={{ height: 32, fontSize: 11, padding: "0 12px", borderRadius: 6, border: `1px solid ${BORDER}`, background: "#f5f6f8", color: TEXT, cursor: "pointer" }}>
+          <button type="button" onClick={() => onExportPdf(filtered)} style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, border: `1px solid ${BORDER}`, background: "#f5f6f8", color: TEXT, cursor: "pointer" }}>
             PDF
           </button>
         )}
       </div>
 
-      <div style={{ overflowX: "auto", background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}` }}>
+      <div style={{ overflowX: "auto", background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}` }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -247,8 +264,8 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
                   key={h}
                   style={{
                     textAlign: h === "수입" || h === "지출" || h === "잔액" ? "right" : "left",
-                    padding: "6px 8px",
-                    fontSize: 10,
+                    padding: thPad,
+                    fontSize: thFs,
                     fontWeight: 700,
                     color: NAVY,
                     borderBottom: `2px solid ${NAVY}`,
@@ -265,25 +282,25 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
             ) : (
               withBalance.map((e, ri) => (
                 <tr key={e.id} style={{ borderBottom: `1px solid ${ROW}`, background: ri % 2 === 1 ? "#fafbfc" : "#fff" }}>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT, whiteSpace: "nowrap" }}>{e.date}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{e.type}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{displayCategory(e.category)}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT, maxWidth: 200 }} title={e.description}>{e.description}</td>
-                  <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>{e.type === "수입" ? `₩${fmt(e.amount)}` : "-"}</td>
-                  <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>{e.type === "지출" ? `₩${fmt(e.amount)}` : "-"}</td>
-                  <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>{fmt(e.balance!)}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: MUTED }}>{e.payment_method ?? "-"}</td>
+                  <td style={{ padding: tdPad, fontSize: tdFs, color: TEXT, whiteSpace: "nowrap" }}>{e.date}</td>
+                  <td style={{ padding: tdPad, fontSize: tdFs, color: TEXT }}>{e.type}</td>
+                  <td style={{ padding: tdPad, fontSize: tdFs, color: TEXT }}>{displayCategory(e.category)}</td>
+                  <td style={{ padding: tdPad, fontSize: tdFs, color: TEXT, maxWidth: 200 }} title={e.description}>{e.description}</td>
+                  <td style={{ padding: tdPad, fontSize: tdFs, textAlign: "right", color: TEXT }}>{e.type === "수입" ? `₩${fmt(e.amount)}` : "-"}</td>
+                  <td style={{ padding: tdPad, fontSize: tdFs, textAlign: "right", color: TEXT }}>{e.type === "지출" ? `₩${fmt(e.amount)}` : "-"}</td>
+                  <td style={{ padding: tdPad, fontSize: tdFs, textAlign: "right", color: TEXT }}>{fmt(e.balance!)}</td>
+                  <td style={{ padding: tdPad, fontSize: tdFs, color: MUTED }}>{e.payment_method ?? "-"}</td>
                 </tr>
               ))
             )}
           </tbody>
           <tfoot>
             <tr style={{ background: "#f0f2f5", fontWeight: 700 }}>
-              <td colSpan={4} style={{ padding: 8, fontSize: 11, color: TEXT }}>합계</td>
-              <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>₩{fmt(totalIncome)}</td>
-              <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: TEXT }}>₩{fmt(totalExpense)}</td>
-              <td style={{ padding: 8, fontSize: 11, textAlign: "right", color: NAVY }}>{fmt(finalBalance)}</td>
-              <td style={{ padding: 8 }} />
+              <td colSpan={4} style={{ padding: tdPad, fontSize: tdFs, color: TEXT }}>합계</td>
+              <td style={{ padding: tdPad, fontSize: tdFs, textAlign: "right", color: TEXT }}>₩{fmt(totalIncome)}</td>
+              <td style={{ padding: tdPad, fontSize: tdFs, textAlign: "right", color: TEXT }}>₩{fmt(totalExpense)}</td>
+              <td style={{ padding: tdPad, fontSize: tdFs, textAlign: "right", color: NAVY }}>{fmt(finalBalance)}</td>
+              <td style={{ padding: tdPad }} />
             </tr>
           </tfoot>
         </table>

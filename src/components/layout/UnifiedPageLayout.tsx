@@ -583,9 +583,10 @@ export function UnifiedPageLayout({
               minHeight: 0,
               width: "100%",
               overflowY: "auto",
+              background: "#f8f9fc",
               WebkitOverflowScrolling: "touch",
-              padding: mob ? `8px ${LAYOUT.mainContentPaddingMob}px ${LAYOUT.mainContentPaddingMob}px` : LAYOUT.mainContentPadding,
-              ...(mob ? { paddingBottom: 100 } : {}),
+              padding: mob ? `8px ${LAYOUT.mainContentPaddingMob}px ${LAYOUT.mainContentPaddingMob}px` : `0px ${LAYOUT.mainContentPadding}px ${LAYOUT.mainContentPadding}px`,
+              paddingBottom: 120,
               fontSize: mob ? 14 : 15,
               lineHeight: 1.55,
             }}

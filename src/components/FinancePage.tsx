@@ -10,9 +10,14 @@ import { FinanceDashboard } from "@/components/finance/FinanceDashboard";
 import { CashJournal } from "@/components/finance/CashJournal";
 import { BudgetManagement } from "@/components/finance/BudgetManagement";
 import { BudgetVsActual } from "@/components/finance/BudgetVsActual";
+import {
+  budgetYearToolbarRowStyle,
+  budgetYearLabelStyle,
+  budgetYearSelectStyle,
+} from "@/components/finance/budgetYearToolbarStyles";
 import { DonorStatistics } from "@/components/finance/DonorStatistics";
 import { SpecialAccounts } from "@/components/finance/SpecialAccounts";
-import { Pagination } from "@/components/common/Pagination";
+import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import LazyChart from "@/components/common/LazyChart";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import type { DB, Member, Income as DBIncome, Expense as DBExpense } from "@/types/db";
@@ -229,20 +234,24 @@ function financeCategoryGridBtnStyle(selected: boolean): CSSProperties {
 }
 
 /** 하위 pill: 한 줄에서 균등 분할 (flex:1) */
-function financeSubTabStyle(isSelected: boolean, layout: "rowEqual" | "gridCell" = "rowEqual"): CSSProperties {
+function financeSubTabStyle(isSelected: boolean, layout: "rowEqual" | "gridCell" = "rowEqual", mob = true): CSSProperties {
+  const h = mob ? 28 : 36;
+  const fs = mob ? 10 : 13;
+  const br = mob ? 6 : 8;
+  const padX = mob ? "0 4px" : "0 8px";
   const base: CSSProperties = {
-    height: 28,
-    minHeight: 28,
-    maxHeight: 28,
-    fontSize: 10,
+    height: h,
+    minHeight: h,
+    maxHeight: h,
+    fontSize: fs,
     fontWeight: 600,
-    padding: "0 4px",
-    borderRadius: 6,
+    padding: padX,
+    borderRadius: br,
     border: isSelected ? "none" : "1px solid #e8ecf1",
     background: isSelected ? "#1B2A4A" : "#f5f6f8",
     color: isSelected ? "#fff" : "#555",
     whiteSpace: "nowrap",
-    lineHeight: "28px",
+    lineHeight: `${h}px`,
     cursor: "pointer",
     outline: "none",
     boxShadow: "none",
@@ -267,25 +276,29 @@ const financeSubTabRowStyle: CSSProperties = {
 };
 
 /** 보고서 유형·예결산 등 2~5개 토글 — 동일 규격 */
-function financeTogglePillStyle(isSelected: boolean): CSSProperties {
-  return financeSubTabStyle(isSelected, "rowEqual");
+function financeTogglePillStyle(isSelected: boolean, mob = true): CSSProperties {
+  return financeSubTabStyle(isSelected, "rowEqual", mob);
 }
 
 /** 주간 등 많은 항목: 가로 스크롤 + 최소 너비(약 4칸 노출) */
-function financeScrollRowPillStyle(isSelected: boolean): CSSProperties {
+function financeScrollRowPillStyle(isSelected: boolean, mob = true): CSSProperties {
+  const h = mob ? 28 : 36;
+  const fs = mob ? 10 : 13;
+  const br = mob ? 6 : 8;
+  const padX = mob ? "0 4px" : "0 8px";
   return {
-    height: 28,
-    minHeight: 28,
-    maxHeight: 28,
-    fontSize: 10,
+    height: h,
+    minHeight: h,
+    maxHeight: h,
+    fontSize: fs,
     fontWeight: 600,
-    padding: "0 4px",
-    borderRadius: 6,
+    padding: padX,
+    borderRadius: br,
     border: isSelected ? "none" : "1px solid #e8ecf1",
     background: isSelected ? "#1B2A4A" : "#f5f6f8",
     color: isSelected ? "#fff" : "#555",
     whiteSpace: "nowrap",
-    lineHeight: "28px",
+    lineHeight: `${h}px`,
     cursor: "pointer",
     outline: "none",
     boxShadow: "none",
@@ -297,31 +310,31 @@ function financeScrollRowPillStyle(isSelected: boolean): CSSProperties {
   };
 }
 
-const financeTableHeaderTh = (align: "left" | "right" | "center" = "left"): CSSProperties => ({
-  fontSize: 10,
+const financeTableHeaderTh = (align: "left" | "right" | "center" = "left", mob = false): CSSProperties => ({
+  fontSize: mob ? 10 : 13,
   fontWeight: 700,
   color: "#1B2A4A",
-  padding: "6px 8px",
+  padding: mob ? "6px 8px" : "10px 14px",
   borderBottom: "2px solid #1B2A4A",
   background: "#fff",
   textAlign: align,
   whiteSpace: "nowrap",
 });
 
-const financeTableCellTd = (isEven: boolean, align: "left" | "right" | "center" = "left"): CSSProperties => ({
-  fontSize: 11,
+const financeTableCellTd = (isEven: boolean, align: "left" | "right" | "center" = "left", mob = false): CSSProperties => ({
+  fontSize: mob ? 11 : 14,
   color: "#555",
-  padding: "8px",
+  padding: mob ? "8px" : "12px 14px",
   borderBottom: "1px solid #f0f2f5",
   background: isEven ? "#fafbfc" : "#fff",
   textAlign: align,
 });
 
-const financeTableTotalRowTd = (align: "left" | "right" | "center" = "left"): CSSProperties => ({
-  fontSize: 11,
+const financeTableTotalRowTd = (align: "left" | "right" | "center" = "left", mob = false): CSSProperties => ({
+  fontSize: mob ? 11 : 14,
   fontWeight: 700,
   color: "#1B2A4A",
-  padding: "8px",
+  padding: mob ? "8px" : "12px 14px",
   background: "#f0f2f5",
   borderBottom: "1px solid #f0f2f5",
   textAlign: align,
@@ -391,12 +404,32 @@ const FINANCE_SUB_TABS_BY_CATEGORY: Record<FinanceCategoryId, { id: string; labe
   ],
 };
 
+function financeStickyNavShell(mob: boolean): CSSProperties {
+  return {
+    position: "sticky",
+    top: 0,
+    zIndex: 25,
+    width: "calc(100% + " + (mob ? "20" : "48") + "px)",
+    marginLeft: mob ? -10 : -24,
+    marginRight: mob ? -10 : -24,
+    paddingLeft: mob ? 10 : 24,
+    paddingRight: mob ? 10 : 24,
+    paddingTop: 8,
+    paddingBottom: mob ? 10 : 8,
+    background: "#f8f9fc",
+    backgroundColor: "#f8f9fc",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+    marginBottom: mob ? 8 : 12,
+    boxSizing: "border-box",
+  };
+}
+
 function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; onLeafChange: (id: string) => void }) {
   const mob = useIsMobile();
   const category = LEAF_TO_FINANCE_CATEGORY[activeTab] ?? "fin_income";
   return (
-    <div style={{ width: "100%", maxWidth: "100%" }}>
-      <div style={{ marginBottom: mob ? 4 : 8 }}>
+    <div style={{ width: "100%", maxWidth: "100%", display: "flex", flexDirection: "column", gap: mob ? 4 : 4 }}>
+      <div style={{ marginBottom: 0 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: mob ? 4 : 8, width: "100%" }}>
           {FINANCE_CATEGORY_GRID[0].map((c) => (
             <button
@@ -411,7 +444,7 @@ function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; on
           ))}
         </div>
       </div>
-      <div style={{ marginBottom: mob ? 8 : 12 }}>
+      <div style={{ marginBottom: 0 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: mob ? 4 : 8, width: "100%" }}>
           {FINANCE_CATEGORY_GRID[1].map((c) => (
             <button
@@ -426,13 +459,13 @@ function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; on
           ))}
         </div>
       </div>
-      <div className="finance-sub-pills" style={{ ...financeSubTabRowStyle, gap: mob ? 4 : 8, marginBottom: mob ? 10 : 16 }}>
+      <div className="finance-sub-pills" style={{ ...financeSubTabRowStyle, gap: mob ? 4 : 8, marginBottom: 0 }}>
         {FINANCE_SUB_TABS_BY_CATEGORY[category].map((t) => (
           <button
             key={t.id}
             type="button"
             className="finance-nav-btn"
-            style={mob ? financeSubTabStyle(activeTab === t.id) : { ...financeSubTabStyle(activeTab === t.id), height: 36, fontSize: 13, borderRadius: 8, lineHeight: "36px", minHeight: 36, maxHeight: 36 }}
+            style={financeSubTabStyle(activeTab === t.id, "rowEqual", mob)}
             onClick={() => onLeafChange(t.id)}
           >
             {t.label}
@@ -454,11 +487,14 @@ function Card({ children, style, onClick }: { children: ReactNode; style?: CSSPr
   );
 }
 
-function Badge({ children, color = C.navy, bg, fontSize = 10 }: { children: ReactNode; color?: string; bg?: string; fontSize?: number }) {
+function Badge({ children, color = C.navy, bg, fontSize }: { children: ReactNode; color?: string; bg?: string; fontSize?: number }) {
+  const mob = useIsMobile();
+  const fs = fontSize ?? (mob ? 10 : 12);
+  const pad = mob ? "2px 6px" : "3px 10px";
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "2px 6px", borderRadius: 4, fontSize, fontWeight: 600,
+      padding: pad, borderRadius: 4, fontSize: fs, fontWeight: 600,
       color, background: bg ?? "#f0f2f5", whiteSpace: "nowrap", border: "none",
     }}>{children}</span>
   );
@@ -589,22 +625,23 @@ interface ColDef { label: string; key?: string; align?: string; render?: (row: R
 function Table({ columns, data, emptyMsg = "데이터가 없습니다" }: {
   columns: ColDef[]; data: Record<string, unknown>[]; emptyMsg?: string;
 }) {
+  const mob = useIsMobile();
   return (
-    <div style={{ overflowX: "auto", borderRadius: 8, border: `1px solid ${C.border}` }}>
+    <div style={{ overflowX: "auto", borderRadius: mob ? 8 : 16, border: `1px solid ${C.border}` }}>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
             {columns.map((col, i) => (
               <th key={i} style={{
-                padding: "6px 8px", textAlign: (col.align || "left") as "left"|"right"|"center",
-                fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}`, whiteSpace: "nowrap",
+                padding: mob ? "6px 8px" : "10px 14px", textAlign: (col.align || "left") as "left"|"right"|"center",
+                fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}`, whiteSpace: "nowrap",
               }}>{col.label}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {data.length === 0 ? (
-            <tr><td colSpan={columns.length} style={{ padding: 40, textAlign: "center", color: "#999", fontSize: 12 }}>{emptyMsg}</td></tr>
+            <tr><td colSpan={columns.length} style={{ padding: mob ? 40 : 60, textAlign: "center", color: "#999", fontSize: mob ? 12 : 14 }}>{emptyMsg}</td></tr>
           ) : data.map((row, ri) => (
             <tr key={ri} style={{
               borderBottom: `1px solid ${C.borderLight}`,
@@ -614,8 +651,8 @@ function Table({ columns, data, emptyMsg = "데이터가 없습니다" }: {
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ri % 2 === 1 ? "#fafbfc" : "#fff"; }}>
               {columns.map((col, ci) => (
                 <td key={ci} style={{
-                  padding: 8, textAlign: (col.align || "left") as "left"|"right"|"center",
-                  color: "#555", fontSize: 11, whiteSpace: "nowrap",
+                  padding: mob ? 8 : "12px 14px", textAlign: (col.align || "left") as "left"|"right"|"center",
+                  color: "#555", fontSize: mob ? 11 : 14, whiteSpace: "nowrap",
                 }}>{col.render ? col.render(row) : (row[col.key || ""] as ReactNode)}</td>
               ))}
             </tr>
@@ -808,6 +845,7 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
   const [filterCat, setFilterCat] = useState("all");
   const [filterMonth, setFilterMonth] = useState("all");
   const [form, setForm] = useState({ donorName: "", categoryId: "tithe", amount: "", date: todayStr(), method: "현금", note: "" });
+  const mob = useIsMobile();
 
   const filtered = useMemo(() => {
     let result = [...offerings];
@@ -852,30 +890,36 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
   };
   const filteredTotal = filtered.reduce((s, o) => s + o.amount, 0);
 
-  const compactSel: CSSProperties = { height: 32, fontSize: 11, padding: "0 8px", borderRadius: 6, border: `1px solid ${C.border}` };
+  const compactSel: CSSProperties = {
+    height: mob ? 32 : 40,
+    fontSize: mob ? 11 : 14,
+    padding: mob ? "0 8px" : "0 14px",
+    borderRadius: mob ? 6 : 10,
+    border: `1px solid ${C.border}`,
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 20 : 24 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: mob ? 8 : 12, alignItems: "center" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 160 }}>
           <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#6b7b9e" }}><Icons.Search /></div>
           <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="헌금자 검색..."
-            style={{ width: "100%", boxSizing: "border-box", height: 32, padding: "0 12px 0 32px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+            style={{ width: "100%", boxSizing: "border-box", height: mob ? 32 : 40, padding: mob ? "0 12px 0 32px" : "0 14px 0 36px", borderRadius: mob ? 6 : 10, border: `1px solid ${C.border}`, fontSize: mob ? 12 : 14, fontFamily: "inherit", outline: "none" }} />
         </div>
         <Select style={compactSel} options={[{ value: "all", label: "전체 항목" }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
           value={filterCat} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterCat(e.target.value); setCurrentPage(1); }} />
         <Select style={compactSel} options={[{ value: "all", label: "전체 월" }, ...MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }))]}
           value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterMonth(e.target.value); setCurrentPage(1); }} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.navy, whiteSpace: "nowrap" }}>합계: ₩{fmt(filteredTotal)}</span>
+        <span style={{ fontSize: mob ? 12 : 14, fontWeight: 700, color: C.navy, whiteSpace: "nowrap" }}>합계: ₩{fmt(filteredTotal)}</span>
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 20px", borderRadius: mob ? 6 : 10, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
         >
           헌금 등록
         </button>
       </div>
-      <div ref={listRef}>
+      <div ref={listRef} style={{ ...PAGINATION_LIST_PARENT_STYLE }}>
       <Table
         columns={[
           { label: "날짜", key: "date" },
@@ -883,12 +927,12 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
           { label: "항목", render: (r) => { const cat = categories.find(c => c.id === r.categoryId); return cat ? <Badge color={C.navy} bg="#f0f2f5">{cat.name}</Badge> : (r.categoryId as string); }},
           { label: "방법", render: (r) => <Badge color="#555" bg="#f5f6f8">{r.method as string}</Badge> },
           { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.navy }}>₩{fmt(r.amount as number)}</span> },
-          { label: "", align: "center", render: (r) => <button onClick={() => handleDelete(r.id as string)} style={{ background: "none", border: "none", cursor: "pointer", color: C.textMuted, fontSize: 12, padding: 4 }}>삭제</button> },
+          { label: "", align: "center", render: (r) => <button onClick={() => handleDelete(r.id as string)} style={{ background: "none", border: "none", cursor: "pointer", color: C.textMuted, fontSize: mob ? 12 : 14, padding: 4 }}>삭제</button> },
         ]}
         data={filtered.slice((currentPage - 1) * 10, currentPage * 10) as unknown as Record<string, unknown>[]}
         emptyMsg="헌금 내역이 없습니다"
       />
-      <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+      <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
       </div>
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="헌금 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -956,6 +1000,7 @@ function DonorTab({ donors, setDonors, offerings }: {
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({ name: "", phone: "", group: "", joinDate: todayStr(), note: "" });
+  const mob = useIsMobile();
 
   const donorStats = useMemo(() => {
     const map: Record<string, { total: number; count: number; lastDate: string }> = {};
@@ -983,23 +1028,23 @@ function DonorTab({ donors, setDonors, offerings }: {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 20 : 24 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: mob ? 8 : 12, alignItems: "center" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
           <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#6b7b9e" }}><Icons.Search /></div>
           <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="이름 또는 연락처 검색..."
-            style={{ width: "100%", boxSizing: "border-box", height: 32, padding: "0 12px 0 32px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+            style={{ width: "100%", boxSizing: "border-box", height: mob ? 32 : 40, padding: mob ? "0 12px 0 32px" : "0 14px 0 36px", borderRadius: mob ? 6 : 10, border: `1px solid ${C.border}`, fontSize: mob ? 12 : 14, fontFamily: "inherit", outline: "none" }} />
         </div>
         <Badge color={C.navy} bg="#f0f2f5">총 {donors.length}명</Badge>
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 20px", borderRadius: mob ? 6 : 10, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
         >
           헌금자 등록
         </button>
       </div>
-      <div ref={listRef}>
+      <div ref={listRef} style={{ ...PAGINATION_LIST_PARENT_STYLE }}>
       <Table
         columns={[
           { label: "이름", render: (r) => <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "inline-block", maxWidth: "100%" }} title={r.name as string}>{r.name as string}</span> },
@@ -1009,12 +1054,12 @@ function DonorTab({ donors, setDonors, offerings }: {
           { label: "헌금 횟수", align: "center", render: (r) => <span>{donorStats[r.id as string]?.count || 0}회</span> },
           { label: "헌금 합계", align: "right", render: (r) => <span style={{ fontWeight: 700, color: C.navy }}>₩{fmt(donorStats[r.id as string]?.total || 0)}</span> },
           { label: "최근 헌금일", render: (r) => <span>{donorStats[r.id as string]?.lastDate || "-"}</span> },
-          { label: "메모", render: (r) => (r.note as string) ? <span style={{ color: C.textMuted, fontSize: 12 }}>{r.note as string}</span> : <span>-</span> },
+          { label: "메모", render: (r) => (r.note as string) ? <span style={{ color: C.textMuted, fontSize: mob ? 12 : 14 }}>{r.note as string}</span> : <span>-</span> },
         ]}
         data={paginatedDonors as unknown as Record<string, unknown>[]}
         emptyMsg="등록된 헌금자가 없습니다"
       />
-      <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+      <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
       </div>
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="헌금자 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1038,6 +1083,7 @@ function DonorTab({ donors, setDonors, offerings }: {
 function GivingStatusTab({ donors, offerings, categories }: {
   donors: Donor[]; offerings: Offering[]; categories: Category[];
 }) {
+  const mob = useIsMobile();
   const listRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -1109,23 +1155,24 @@ function GivingStatusTab({ donors, offerings, categories }: {
   };
 
   const Th = ({ label, keyName, align = "left" }: { label: string; keyName: typeof sortKey; align?: "left" | "right" | "center" }) => (
-    <th style={{ padding: "6px 8px", textAlign: align, fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}`, whiteSpace: "nowrap", cursor: "pointer" }} onClick={() => toggleSort(keyName)}>
+    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: align, fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}`, whiteSpace: "nowrap", cursor: "pointer" }} onClick={() => toggleSort(keyName)}>
       {label} {sortKey === keyName ? (sortDir === "asc" ? "↑" : "↓") : ""}
     </th>
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 20 : 24 }}>
+      <div style={{ display: "flex", gap: mob ? 12 : 16, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative" }}>
           <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><Icons.Search /></div>
           <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="이름 검색..."
-            style={{ height: 32, padding: "0 12px 0 32px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontFamily: "inherit", outline: "none", width: 200 }} />
+            style={{ height: mob ? 32 : 40, padding: mob ? "0 12px 0 32px" : "0 14px 0 36px", borderRadius: mob ? 6 : 10, border: `1px solid ${C.border}`, fontSize: mob ? 12 : 14, fontFamily: "inherit", outline: "none", width: mob ? 200 : 260 }} />
         </div>
       </div>
 
-      <div ref={listRef}><Card style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ overflowX: "auto" }}>
+      <div ref={listRef} style={{ ...PAGINATION_LIST_PARENT_STYLE }}>
+        <Card style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, padding: 0, overflow: "hidden" }}>
+        <div style={{ overflowX: "auto", flex: 1, minHeight: 0 }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -1145,29 +1192,29 @@ function GivingStatusTab({ donors, offerings, categories }: {
                     background: i % 2 === 1 ? "#fafbfc" : "#fff",
                   }}
                 >
-                  <td style={{ padding: "6px 8px", verticalAlign: "middle" }}>
+                  <td style={{ padding: mob ? "6px 8px" : "12px 14px", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                       <div style={{
-                        width: 28, height: 28, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
-                        background: "#f0f2f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: C.navy,
+                        width: mob ? 28 : 36, height: mob ? 28 : 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
+                        background: "#f0f2f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 11 : 13, fontWeight: 700, color: C.navy,
                       }}>
                         {s.donor.photoUrl ? <img src={s.donor.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : s.donor.name.charAt(0)}
                       </div>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", minWidth: 0 }}>{s.donor.name}</span>
+                      <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", minWidth: 0 }}>{s.donor.name}</span>
                     </div>
                   </td>
-                  <td style={{ padding: "6px 8px", textAlign: "right", fontSize: 11, fontWeight: 600, color: C.navy }}>₩{fmt(s.total)}</td>
-                  <td style={{ padding: "6px 8px", textAlign: "center", fontSize: 10, color: "#999" }}>{s.lastDate || "-"}</td>
-                  <td style={{ padding: "6px 8px", textAlign: "center", fontSize: 10, color: "#999" }}>{s.prevDate || "-"}</td>
-                  <td style={{ padding: "6px 8px", textAlign: "right", fontSize: 11, color: "#555" }}>₩{fmt(s.thisMonth)}</td>
+                  <td style={{ padding: mob ? "6px 8px" : "12px 14px", textAlign: "right", fontSize: mob ? 11 : 14, fontWeight: 600, color: C.navy }}>₩{fmt(s.total)}</td>
+                  <td style={{ padding: mob ? "6px 8px" : "12px 14px", textAlign: "center", fontSize: mob ? 10 : 13, color: "#999" }}>{s.lastDate || "-"}</td>
+                  <td style={{ padding: mob ? "6px 8px" : "12px 14px", textAlign: "center", fontSize: mob ? 10 : 13, color: "#999" }}>{s.prevDate || "-"}</td>
+                  <td style={{ padding: mob ? "6px 8px" : "12px 14px", textAlign: "right", fontSize: mob ? 11 : 14, color: "#555" }}>₩{fmt(s.thisMonth)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && <div style={{ padding: 32, textAlign: "center", color: "#999", fontSize: 11 }}>조건에 맞는 교인이 없습니다</div>}
+        {filtered.length === 0 && <div style={{ padding: mob ? 32 : 48, textAlign: "center", color: "#999", fontSize: mob ? 11 : 14 }}>조건에 맞는 교인이 없습니다</div>}
         {filtered.length > 0 && (
-          <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+          <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
         )}
       </Card></div>
     </div>
@@ -1186,6 +1233,7 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
   const [filterDept, setFilterDept] = useState("all");
   const [filterMonth, setFilterMonth] = useState("all");
   const [form, setForm] = useState({ categoryId: "salary", departmentId: "admin", amount: "", date: todayStr(), description: "", receipt: true, note: "" });
+  const mob = useIsMobile();
 
   const filtered = useMemo(() => {
     let result = [...expenses];
@@ -1220,25 +1268,31 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
     }
   };
 
-  const expSel: CSSProperties = { height: 32, fontSize: 11, padding: "0 8px", borderRadius: 6, border: `1px solid ${C.border}` };
+  const expSel: CSSProperties = {
+    height: mob ? 32 : 40,
+    fontSize: mob ? 11 : 14,
+    padding: mob ? "0 8px" : "0 14px",
+    borderRadius: mob ? 6 : 10,
+    border: `1px solid ${C.border}`,
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 20 : 24 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: mob ? 8 : 12, alignItems: "center" }}>
         <Select style={expSel} options={[{ value: "all", label: "전체 부서" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
           value={filterDept} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterDept(e.target.value); setCurrentPage(1); }} />
         <Select style={expSel} options={[{ value: "all", label: "전체 월" }, ...MONTHS.map((m, i) => ({ value: String(i+1).padStart(2,"0"), label: m }))]}
           value={filterMonth} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setFilterMonth(e.target.value); setCurrentPage(1); }} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.navy, whiteSpace: "nowrap" }}>합계: ₩{fmt(filteredTotal)}</span>
+        <span style={{ fontSize: mob ? 12 : 14, fontWeight: 700, color: C.navy, whiteSpace: "nowrap" }}>합계: ₩{fmt(filteredTotal)}</span>
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 20px", borderRadius: mob ? 6 : 10, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
         >
           지출 등록
         </button>
       </div>
-      <div ref={listRef}>
+      <div ref={listRef} style={{ ...PAGINATION_LIST_PARENT_STYLE }}>
       <Table
         columns={[
           { label: "날짜", key: "date" },
@@ -1250,7 +1304,7 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
         ]}
         data={filtered.slice((currentPage - 1) * 10, currentPage * 10) as unknown as Record<string, unknown>[]}
       />
-      <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => { setCurrentPage(p); listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+      <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
       </div>
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="지출 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1438,7 +1492,7 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
           type="button"
           className="finance-nav-btn"
           onClick={() => setShowSettlement(true)}
-          style={{ height: 32, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: C.navy, color: "#fff", border: "none", cursor: "pointer", boxShadow: "none", outline: "none" }}
+          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, background: C.navy, color: "#fff", border: "none", cursor: "pointer", boxShadow: "none", outline: "none" }}
         >
           결산 보고서
         </button>
@@ -1454,7 +1508,7 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
                 setReportType(t);
                 setSelectedPeriod(t === "monthly" ? "01" : "0");
               }}
-              style={financeTogglePillStyle(reportType === t)}
+              style={financeTogglePillStyle(reportType === t, mob)}
             >
               {reportTypeLabel[t]}
             </button>
@@ -1476,7 +1530,7 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
                   type="button"
                   className="finance-nav-btn"
                   onClick={() => setSelectedPeriod(opt.value)}
-                  style={financeSubTabStyle(selectedPeriod === opt.value, "gridCell")}
+                  style={financeSubTabStyle(selectedPeriod === opt.value, "gridCell", mob)}
                 >
                   {opt.label}
                 </button>
@@ -1501,7 +1555,7 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
                   type="button"
                   className="finance-nav-btn"
                   onClick={() => setSelectedPeriod(opt.value)}
-                  style={financeScrollRowPillStyle(selectedPeriod === opt.value)}
+                  style={financeScrollRowPillStyle(selectedPeriod === opt.value, mob)}
                 >
                   {opt.label}
                 </button>
@@ -1515,7 +1569,7 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
                   type="button"
                   className="finance-nav-btn"
                   onClick={() => setSelectedPeriod(opt.value)}
-                  style={financeTogglePillStyle(selectedPeriod === opt.value)}
+                  style={financeTogglePillStyle(selectedPeriod === opt.value, mob)}
                 >
                   {opt.label}
                 </button>
@@ -1524,23 +1578,23 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
           )
         )}
       </Card>
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
-        <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff" }}>
-          <div style={{ fontSize: 10, color: "#6b7b9e", fontWeight: 500 }}>수입 합계</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>₩{fmt(reportData.totalOff)}</div>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, 1fr)", gap: mob ? 12 : 20 }}>
+        <div style={{ padding: mob ? "10px 12px" : "16px 20px", borderRadius: mob ? 8 : 16, border: `1px solid ${C.border}`, background: "#fff" }}>
+          <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", fontWeight: 500 }}>수입 합계</div>
+          <div style={{ fontSize: mob ? 18 : 26, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>₩{fmt(reportData.totalOff)}</div>
         </div>
-        <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff" }}>
-          <div style={{ fontSize: 10, color: "#6b7b9e", fontWeight: 500 }}>지출 합계</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>₩{fmt(reportData.totalExp)}</div>
+        <div style={{ padding: mob ? "10px 12px" : "16px 20px", borderRadius: mob ? 8 : 16, border: `1px solid ${C.border}`, background: "#fff" }}>
+          <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", fontWeight: 500 }}>지출 합계</div>
+          <div style={{ fontSize: mob ? 18 : 26, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>₩{fmt(reportData.totalExp)}</div>
         </div>
-        <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff" }}>
-          <div style={{ fontSize: 10, color: "#6b7b9e", fontWeight: 500 }}>잔액</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>₩{fmt(reportData.balance)}</div>
+        <div style={{ padding: mob ? "10px 12px" : "16px 20px", borderRadius: mob ? 8 : 16, border: `1px solid ${C.border}`, background: "#fff" }}>
+          <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", fontWeight: 500 }}>잔액</div>
+          <div style={{ fontSize: mob ? 18 : 26, fontWeight: 800, color: "#1B2A4A", letterSpacing: "-0.02em" }}>₩{fmt(reportData.balance)}</div>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: mob ? 12 : 20 }}>
         <Card>
-          <h4 style={{ margin: "0 0 16px", color: C.navy }}>헌금 항목별 보고</h4>
+          <h4 style={{ margin: "0 0 16px", color: C.navy, fontSize: mob ? 13 : 16, fontWeight: 700 }}>헌금 항목별 보고</h4>
           <Table columns={[
             { label: "항목", key: "name" },
             { label: "비율", render: (r) => <span>{r.pct as string}%</span> },
@@ -1548,7 +1602,7 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
           ]} data={reportData.catBreakdown as unknown as Record<string, unknown>[]} />
         </Card>
         <Card>
-          <h4 style={{ margin: "0 0 16px", color: C.navy }}>지출 항목별 보고</h4>
+          <h4 style={{ margin: "0 0 16px", color: C.navy, fontSize: mob ? 13 : 16, fontWeight: 700 }}>지출 항목별 보고</h4>
           <Table columns={[
             { label: "항목", key: "name" },
             { label: "비율", render: (r) => <span>{r.pct as string}%</span> },
@@ -1557,7 +1611,7 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
         </Card>
       </div>
       <Card>
-        <h4 style={{ margin: "0 0 16px", color: C.navy }}>부서별 지출 보고</h4>
+        <h4 style={{ margin: "0 0 16px", color: C.navy, fontSize: mob ? 13 : 16, fontWeight: 700 }}>부서별 지출 보고</h4>
         <Table columns={[
           { label: "부서", key: "name" },
           { label: "비율", render: (r) => <span>{r.pct as string}%</span> },
@@ -1701,24 +1755,24 @@ function BudgetActualTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: C.navy }}>
-          연도
+        <div style={budgetYearToolbarRowStyle()}>
+          <span style={budgetYearLabelStyle(mob)}>연도</span>
           <select
             value={String(year)}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
               setYear(Number(e.target.value));
               setCurrentPageCompare(1);
             }}
-            style={{ height: 32, fontSize: 12, width: 90, borderRadius: 6, border: `1px solid ${C.border}`, padding: "0 8px", color: C.navy, background: "#fff", cursor: "pointer" }}
+            style={budgetYearSelectStyle(mob)}
           >
             {[currentYear, currentYear - 1, currentYear - 2].map((y) => (
               <option key={y} value={String(y)}>{y}년</option>
             ))}
           </select>
-        </label>
+        </div>
         <div style={{ ...financeSubTabRowStyle, marginBottom: 0 }}>
           {(["input", "compare"] as const).map((m) => (
-            <button key={m} type="button" className="finance-nav-btn" onClick={() => setMode(m)} style={financeTogglePillStyle(mode === m)}>
+            <button key={m} type="button" className="finance-nav-btn" onClick={() => setMode(m)} style={financeTogglePillStyle(mode === m, mob)}>
               {m === "input" ? "예산 입력" : "비교 뷰"}
             </button>
           ))}
@@ -1744,67 +1798,73 @@ function BudgetActualTab({
 
       {mode === "compare" && (
         <>
-          <div ref={listRefCompare}><div id="budget-actual-report-card" ref={reportCardRef} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
+          <div ref={listRefCompare} style={{ ...PAGINATION_LIST_PARENT_STYLE }}>
+            <div id="budget-actual-report-card" ref={reportCardRef} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
             <h3 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: C.navy }}>{year}년 예산 vs 실적</h3>
-            <div style={{ overflowX: "auto", marginBottom: 24 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={financeTableHeaderTh("left")}>구분</th>
-                    <th style={financeTableHeaderTh("left")}>항목명</th>
-                    <th style={financeTableHeaderTh("right")}>예산</th>
-                    <th style={financeTableHeaderTh("right")}>실적</th>
-                    <th style={financeTableHeaderTh("right")}>차이</th>
-                    <th style={financeTableHeaderTh("right")}>집행률</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedCompareRows.map((r, i) => {
-                    const gi = (currentPageCompare - 1) * 10 + i;
-                    const total = r.id.startsWith("_");
-                    if (total) {
+            <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th style={financeTableHeaderTh("left", mob)}>구분</th>
+                      <th style={financeTableHeaderTh("left", mob)}>항목명</th>
+                      <th style={financeTableHeaderTh("right", mob)}>예산</th>
+                      <th style={financeTableHeaderTh("right", mob)}>실적</th>
+                      <th style={financeTableHeaderTh("right", mob)}>차이</th>
+                      <th style={financeTableHeaderTh("right", mob)}>집행률</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedCompareRows.map((r, i) => {
+                      const gi = (currentPageCompare - 1) * 10 + i;
+                      const total = r.id.startsWith("_");
+                      if (total) {
+                        return (
+                          <tr key={r.id}>
+                            <td style={financeTableTotalRowTd("left", mob)}>{r.type}</td>
+                            <td style={financeTableTotalRowTd("left", mob)}>{r.name}</td>
+                            <td style={financeTableTotalRowTd("right", mob)}>₩{fmt(r.budget)}</td>
+                            <td style={financeTableTotalRowTd("right", mob)}>₩{fmt(r.actual)}</td>
+                            <td style={financeTableTotalRowTd("right", mob)}>₩{fmt(r.diff)}</td>
+                            <td style={financeTableTotalRowTd("right", mob)}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
+                          </tr>
+                        );
+                      }
                       return (
                         <tr key={r.id}>
-                          <td style={financeTableTotalRowTd("left")}>{r.type}</td>
-                          <td style={financeTableTotalRowTd("left")}>{r.name}</td>
-                          <td style={financeTableTotalRowTd("right")}>₩{fmt(r.budget)}</td>
-                          <td style={financeTableTotalRowTd("right")}>₩{fmt(r.actual)}</td>
-                          <td style={financeTableTotalRowTd("right")}>₩{fmt(r.diff)}</td>
-                          <td style={financeTableTotalRowTd("right")}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
+                          <td style={financeTableCellTd(gi % 2 === 1, "left", mob)}>{r.type}</td>
+                          <td style={financeTableCellTd(gi % 2 === 1, "left", mob)}>{r.name}</td>
+                          <td style={financeTableCellTd(gi % 2 === 1, "right", mob)}>₩{fmt(r.budget)}</td>
+                          <td style={{ ...financeTableCellTd(gi % 2 === 1, "right", mob), color: C.navy }}>₩{fmt(r.actual)}</td>
+                          <td style={financeTableCellTd(gi % 2 === 1, "right", mob)}>₩{fmt(r.diff)}</td>
+                          <td style={{ ...financeTableCellTd(gi % 2 === 1, "right", mob), fontWeight: 600, color: pctColor() }}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
                         </tr>
                       );
-                    }
-                    return (
-                      <tr key={r.id}>
-                        <td style={financeTableCellTd(gi % 2 === 1, "left")}>{r.type}</td>
-                        <td style={financeTableCellTd(gi % 2 === 1, "left")}>{r.name}</td>
-                        <td style={financeTableCellTd(gi % 2 === 1, "right")}>₩{fmt(r.budget)}</td>
-                        <td style={{ ...financeTableCellTd(gi % 2 === 1, "right"), color: C.navy }}>₩{fmt(r.actual)}</td>
-                        <td style={financeTableCellTd(gi % 2 === 1, "right")}>₩{fmt(r.diff)}</td>
-                        <td style={{ ...financeTableCellTd(gi % 2 === 1, "right"), fontWeight: 600, color: pctColor() }}>{r.pct > 0 ? `${r.pct}%` : "-"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination totalItems={compareRows.length} itemsPerPage={10} currentPage={currentPageCompare} onPageChange={(p) => setCurrentPageCompare(p)} />
             </div>
-            <Pagination totalItems={compareRows.length} itemsPerPage={10} currentPage={currentPageCompare} onPageChange={(p) => { setCurrentPageCompare(p); listRefCompare.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
             {chartData.length > 0 && (
-              <LazyChart height={mob ? 280 : 320}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" height={60} />
-                    <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 10000).toFixed(0)}만`} />
-                    <Tooltip formatter={(value) => `₩${fmt(Number(value))}`} />
-                    <Legend />
-                    <Bar dataKey="예산" fill="#6b7b9e" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="실적" fill="#1B2A4A" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </LazyChart>
+              <div style={{ marginTop: 24, flexShrink: 0 }}>
+                <LazyChart height={mob ? 280 : 320}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" height={60} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 10000).toFixed(0)}만`} />
+                      <Tooltip formatter={(value) => `₩${fmt(Number(value))}`} />
+                      <Legend />
+                      <Bar dataKey="예산" fill="#6b7b9e" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="실적" fill="#1B2A4A" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </LazyChart>
+              </div>
             )}
-          </div></div>
+            </div>
+          </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Button onClick={handleSaveImage} variant="accent">예결산 보고서 이미지 저장</Button>
             <Button onClick={handleShare} variant="soft">카카오톡 공유</Button>
@@ -1834,6 +1894,7 @@ function BudgetInputRow({ label, value, onSave }: { label: string; value: number
 
 /* ====== 예산 관리 ====== */
 function BudgetTab({ departments, expenses }: { departments: Department[]; expenses: Expense[] }) {
+  const mob = useIsMobile();
   const [year, setYear] = useState("2026");
   const [budgets, setBudgets] = useState<Record<string, Record<string, string>>>(() => {
     const b: Record<string, Record<string, string>> = {};
@@ -1858,11 +1919,12 @@ function BudgetTab({ departments, expenses }: { departments: Department[]; expen
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+      <div style={budgetYearToolbarRowStyle()}>
+        <span style={budgetYearLabelStyle(mob)}>연도</span>
         <select
           value={year}
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value)}
-          style={{ height: 32, fontSize: 12, width: 90, borderRadius: 6, border: `1px solid ${C.border}`, padding: "0 8px", color: C.navy, background: "#fff", cursor: "pointer" }}
+          style={budgetYearSelectStyle(mob)}
         >
           <option value="2026">2026년</option>
           <option value="2027">2027년</option>
@@ -1876,7 +1938,7 @@ function BudgetTab({ departments, expenses }: { departments: Department[]; expen
             <thead>
               <tr>
                 {["부서", "전년 실적", "1분기 예산", "2분기 예산", "3분기 예산", "4분기 예산", "연간 합계"].map((h, i) => (
-                  <th key={h} style={financeTableHeaderTh(i === 0 ? "left" : (i === 1 || i === 6) ? "right" : "center")}>{h}</th>
+                  <th key={h} style={financeTableHeaderTh(i === 0 ? "left" : (i === 1 || i === 6) ? "right" : "center", mob)}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1887,15 +1949,15 @@ function BudgetTab({ departments, expenses }: { departments: Department[]; expen
                 const even = i % 2 === 1;
                 return (
                   <tr key={d.id}>
-                    <td style={{ ...financeTableCellTd(even, "left"), minWidth: 0 }}>
+                    <td style={{ ...financeTableCellTd(even, "left", mob), minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                         <div style={{ width: 8, height: 8, borderRadius: 4, background: "#1B2A4A", flexShrink: 0 }} />
                         <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
                       </div>
                     </td>
-                    <td style={financeTableCellTd(even, "right")}>₩{fmt(actualByDept[d.id] || 0)}</td>
+                    <td style={financeTableCellTd(even, "right", mob)}>₩{fmt(actualByDept[d.id] || 0)}</td>
                     {(["q1", "q2", "q3", "q4"] as const).map((q) => (
-                      <td key={q} style={{ ...financeTableCellTd(even, "center"), verticalAlign: "middle" }}>
+                      <td key={q} style={{ ...financeTableCellTd(even, "center", mob), verticalAlign: "middle" }}>
                         <input
                           type="number"
                           value={b[q] || ""}
@@ -1905,18 +1967,18 @@ function BudgetTab({ departments, expenses }: { departments: Department[]; expen
                         />
                       </td>
                     ))}
-                    <td style={{ ...financeTableCellTd(even, "right"), fontWeight: 700, color: C.navy }}>₩{fmt(annual)}</td>
+                    <td style={{ ...financeTableCellTd(even, "right", mob), fontWeight: 700, color: C.navy }}>₩{fmt(annual)}</td>
                   </tr>
                 );
               })}
               <tr>
-                <td style={financeTableTotalRowTd("left")}>합계</td>
-                <td style={financeTableTotalRowTd("right")}>₩{fmt(Object.values(actualByDept).reduce((s, v) => s + v, 0))}</td>
+                <td style={financeTableTotalRowTd("left", mob)}>합계</td>
+                <td style={financeTableTotalRowTd("right", mob)}>₩{fmt(Object.values(actualByDept).reduce((s, v) => s + v, 0))}</td>
                 {(["q1", "q2", "q3", "q4"] as const).map((q) => {
                   const qTotal = departments.reduce((s, d) => s + (parseInt(budgets[d.id]?.[q]) || 0), 0);
-                  return <td key={q} style={financeTableTotalRowTd("center")}>₩{fmt(qTotal)}</td>;
+                  return <td key={q} style={financeTableTotalRowTd("center", mob)}>₩{fmt(qTotal)}</td>;
                 })}
-                <td style={financeTableTotalRowTd("right")}>₩{fmt(totalBudget)}</td>
+                <td style={financeTableTotalRowTd("right", mob)}>₩{fmt(totalBudget)}</td>
               </tr>
             </tbody>
           </table>
@@ -1931,6 +1993,7 @@ function ExportTab({ offerings, expenses, categories, departments, expenseCatego
   offerings: Offering[]; expenses: Expense[]; categories: Category[];
   departments: Department[]; expenseCategories: ExpCategory[]; donors: Donor[];
 }) {
+  const mob = useIsMobile();
   const exportOfferings = () => {
     const data = offerings.map(o => {
       const cat = categories.find(c => c.id === o.categoryId);
@@ -2023,23 +2086,31 @@ function ExportTab({ offerings, expenses, categories, departments, expenseCatego
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ background: "#f5f6f8", borderRadius: 8, fontSize: 11, color: "#555", padding: "10px 12px", lineHeight: 1.5, border: `1px solid ${C.border}` }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 20 }}>
+      <div style={{
+        background: "#f5f6f8",
+        borderRadius: mob ? 8 : 16,
+        fontSize: mob ? 11 : 14,
+        color: "#6b7b9e",
+        padding: mob ? "10px 12px" : "16px 20px",
+        lineHeight: mob ? 1.4 : 1.6,
+        border: `1px solid ${C.border}`,
+      }}>
         원하는 보고서를 선택하면 엑셀(.xlsx) 파일로 바로 내려받을 수 있습니다. 항목별로 정리되어 재정 보고에 활용하기 좋습니다.
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(2, 1fr)", gap: mob ? 8 : 16 }}>
         {exports.map((item, i) => (
-          <Card key={i} onClick={item.action} style={{ cursor: "pointer", transition: "all 0.2s ease", padding: "10px 12px", marginBottom: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Card key={i} onClick={item.action} style={{ cursor: "pointer", transition: "all 0.2s ease", padding: mob ? "10px 12px" : "20px 24px", marginBottom: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: mob ? 10 : 16 }}>
               <div style={{
-                width: 32, height: 32, borderRadius: "50%", background: "#f0f2f5", color: "#1B2A4A",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0,
+                width: mob ? 32 : 44, height: mob ? 32 : 44, borderRadius: "50%", background: "#f0f2f5", color: "#1B2A4A",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 11 : 14, fontWeight: 700, flexShrink: 0,
               }}>{item.initial}</div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 700, color: "#1B2A4A", fontSize: 12, marginBottom: 2 }}>{item.title}</div>
-                <div style={{ fontSize: 10, color: "#999", lineHeight: 1.35 }}>{item.desc}</div>
+                <div style={{ fontWeight: 700, color: "#1B2A4A", fontSize: mob ? 12 : 15, marginBottom: 2 }}>{item.title}</div>
+                <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", lineHeight: 1.35 }}>{item.desc}</div>
               </div>
-              <div style={{ marginLeft: "auto", color: "#6b7b9e", display: "flex", alignItems: "center", flexShrink: 0, fontSize: 14 }}><Icons.Export /></div>
+              <div style={{ marginLeft: "auto", color: "#6b7b9e", display: "flex", alignItems: "center", flexShrink: 0, fontSize: mob ? 14 : 18 }}><Icons.Export /></div>
             </div>
           </Card>
         ))}
@@ -2486,19 +2557,22 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
     setBatchGenerating(true);
   };
 
-  const receiptInputBase: CSSProperties = {
-    height: 32,
-    padding: "0 10px",
-    borderRadius: 6,
-    border: `1px solid ${C.border}`,
-    fontSize: 12,
-    fontFamily: "inherit",
-    outline: "none",
-    width: "100%",
-    maxWidth: 360,
-    boxSizing: "border-box",
-    color: "#555",
-  };
+  const receiptInputBase = useMemo<CSSProperties>(
+    () => ({
+      height: mob ? 32 : 40,
+      padding: mob ? "0 10px" : "0 14px",
+      borderRadius: mob ? 6 : 10,
+      border: `1px solid ${C.border}`,
+      fontSize: mob ? 12 : 14,
+      fontFamily: "inherit",
+      outline: "none",
+      width: "100%",
+      maxWidth: 360,
+      boxSizing: "border-box",
+      color: "#555",
+    }),
+    [mob]
+  );
 
   const receiptSubTabs: { id: ReceiptSubTab; label: string }[] = [
     { id: "individual", label: "개별 발급" },
@@ -2561,7 +2635,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               type="button"
               className="finance-nav-btn"
               onClick={() => setReceiptSubTab(t.id)}
-              style={financeSubTabStyle(receiptSubTab === t.id)}
+              style={financeSubTabStyle(receiptSubTab === t.id, "rowEqual", mob)}
             >
               {t.label}
             </button>
@@ -2577,15 +2651,15 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             alignItems: "center",
             justifyContent: "center",
             gap: 6,
-            height: 28,
-            minHeight: 28,
-            maxHeight: 28,
-            padding: "0 10px",
-            borderRadius: 6,
+            height: mob ? 28 : 36,
+            minHeight: mob ? 28 : 36,
+            maxHeight: mob ? 28 : 36,
+            padding: mob ? "0 10px" : "0 14px",
+            borderRadius: mob ? 6 : 8,
             border: `1px solid ${C.border}`,
             background: "#f5f6f8",
             color: "#555",
-            fontSize: 10,
+            fontSize: mob ? 10 : 13,
             fontWeight: 600,
             cursor: "pointer",
             fontFamily: "inherit",
@@ -2599,10 +2673,10 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
       </div>
 
       {(receiptSubTab === "individual" || receiptSubTab === "bulk") && receiptSettingsIncomplete && (
-        <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#f5f6f8", color: "#555" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: C.navy }}>기부금영수증 설정이 완료되지 않았습니다.</p>
-          <p style={{ margin: "6px 0 8px", fontSize: 11, color: "#555", lineHeight: 1.5 }}>교회 고유번호, 대표자, 소재지를 먼저 등록해주세요. 미등록 시 PDF에 해당 정보가 빈칸으로 나옵니다.</p>
-          <button type="button" onClick={() => setSealSettingsOpen(true)} style={{ padding: 0, background: "none", border: "none", color: C.navy, fontWeight: 600, fontSize: 11, cursor: "pointer" }}>설정하러 가기 →</button>
+        <div style={{ padding: mob ? "10px 12px" : "16px 20px", borderRadius: mob ? 8 : 16, border: `1px solid ${C.border}`, background: "#f5f6f8", color: "#555" }}>
+          <p style={{ margin: 0, fontSize: mob ? 12 : 15, fontWeight: 700, color: C.navy }}>기부금영수증 설정이 완료되지 않았습니다.</p>
+          <p style={{ margin: "6px 0 8px", fontSize: mob ? 11 : 14, color: "#555", lineHeight: mob ? 1.4 : 1.6 }}>교회 고유번호, 대표자, 소재지를 먼저 등록해주세요. 미등록 시 PDF에 해당 정보가 빈칸으로 나옵니다.</p>
+          <button type="button" onClick={() => setSealSettingsOpen(true)} style={{ padding: 0, background: "none", border: "none", color: C.navy, fontWeight: 600, fontSize: mob ? 11 : 14, cursor: "pointer" }}>설정하러 가기 →</button>
         </div>
       )}
 
@@ -2613,7 +2687,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               <SealSettingsSection churchId={churchId} toast={toast ?? (() => {})} onSaved={() => { setSealSettingsOpen(false); if (supabase && churchId) supabase.from("church_settings").select("church_registration_number, representative_name, church_address, church_tel, seal_image_url").eq("church_id", churchId).maybeSingle().then(({ data }) => setChurchSettings(data ?? null)); }} />
             </div>
             <div style={{ flexShrink: 0, paddingTop: 12 }}>
-              <button type="button" onClick={() => setSealSettingsOpen(false)} style={{ width: "100%", padding: "10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer" }}>닫기</button>
+              <button type="button" onClick={() => setSealSettingsOpen(false)} style={{ width: "100%", padding: mob ? "10px" : "12px 16px", borderRadius: mob ? 8 : 10, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer", fontSize: mob ? 13 : 14 }}>닫기</button>
             </div>
           </div>
         </div>
@@ -2621,10 +2695,10 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
 
       {receiptSubTab === "individual" && (
         <>
-      <Card style={{ padding: 12 }}>
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+      <Card style={{ padding: mob ? 12 : 20 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: mob ? 10 : 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }} ref={yearDropdownRef}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: C.navy, whiteSpace: "nowrap" }}>귀속연도</label>
+            <label style={{ fontSize: mob ? 11 : 13, fontWeight: 600, color: C.navy, whiteSpace: "nowrap" }}>귀속연도</label>
             <div style={{ position: "relative" }}>
               <button
                 type="button"
@@ -2632,11 +2706,11 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 onClick={(e) => { e.stopPropagation(); setYearDropdownOpen(o => !o); }}
                 style={{
                   minWidth: 88,
-                  height: 32,
-                  padding: "0 28px 0 10px",
-                  borderRadius: 6,
+                  height: mob ? 32 : 40,
+                  padding: mob ? "0 28px 0 10px" : "0 32px 0 14px",
+                  borderRadius: mob ? 6 : 10,
                   border: `1px solid ${C.border}`,
-                  fontSize: 12,
+                  fontSize: mob ? 12 : 14,
                   fontFamily: "inherit",
                   color: C.navy,
                   background: "#fff",
@@ -2650,7 +2724,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 }}
               >
                 <span>{year}년</span>
-                <span style={{ flexShrink: 0, display: "flex", alignItems: "center", fontSize: 10 }}>▼</span>
+                <span style={{ flexShrink: 0, display: "flex", alignItems: "center", fontSize: mob ? 10 : 12 }}>▼</span>
               </button>
               {yearDropdownOpen && (
                 <div
@@ -2677,11 +2751,11 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                       style={{
                         display: "block",
                         width: "100%",
-                        padding: "8px 10px",
+                        padding: mob ? "8px 10px" : "10px 14px",
                         border: "none",
                         background: year === y ? C.navy : "transparent",
                         color: year === y ? "#fff" : C.navy,
-                        fontSize: 12,
+                        fontSize: mob ? 12 : 14,
                         fontFamily: "inherit",
                         cursor: "pointer",
                         textAlign: "left",
@@ -2699,14 +2773,14 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             className="finance-nav-btn"
             onClick={() => setReceiptSubTab("bulk")}
             style={{
-              height: 32,
-              padding: "0 12px",
-              borderRadius: 6,
+              height: mob ? 32 : 40,
+              padding: mob ? "0 12px" : "0 20px",
+              borderRadius: mob ? 6 : 10,
               border: `1px solid ${C.border}`,
               background: "#f5f6f8",
               color: "#555",
               fontWeight: 600,
-              fontSize: 11,
+              fontSize: mob ? 11 : 14,
               cursor: "pointer",
               flexShrink: 0,
             }}
@@ -2716,11 +2790,11 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
         </div>
       </Card>
 
-          <Card style={{ padding: 12, border: `1px solid ${C.border}` }}>
-            <h4 style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 700, color: C.navy }}>교인 선택</h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Card style={{ padding: mob ? 12 : 20, border: `1px solid ${C.border}` }}>
+            <h4 style={{ margin: "0 0 12px", fontSize: mob ? 13 : 16, fontWeight: 700, color: C.navy }}>교인 선택</h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 500, color: "#6b7b9e", marginBottom: 6 }}>이름으로 검색</label>
+                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: "#1B2A4A", marginBottom: mob ? 6 : 8 }}>이름으로 검색</label>
                 <input
                   type="text"
                   className="receipt-form-input finance-nav-btn"
@@ -2731,7 +2805,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 />
               </div>
               <div ref={donorDropdownRef} style={{ position: "relative" }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 500, color: "#6b7b9e", marginBottom: 6 }}>교인 선택</label>
+                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: "#1B2A4A", marginBottom: mob ? 6 : 8 }}>교인 선택</label>
                 <button
                   type="button"
                   className="finance-nav-btn"
@@ -2740,7 +2814,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     ...receiptInputBase,
                     margin: 0,
                     cursor: "pointer",
-                    height: 32,
+                    height: mob ? 32 : 40,
                     textAlign: "left",
                     display: "flex",
                     alignItems: "center",
@@ -2751,7 +2825,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {selectedDonor ? `${selectedDonor.name}${selectedDonor.phone ? ` (${selectedDonor.phone})` : ""}` : "선택하세요"}
                   </span>
-                  <span style={{ flexShrink: 0, marginLeft: 8, fontSize: 10 }}>▼</span>
+                  <span style={{ flexShrink: 0, marginLeft: 8, fontSize: mob ? 10 : 12 }}>▼</span>
                 </button>
                 {donorDropdownOpen && (
                   <div
@@ -2777,11 +2851,11 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                       style={{
                         display: "block",
                         width: "100%",
-                        padding: "8px 10px",
+                        padding: mob ? "8px 10px" : "10px 14px",
                         border: "none",
                         background: !selectedDonorId ? C.navy : "transparent",
                         color: !selectedDonorId ? "#fff" : C.navy,
-                        fontSize: 12,
+                        fontSize: mob ? 12 : 14,
                         fontFamily: "inherit",
                         cursor: "pointer",
                         textAlign: "left",
@@ -2798,12 +2872,12 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                         style={{
                           display: "block",
                           width: "100%",
-                          padding: "8px 10px",
+                          padding: mob ? "8px 10px" : "10px 14px",
                           border: "none",
                           borderTop: `1px solid ${C.borderLight}`,
                           background: selectedDonorId === d.id ? C.navy : "transparent",
                           color: selectedDonorId === d.id ? "#fff" : C.navy,
-                          fontSize: 12,
+                          fontSize: mob ? 12 : 14,
                           fontFamily: "inherit",
                           cursor: "pointer",
                           textAlign: "left",
@@ -2816,12 +2890,12 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 )}
               </div>
               {selectedDonor && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#f5f6f8", marginBottom: 4 }}>
-                    <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: C.navy }}>개인정보 보호</p>
-                    <p style={{ margin: "4px 0 0", fontSize: 11, color: "#555", lineHeight: 1.5 }}>주민등록번호는 서버에 저장되지 않으며, 영수증 PDF 생성 후 즉시 폐기됩니다.</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 12 }}>
+                  <div style={{ padding: mob ? "10px 12px" : "14px 18px", borderRadius: mob ? 8 : 16, border: `1px solid ${C.border}`, background: "#f5f6f8", marginBottom: 4 }}>
+                    <p style={{ margin: 0, fontSize: mob ? 12 : 15, fontWeight: 700, color: C.navy }}>개인정보 보호</p>
+                    <p style={{ margin: "4px 0 0", fontSize: mob ? 11 : 14, color: "#555", lineHeight: mob ? 1.4 : 1.6 }}>주민등록번호는 서버에 저장되지 않으며, 영수증 PDF 생성 후 즉시 폐기됩니다.</p>
                   </div>
-                  <label style={{ display: "block", fontSize: 11, fontWeight: 500, color: "#6b7b9e", marginBottom: 2 }}>주민등록번호 (13자리, - 제외)</label>
+                  <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: "#1B2A4A", marginBottom: mob ? 2 : 6 }}>주민등록번호 (13자리, - 제외)</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <input
                       type="password"
@@ -2833,7 +2907,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                       placeholder="앞 6자리"
                       style={{ ...receiptInputBase, width: 90, margin: 0 }}
                     />
-                    <span style={{ color: "#6b7b9e", fontWeight: 600, fontSize: 11 }}>-</span>
+                    <span style={{ color: "#6b7b9e", fontWeight: 600, fontSize: mob ? 11 : 13 }}>-</span>
                     <input
                       type="password"
                       className="receipt-form-input finance-nav-btn"
@@ -2846,13 +2920,13 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     />
                   </div>
                   {selectedDonor && total > 0 && !residentValid && (
-                    <p style={{ fontSize: 11, color: "#999", margin: "4px 0 0" }}>주민등록번호를 입력해주세요 (앞 6자리 + 뒷 7자리)</p>
+                    <p style={{ fontSize: mob ? 11 : 14, color: "#999", margin: "4px 0 0" }}>주민등록번호를 입력해주세요 (앞 6자리 + 뒷 7자리)</p>
                   )}
                 </div>
               )}
             </div>
             {selectedDonor && total > 0 && (
-              <p style={{ margin: "12px 0 0", paddingTop: 10, borderTop: `1px solid ${C.borderLight}`, fontSize: 11, color: "#555" }}>{year}년 헌금 총액: <span style={{ fontWeight: 700, color: C.navy }}>₩{total.toLocaleString("ko-KR")}</span></p>
+              <p style={{ margin: "12px 0 0", paddingTop: 10, borderTop: `1px solid ${C.borderLight}`, fontSize: mob ? 11 : 14, color: "#555" }}>{year}년 헌금 총액: <span style={{ fontWeight: 700, color: C.navy }}>₩{total.toLocaleString("ko-KR")}</span></p>
             )}
           </Card>
 
@@ -3073,26 +3147,27 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               </div>
             </>
           )}
-          {selectedDonor && total === 0 && <p style={{ color: "#999", fontSize: 11 }}>해당 연도 헌금 내역이 없습니다.</p>}
+          {selectedDonor && total === 0 && <p style={{ color: "#999", fontSize: mob ? 11 : 14 }}>해당 연도 헌금 내역이 없습니다.</p>}
         </>
       )}
 
       {batchMode && (
         <>
-          <div ref={listRefBatch}><Card>
-            <h4 style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 700, color: C.navy }}>해당 연도 헌금 교인 ({donorsWithOfferingsInYear.length}명)</h4>
+          <div ref={listRefBatch} style={{ ...PAGINATION_LIST_PARENT_STYLE }}>
+            <Card style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+            <h4 style={{ margin: "0 0 10px", fontSize: mob ? 13 : 16, fontWeight: 700, color: C.navy }}>해당 연도 헌금 교인 ({donorsWithOfferingsInYear.length}명)</h4>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <input type="checkbox" checked={batchSelected.size === donorsWithOfferingsInYear.length && donorsWithOfferingsInYear.length > 0} onChange={toggleBatchSelectAll} style={{ width: 16, height: 16 }} />
-              <span style={{ fontSize: 11, color: "#555" }}>전체 선택/해제</span>
+              <span style={{ fontSize: mob ? 11 : 14, color: "#555" }}>전체 선택/해제</span>
             </div>
-            <div style={{ overflowX: "auto" }}>
+            <div style={{ overflowX: "auto", flex: 1, minHeight: 0 }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}></th>
-                    <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>교인 이름</th>
-                    <th style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>연간 헌금 총액</th>
-                    <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>주민등록번호</th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}></th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>교인 이름</th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>연간 헌금 총액</th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>주민등록번호</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3101,12 +3176,12 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     const rn = batchResidentNumbers[d.id] ?? { first: "", last: "" };
                     return (
                       <tr key={d.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
-                        <td style={{ padding: "6px 8px" }}>
+                        <td style={{ padding: mob ? "6px 8px" : "12px 14px" }}>
                           <input type="checkbox" checked={batchSelected.has(d.id)} onChange={() => toggleBatchSelect(d.id)} style={{ width: 16, height: 16 }} />
                         </td>
-                        <td style={{ padding: "6px 8px", fontSize: 11, color: "#555", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }} title={d.name}>{d.name}</td>
-                        <td style={{ padding: "6px 8px", textAlign: "right", fontSize: 11, fontWeight: 600, color: C.navy }}>₩{sum.toLocaleString("ko-KR")}</td>
-                        <td style={{ padding: "6px 8px" }}>
+                        <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 11 : 14, color: "#555", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }} title={d.name}>{d.name}</td>
+                        <td style={{ padding: mob ? "6px 8px" : "12px 14px", textAlign: "right", fontSize: mob ? 11 : 14, fontWeight: 600, color: C.navy }}>₩{sum.toLocaleString("ko-KR")}</td>
+                        <td style={{ padding: mob ? "6px 8px" : "12px 14px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                             <input
                               type="text"
@@ -3116,9 +3191,9 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                               value={rn.first}
                               onChange={e => setBatchResidentNumbers(prev => ({ ...prev, [d.id]: { ...(prev[d.id] ?? { first: "", last: "" }), first: e.target.value.replace(/\D/g, "").slice(0, 6) } }))}
                               placeholder="앞6"
-                              style={{ width: 52, height: 28, padding: "0 6px", fontSize: 11, border: `1px solid ${C.border}`, borderRadius: 6, boxSizing: "border-box" }}
+                              style={{ width: mob ? 52 : 60, height: mob ? 28 : 36, padding: mob ? "0 6px" : "0 8px", fontSize: mob ? 11 : 13, border: `1px solid ${C.border}`, borderRadius: mob ? 6 : 10, boxSizing: "border-box" }}
                             />
-                            <span style={{ color: "#6b7b9e", fontSize: 11 }}>-</span>
+                            <span style={{ color: "#6b7b9e", fontSize: mob ? 11 : 13 }}>-</span>
                             <input
                               type="text"
                               className="receipt-form-input finance-nav-btn"
@@ -3127,7 +3202,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                               value={rn.last}
                               onChange={e => setBatchResidentNumbers(prev => ({ ...prev, [d.id]: { ...(prev[d.id] ?? { first: "", last: "" }), last: e.target.value.replace(/\D/g, "").slice(0, 1) } }))}
                               placeholder="뒷1"
-                              style={{ width: 40, height: 28, padding: "0 6px", fontSize: 11, border: `1px solid ${C.border}`, borderRadius: 6, boxSizing: "border-box" }}
+                              style={{ width: mob ? 40 : 48, height: mob ? 28 : 36, padding: mob ? "0 6px" : "0 8px", fontSize: mob ? 11 : 13, border: `1px solid ${C.border}`, borderRadius: mob ? 6 : 10, boxSizing: "border-box" }}
                             />
                           </div>
                         </td>
@@ -3137,13 +3212,14 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 </tbody>
               </table>
             </div>
-            {donorsWithOfferingsInYear.length === 0 && <p style={{ padding: 16, color: "#999", fontSize: 11, textAlign: "center" }}>해당 연도 헌금 기록이 있는 교인이 없습니다.</p>}
+            {donorsWithOfferingsInYear.length === 0 && <p style={{ padding: 16, color: "#999", fontSize: mob ? 11 : 14, textAlign: "center" }}>해당 연도 헌금 기록이 있는 교인이 없습니다.</p>}
             {donorsWithOfferingsInYear.length > 0 && (
-              <Pagination totalItems={donorsWithOfferingsInYear.length} itemsPerPage={10} currentPage={currentPageBatch} onPageChange={(p) => { setCurrentPageBatch(p); listRefBatch.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+              <Pagination totalItems={donorsWithOfferingsInYear.length} itemsPerPage={10} currentPage={currentPageBatch} onPageChange={(p) => setCurrentPageBatch(p)} />
             )}
-          </Card></div>
+            </Card>
+          </div>
           {batchSelected.size > 0 && !batchResidentValid && (
-            <p style={{ fontSize: 11, color: "#c00", margin: "0 0 8px" }}>선택한 교인 모두 주민등록번호를 입력해주세요</p>
+            <p style={{ fontSize: mob ? 11 : 14, color: "#c00", margin: "0 0 8px" }}>선택한 교인 모두 주민등록번호를 입력해주세요</p>
           )}
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <Button onClick={handleBatchPdf} disabled={batchSelected.size === 0 || !batchResidentValid || batchGenerating} variant="accent">
@@ -3302,41 +3378,41 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
       )}
 
       {receiptSubTab === "history" && (
-        <Card style={{ padding: 12 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>
-            <select value={historyYearFilter} onChange={e => setHistoryYearFilter(Number(e.target.value))} className="finance-nav-btn" style={{ height: 32, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, background: "#fff", color: "#555" }}>
+        <Card style={{ padding: mob ? 12 : 20 }}>
+          <div style={{ display: "flex", gap: mob ? 8 : 12, flexWrap: "wrap", marginBottom: 12, alignItems: "center" }}>
+            <select value={historyYearFilter} onChange={e => setHistoryYearFilter(Number(e.target.value))} className="finance-nav-btn" style={{ height: mob ? 32 : 40, padding: mob ? "0 10px" : "0 14px", borderRadius: mob ? 6 : 10, border: `1px solid ${C.border}`, fontSize: mob ? 12 : 14, background: "#fff", color: "#555" }}>
               {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
             </select>
-            <input type="text" className="receipt-form-input finance-nav-btn" value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="교인명 검색" style={{ height: 32, padding: "0 10px", borderRadius: 6, border: `1px solid ${C.border}`, width: 160, fontSize: 12, boxSizing: "border-box" }} />
-            <button type="button" className="finance-nav-btn" onClick={async () => { if (!supabase) return; const cid = getChurchId(); const { data } = await supabase.from("donation_receipts").select("id, receipt_number, member_name, tax_year, total_amount, issue_date, status").eq("church_id", cid).eq("tax_year", historyYearFilter).order("created_at", { ascending: false }); setReceiptHistory(data ?? []); }} style={{ height: 32, padding: "0 14px", borderRadius: 6, border: "none", background: C.navy, color: "#fff", fontWeight: 600, fontSize: 11, cursor: "pointer" }}>조회</button>
+            <input type="text" className="receipt-form-input finance-nav-btn" value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="교인명 검색" style={{ height: mob ? 32 : 40, padding: mob ? "0 10px" : "0 14px", borderRadius: mob ? 6 : 10, border: `1px solid ${C.border}`, width: mob ? 160 : 220, fontSize: mob ? 12 : 14, boxSizing: "border-box" }} />
+            <button type="button" className="finance-nav-btn" onClick={async () => { if (!supabase) return; const cid = getChurchId(); const { data } = await supabase.from("donation_receipts").select("id, receipt_number, member_name, tax_year, total_amount, issue_date, status").eq("church_id", cid).eq("tax_year", historyYearFilter).order("created_at", { ascending: false }); setReceiptHistory(data ?? []); }} style={{ height: mob ? 32 : 40, padding: mob ? "0 14px" : "0 20px", borderRadius: mob ? 6 : 10, border: "none", background: C.navy, color: "#fff", fontWeight: 600, fontSize: mob ? 11 : 14, cursor: "pointer" }}>조회</button>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>발급번호</th>
-                  <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>교인명</th>
-                  <th style={{ padding: "6px 8px", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>귀속연도</th>
-                  <th style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>총액</th>
-                  <th style={{ padding: "6px 8px", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>발급일</th>
-                  <th style={{ padding: "6px 8px", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>상태</th>
-                  <th style={{ padding: "6px 8px", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>액션</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>발급번호</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>교인명</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>귀속연도</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>총액</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>발급일</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>상태</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>액션</th>
                 </tr>
               </thead>
               <tbody>
                 {receiptHistory.filter(r => !historySearch.trim() || r.member_name.includes(historySearch)).map(r => (
                   <tr key={r.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
-                    <td style={{ padding: "6px 8px", fontSize: 11, color: "#555" }}>{r.receipt_number}</td>
-                    <td style={{ padding: "6px 8px", fontSize: 11, color: "#555" }}>{r.member_name}</td>
-                    <td style={{ padding: "6px 8px", fontSize: 11, color: "#555" }}>{r.tax_year}년</td>
-                    <td style={{ padding: "6px 8px", textAlign: "right", fontSize: 11, fontWeight: 600, color: C.navy }}>₩{r.total_amount.toLocaleString("ko-KR")}</td>
-                    <td style={{ padding: "6px 8px", fontSize: 10, color: "#999" }}>{r.issue_date}</td>
-                    <td style={{ padding: "6px 8px" }}><span style={{ padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 600, background: "#f0f2f5", color: "#555" }}>{r.status}</span></td>
-                    <td style={{ padding: "6px 8px" }}>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 11 : 14, color: "#555" }}>{r.receipt_number}</td>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 11 : 14, color: "#555" }}>{r.member_name}</td>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 11 : 14, color: "#555" }}>{r.tax_year}년</td>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px", textAlign: "right", fontSize: mob ? 11 : 14, fontWeight: 600, color: C.navy }}>₩{r.total_amount.toLocaleString("ko-KR")}</td>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 10 : 13, color: "#999" }}>{r.issue_date}</td>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px" }}><span style={{ padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, fontSize: mob ? 10 : 12, fontWeight: 600, background: "#f0f2f5", color: "#555" }}>{r.status}</span></td>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px" }}>
                       {r.status === "발급완료" && (
                         <>
-                          <button type="button" className="finance-nav-btn" onClick={() => setReprintModal({ receipt: r, ssnFirst: "", ssnLast: "" })} style={{ marginRight: 6, padding: "2px 8px", fontSize: 10, borderRadius: 6, border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer" }}>재출력</button>
-                          <button type="button" className="finance-nav-btn" onClick={() => setCancelModal({ receipt: r, reason: "" })} style={{ padding: "2px 8px", fontSize: 10, borderRadius: 6, border: `1px solid ${C.border}`, color: "#555", background: "#f5f6f8", cursor: "pointer" }}>취소</button>
+                          <button type="button" className="finance-nav-btn" onClick={() => setReprintModal({ receipt: r, ssnFirst: "", ssnLast: "" })} style={{ marginRight: 6, padding: mob ? "2px 8px" : "6px 12px", fontSize: mob ? 10 : 13, borderRadius: mob ? 6 : 8, border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer" }}>재출력</button>
+                          <button type="button" className="finance-nav-btn" onClick={() => setCancelModal({ receipt: r, reason: "" })} style={{ padding: mob ? "2px 8px" : "6px 12px", fontSize: mob ? 10 : 13, borderRadius: mob ? 6 : 8, border: `1px solid ${C.border}`, color: "#555", background: "#f5f6f8", cursor: "pointer" }}>취소</button>
                         </>
                       )}
                     </td>
@@ -3345,7 +3421,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               </tbody>
             </table>
           </div>
-          {receiptHistory.length === 0 && <p style={{ margin: "12px 0 0", fontSize: 11, color: "#999", lineHeight: 1.5 }}>발급 이력을 조회하려면 위에서 연도를 선택한 뒤 [조회]를 누르세요. churches 테이블과 donation_receipts 테이블이 있어야 합니다.</p>}
+          {receiptHistory.length === 0 && <p style={{ margin: "12px 0 0", fontSize: mob ? 11 : 14, color: "#999", lineHeight: mob ? 1.4 : 1.6 }}>발급 이력을 조회하려면 위에서 연도를 선택한 뒤 [조회]를 누르세요. churches 테이블과 donation_receipts 테이블이 있어야 합니다.</p>}
           {reprintModal && (
             <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setReprintModal(null)}>
               <div style={{ background: C.card, borderRadius: 16, padding: 24, maxWidth: 400, width: "100%" }} onClick={e => e.stopPropagation()}>
@@ -3569,7 +3645,22 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
       accentColor="#1B2A4A"
       hideMobileSubTabs
     >
-          <FinanceCategoryNav activeTab={activeTab} onLeafChange={setActiveTab} />
+          {activeTab === "budgetManagement" ? (
+            <BudgetManagement
+              fiscalYear={String(new Date().getFullYear())}
+              toast={toast ?? (() => {})}
+              stickyNavBand={(toolbar) => (
+                <div style={financeStickyNavShell(mob)}>
+                  <FinanceCategoryNav activeTab={activeTab} onLeafChange={setActiveTab} />
+                  {toolbar}
+                </div>
+              )}
+            />
+          ) : (
+            <div style={financeStickyNavShell(mob)}>
+              <FinanceCategoryNav activeTab={activeTab} onLeafChange={setActiveTab} />
+            </div>
+          )}
           {activeTab === "dashboard" && (
             <FinanceDashboard
               offerings={offerings}
@@ -3583,7 +3674,6 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
           {activeTab === "donor" && <DonorTab donors={donors} setDonors={setDonors} offerings={offerings} />}
           {activeTab === "expense" && <ExpenseTab expenses={expenses} setExpenses={setExpenses} departments={DEFAULT_DEPARTMENTS} expenseCategories={EXPENSE_CATEGORIES} onAddExpense={onAddExpense} />}
           {activeTab === "cashJournal" && <CashJournal toast={toast ?? (() => {})} />}
-          {activeTab === "budgetManagement" && <BudgetManagement fiscalYear={String(new Date().getFullYear())} toast={toast ?? (() => {})} />}
           {activeTab === "budgetVsActual" && <BudgetVsActual year={String(new Date().getFullYear())} month={new Date().getMonth() + 1} toast={toast ?? (() => {})} />}
           {activeTab === "donorStatistics" && <DonorStatistics year={String(new Date().getFullYear())} offerings={offerings} donors={donors} categories={DEFAULT_CATEGORIES} receiptSettings={settings} />}
           {activeTab === "specialAccounts" && <SpecialAccounts toast={toast ?? (() => {})} />}

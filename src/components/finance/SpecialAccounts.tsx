@@ -219,13 +219,13 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-[#1e3a5f]">특별회계</h3>
-        <button type="button" onClick={openAddAccount} className="px-4 py-2 rounded-xl bg-[#1e3a5f] text-white text-sm font-semibold hover:opacity-90">
+        <button type="button" onClick={openAddAccount} className="px-4 py-2 lg:px-6 lg:py-3 rounded-xl bg-[#1e3a5f] text-white text-sm lg:text-base font-semibold hover:opacity-90">
           + 새 특별회계
         </button>
       </div>
 
       {accounts.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center text-gray-500">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 lg:p-16 text-center text-gray-500 text-sm lg:text-base">
           등록된 특별회계가 없습니다. &quot;+ 새 특별회계&quot;로 추가하세요.
         </div>
       ) : (
@@ -237,15 +237,15 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
                 key={acc.id}
                 type="button"
                 onClick={() => setSelectedId(acc.id)}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 text-left hover:shadow-md transition"
+                className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6 text-left hover:shadow-md transition"
               >
-                <div className="font-semibold text-[#1e3a5f] mb-1">{acc.account_name}</div>
-                {acc.description && <div className="text-xs text-gray-500 mb-2">{acc.description}</div>}
-                <div className="flex justify-between text-sm mb-2">
+                <div className="font-semibold text-[#1e3a5f] mb-1 text-base lg:text-lg">{acc.account_name}</div>
+                {acc.description && <div className="text-xs lg:text-sm text-gray-500 mb-2">{acc.description}</div>}
+                <div className="flex justify-between text-sm lg:text-base mb-2">
                   <span className="text-gray-500">목표</span>
                   <span className="font-medium">₩{fmt(acc.target_amount)}</span>
                 </div>
-                <div className="flex justify-between text-sm mb-2">
+                <div className="flex justify-between text-sm lg:text-base mb-2">
                   <span className="text-gray-500">현재</span>
                   <span className="font-medium">₩{fmt(acc.current_amount)}</span>
                 </div>
@@ -267,22 +267,22 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       )}
 
       {selected && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
               <h4 className="text-lg font-semibold text-[#1e3a5f]">{selected.account_name}</h4>
               {selected.description && <p className="text-sm text-gray-500 mt-1">{selected.description}</p>}
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={() => openEditAccount(selected)} className="px-3 py-1 rounded-lg border border-gray-200 text-sm">수정</button>
-              <button type="button" onClick={openAddTransaction} className="px-3 py-1 rounded-lg bg-[#1e3a5f] text-white text-sm">+ 거래 추가</button>
-              <button type="button" onClick={() => deleteAccount(selected.id)} className="px-3 py-1 rounded-lg border border-red-200 text-red-600 text-sm">삭제</button>
-              <button type="button" onClick={() => setSelectedId(null)} className="px-3 py-1 rounded-lg border border-gray-200 text-sm">닫기</button>
+              <button type="button" onClick={() => openEditAccount(selected)} className="px-3 py-1 lg:px-4 lg:py-2 rounded-lg border border-gray-200 text-sm lg:text-base">수정</button>
+              <button type="button" onClick={openAddTransaction} className="px-3 py-1 lg:px-4 lg:py-2 rounded-lg bg-[#1e3a5f] text-white text-sm lg:text-base">+ 거래 추가</button>
+              <button type="button" onClick={() => deleteAccount(selected.id)} className="px-3 py-1 lg:px-4 lg:py-2 rounded-lg border border-red-200 text-red-600 text-sm lg:text-base">삭제</button>
+              <button type="button" onClick={() => setSelectedId(null)} className="px-3 py-1 lg:px-4 lg:py-2 rounded-lg border border-gray-200 text-sm lg:text-base">닫기</button>
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="bg-gray-50 border-b"><th className="text-left py-2 px-3">날짜</th><th className="text-left py-2 px-3">유형</th><th className="text-right py-2 px-3">금액</th><th className="text-left py-2 px-3">설명</th><th className="text-left py-2 px-3">헌금자</th></tr></thead>
+            <table className="w-full text-xs lg:text-sm">
+              <thead><tr className="bg-gray-50 border-b"><th className="text-left py-2 px-3 lg:py-3 lg:px-4">날짜</th><th className="text-left py-2 px-3 lg:py-3 lg:px-4">유형</th><th className="text-right py-2 px-3 lg:py-3 lg:px-4">금액</th><th className="text-left py-2 px-3 lg:py-3 lg:px-4">설명</th><th className="text-left py-2 px-3 lg:py-3 lg:px-4">헌금자</th></tr></thead>
               <tbody>
                 {txLoading ? (
                   <tr><td colSpan={5} className="py-8 text-center text-gray-500">로딩 중...</td></tr>
@@ -291,11 +291,11 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
                 ) : (
                   selectedTx.map((tx) => (
                     <tr key={tx.id} className="border-b border-gray-100">
-                      <td className="py-2 px-3">{tx.date}</td>
-                      <td className="py-2 px-3"><span className={tx.type === "수입" ? "text-blue-600" : "text-red-600"}>{tx.type}</span></td>
-                      <td className="py-2 px-3 text-right font-medium">{tx.type === "지출" ? "(" : ""}₩{fmt(tx.amount)}{tx.type === "지출" ? ")" : ""}</td>
-                      <td className="py-2 px-3">{tx.description ?? "-"}</td>
-                      <td className="py-2 px-3">{tx.member_name ?? "-"}</td>
+                      <td className="py-2 px-3 lg:py-3 lg:px-4">{tx.date}</td>
+                      <td className="py-2 px-3 lg:py-3 lg:px-4"><span className={tx.type === "수입" ? "text-blue-600" : "text-red-600"}>{tx.type}</span></td>
+                      <td className="py-2 px-3 lg:py-3 lg:px-4 text-right font-medium">{tx.type === "지출" ? "(" : ""}₩{fmt(tx.amount)}{tx.type === "지출" ? ")" : ""}</td>
+                      <td className="py-2 px-3 lg:py-3 lg:px-4">{tx.description ?? "-"}</td>
+                      <td className="py-2 px-3 lg:py-3 lg:px-4">{tx.member_name ?? "-"}</td>
                     </tr>
                   ))
                 )}
@@ -307,31 +307,31 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
 
       {showAccountModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => !saving && setShowAccountModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md lg:max-w-lg w-full p-5 lg:p-8" onClick={(e) => e.stopPropagation()}>
             <h4 className="text-lg font-semibold text-[#1e3a5f] mb-4">{editingAccount ? "특별회계 수정" : "새 특별회계"}</h4>
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">계좌 이름 *</label>
-              <input type="text" value={accountForm.account_name ?? ""} onChange={(e) => setAccountForm((f) => ({ ...f, account_name: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" placeholder="예: 건축헌금" />
-              <label className="block text-sm font-medium text-gray-700">설명</label>
-              <input type="text" value={accountForm.description ?? ""} onChange={(e) => setAccountForm((f) => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" placeholder="선택" />
-              <label className="block text-sm font-medium text-gray-700">목표 금액</label>
-              <input type="number" min={0} value={accountForm.target_amount ?? 0} onChange={(e) => setAccountForm((f) => ({ ...f, target_amount: Number(e.target.value) || 0 }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-              <label className="block text-sm font-medium text-gray-700">현재 금액</label>
-              <input type="number" min={0} value={accountForm.current_amount ?? 0} onChange={(e) => setAccountForm((f) => ({ ...f, current_amount: Number(e.target.value) || 0 }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-              <label className="block text-sm font-medium text-gray-700">시작일</label>
-              <input type="date" value={accountForm.start_date ?? ""} onChange={(e) => setAccountForm((f) => ({ ...f, start_date: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-              <label className="block text-sm font-medium text-gray-700">종료일</label>
-              <input type="date" value={accountForm.end_date ?? ""} onChange={(e) => setAccountForm((f) => ({ ...f, end_date: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-              <label className="block text-sm font-medium text-gray-700">상태</label>
-              <select value={accountForm.status ?? "진행중"} onChange={(e) => setAccountForm((f) => ({ ...f, status: e.target.value as SpecialAccount["status"] }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
+              <label className="block text-sm lg:text-base font-medium text-gray-700">계좌 이름 *</label>
+              <input type="text" value={accountForm.account_name ?? ""} onChange={(e) => setAccountForm((f) => ({ ...f, account_name: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" placeholder="예: 건축헌금" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">설명</label>
+              <input type="text" value={accountForm.description ?? ""} onChange={(e) => setAccountForm((f) => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" placeholder="선택" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">목표 금액</label>
+              <input type="number" min={0} value={accountForm.target_amount ?? 0} onChange={(e) => setAccountForm((f) => ({ ...f, target_amount: Number(e.target.value) || 0 }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">현재 금액</label>
+              <input type="number" min={0} value={accountForm.current_amount ?? 0} onChange={(e) => setAccountForm((f) => ({ ...f, current_amount: Number(e.target.value) || 0 }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">시작일</label>
+              <input type="date" value={accountForm.start_date ?? ""} onChange={(e) => setAccountForm((f) => ({ ...f, start_date: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">종료일</label>
+              <input type="date" value={accountForm.end_date ?? ""} onChange={(e) => setAccountForm((f) => ({ ...f, end_date: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">상태</label>
+              <select value={accountForm.status ?? "진행중"} onChange={(e) => setAccountForm((f) => ({ ...f, status: e.target.value as SpecialAccount["status"] }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base">
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>{STATUS_LABEL[s]}</option>
                 ))}
               </select>
             </div>
             <div className="flex gap-2 mt-6">
-              <button type="button" onClick={saveAccount} disabled={saving} className="px-4 py-2 rounded-lg bg-[#1e3a5f] text-white text-sm font-semibold disabled:opacity-60">{saving ? "저장 중..." : "저장"}</button>
-              <button type="button" onClick={() => setShowAccountModal(false)} disabled={saving} className="px-4 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
+              <button type="button" onClick={saveAccount} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg bg-[#1e3a5f] text-white text-sm lg:text-base font-semibold disabled:opacity-60">{saving ? "저장 중..." : "저장"}</button>
+              <button type="button" onClick={() => setShowAccountModal(false)} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base">취소</button>
             </div>
           </div>
         </div>
@@ -339,26 +339,26 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
 
       {showTxModal && selected && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => !saving && setShowTxModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md lg:max-w-lg w-full p-5 lg:p-8" onClick={(e) => e.stopPropagation()}>
             <h4 className="text-lg font-semibold text-[#1e3a5f] mb-4">거래 추가</h4>
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">날짜</label>
-              <input type="date" value={txForm.date} onChange={(e) => setTxForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-              <label className="block text-sm font-medium text-gray-700">유형</label>
-              <select value={txForm.type} onChange={(e) => setTxForm((f) => ({ ...f, type: e.target.value as "수입" | "지출" }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm">
+              <label className="block text-sm lg:text-base font-medium text-gray-700">날짜</label>
+              <input type="date" value={txForm.date} onChange={(e) => setTxForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">유형</label>
+              <select value={txForm.type} onChange={(e) => setTxForm((f) => ({ ...f, type: e.target.value as "수입" | "지출" }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base">
                 <option value="수입">수입</option>
                 <option value="지출">지출</option>
               </select>
-              <label className="block text-sm font-medium text-gray-700">금액 *</label>
-              <input type="number" min={1} value={txForm.amount || ""} onChange={(e) => setTxForm((f) => ({ ...f, amount: Number(e.target.value) || 0 }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-              <label className="block text-sm font-medium text-gray-700">설명</label>
-              <input type="text" value={txForm.description} onChange={(e) => setTxForm((f) => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-              <label className="block text-sm font-medium text-gray-700">헌금자/비고</label>
-              <input type="text" value={txForm.member_name} onChange={(e) => setTxForm((f) => ({ ...f, member_name: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">금액 *</label>
+              <input type="number" min={1} value={txForm.amount || ""} onChange={(e) => setTxForm((f) => ({ ...f, amount: Number(e.target.value) || 0 }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">설명</label>
+              <input type="text" value={txForm.description} onChange={(e) => setTxForm((f) => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
+              <label className="block text-sm lg:text-base font-medium text-gray-700">헌금자/비고</label>
+              <input type="text" value={txForm.member_name} onChange={(e) => setTxForm((f) => ({ ...f, member_name: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
             </div>
             <div className="flex gap-2 mt-6">
-              <button type="button" onClick={saveTransaction} disabled={saving} className="px-4 py-2 rounded-lg bg-[#1e3a5f] text-white text-sm font-semibold disabled:opacity-60">{saving ? "저장 중..." : "저장"}</button>
-              <button type="button" onClick={() => setShowTxModal(false)} disabled={saving} className="px-4 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
+              <button type="button" onClick={saveTransaction} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg bg-[#1e3a5f] text-white text-sm lg:text-base font-semibold disabled:opacity-60">{saving ? "저장 중..." : "저장"}</button>
+              <button type="button" onClick={() => setShowTxModal(false)} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base">취소</button>
             </div>
           </div>
         </div>
