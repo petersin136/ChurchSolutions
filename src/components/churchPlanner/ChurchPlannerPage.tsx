@@ -112,23 +112,12 @@ function useIsMobile(bp = 768) {
   return m;
 }
 
-function parseYMD(s: string): { y: number; m: number; d: number } {
-  const [y, m, d] = s.split("-").map(Number);
-  return { y, m, d };
-}
-
-function toDate(y: number, m: number, d: number): Date {
-  return new Date(y, m - 1, d);
-}
-
-function eventCoversDate(ev: PlannerEventRow, y: number, m: number, d: number): boolean {
-  const cell = toDate(y, m, d);
-  const s = parseYMD(ev.start_date);
-  const start = toDate(s.y, s.m, s.d);
-  const e = ev.end_date ? parseYMD(ev.end_date) : s;
-  const end = toDate(e.y, e.m, e.d);
-  return cell >= start && cell <= end;
-}
+const eventCoversDate = (ev: PlannerEventRow, dateStr: string) => {
+  if (!ev || !ev.start_date || !dateStr) return false;
+  const start = ev.start_date.substring(0, 10);
+  const end = ev.end_date ? ev.end_date.substring(0, 10) : start;
+  return dateStr >= start && dateStr <= end;
+};
 
 /** ISO date key for church_calendar map */
 function dateKey(y: number, m: number, d: number) {
@@ -162,6 +151,53 @@ function buildMonthGridCells(viewYear: number, viewMonth: number): MonthCell[] {
   return cells;
 }
 
+/** month: 0–11 (Date month index) */
+function generateMiniCalendarDays(year: number, month: number): { day: number; isCurrentMonth: boolean; dateStr: string }[] {
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevDaysInMonth = new Date(year, month, 0).getDate();
+  const cells: { day: number; isCurrentMonth: boolean; dateStr: string }[] = [];
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const d = prevDaysInMonth - i;
+    const pm = month === 0 ? 11 : month - 1;
+    const py = month === 0 ? year - 1 : year;
+    cells.push({
+      day: d,
+      isCurrentMonth: false,
+      dateStr: `${py}-${String(pm + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+    });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({
+      day: d,
+      isCurrentMonth: true,
+      dateStr: `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+    });
+  }
+  const remaining = 42 - cells.length;
+  for (let d = 1; d <= remaining; d++) {
+    const nm = month === 11 ? 0 : month + 1;
+    const ny = month === 11 ? year + 1 : year;
+    cells.push({
+      day: d,
+      isCurrentMonth: false,
+      dateStr: `${ny}-${String(nm + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+    });
+  }
+  return cells;
+}
+
+function countEventsOverlappingMonth(year: number, month1to12: number, evs: PlannerEventRow[]): number {
+  const dim = new Date(year, month1to12, 0).getDate();
+  const monthStart = dateKey(year, month1to12, 1);
+  const monthEnd = dateKey(year, month1to12, dim);
+  return evs.filter((ev) => {
+    const s = ev.start_date.substring(0, 10);
+    const end = (ev.end_date || ev.start_date).substring(0, 10);
+    return !(end < monthStart || s > monthEnd);
+  }).length;
+}
+
 function startOfWeekSunday(d: Date): Date {
   const x = new Date(d);
   const dow = x.getDay();
@@ -173,6 +209,20 @@ function startOfWeekSunday(d: Date): Date {
 function deptColor(depts: PlannerDepartment[], id: string | null): string {
   if (!id) return ACCENT;
   return depts.find((x) => x.id === id)?.color ?? ACCENT;
+}
+
+function eventDisplayColor(ev: PlannerEventRow, depts: PlannerDepartment[]): string {
+  const join = (ev as PlannerEventRow & { departments?: { color?: string | null } | null }).departments?.color;
+  if (join) return join;
+  if (ev.department_id) return deptColor(depts, ev.department_id);
+  return "#94a3b8";
+}
+
+function eventDepartmentName(ev: PlannerEventRow, depts: PlannerDepartment[]): string {
+  const join = (ev as PlannerEventRow & { departments?: { name?: string | null } | null }).departments?.name;
+  if (join) return join;
+  if (ev.department_id) return depts.find((d) => d.id === ev.department_id)?.name ?? "미지정";
+  return "미지정";
 }
 
 function rgbaFromHex(hex: string, alpha: number): string {
@@ -209,6 +259,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   const [departments, setDepartments] = useState<PlannerDepartment[]>([]);
   const [places, setPlaces] = useState<PlannerPlace[]>([]);
   const [events, setEvents] = useState<PlannerEventRow[]>([]);
+  const [yearEvents, setYearEvents] = useState<PlannerEventRow[]>([]);
   const [calRows, setCalRows] = useState<ChurchCalendarRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -246,6 +297,10 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   });
 
   const [moreModal, setMoreModal] = useState<{ y: number; m: number; d: number; list: PlannerEventRow[] } | null>(null);
+
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
+  const [yearlyHoverMonth, setYearlyHoverMonth] = useState<number | null>(null);
 
   const resetEventForm = useCallback(() => {
     setEventForm({
@@ -334,24 +389,30 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
   const loadEvents = useCallback(async () => {
     if (!supabase || !churchId) return;
+    const currentYear = cursorY;
     try {
-      const startDate = `${cursorY - 1}-12-01`;
-      const endDate = `${cursorY + 1}-01-31`;
       const { data, error } = await supabase
-        .from(TB_EVENTS)
-        .select("*")
+        .from("events")
+        .select("*, departments(name, color)")
         .eq("church_id", churchId)
-        .gte("start_date", startDate)
-        .lte("start_date", endDate);
+        .gte("start_date", `${currentYear}-01-01`)
+        .lte("start_date", `${currentYear}-12-31`);
+
       if (error) {
-        console.error("[planner] loadEvents", error);
+        console.error("[planner] loadEvents error:", error);
         return;
       }
-      setEvents((data ?? []) as PlannerEventRow[]);
+      console.log("[planner] loaded events:", data?.length, data);
+      if (data) {
+        setEvents(data as PlannerEventRow[]);
+        setYearEvents(data as PlannerEventRow[]);
+      }
     } catch (e) {
-      console.error("[planner] loadEvents", e);
+      console.error("[planner] loadEvents catch:", e);
     }
-  }, [churchId, cursorY, cursorM]);
+  }, [churchId, cursorY]);
+
+  const loadYearEvents = loadEvents;
 
   const loadChurchCalendar = useCallback(async () => {
     if (!supabase || !churchId) return;
@@ -401,6 +462,17 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   }, [calRows]);
 
   const monthCells = useMemo(() => buildMonthGridCells(cursorY, cursorM), [cursorY, cursorM]);
+
+  const monthEventsForBulkDelete = useMemo(() => {
+    const dim = new Date(cursorY, cursorM, 0).getDate();
+    const monthStart = dateKey(cursorY, cursorM, 1);
+    const monthEnd = dateKey(cursorY, cursorM, dim);
+    return events.filter((ev) => {
+      const s = ev.start_date.substring(0, 10);
+      const end = (ev.end_date || ev.start_date).substring(0, 10);
+      return !(end < monthStart || s > monthEnd);
+    });
+  }, [events, cursorY, cursorM]);
 
   const openAddEvent = (y: number, m: number, d: number) => {
     resetEventForm();
@@ -514,25 +586,6 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
     } catch (e) {
       console.error("[planner] handleSaveEvent", e);
       toast("저장 중 오류가 발생했습니다.", "err");
-    }
-  };
-
-  const handleDeleteEvent = async () => {
-    if (!supabase || !editingEventId) return;
-    if (!confirm("이 일정을 삭제할까요?")) return;
-    try {
-      const { error } = await supabase.from(TB_EVENTS).delete().eq("id", editingEventId);
-      if (error) {
-        console.error("[planner] delete event", error);
-        toast("삭제 실패: " + error.message, "err");
-        return;
-      }
-      toast("삭제되었습니다.", "ok");
-      setEventModalOpen(false);
-      resetEventForm();
-      await loadEvents();
-    } catch (e) {
-      console.error("[planner] handleDeleteEvent", e);
     }
   };
 
@@ -736,7 +789,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 background: "#fff",
                 borderRadius: 20,
                 boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-                padding: 16,
+                padding: 20,
                 overflow: "visible",
                 maxWidth: "100%",
                 boxSizing: "border-box",
@@ -809,27 +862,163 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     <ChevronRight size={20} />
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => openAddEvent(cursorY, cursorM, addEventDayForHeader)}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectMode((v) => !v);
+                      setSelectedEventIds(new Set());
+                    }}
+                    style={{
+                      background: selectMode ? "#FEF2F2" : "#fff",
+                      color: selectMode ? "#EF4444" : "#64748b",
+                      border: `1.5px solid ${selectMode ? "#FECACA" : "#e5e7eb"}`,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      borderRadius: 10,
+                      padding: "6px 14px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    선택 삭제
+                  </button>
+                  {monthEventsForBulkDelete.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const n = monthEventsForBulkDelete.length;
+                        if (
+                          !confirm(
+                            `이 달의 모든 일정(${n}개)을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
+                          )
+                        )
+                          return;
+                        if (!confirm("정말로 전체 삭제하시겠습니까?")) return;
+                        if (!supabase) {
+                          toast("Supabase를 사용할 수 없습니다.", "err");
+                          return;
+                        }
+                        const ids = monthEventsForBulkDelete.map((e) => e.id);
+                        const { error } = await supabase.from("events").delete().in("id", ids);
+                        if (error) {
+                          console.error("[planner] bulk delete error:", error);
+                          alert("삭제 실패");
+                          return;
+                        }
+                        await loadEvents();
+                        toast("이 달의 일정이 삭제되었습니다.", "ok");
+                      }}
+                      style={{
+                        height: 36,
+                        padding: "0 14px",
+                        borderRadius: 10,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        background: "#fff",
+                        color: "#EF4444",
+                        border: "1.5px solid #FECACA",
+                        cursor: "pointer",
+                      }}
+                    >
+                      전체 삭제
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => openAddEvent(cursorY, cursorM, addEventDayForHeader)}
+                    style={{
+                      background: ACCENT,
+                      color: "#fff",
+                      height: 40,
+                      padding: "0 20px",
+                      borderRadius: 12,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      border: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <Plus size={18} strokeWidth={2.5} />+ 일정 추가
+                  </button>
+                </div>
+              </div>
+
+              {selectMode && selectedEventIds.size > 0 && (
+                <div
                   style={{
-                    background: ACCENT,
-                    color: "#fff",
-                    height: 40,
-                    padding: "0 20px",
+                    background: "#FEF2F2",
                     borderRadius: 12,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    border: "none",
-                    display: "inline-flex",
+                    padding: "10px 16px",
+                    display: "flex",
                     alignItems: "center",
-                    gap: 6,
+                    justifyContent: "space-between",
+                    marginBottom: 12,
                   }}
                 >
-                  <Plus size={18} strokeWidth={2.5} />+ 일정 추가
-                </button>
-              </div>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "#EF4444" }}>
+                    {selectedEventIds.size}개 선택됨
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (events.length > 0 && selectedEventIds.size === events.length) {
+                          setSelectedEventIds(new Set());
+                        } else {
+                          setSelectedEventIds(new Set(events.map((e) => e.id)));
+                        }
+                      }}
+                      style={{
+                        background: "#fff",
+                        color: "#64748b",
+                        border: "1.5px solid #e5e7eb",
+                        borderRadius: 8,
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {events.length > 0 && selectedEventIds.size === events.length ? "선택 해제" : "전체 선택"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!confirm(`선택한 ${selectedEventIds.size}개 일정을 삭제하시겠습니까?`)) return;
+                        if (!supabase) {
+                          toast("Supabase를 사용할 수 없습니다.", "err");
+                          return;
+                        }
+                        const ids = Array.from(selectedEventIds);
+                        const { error } = await supabase.from("events").delete().in("id", ids);
+                        if (error) {
+                          alert("삭제 실패: " + error.message);
+                          return;
+                        }
+                        setSelectedEventIds(new Set());
+                        setSelectMode(false);
+                        await loadEvents();
+                        toast("선택한 일정이 삭제되었습니다.", "ok");
+                      }}
+                      style={{
+                        background: "#EF4444",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "6px 16px",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div
                 style={{
@@ -851,10 +1040,10 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       key={label}
                       style={{
                         textAlign: "center",
-                        fontSize: 13,
+                        fontSize: mob ? 11 : 13,
                         fontWeight: 700,
                         color: i === 0 ? "#EF4444" : i === 6 ? "#3B82F6" : "#94a3b8",
-                        padding: "8px 0",
+                        padding: "12px 0",
                       }}
                     >
                       {label}
@@ -869,7 +1058,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   const nRows = Math.ceil(monthCells.length / 7);
                   const isLastCol = col === 6;
                   const isLastRow = row === nRows - 1;
-                  const list = events.filter((e) => eventCoversDate(e, cell.y, cell.m, cell.d));
+                  const list = events.filter((e) => eventCoversDate(e, dateKey(cell.y, cell.m, cell.d)));
                   const markers = calByDate.get(dateKey(cell.y, cell.m, cell.d));
                   const seasonText = markers?.map((x) => x.name).join(" · ");
                   const isTodayCell = cell.y === todayY && cell.m === todayM && cell.d === todayD;
@@ -892,9 +1081,8 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       type="button"
                       onClick={() => openAddEvent(cell.y, cell.m, cell.d)}
                       style={{
-                        minHeight: mob ? 50 : 85,
-                        maxHeight: mob ? undefined : 100,
-                        padding: 6,
+                        minHeight: mob ? 56 : 110,
+                        padding: mob ? 4 : 8,
                         cursor: "pointer",
                         transition: "background 0.15s",
                         border: "none",
@@ -942,25 +1130,66 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       ) : null}
                       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                         {visible.map((ev) => {
-                          const c = deptColor(departments, ev.department_id);
+                          const hex = eventDisplayColor(ev, departments);
+                          const toggleSelect = () => {
+                            setSelectedEventIds((prev) => {
+                              const s = new Set(prev);
+                              if (s.has(ev.id)) s.delete(ev.id);
+                              else s.add(ev.id);
+                              return s;
+                            });
+                          };
                           if (mob) {
+                            const dn = eventDepartmentName(ev, departments);
                             return (
                               <span
                                 key={ev.id}
-                                title={ev.title}
+                                title={`${dn}: ${ev.title}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  openEditEvent(ev);
+                                  if (selectMode) toggleSelect();
+                                  else openEditEvent(ev);
                                 }}
                                 style={{
-                                  width: 5,
-                                  height: 5,
-                                  borderRadius: "50%",
-                                  background: c,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
                                   flexShrink: 0,
+                                  cursor: "pointer",
+                                  marginBottom: 2,
+                                  maxWidth: "100%",
                                 }}
                                 role="presentation"
-                              />
+                              >
+                                {selectMode && (
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedEventIds.has(ev.id)}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      toggleSelect();
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      width: 13,
+                                      height: 13,
+                                      marginRight: 4,
+                                      cursor: "pointer",
+                                      flexShrink: 0,
+                                      accentColor: "#4A90D9",
+                                    }}
+                                  />
+                                )}
+                                <span
+                                  style={{
+                                    width: 5,
+                                    height: 5,
+                                    borderRadius: "50%",
+                                    background: hex,
+                                    flexShrink: 0,
+                                  }}
+                                />
+                              </span>
                             );
                           }
                           return (
@@ -970,31 +1199,79 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                               tabIndex={0}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openEditEvent(ev);
+                                if (selectMode) toggleSelect();
+                                else openEditEvent(ev);
                               }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" || e.key === " ") {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  openEditEvent(ev);
+                                  if (selectMode) toggleSelect();
+                                  else openEditEvent(ev);
                                 }
                               }}
                               style={{
-                                background: rgbaFromHex(c, 0.15),
-                                color: c,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0,
+                                background: `${hex}20`,
+                                color: hex,
                                 fontSize: 11,
                                 fontWeight: 600,
                                 borderRadius: 6,
                                 padding: "2px 6px",
                                 marginBottom: 2,
+                                cursor: "pointer",
+                                maxWidth: "100%",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
-                                maxWidth: "100%",
-                                cursor: "pointer",
                               }}
                             >
-                              {ev.title}
+                              {selectMode && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedEventIds.has(ev.id)}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    toggleSelect();
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    width: 13,
+                                    height: 13,
+                                    marginRight: 4,
+                                    cursor: "pointer",
+                                    flexShrink: 0,
+                                    accentColor: "#4A90D9",
+                                  }}
+                                />
+                              )}
+                              <span
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 0,
+                                  minWidth: 0,
+                                  flex: 1,
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <span style={{ fontWeight: 700, fontSize: mob ? 9 : 10, flexShrink: 0 }}>
+                                  {eventDepartmentName(ev, departments)}
+                                </span>
+                                <span style={{ margin: "0 3px", opacity: 0.5, flexShrink: 0 }}>:</span>
+                                <span
+                                  style={{
+                                    minWidth: 0,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {ev.title}
+                                </span>
+                              </span>
                             </div>
                           );
                         })}
@@ -1025,6 +1302,58 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 </div>
               </div>
             </div>
+
+            {/* 부서 컬러 범례 */}
+            {departments.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: mob ? 8 : 12,
+                  padding: mob ? "10px 4px" : "12px 8px",
+                  marginBottom: 8,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: mob ? 11 : 12,
+                    fontWeight: 700,
+                    color: "#94a3b8",
+                    marginRight: 4,
+                  }}
+                >
+                  부서 색상 안내
+                </span>
+                {departments
+                  .filter((d) => d.is_active !== false)
+                  .map((dept) => (
+                    <div key={dept.id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <span
+                        style={{
+                          width: mob ? 10 : 12,
+                          height: mob ? 10 : 12,
+                          borderRadius: "50%",
+                          background: dept.color || "#94a3b8",
+                          display: "inline-block",
+                          flexShrink: 0,
+                          border: "1.5px solid rgba(0,0,0,0.08)",
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: mob ? 10 : 12,
+                          color: "#475569",
+                          fontWeight: 500,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {dept.name}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            )}
           </section>
 
           {/* 주간 */}
@@ -1033,10 +1362,11 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 10 }}>
               {weekDays.map((d) => {
                 const y = d.getFullYear();
-                const m = d.getMonth() + 1;
+                const m = d.getMonth();
                 const day = d.getDate();
                 const dow = d.getDay();
-                const list = events.filter((e) => eventCoversDate(e, y, m, day));
+                const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const dayEvents = events.filter((ev) => eventCoversDate(ev, dateStr));
                 return (
                   <div
                     key={d.toISOString()}
@@ -1056,30 +1386,100 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         color: dow === 0 ? "#EF4444" : dow === 6 ? "#3B82F6" : NAVY,
                       }}
                     >
-                      {m}/{day}
+                      {m + 1}/{day}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {list.length === 0 && <span style={{ fontSize: 12, color: "#94a3b8" }}>일정 없음</span>}
-                      {list.map((ev) => (
-                        <button
-                          key={ev.id}
-                          type="button"
-                          onClick={() => openEditEvent(ev)}
-                          style={{
-                            textAlign: "left",
-                            fontSize: 12,
-                            fontWeight: 600,
-                            padding: "6px 8px",
-                            borderRadius: 8,
-                            border: "1px solid #f0f0f0",
-                            background: rgbaFromHex(deptColor(departments, ev.department_id), 0.12),
-                            color: deptColor(departments, ev.department_id),
-                            cursor: "pointer",
-                          }}
-                        >
-                          {ev.title}
-                        </button>
-                      ))}
+                      {dayEvents.length === 0 && <span style={{ fontSize: 12, color: "#94a3b8" }}>일정 없음</span>}
+                      {dayEvents.map((ev) => {
+                        const hex = eventDisplayColor(ev, departments);
+                        const toggleSelect = () => {
+                          setSelectedEventIds((prev) => {
+                            const s = new Set(prev);
+                            if (s.has(ev.id)) s.delete(ev.id);
+                            else s.add(ev.id);
+                            return s;
+                          });
+                        };
+                        return (
+                          <div
+                            key={ev.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              if (selectMode) toggleSelect();
+                              else openEditEvent(ev);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                if (selectMode) toggleSelect();
+                                else openEditEvent(ev);
+                              }
+                            }}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              textAlign: "left",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              padding: "6px 8px",
+                              borderRadius: 8,
+                              border: "1px solid #f0f0f0",
+                              background: `${hex}20`,
+                              color: hex,
+                              cursor: "pointer",
+                              maxWidth: "100%",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {selectMode && (
+                              <input
+                                type="checkbox"
+                                checked={selectedEventIds.has(ev.id)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  toggleSelect();
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  width: 13,
+                                  height: 13,
+                                  marginRight: 4,
+                                  cursor: "pointer",
+                                  flexShrink: 0,
+                                  accentColor: "#4A90D9",
+                                }}
+                              />
+                            )}
+                            <span
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0,
+                                minWidth: 0,
+                                flex: 1,
+                                overflow: "hidden",
+                              }}
+                            >
+                              <span style={{ fontWeight: 700, flexShrink: 0 }}>
+                                {eventDepartmentName(ev, departments)}
+                              </span>
+                              <span style={{ margin: "0 3px", opacity: 0.5, flexShrink: 0 }}>:</span>
+                              <span
+                                style={{
+                                  minWidth: 0,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {ev.title}
+                              </span>
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -1089,58 +1489,183 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
           {/* 연간 */}
           <section style={{ marginBottom: 40 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, color: NAVY, margin: "0 0 16px" }}>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: "#1B2A4A", margin: "0 0 16px" }}>
               {cursorY}년 연간 일정
             </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: mob ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
+                gap: mob ? 12 : 16,
+              }}
+            >
               {Array.from({ length: 12 }, (_, mi) => {
-                const month = mi + 1;
-                const cells = buildMonthGridCells(cursorY, month).slice(0, 35);
+                const monthNum = mi + 1;
+                const miniCells = generateMiniCalendarDays(cursorY, mi);
+                const monthEventCount = countEventsOverlappingMonth(cursorY, monthNum, yearEvents);
+                const isActiveMonth = cursorM === monthNum;
+                const isHovered = yearlyHoverMonth === monthNum;
+                const todayStr = dateKey(todayY, todayM, todayD);
                 return (
-                  <div
-                    key={month}
+                  <button
+                    key={monthNum}
+                    type="button"
+                    onClick={() => {
+                      setCursorM(monthNum);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    onMouseEnter={() => setYearlyHoverMonth(monthNum)}
+                    onMouseLeave={() => setYearlyHoverMonth(null)}
                     style={{
                       background: "#fff",
-                      borderRadius: 16,
-                      padding: 10,
-                      boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+                      borderRadius: 14,
+                      border: isActiveMonth ? "2px solid #4A90D9" : isHovered ? "1.5px solid #4A90D9" : "1.5px solid #e5e7eb",
+                      padding: mob ? 10 : 14,
+                      cursor: "pointer",
+                      transition: "box-shadow 0.2s, border-color 0.2s",
+                      boxShadow: isHovered
+                        ? "0 4px 16px rgba(74,144,217,0.12)"
+                        : isActiveMonth
+                          ? "0 2px 12px rgba(74,144,217,0.10)"
+                          : "none",
+                      textAlign: "left",
+                      boxSizing: "border-box",
                       minWidth: 0,
-                      overflow: "hidden",
                     }}
                   >
-                    <div style={{ fontWeight: 800, fontSize: 13, color: NAVY, marginBottom: 8, textAlign: "center" }}>{month}월</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-                      {cells.map((cell, i) => {
-                        if (!cell.inMonth) return <div key={i} style={{ aspectRatio: "1", minWidth: 0 }} />;
-                        const has = events.some((e) => eventCoversDate(e, cell.y, cell.m, cell.d));
-                        const c = has
-                          ? deptColor(
-                              departments,
-                              events.find((e) => eventCoversDate(e, cell.y, cell.m, cell.d))?.department_id ?? null
-                            )
-                          : "transparent";
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginBottom: 8,
+                        position: "relative",
+                        width: "100%",
+                      }}
+                    >
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "#1B2A4A" }}>{monthNum}월</span>
+                      {monthEventCount > 0 && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            right: 0,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            background: "#EFF6FF",
+                            color: "#4A90D9",
+                            borderRadius: 8,
+                            padding: "2px 7px",
+                          }}
+                        >
+                          {monthEventCount}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(7, 1fr)",
+                        textAlign: "center",
+                        fontSize: 9,
+                        color: "#94a3b8",
+                        fontWeight: 600,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {["일", "월", "화", "수", "목", "금", "토"].map((label, wi) => (
+                        <div
+                          key={label}
+                          style={{
+                            color: wi === 0 ? "#EF4444" : wi === 6 ? "#3B82F6" : "#94a3b8",
+                          }}
+                        >
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 0 }}>
+                      {miniCells.map((cell, ci) => {
+                        const col = ci % 7;
+                        const isTodayCell = cell.dateStr === todayStr;
+                        const dayEvts = yearEvents.filter((ev) => eventCoversDate(ev, cell.dateStr));
+                        const numColor = !cell.isCurrentMonth
+                          ? "#d1d5db"
+                          : col === 0
+                            ? "#EF4444"
+                            : col === 6
+                              ? "#3B82F6"
+                              : "#475569";
                         return (
                           <div
-                            key={i}
+                            key={`${cell.dateStr}-${ci}`}
+                            title={
+                              dayEvts.length > 0
+                                ? dayEvts.map((ev) => `${eventDepartmentName(ev, departments)}: ${ev.title}`).join("\n")
+                                : undefined
+                            }
                             style={{
-                              aspectRatio: "1",
+                              textAlign: "center",
+                              fontSize: mob ? 9 : 10,
+                              padding: mob ? "2px 0" : "3px 0",
+                              color: "#475569",
+                              position: "relative",
+                              lineHeight: 1.4,
                               display: "flex",
+                              flexDirection: "column",
                               alignItems: "center",
-                              justifyContent: "center",
-                              minWidth: 0,
+                              justifyContent: "flex-start",
+                              minHeight: 0,
                             }}
-                            title={`${cell.m}/${cell.d}`}
                           >
-                            {has ? (
-                              <span style={{ width: 5, height: 5, borderRadius: "50%", background: c }} />
+                            {isTodayCell ? (
+                              <span
+                                style={{
+                                  width: 20,
+                                  height: 20,
+                                  borderRadius: "50%",
+                                  background: "#4A90D9",
+                                  color: "#fff",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: mob ? 9 : 10,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {cell.day}
+                              </span>
                             ) : (
-                              <span style={{ fontSize: 8, color: "#cbd5e1" }}>{cell.d}</span>
+                              <span style={{ color: numColor, fontSize: mob ? 9 : 10, fontWeight: 400 }}>{cell.day}</span>
                             )}
+                            {dayEvts.length > 0 ? (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  gap: 2,
+                                  marginTop: 1,
+                                  flexWrap: "nowrap",
+                                }}
+                              >
+                                {dayEvts.slice(0, 3).map((ev) => (
+                                  <span
+                                    key={ev.id}
+                                    style={{
+                                      width: 4,
+                                      height: 4,
+                                      borderRadius: "50%",
+                                      background: eventDisplayColor(ev, departments),
+                                      flexShrink: 0,
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
                         );
                       })}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -1451,8 +1976,36 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
             저장
           </button>
           {editingEventId && (
-            <button type="button" onClick={() => void handleDeleteEvent()} style={btnDanger}>
-              삭제
+            <button
+              type="button"
+              onClick={async () => {
+                if (!confirm("이 일정을 삭제하시겠습니까?")) return;
+                if (!supabase || !editingEventId) return;
+                const { error } = await supabase.from("events").delete().eq("id", editingEventId);
+                if (error) {
+                  console.error("[planner] delete event:", error);
+                  alert("삭제 실패");
+                  return;
+                }
+                toast("삭제되었습니다.", "ok");
+                setEventModalOpen(false);
+                resetEventForm();
+                await loadEvents();
+              }}
+              style={{
+                width: "100%",
+                height: 44,
+                background: "#fff",
+                color: "#EF4444",
+                border: "1.5px solid #FECACA",
+                borderRadius: 14,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                marginTop: 8,
+              }}
+            >
+              이 일정 삭제
             </button>
           )}
           <button
@@ -1655,18 +2208,6 @@ const btnGhost: CSSProperties = {
   cursor: "pointer",
 };
 
-const btnDanger: CSSProperties = {
-  width: "100%",
-  height: 44,
-  background: "transparent",
-  color: "#EF4444",
-  border: "1.5px solid #fecaca",
-  borderRadius: 14,
-  fontSize: 14,
-  marginTop: 8,
-  cursor: "pointer",
-};
-
 function FieldInput({
   value,
   onChange,
@@ -1721,7 +2262,9 @@ function EventModalOverlay({
         justifyContent: "center",
         padding: mob ? 0 : 16,
       }}
-      onClick={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       aria-modal="true"
       aria-label={title}
     >
@@ -1738,7 +2281,6 @@ function EventModalOverlay({
           overflowY: "auto",
           boxSizing: "border-box",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
           <button type="button" onClick={onClose} aria-label="닫기" style={{ border: "none", background: "none", cursor: "pointer", padding: 4 }}>
