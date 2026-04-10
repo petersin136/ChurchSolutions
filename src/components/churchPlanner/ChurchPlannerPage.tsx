@@ -6,7 +6,6 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
-  Plus,
   Pencil,
   Trash2,
   X,
@@ -830,41 +829,42 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: 20,
+                  justifyContent: "space-between",
+                  marginBottom: mob ? 12 : 16,
                   flexWrap: "wrap",
-                  gap: 12,
+                  gap: 8,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: mob ? 8 : 12 }}>
                   <button
                     type="button"
                     aria-label="이전 달"
                     onClick={goPrevMonth}
                     style={{
-                      width: 40,
-                      height: 40,
+                      width: mob ? 32 : 36,
+                      height: mob ? 32 : 36,
                       borderRadius: "50%",
                       border: "1.5px solid #e5e7eb",
                       background: "#fff",
-                      fontSize: 18,
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#f0f4ff";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "#fff";
+                      fontSize: mob ? 14 : 16,
+                      color: "#64748b",
                     }}
                   >
-                    <ChevronLeft size={20} />
+                    <ChevronLeft size={mob ? 16 : 18} />
                   </button>
-                  <span style={{ fontSize: 22, fontWeight: 800, color: NAVY, minWidth: 140, textAlign: "center" }}>
+                  <span
+                    style={{
+                      fontSize: mob ? 17 : 20,
+                      fontWeight: 700,
+                      color: "#1B2A4A",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {cursorY}년 {cursorM}월
                   </span>
                   <button
@@ -872,36 +872,23 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     aria-label="다음 달"
                     onClick={goNextMonth}
                     style={{
-                      width: 40,
-                      height: 40,
+                      width: mob ? 32 : 36,
+                      height: mob ? 32 : 36,
                       borderRadius: "50%",
                       border: "1.5px solid #e5e7eb",
                       background: "#fff",
-                      fontSize: 18,
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#f0f4ff";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "#fff";
+                      fontSize: mob ? 14 : 16,
+                      color: "#64748b",
                     }}
                   >
-                    <ChevronRight size={20} />
+                    <ChevronRight size={mob ? 16 : 18} />
                   </button>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: mob ? 6 : 8,
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={{ display: "flex", alignItems: "center", gap: mob ? 6 : 8 }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -915,54 +902,57 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       fontSize: mob ? 11 : 13,
                       fontWeight: 600,
                       borderRadius: mob ? 8 : 10,
-                      padding: mob ? "4px 10px" : "6px 14px",
+                      padding: mob ? "5px 10px" : "6px 14px",
                       cursor: "pointer",
                       whiteSpace: "nowrap",
                     }}
                   >
                     선택 삭제
                   </button>
-                  {monthEventsForBulkDelete.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const n = monthEventsForBulkDelete.length;
-                        if (
-                          !confirm(
-                            `이 달의 모든 일정(${n}개)을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
-                          )
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const n = monthEventsForBulkDelete.length;
+                      if (n === 0) {
+                        alert("삭제할 일정이 없습니다.");
+                        return;
+                      }
+                      if (
+                        !confirm(
+                          `이 달의 모든 일정(${n}개)을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
                         )
-                          return;
-                        if (!confirm("정말로 전체 삭제하시겠습니까?")) return;
-                        if (!supabase) {
-                          toast("Supabase를 사용할 수 없습니다.", "err");
-                          return;
-                        }
-                        const ids = monthEventsForBulkDelete.map((e) => e.id);
-                        const { error } = await supabase.from("events").delete().in("id", ids);
-                        if (error) {
-                          console.error("[planner] bulk delete error:", error);
-                          alert("삭제 실패");
-                          return;
-                        }
-                        await loadEvents();
-                        toast("이 달의 일정이 삭제되었습니다.", "ok");
-                      }}
-                      style={{
-                        background: "#fff",
-                        color: "#EF4444",
-                        border: "1.5px solid #FECACA",
-                        fontSize: mob ? 11 : 13,
-                        fontWeight: 600,
-                        borderRadius: mob ? 8 : 10,
-                        padding: mob ? "4px 10px" : "6px 14px",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      전체 삭제
-                    </button>
-                  )}
+                      )
+                        return;
+                      if (!confirm("정말로 전체 삭제하시겠습니까?")) return;
+                      if (!supabase) {
+                        toast("Supabase를 사용할 수 없습니다.", "err");
+                        return;
+                      }
+                      const ids = monthEventsForBulkDelete.map((e) => e.id);
+                      const { error } = await supabase.from("events").delete().in("id", ids);
+                      if (error) {
+                        console.error("[planner] bulk delete error:", error);
+                        alert("삭제 실패: " + error.message);
+                        return;
+                      }
+                      await loadEvents();
+                      if (typeof loadYearEvents === "function") await loadYearEvents();
+                      toast("이 달의 일정이 삭제되었습니다.", "ok");
+                    }}
+                    style={{
+                      background: "#fff",
+                      color: "#EF4444",
+                      border: "1.5px solid #FECACA",
+                      fontSize: mob ? 11 : 13,
+                      fontWeight: 600,
+                      borderRadius: mob ? 8 : 10,
+                      padding: mob ? "5px 10px" : "6px 14px",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    전체 삭제
+                  </button>
                   <button
                     type="button"
                     onClick={() => openAddEvent(cursorY, cursorM, addEventDayForHeader)}
@@ -973,15 +963,11 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       fontSize: mob ? 11 : 14,
                       fontWeight: 700,
                       borderRadius: mob ? 8 : 10,
-                      padding: mob ? "4px 12px" : "6px 18px",
+                      padding: mob ? "5px 12px" : "6px 18px",
                       cursor: "pointer",
                       whiteSpace: "nowrap",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
                     }}
                   >
-                    <Plus size={mob ? 14 : 18} strokeWidth={2.5} />
                     + 일정 추가
                   </button>
                 </div>

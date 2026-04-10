@@ -476,6 +476,7 @@ function FInput({ value, onChange, placeholder, type = "text", style, maxLength 
       maxLength={maxLength}
       style={{
         width: "100%",
+        boxSizing: "border-box",
         padding: mob ? "9px 12px" : "10px 14px",
         border: `1px solid ${C.border}`,
         borderRadius: mob ? 8 : 10,
@@ -499,6 +500,7 @@ function FTextarea({ value, onChange, placeholder, style, maxLength }: { value: 
       maxLength={maxLength}
       style={{
         width: "100%",
+        boxSizing: "border-box",
         padding: mob ? "9px 12px" : "10px 14px",
         border: `1px solid ${C.border}`,
         borderRadius: mob ? 8 : 10,
@@ -522,6 +524,7 @@ function FSelect({ value, onChange, children, style }: { value: string; onChange
       onChange={e => onChange(e.target.value)}
       style={{
         width: "100%",
+        boxSizing: "border-box",
         padding: mob ? "9px 12px" : "10px 14px",
         border: `1px solid ${C.border}`,
         borderRadius: mob ? 8 : 10,
@@ -2116,7 +2119,7 @@ export function BulletinPage() {
       })();
     case "info":
       return (<>
-        <FormField label="헌금 계좌"><textarea className="w-full border rounded-lg p-2 text-sm" rows={2} value={db.settings.account || ""} onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, account: e.target.value } }))} /></FormField>
+        <FormField label="헌금 계좌"><textarea className="w-full box-border border rounded-lg p-2 text-sm" rows={2} value={db.settings.account || ""} onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, account: e.target.value } }))} /></FormField>
         <FormField label="교회 주소"><FInput value={db.settings.address || ""} onChange={v => setDb(p => ({ ...p, settings: { ...p.settings, address: v } }))} /></FormField>
         <FormField label="전화번호"><FInput value={db.settings.phone || ""} onChange={v => setDb(p => ({ ...p, settings: { ...p.settings, phone: v } }))} /></FormField>
         <p style={{ fontSize: 11, color: "#999", marginTop: 8 }}>※ 설정 페이지에서도 수정할 수 있습니다</p>
@@ -2135,7 +2138,10 @@ export function BulletinPage() {
           ? "flex-1 flex flex-col overflow-hidden min-w-0"
           : "flex flex-col overflow-hidden min-w-0 w-full"
       }
-      style={{ marginTop: 0 }}
+      style={{
+        marginTop: 0,
+        ...(variant === "desktop" ? { flex: 1, minWidth: 0 } : {}),
+      }}
     >
       {variant !== "mobile" && (
       <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-3 py-2 space-y-2">
@@ -3502,8 +3508,27 @@ export function BulletinPage() {
                 )}
               </div>
             ) : (
-            <div className="flex" style={{ height: "calc(100vh - 120px)", minHeight: 0, gap: 20, flexDirection: "row" }}>
-              <div style={{ overflowY: "auto", paddingRight: 10, flex: "0 0 auto", width: 400, minWidth: 0 }}>
+            <div
+              className="flex"
+              style={{
+                display: "flex",
+                width: "100%",
+                height: "calc(100vh - 120px)",
+                minHeight: 0,
+                gap: 16,
+                flexDirection: "row",
+              }}
+            >
+              <div
+                style={{
+                  width: "340px",
+                  minWidth: 280,
+                  maxWidth: 400,
+                  flexShrink: 0,
+                  overflowY: "auto",
+                  paddingRight: 10,
+                }}
+              >
                 {printFormat === "fold2" && (
                   <div style={{ fontSize: 12, color: "#f59e0b", padding: "8px 12px", background: "#fffbeb", borderRadius: 8, marginBottom: 8 }}>
                     4면 주보: 예배순서+칼럼이 한 면, 교회소식+부서소식이 한 면에 들어갑니다
@@ -3709,7 +3734,15 @@ export function BulletinPage() {
                           placeholder="https://www.youtube.com/watch?v=..."
                           value={db.current.youtubeUrl ?? ""}
                           onChange={(e) => setCurrent((c) => ({ ...c, youtubeUrl: e.target.value }))}
-                          style={{ width: "100%", padding: "8px 12px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 8, outline: "none" }}
+                          style={{
+                            width: "100%",
+                            boxSizing: "border-box",
+                            padding: "8px 12px",
+                            fontSize: mob ? 13 : 14,
+                            border: "1px solid #d1d5db",
+                            borderRadius: 8,
+                            outline: "none",
+                          }}
                         />
                         {extractYoutubeId(db.current.youtubeUrl ?? "") && (
                           <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" }}>
