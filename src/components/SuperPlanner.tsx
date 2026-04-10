@@ -8,9 +8,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAppData } from "@/contexts/AppDataContext";
 import { SuperPlannerUI } from "./SuperPlannerUI";
 
-export type PageId = "pastoral" | "visit" | "school" | "finance" | "bulletin" | "reports";
+export type PageId = "pastoral" | "visit" | "school" | "finance" | "planner" | "bulletin" | "reports";
 
-const PAGE_IDS: PageId[] = ["pastoral", "visit", "school", "finance", "bulletin", "reports"];
+const PAGE_IDS: PageId[] = ["pastoral", "visit", "school", "finance", "planner", "bulletin", "reports"];
 const STORAGE_KEY_PAGE = "currentPage";
 
 export interface ToastItem {

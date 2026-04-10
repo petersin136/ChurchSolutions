@@ -8,7 +8,8 @@ import { VisitCounselPage } from "./VisitCounselPage";
 import { BulletinPage } from "./BulletinPage";
 import { Toast } from "./Toast";
 import { Modals } from "./Modals";
-import { Users, Wallet, Heart, GraduationCap, FileBarChart, Newspaper, LogOut } from "lucide-react";
+import { Users, Wallet, Heart, GraduationCap, FileBarChart, Newspaper, LogOut, CalendarDays } from "lucide-react";
+import { PlannerPage } from "./PlannerPage";
 import { SchoolPage } from "./school/SchoolPage";
 import { ReportsSettingsPage } from "./ReportsSettingsPage";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +19,7 @@ const PAGE_LABELS: Record<PageId, string> = {
   finance: "재정관리",
   visit: "심방·상담",
   school: "교회학교",
+  planner: "플래너",
   bulletin: "주보",
   reports: "보고서·설정",
 };
@@ -27,6 +29,7 @@ const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[
   { id: "visit", label: "심방·상담", Icon: Heart },
   { id: "school", label: "교회학교", Icon: GraduationCap },
   { id: "finance", label: "재정", Icon: Wallet },
+  { id: "planner", label: "플래너", Icon: CalendarDays },
   { id: "bulletin", label: "주보", Icon: Newspaper },
   { id: "reports", label: "보고서·설정", Icon: FileBarChart },
 ];
@@ -37,6 +40,7 @@ const PAGE_TAB_ACCENT: Record<PageId, string> = {
   visit: "#2563eb",
   school: "#1B2A4A",
   finance: "#1B2A4A",
+  planner: "#4A90D9",
   bulletin: "#8b6f47",
   reports: "#6b7280",
 };
@@ -102,14 +106,17 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
         <div className={`page ${currentPage === "pastoral" ? "active" : ""}`} id="page-pastoral">
           <PastoralPage db={db} setDb={setDb} saveDb={saveDb} />
         </div>
-        <div className={`page ${currentPage === "finance" ? "active" : ""}`} id="page-finance">
-          <FinancePage db={db} setDb={setDb} settings={db.settings} toast={toast} />
-        </div>
         <div className={`page ${currentPage === "visit" ? "active" : ""}`} id="page-visit">
           <VisitCounselPage mainDb={db} setMainDb={setDb} saveMain={save} />
         </div>
         <div className={`page ${currentPage === "school" ? "active" : ""}`} id="page-school">
           <SchoolPage db={db} toast={toast} />
+        </div>
+        <div className={`page ${currentPage === "finance" ? "active" : ""}`} id="page-finance">
+          <FinancePage db={db} setDb={setDb} settings={db.settings} toast={toast} />
+        </div>
+        <div className={`page ${currentPage === "planner" ? "active" : ""}`} id="page-planner">
+          <PlannerPage toast={toast} />
         </div>
         <div className={`page ${currentPage === "bulletin" ? "active" : ""}`} id="page-bulletin">
           <BulletinPage />
