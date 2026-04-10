@@ -151,8 +151,12 @@ function buildMonthGridCells(viewYear: number, viewMonth: number): MonthCell[] {
   return cells;
 }
 
-/** month: 0–11 (Date month index) */
-function generateMiniCalendarDays(year: number, month: number): { day: number; isCurrentMonth: boolean; dateStr: string }[] {
+/** month: 0–11 (Date month index); totalCells 35 (모바일) or 42 (데스크톱) */
+function generateMiniCalendarDays(
+  year: number,
+  month: number,
+  totalCells: number = 42
+): { day: number; isCurrentMonth: boolean; dateStr: string }[] {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevDaysInMonth = new Date(year, month, 0).getDate();
@@ -174,7 +178,10 @@ function generateMiniCalendarDays(year: number, month: number): { day: number; i
       dateStr: `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
     });
   }
-  const remaining = 42 - cells.length;
+  const remaining = totalCells - cells.length;
+  if (remaining < 0) {
+    return cells.slice(0, totalCells);
+  }
   for (let d = 1; d <= remaining; d++) {
     const nm = month === 11 ? 0 : month + 1;
     const ny = month === 11 ? year + 1 : year;
@@ -238,6 +245,31 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   const mob = useIsMobile();
   const { churchId: ctxChurchId } = useAuth();
   const [churchId, setChurchId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const styleId = "hide-scrollbar-style";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `
+      /* 모든 요소의 스크롤바 숨기기 */
+      *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+      * {
+        -ms-overflow-style: none !important;
+        scrollbar-width: none !important;
+      }
+    `;
+      document.head.appendChild(style);
+    }
+    return () => {
+      const el = document.getElementById(styleId);
+      if (el) el.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (ctxChurchId) {
@@ -1359,132 +1391,285 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
           {/* 주간 */}
           <section style={{ marginBottom: 40 }}>
             <h2 style={{ fontSize: 17, fontWeight: 700, color: NAVY, margin: "0 0 16px" }}>이번 주</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 10 }}>
-              {weekDays.map((d) => {
-                const y = d.getFullYear();
-                const m = d.getMonth();
-                const day = d.getDate();
-                const dow = d.getDay();
-                const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                const dayEvents = events.filter((ev) => eventCoversDate(ev, dateStr));
-                return (
-                  <div
-                    key={d.toISOString()}
-                    style={{
-                      background: "#fff",
-                      borderRadius: 16,
-                      padding: 12,
-                      boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-                      minWidth: 0,
-                    }}
-                  >
+            {mob ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {weekDays.map((d) => {
+                  const y = d.getFullYear();
+                  const m = d.getMonth();
+                  const day = d.getDate();
+                  const dow = d.getDay();
+                  const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                  const dayEvents = events.filter((ev) => eventCoversDate(ev, dateStr));
+                  const isToday = dateStr === dateKey(todayY, todayM, todayD);
+                  const isSunday = dow === 0;
+                  const isSaturday = dow === 6;
+                  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+                  return (
                     <div
+                      key={d.toISOString()}
                       style={{
-                        fontWeight: 800,
-                        fontSize: 14,
-                        marginBottom: 10,
-                        color: dow === 0 ? "#EF4444" : dow === 6 ? "#3B82F6" : NAVY,
+                        background: isToday ? "#F0F7FF" : "#fff",
+                        borderRadius: 14,
+                        border: isToday ? "1.5px solid #4A90D9" : "1.5px solid #f0f0f0",
+                        padding: "12px 14px",
                       }}
                     >
-                      {m + 1}/{day}
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {dayEvents.length === 0 && <span style={{ fontSize: 12, color: "#94a3b8" }}>일정 없음</span>}
-                      {dayEvents.map((ev) => {
-                        const hex = eventDisplayColor(ev, departments);
-                        const toggleSelect = () => {
-                          setSelectedEventIds((prev) => {
-                            const s = new Set(prev);
-                            if (s.has(ev.id)) s.delete(ev.id);
-                            else s.add(ev.id);
-                            return s;
-                          });
-                        };
-                        return (
-                          <div
-                            key={ev.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => {
-                              if (selectMode) toggleSelect();
-                              else openEditEvent(ev);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                if (selectMode) toggleSelect();
-                                else openEditEvent(ev);
-                              }
-                            }}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          marginBottom: dayEvents.length > 0 ? 8 : 0,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: isSunday ? "#EF4444" : isSaturday ? "#3B82F6" : NAVY,
+                          }}
+                        >
+                          {m + 1}/{day}
+                        </span>
+                        <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>({dayNames[dow]})</span>
+                        {isToday && (
+                          <span
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 6,
-                              textAlign: "left",
-                              fontSize: 12,
-                              fontWeight: 600,
-                              padding: "6px 8px",
-                              borderRadius: 8,
-                              border: "1px solid #f0f0f0",
-                              background: `${hex}20`,
-                              color: hex,
-                              cursor: "pointer",
-                              maxWidth: "100%",
-                              overflow: "hidden",
+                              fontSize: 10,
+                              fontWeight: 700,
+                              background: "#4A90D9",
+                              color: "#fff",
+                              borderRadius: 6,
+                              padding: "2px 6px",
                             }}
                           >
-                            {selectMode && (
-                              <input
-                                type="checkbox"
-                                checked={selectedEventIds.has(ev.id)}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  toggleSelect();
+                            오늘
+                          </span>
+                        )}
+                      </div>
+                      {dayEvents.length > 0 ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {dayEvents.map((ev) => {
+                            const hex = eventDisplayColor(ev, departments);
+                            const toggleSelect = () => {
+                              setSelectedEventIds((prev) => {
+                                const s = new Set(prev);
+                                if (s.has(ev.id)) s.delete(ev.id);
+                                else s.add(ev.id);
+                                return s;
+                              });
+                            };
+                            return (
+                              <div
+                                key={ev.id}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => {
+                                  if (selectMode) toggleSelect();
+                                  else openEditEvent(ev);
                                 }}
-                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    if (selectMode) toggleSelect();
+                                    else openEditEvent(ev);
+                                  }
+                                }}
                                 style={{
-                                  width: 13,
-                                  height: 13,
-                                  marginRight: 4,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  padding: "8px 10px",
+                                  background: `${hex}12`,
+                                  borderLeft: `3px solid ${hex}`,
+                                  borderRadius: 8,
                                   cursor: "pointer",
-                                  flexShrink: 0,
-                                  accentColor: "#4A90D9",
+                                  maxWidth: "100%",
+                                  overflow: "hidden",
                                 }}
-                              />
-                            )}
-                            <span
+                              >
+                                {selectMode && (
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedEventIds.has(ev.id)}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      toggleSelect();
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      width: 14,
+                                      height: 14,
+                                      accentColor: "#4A90D9",
+                                      flexShrink: 0,
+                                      cursor: "pointer",
+                                    }}
+                                  />
+                                )}
+                                <span
+                                  style={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    background: hex,
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "#475569", flexShrink: 0 }}>
+                                  {eventDepartmentName(ev, departments)}:
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 12,
+                                    color: NAVY,
+                                    fontWeight: 500,
+                                    minWidth: 0,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {ev.title}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: 11, color: "#cbd5e1" }}>일정 없음</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 10 }}>
+                {weekDays.map((d) => {
+                  const y = d.getFullYear();
+                  const m = d.getMonth();
+                  const day = d.getDate();
+                  const dow = d.getDay();
+                  const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                  const dayEvents = events.filter((ev) => eventCoversDate(ev, dateStr));
+                  return (
+                    <div
+                      key={d.toISOString()}
+                      style={{
+                        background: "#fff",
+                        borderRadius: 16,
+                        padding: 12,
+                        boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+                        minWidth: 0,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          fontSize: 14,
+                          marginBottom: 10,
+                          color: dow === 0 ? "#EF4444" : dow === 6 ? "#3B82F6" : NAVY,
+                        }}
+                      >
+                        {m + 1}/{day}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {dayEvents.length === 0 && <span style={{ fontSize: 12, color: "#94a3b8" }}>일정 없음</span>}
+                        {dayEvents.map((ev) => {
+                          const hex = eventDisplayColor(ev, departments);
+                          const toggleSelect = () => {
+                            setSelectedEventIds((prev) => {
+                              const s = new Set(prev);
+                              if (s.has(ev.id)) s.delete(ev.id);
+                              else s.add(ev.id);
+                              return s;
+                            });
+                          };
+                          return (
+                            <div
+                              key={ev.id}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => {
+                                if (selectMode) toggleSelect();
+                                else openEditEvent(ev);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  if (selectMode) toggleSelect();
+                                  else openEditEvent(ev);
+                                }
+                              }}
                               style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: 0,
-                                minWidth: 0,
-                                flex: 1,
+                                gap: 6,
+                                textAlign: "left",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                padding: "6px 8px",
+                                borderRadius: 8,
+                                border: "1px solid #f0f0f0",
+                                background: `${hex}20`,
+                                color: hex,
+                                cursor: "pointer",
+                                maxWidth: "100%",
                                 overflow: "hidden",
                               }}
                             >
-                              <span style={{ fontWeight: 700, flexShrink: 0 }}>
-                                {eventDepartmentName(ev, departments)}
-                              </span>
-                              <span style={{ margin: "0 3px", opacity: 0.5, flexShrink: 0 }}>:</span>
+                              {selectMode && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedEventIds.has(ev.id)}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    toggleSelect();
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    width: 13,
+                                    height: 13,
+                                    marginRight: 4,
+                                    cursor: "pointer",
+                                    flexShrink: 0,
+                                    accentColor: "#4A90D9",
+                                  }}
+                                />
+                              )}
                               <span
                                 style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 0,
                                   minWidth: 0,
+                                  flex: 1,
                                   overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
                                 }}
                               >
-                                {ev.title}
+                                <span style={{ fontWeight: 700, flexShrink: 0 }}>
+                                  {eventDepartmentName(ev, departments)}
+                                </span>
+                                <span style={{ margin: "0 3px", opacity: 0.5, flexShrink: 0 }}>:</span>
+                                <span
+                                  style={{
+                                    minWidth: 0,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {ev.title}
+                                </span>
                               </span>
-                            </span>
-                          </div>
-                        );
-                      })}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* 연간 */}
@@ -1495,17 +1680,26 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: mob ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
-                gap: mob ? 12 : 16,
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: mob ? 6 : 16,
               }}
             >
               {Array.from({ length: 12 }, (_, mi) => {
                 const monthNum = mi + 1;
-                const miniCells = generateMiniCalendarDays(cursorY, mi);
+                const miniCells = generateMiniCalendarDays(cursorY, mi, mob ? 35 : 42);
                 const monthEventCount = countEventsOverlappingMonth(cursorY, monthNum, yearEvents);
                 const isActiveMonth = cursorM === monthNum;
                 const isHovered = yearlyHoverMonth === monthNum;
                 const todayStr = dateKey(todayY, todayM, todayD);
+                const cardBorder = isActiveMonth
+                  ? mob
+                    ? "1.5px solid #4A90D9"
+                    : "2px solid #4A90D9"
+                  : isHovered
+                    ? "1.5px solid #4A90D9"
+                    : mob
+                      ? "1px solid #e5e7eb"
+                      : "1.5px solid #e5e7eb";
                 return (
                   <button
                     key={monthNum}
@@ -1518,9 +1712,9 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     onMouseLeave={() => setYearlyHoverMonth(null)}
                     style={{
                       background: "#fff",
-                      borderRadius: 14,
-                      border: isActiveMonth ? "2px solid #4A90D9" : isHovered ? "1.5px solid #4A90D9" : "1.5px solid #e5e7eb",
-                      padding: mob ? 10 : 14,
+                      borderRadius: mob ? 8 : 14,
+                      border: cardBorder,
+                      padding: mob ? 6 : 14,
                       cursor: "pointer",
                       transition: "box-shadow 0.2s, border-color 0.2s",
                       boxShadow: isHovered
@@ -1538,23 +1732,23 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        marginBottom: 8,
+                        marginBottom: mob ? 4 : 8,
                         position: "relative",
                         width: "100%",
                       }}
                     >
-                      <span style={{ fontSize: 14, fontWeight: 700, color: "#1B2A4A" }}>{monthNum}월</span>
+                      <span style={{ fontSize: mob ? 10 : 14, fontWeight: 700, color: "#1B2A4A" }}>{monthNum}월</span>
                       {monthEventCount > 0 && (
                         <span
                           style={{
                             position: "absolute",
                             right: 0,
-                            fontSize: 10,
+                            fontSize: mob ? 8 : 10,
                             fontWeight: 700,
                             background: "#EFF6FF",
                             color: "#4A90D9",
                             borderRadius: 8,
-                            padding: "2px 7px",
+                            padding: mob ? "1px 4px" : "2px 7px",
                           }}
                         >
                           {monthEventCount}
@@ -1566,10 +1760,10 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         display: "grid",
                         gridTemplateColumns: "repeat(7, 1fr)",
                         textAlign: "center",
-                        fontSize: 9,
+                        fontSize: mob ? 7 : 9,
                         color: "#94a3b8",
                         fontWeight: 600,
-                        marginBottom: 4,
+                        marginBottom: mob ? 2 : 4,
                       }}
                     >
                       {["일", "월", "화", "수", "목", "금", "토"].map((label, wi) => (
@@ -1605,8 +1799,8 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                             }
                             style={{
                               textAlign: "center",
-                              fontSize: mob ? 9 : 10,
-                              padding: mob ? "2px 0" : "3px 0",
+                              fontSize: mob ? 7 : 10,
+                              padding: mob ? "1px 0" : "3px 0",
                               color: "#475569",
                               position: "relative",
                               lineHeight: 1.4,
@@ -1620,22 +1814,22 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                             {isTodayCell ? (
                               <span
                                 style={{
-                                  width: 20,
-                                  height: 20,
+                                  width: mob ? 14 : 20,
+                                  height: mob ? 14 : 20,
                                   borderRadius: "50%",
                                   background: "#4A90D9",
                                   color: "#fff",
                                   display: "inline-flex",
                                   alignItems: "center",
                                   justifyContent: "center",
-                                  fontSize: mob ? 9 : 10,
+                                  fontSize: mob ? 7 : 10,
                                   fontWeight: 700,
                                 }}
                               >
                                 {cell.day}
                               </span>
                             ) : (
-                              <span style={{ color: numColor, fontSize: mob ? 9 : 10, fontWeight: 400 }}>{cell.day}</span>
+                              <span style={{ color: numColor, fontSize: mob ? 7 : 10, fontWeight: 400 }}>{cell.day}</span>
                             )}
                             {dayEvts.length > 0 ? (
                               <div
@@ -1651,8 +1845,8 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                   <span
                                     key={ev.id}
                                     style={{
-                                      width: 4,
-                                      height: 4,
+                                      width: mob ? 3 : 4,
+                                      height: mob ? 3 : 4,
                                       borderRadius: "50%",
                                       background: eventDisplayColor(ev, departments),
                                       flexShrink: 0,
