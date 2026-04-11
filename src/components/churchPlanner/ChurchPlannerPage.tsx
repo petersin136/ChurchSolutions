@@ -61,6 +61,7 @@ export type PlannerEventRow = {
   end_time: string | null;
   is_all_day: boolean | null;
   place_id: string | null;
+  place_name?: string | null;
   recurrence_rule: string | null;
   description: string | null;
   expected_people: number | null;
@@ -306,10 +307,16 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
     start_time: "09:00",
     end_time: "10:00",
     place_id: "",
+    place_name: "",
     recurrence_rule: "",
     expected_people: "" as string | number,
     description: "",
   });
+
+  const [customPlace, setCustomPlace] = useState("");
+  const [useCustomPlace, setUseCustomPlace] = useState(false);
+  const [customEventType, setCustomEventType] = useState("");
+  const [useCustomEventType, setUseCustomEventType] = useState(false);
 
   const [deptModalOpen, setDeptModalOpen] = useState(false);
   const [editingDeptId, setEditingDeptId] = useState<string | null>(null);
@@ -333,6 +340,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
   const [yearlyHoverMonth, setYearlyHoverMonth] = useState<number | null>(null);
   const [showLegendModal, setShowLegendModal] = useState(false);
+  const [briefingEvent, setBriefingEvent] = useState<any>(null);
 
   const resetEventForm = useCallback(() => {
     setEventForm({
@@ -345,11 +353,16 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
       start_time: "09:00",
       end_time: "10:00",
       place_id: "",
+      place_name: "",
       recurrence_rule: "",
       expected_people: "",
       description: "",
     });
     setEditingEventId(null);
+    setUseCustomPlace(false);
+    setCustomPlace("");
+    setUseCustomEventType(false);
+    setCustomEventType("");
   }, []);
 
   const loadDepartments = useCallback(async () => {
@@ -425,7 +438,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
     try {
       const { data, error } = await supabase
         .from("events")
-        .select("*, departments(name, color)")
+        .select("*, departments(name, color), places(name)")
         .eq("church_id", churchId)
         .gte("start_date", `${currentYear}-01-01`)
         .lte("start_date", `${currentYear}-12-31`);
@@ -519,6 +532,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
   const openEditEvent = (ev: PlannerEventRow) => {
     setEditingEventId(ev.id);
+    const pn = ev.place_name ?? "";
     setEventForm({
       title: ev.title,
       department_id: ev.department_id ?? "",
@@ -529,10 +543,29 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
       start_time: (ev.start_time || "09:00").slice(0, 5),
       end_time: (ev.end_time || "10:00").slice(0, 5),
       place_id: ev.place_id ?? "",
+      place_name: pn,
       recurrence_rule: ev.recurrence_rule ?? "",
       expected_people: ev.expected_people != null ? ev.expected_people : "",
       description: ev.description ?? "",
     });
+    if (ev.place_id) {
+      setUseCustomPlace(false);
+      setCustomPlace("");
+    } else if (pn) {
+      setUseCustomPlace(true);
+      setCustomPlace(pn);
+    } else {
+      setUseCustomPlace(false);
+      setCustomPlace("");
+    }
+    const predefinedTypeValues = EVENT_TYPES.map((t) => t.value);
+    if (ev.event_type && !predefinedTypeValues.includes(ev.event_type)) {
+      setUseCustomEventType(true);
+      setCustomEventType(ev.event_type);
+    } else {
+      setUseCustomEventType(false);
+      setCustomEventType("");
+    }
     setEventModalOpen(true);
   };
 
@@ -550,7 +583,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
       return;
     }
     try {
-      if (eventForm.place_id) {
+      if (!useCustomPlace && eventForm.place_id) {
         let q = supabase
           .from(TB_EVENTS)
           .select("id,title,department_id")
@@ -581,7 +614,8 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
         start_time: eventForm.is_all_day ? null : eventForm.start_time ? `${eventForm.start_time}:00` : null,
         end_time: eventForm.is_all_day ? null : eventForm.end_time ? `${eventForm.end_time}:00` : null,
         is_all_day: eventForm.is_all_day,
-        place_id: eventForm.place_id || null,
+        place_id: useCustomPlace ? null : eventForm.place_id || null,
+        place_name: useCustomPlace ? (customPlace.trim() || null) : null,
         recurrence_rule: eventForm.recurrence_rule || null,
         description: eventForm.description.trim() || null,
         expected_people:
@@ -792,310 +826,9 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   const addEventDayForHeader =
     cursorY === todayY && cursorM === todayM ? todayD : 1;
 
-  return (
-    <UnifiedPageLayout
-      pageTitle="플래너"
-      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
-      navSections={navSections}
-      activeId={sidebarTab}
-      onNav={(id) => setSidebarTab(id as "calendar" | "admin")}
-      versionText="플래너 v2"
-      headerTitle="교회 플래너"
-      headerDesc="교회 전체 일정을 한눈에 관리합니다"
-      SidebarIcon={CalendarDays}
-      accentColor={ACCENT}
-    >
-      {loading && (
-        <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>불러오는 중…</div>
-      )}
-      {!loading && !churchId && (
-        <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>로그인 후 교회를 선택하면 플래너를 사용할 수 있습니다.</div>
-      )}
-
-      {!loading && churchId && sidebarTab === "calendar" && (
-        <div style={{ maxWidth: "100%", overflowX: "hidden", paddingBottom: 32 }}>
-          {/* 월간 (제목 없음 — 카드로만 구분) */}
-          <section style={{ paddingTop: 16, marginBottom: mob ? 24 : 40 }}>
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: mob ? 16 : 20,
-                border: "1.5px solid #e9ecf0",
-                boxShadow: "none",
-                padding: mob ? 16 : 20,
-                marginBottom: mob ? 12 : 24,
-                overflow: "visible",
-                maxWidth: "100%",
-                boxSizing: "border-box",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: mob ? 12 : 16,
-                  flexWrap: "wrap",
-                  gap: 8,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: mob ? 8 : 12 }}>
-                  <button
-                    type="button"
-                    aria-label="이전 달"
-                    onClick={goPrevMonth}
-                    style={{
-                      width: mob ? 28 : 36,
-                      height: mob ? 28 : 36,
-                      borderRadius: "50%",
-                      border: "1.5px solid #e9ecf0",
-                      background: "#fff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: mob ? 12 : 16,
-                      color: "#64748b",
-                    }}
-                  >
-                    <ChevronLeft size={mob ? 14 : 18} />
-                  </button>
-                  <span
-                    style={{
-                      fontSize: mob ? 15 : 20,
-                      fontWeight: 700,
-                      color: "#1B2A4A",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {cursorY}년 {cursorM}월
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="다음 달"
-                    onClick={goNextMonth}
-                    style={{
-                      width: mob ? 28 : 36,
-                      height: mob ? 28 : 36,
-                      borderRadius: "50%",
-                      border: "1.5px solid #e9ecf0",
-                      background: "#fff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: mob ? 12 : 16,
-                      color: "#64748b",
-                    }}
-                  >
-                    <ChevronRight size={mob ? 14 : 18} />
-                  </button>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: mob ? 6 : 8 }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectMode((v) => !v);
-                      setSelectedEventIds(new Set());
-                    }}
-                    style={{
-                      background: selectMode ? "#FEF2F2" : "#fff",
-                      color: selectMode ? "#EF4444" : "#64748b",
-                      border: `1.5px solid ${selectMode ? "#FECACA" : "#e9ecf0"}`,
-                      fontSize: mob ? 11 : 13,
-                      fontWeight: 600,
-                      borderRadius: mob ? 8 : 10,
-                      padding: mob ? "4px 8px" : "6px 14px",
-                      height: mob ? 28 : undefined,
-                      boxSizing: "border-box",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    선택 삭제
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const n = monthEventsForBulkDelete.length;
-                      if (n === 0) {
-                        alert("삭제할 일정이 없습니다.");
-                        return;
-                      }
-                      if (
-                        !confirm(
-                          `이 달의 모든 일정(${n}개)을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
-                        )
-                      )
-                        return;
-                      if (!confirm("정말로 전체 삭제하시겠습니까?")) return;
-                      if (!supabase) {
-                        toast("Supabase를 사용할 수 없습니다.", "err");
-                        return;
-                      }
-                      const ids = monthEventsForBulkDelete.map((e) => e.id);
-                      const { error } = await supabase.from("events").delete().in("id", ids);
-                      if (error) {
-                        console.error("[planner] bulk delete error:", error);
-                        alert("삭제 실패: " + error.message);
-                        return;
-                      }
-                      await loadEvents();
-                      if (typeof loadYearEvents === "function") await loadYearEvents();
-                      toast("이 달의 일정이 삭제되었습니다.", "ok");
-                    }}
-                    style={{
-                      background: "#fff",
-                      color: "#EF4444",
-                      border: mob ? "1.5px solid #e9ecf0" : "1.5px solid #FECACA",
-                      fontSize: mob ? 11 : 13,
-                      fontWeight: 600,
-                      borderRadius: mob ? 8 : 10,
-                      padding: mob ? "4px 8px" : "6px 14px",
-                      height: mob ? 28 : undefined,
-                      boxSizing: "border-box",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    전체 삭제
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openAddEvent(cursorY, cursorM, addEventDayForHeader)}
-                    style={{
-                      background: mob ? "#1B2A4A" : "#4A90D9",
-                      color: "#fff",
-                      border: "none",
-                      fontSize: mob ? 11 : 14,
-                      fontWeight: 700,
-                      borderRadius: mob ? 8 : 10,
-                      padding: mob ? "4px 8px" : "6px 18px",
-                      height: mob ? 28 : undefined,
-                      boxSizing: "border-box",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    + 일정 추가
-                  </button>
-                  {mob && departments.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowLegendModal(true)}
-                      style={{
-                        background: "#fff",
-                        color: "#64748b",
-                        border: "1.5px solid #e9ecf0",
-                        fontSize: 11,
-                        fontWeight: 600,
-                        borderRadius: 8,
-                        padding: "4px 8px",
-                        height: 28,
-                        boxSizing: "border-box",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          background: "linear-gradient(135deg, #EF4444, #1B2A4A, #22C55E)",
-                          display: "inline-block",
-                        }}
-                      />
-                      범례
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {selectMode && selectedEventIds.size > 0 && (
-                <div
-                  style={{
-                    background: "#FEF2F2",
-                    borderRadius: 12,
-                    padding: "10px 16px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 12,
-                  }}
-                >
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#EF4444" }}>
-                    {selectedEventIds.size}개 선택됨
-                  </span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (events.length > 0 && selectedEventIds.size === events.length) {
-                          setSelectedEventIds(new Set());
-                        } else {
-                          setSelectedEventIds(new Set(events.map((e) => e.id)));
-                        }
-                      }}
-                      style={{
-                        background: "#fff",
-                        color: "#64748b",
-                        border: "1.5px solid #e5e7eb",
-                        borderRadius: 8,
-                        padding: "6px 12px",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {events.length > 0 && selectedEventIds.size === events.length ? "선택 해제" : "전체 선택"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!confirm(`선택한 ${selectedEventIds.size}개 일정을 삭제하시겠습니까?`)) return;
-                        if (!supabase) {
-                          toast("Supabase를 사용할 수 없습니다.", "err");
-                          return;
-                        }
-                        const ids = Array.from(selectedEventIds);
-                        const { error } = await supabase.from("events").delete().in("id", ids);
-                        if (error) {
-                          alert("삭제 실패: " + error.message);
-                          return;
-                        }
-                        setSelectedEventIds(new Set());
-                        setSelectMode(false);
-                        await loadEvents();
-                        toast("선택한 일정이 삭제되었습니다.", "ok");
-                      }}
-                      style={{
-                        background: "#EF4444",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 8,
-                        padding: "6px 16px",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      삭제
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div
-                style={{
-                  border: mob ? "1.5px solid #e9ecf0" : "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                }}
-              >
+  const plannerMonthGridInner = useMemo(
+    () => (
+      <>
                 <div
                   style={{
                     display: "grid",
@@ -1225,7 +958,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (selectMode) toggleSelect();
-                                  else openEditEvent(ev);
+                                  else setBriefingEvent(ev);
                                 }}
                                 style={{
                                   display: "inline-flex",
@@ -1277,14 +1010,14 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (selectMode) toggleSelect();
-                                else openEditEvent(ev);
+                                else setBriefingEvent(ev);
                               }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" || e.key === " ") {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   if (selectMode) toggleSelect();
-                                  else openEditEvent(ev);
+                                  else setBriefingEvent(ev);
                                 }
                               }}
                               style={{
@@ -1377,8 +1110,586 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   );
                 })}
                 </div>
+      </>
+    ),
+    [
+      mob,
+      monthCells,
+      events,
+      calByDate,
+      departments,
+      selectMode,
+      selectedEventIds,
+      todayY,
+      todayM,
+      todayD,
+    ]
+  );
+
+  return (
+    <UnifiedPageLayout
+      pageTitle="플래너"
+      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      navSections={navSections}
+      activeId={sidebarTab}
+      onNav={(id) => setSidebarTab(id as "calendar" | "admin")}
+      versionText="플래너 v2"
+      headerTitle="교회 플래너"
+      headerDesc="교회 전체 일정을 한눈에 관리합니다"
+      SidebarIcon={CalendarDays}
+      accentColor={ACCENT}
+    >
+      {loading && (
+        <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>불러오는 중…</div>
+      )}
+      {!loading && !churchId && (
+        <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>로그인 후 교회를 선택하면 플래너를 사용할 수 있습니다.</div>
+      )}
+
+      {!loading && churchId && sidebarTab === "calendar" && (
+        <div style={{ maxWidth: "100%", overflowX: "hidden", paddingBottom: 32 }}>
+          {/* 월간 (제목 없음 — 카드로만 구분) */}
+          <section style={{ paddingTop: 16, marginBottom: mob ? 24 : 40 }}>
+            {mob ? (
+              <div
+                style={{
+                  background: "transparent",
+                  borderRadius: 0,
+                  border: "none",
+                  padding: 0,
+                  boxShadow: "none",
+                  marginBottom: 16,
+                  overflow: "visible",
+                  maxWidth: "100%",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 12,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      aria-label="이전 달"
+                      onClick={goPrevMonth}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        border: "1.5px solid #e9ecf0",
+                        background: "#fff",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 12,
+                        color: "#64748b",
+                      }}
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: "#1B2A4A",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {cursorY}년 {cursorM}월
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="다음 달"
+                      onClick={goNextMonth}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        border: "1.5px solid #e9ecf0",
+                        background: "#fff",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 12,
+                        color: "#64748b",
+                      }}
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 12,
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectMode((v) => !v);
+                        setSelectedEventIds(new Set());
+                      }}
+                      style={{
+                        background: selectMode ? "#FEF2F2" : "#fff",
+                        color: selectMode ? "#EF4444" : "#64748b",
+                        border: `1.5px solid ${selectMode ? "#FECACA" : "#e9ecf0"}`,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        padding: "4px 8px",
+                        height: 28,
+                        boxSizing: "border-box",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      선택 삭제
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const n = monthEventsForBulkDelete.length;
+                        if (n === 0) {
+                          alert("삭제할 일정이 없습니다.");
+                          return;
+                        }
+                        if (
+                          !confirm(
+                            `이 달의 모든 일정(${n}개)을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
+                          )
+                        )
+                          return;
+                        if (!confirm("정말로 전체 삭제하시겠습니까?")) return;
+                        if (!supabase) {
+                          toast("Supabase를 사용할 수 없습니다.", "err");
+                          return;
+                        }
+                        const ids = monthEventsForBulkDelete.map((e) => e.id);
+                        const { error } = await supabase.from("events").delete().in("id", ids);
+                        if (error) {
+                          console.error("[planner] bulk delete error:", error);
+                          alert("삭제 실패: " + error.message);
+                          return;
+                        }
+                        await loadEvents();
+                        if (typeof loadYearEvents === "function") await loadYearEvents();
+                        toast("이 달의 일정이 삭제되었습니다.", "ok");
+                      }}
+                      style={{
+                        background: "#fff",
+                        color: "#EF4444",
+                        border: "1.5px solid #e9ecf0",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        padding: "4px 8px",
+                        height: 28,
+                        boxSizing: "border-box",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      전체 삭제
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAddEvent(cursorY, cursorM, addEventDayForHeader)}
+                      style={{
+                        background: "#1B2A4A",
+                        color: "#fff",
+                        border: "none",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        borderRadius: 8,
+                        padding: "4px 8px",
+                        height: 28,
+                        boxSizing: "border-box",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      + 일정 추가
+                    </button>
+                  </div>
+                  {departments.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowLegendModal(true)}
+                      style={{
+                        background: "#fff",
+                        color: "#64748b",
+                        border: "1.5px solid #e9ecf0",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        padding: "5px 10px",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg, #EF4444, #4A90D9, #22C55E)",
+                          display: "inline-block",
+                        }}
+                      />
+                      범례
+                    </button>
+                  )}
+                </div>
+
+                {selectMode && selectedEventIds.size > 0 && (
+                  <div
+                    style={{
+                      background: "#FEF2F2",
+                      borderRadius: 12,
+                      padding: "10px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#EF4444" }}>
+                      {selectedEventIds.size}개 선택됨
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (events.length > 0 && selectedEventIds.size === events.length) {
+                            setSelectedEventIds(new Set());
+                          } else {
+                            setSelectedEventIds(new Set(events.map((e) => e.id)));
+                          }
+                        }}
+                        style={{
+                          background: "#fff",
+                          color: "#64748b",
+                          border: "1.5px solid #e5e7eb",
+                          borderRadius: 8,
+                          padding: "6px 12px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {events.length > 0 && selectedEventIds.size === events.length ? "선택 해제" : "전체 선택"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`선택한 ${selectedEventIds.size}개 일정을 삭제하시겠습니까?`)) return;
+                          if (!supabase) {
+                            toast("Supabase를 사용할 수 없습니다.", "err");
+                            return;
+                          }
+                          const ids = Array.from(selectedEventIds);
+                          const { error } = await supabase.from("events").delete().in("id", ids);
+                          if (error) {
+                            alert("삭제 실패: " + error.message);
+                            return;
+                          }
+                          setSelectedEventIds(new Set());
+                          setSelectMode(false);
+                          await loadEvents();
+                          toast("선택한 일정이 삭제되었습니다.", "ok");
+                        }}
+                        style={{
+                          background: "#EF4444",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 8,
+                          padding: "6px 16px",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                  }}
+                >
+                  {plannerMonthGridInner}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: 20,
+                  border: "1.5px solid #e9ecf0",
+                  boxShadow: "none",
+                  padding: 20,
+                  marginBottom: 24,
+                  overflow: "visible",
+                  maxWidth: "100%",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 16,
+                    flexWrap: "wrap",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <button
+                      type="button"
+                      aria-label="이전 달"
+                      onClick={goPrevMonth}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        border: "1.5px solid #e9ecf0",
+                        background: "#fff",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 16,
+                        color: "#64748b",
+                      }}
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <span
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 700,
+                        color: "#1B2A4A",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {cursorY}년 {cursorM}월
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="다음 달"
+                      onClick={goNextMonth}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        border: "1.5px solid #e9ecf0",
+                        background: "#fff",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 16,
+                        color: "#64748b",
+                      }}
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectMode((v) => !v);
+                        setSelectedEventIds(new Set());
+                      }}
+                      style={{
+                        background: selectMode ? "#FEF2F2" : "#fff",
+                        color: selectMode ? "#EF4444" : "#64748b",
+                        border: `1.5px solid ${selectMode ? "#FECACA" : "#e9ecf0"}`,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        borderRadius: 10,
+                        padding: "6px 14px",
+                        boxSizing: "border-box",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      선택 삭제
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const n = monthEventsForBulkDelete.length;
+                        if (n === 0) {
+                          alert("삭제할 일정이 없습니다.");
+                          return;
+                        }
+                        if (
+                          !confirm(
+                            `이 달의 모든 일정(${n}개)을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
+                          )
+                        )
+                          return;
+                        if (!confirm("정말로 전체 삭제하시겠습니까?")) return;
+                        if (!supabase) {
+                          toast("Supabase를 사용할 수 없습니다.", "err");
+                          return;
+                        }
+                        const ids = monthEventsForBulkDelete.map((e) => e.id);
+                        const { error } = await supabase.from("events").delete().in("id", ids);
+                        if (error) {
+                          console.error("[planner] bulk delete error:", error);
+                          alert("삭제 실패: " + error.message);
+                          return;
+                        }
+                        await loadEvents();
+                        if (typeof loadYearEvents === "function") await loadYearEvents();
+                        toast("이 달의 일정이 삭제되었습니다.", "ok");
+                      }}
+                      style={{
+                        background: "#fff",
+                        color: "#EF4444",
+                        border: "1.5px solid #FECACA",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        borderRadius: 10,
+                        padding: "6px 14px",
+                        boxSizing: "border-box",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      전체 삭제
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAddEvent(cursorY, cursorM, addEventDayForHeader)}
+                      style={{
+                        background: "#4A90D9",
+                        color: "#fff",
+                        border: "none",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        borderRadius: 10,
+                        padding: "6px 18px",
+                        boxSizing: "border-box",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      + 일정 추가
+                    </button>
+                  </div>
+                </div>
+
+                {selectMode && selectedEventIds.size > 0 && (
+                  <div
+                    style={{
+                      background: "#FEF2F2",
+                      borderRadius: 12,
+                      padding: "10px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#EF4444" }}>
+                      {selectedEventIds.size}개 선택됨
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (events.length > 0 && selectedEventIds.size === events.length) {
+                            setSelectedEventIds(new Set());
+                          } else {
+                            setSelectedEventIds(new Set(events.map((e) => e.id)));
+                          }
+                        }}
+                        style={{
+                          background: "#fff",
+                          color: "#64748b",
+                          border: "1.5px solid #e5e7eb",
+                          borderRadius: 8,
+                          padding: "6px 12px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {events.length > 0 && selectedEventIds.size === events.length ? "선택 해제" : "전체 선택"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`선택한 ${selectedEventIds.size}개 일정을 삭제하시겠습니까?`)) return;
+                          if (!supabase) {
+                            toast("Supabase를 사용할 수 없습니다.", "err");
+                            return;
+                          }
+                          const ids = Array.from(selectedEventIds);
+                          const { error } = await supabase.from("events").delete().in("id", ids);
+                          if (error) {
+                            alert("삭제 실패: " + error.message);
+                            return;
+                          }
+                          setSelectedEventIds(new Set());
+                          setSelectMode(false);
+                          await loadEvents();
+                          toast("선택한 일정이 삭제되었습니다.", "ok");
+                        }}
+                        style={{
+                          background: "#EF4444",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 8,
+                          padding: "6px 16px",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                  }}
+                >
+                  {plannerMonthGridInner}
+                </div>
+              </div>
+            )}
 
             {/* 부서 컬러 범례 — 데스크톱만 인라인; 모바일은 버튼+모달 */}
             {departments.length > 0 && !mob && (
@@ -1537,13 +1848,13 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                 tabIndex={0}
                                 onClick={() => {
                                   if (selectMode) toggleSelect();
-                                  else openEditEvent(ev);
+                                  else setBriefingEvent(ev);
                                 }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     e.preventDefault();
                                     if (selectMode) toggleSelect();
-                                    else openEditEvent(ev);
+                                    else setBriefingEvent(ev);
                                   }
                                 }}
                                 style={{
@@ -1662,13 +1973,13 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                               tabIndex={0}
                               onClick={() => {
                                 if (selectMode) toggleSelect();
-                                else openEditEvent(ev);
+                                else setBriefingEvent(ev);
                               }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" || e.key === " ") {
                                   e.preventDefault();
                                   if (selectMode) toggleSelect();
-                                  else openEditEvent(ev);
+                                  else setBriefingEvent(ev);
                                 }
                               }}
                               style={{
@@ -2152,27 +2463,504 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
         </div>
       )}
 
+      {/* 이벤트 브리핑 모달 */}
+      {briefingEvent && (
+        <div
+          role="presentation"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setBriefingEvent(null);
+          }}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.3)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              background: "#fff",
+              borderRadius: 20,
+              width: mob ? "90%" : "100%",
+              maxWidth: mob ? 380 : 460,
+              padding: 0,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
+              boxSizing: "border-box",
+              minWidth: 0,
+            }}
+          >
+            <div
+              style={{
+                background: briefingEvent.departments?.color || "#94a3b8",
+                padding: mob ? "20px 18px 16px" : "24px 24px 20px",
+                borderRadius: "20px 20px 0 0",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                {briefingEvent.departments?.name && (
+                  <span
+                    style={{
+                      background: "rgba(255,255,255,0.25)",
+                      color: "#fff",
+                      fontSize: mob ? 11 : 12,
+                      fontWeight: 600,
+                      padding: "3px 10px",
+                      borderRadius: 6,
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    {briefingEvent.departments.name}
+                  </span>
+                )}
+                {briefingEvent.event_type && (
+                  <span
+                    style={{
+                      background: "rgba(255,255,255,0.15)",
+                      color: "rgba(255,255,255,0.9)",
+                      fontSize: mob ? 11 : 12,
+                      fontWeight: 500,
+                      padding: "3px 10px",
+                      borderRadius: 6,
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    {EVENT_TYPES.find((t) => t.value === briefingEvent.event_type)?.label ?? briefingEvent.event_type}
+                  </span>
+                )}
+              </div>
+
+              <h2
+                style={{
+                  fontSize: mob ? 18 : 22,
+                  fontWeight: 700,
+                  color: "#fff",
+                  margin: 0,
+                  lineHeight: 1.3,
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {briefingEvent.title}
+              </h2>
+            </div>
+
+            <div
+              style={{
+                padding: mob ? "18px 18px 8px" : "22px 24px 8px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 0,
+                minWidth: 0,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "12px 0",
+                  borderBottom: "1px solid #f0f0f0",
+                  minWidth: 0,
+                }}
+              >
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    background: "#f1f5f9",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                    <rect x="1" y="2" width="14" height="13" rx="2" stroke="#64748b" strokeWidth="1.5" fill="none" />
+                    <line x1="1" y1="6" x2="15" y2="6" stroke="#64748b" strokeWidth="1.5" />
+                    <line x1="5" y1="1" x2="5" y2="3" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
+                    <line x1="11" y1="1" x2="11" y2="3" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 1 }}>날짜</div>
+                  <div
+                    style={{
+                      fontSize: mob ? 13 : 14,
+                      color: "#1B2A4A",
+                      fontWeight: 600,
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    {briefingEvent.start_date?.substring(0, 10)}
+                    {briefingEvent.end_date &&
+                      briefingEvent.end_date.substring(0, 10) !== briefingEvent.start_date?.substring(0, 10) && (
+                        <span style={{ fontWeight: 400 }}> ~ {briefingEvent.end_date.substring(0, 10)}</span>
+                      )}
+                    {briefingEvent.is_all_day ? (
+                      <span style={{ color: "#94a3b8", fontSize: mob ? 11 : 12, fontWeight: 400, marginLeft: 6 }}>종일</span>
+                    ) : (
+                      briefingEvent.start_time && (
+                        <span style={{ color: "#64748b", fontSize: mob ? 11 : 12, fontWeight: 400, marginLeft: 6 }}>
+                          {String(briefingEvent.start_time).slice(0, 5)}
+                          {briefingEvent.end_time && ` ~ ${String(briefingEvent.end_time).slice(0, 5)}`}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {(briefingEvent.place_name || briefingEvent.places?.name) && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "12px 0",
+                    borderBottom: "1px solid #f0f0f0",
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: "#f1f5f9",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                      <path
+                        d="M8 1C5.24 1 3 3.24 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z"
+                        stroke="#64748b"
+                        strokeWidth="1.5"
+                        fill="none"
+                      />
+                      <circle cx="8" cy="6" r="2" stroke="#64748b" strokeWidth="1.3" fill="none" />
+                    </svg>
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 1 }}>장소</div>
+                    <div
+                      style={{
+                        fontSize: mob ? 13 : 14,
+                        color: "#1B2A4A",
+                        fontWeight: 500,
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                        maxWidth: "100%",
+                      }}
+                    >
+                      {briefingEvent.place_name || briefingEvent.places?.name}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {briefingEvent.expected_people != null && briefingEvent.expected_people !== "" && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "12px 0",
+                    borderBottom: "1px solid #f0f0f0",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: "#f1f5f9",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                      <circle cx="6" cy="5" r="2.5" stroke="#64748b" strokeWidth="1.5" fill="none" />
+                      <path
+                        d="M1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5"
+                        stroke="#64748b"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                      <circle cx="11.5" cy="5.5" r="1.8" stroke="#64748b" strokeWidth="1.2" fill="none" />
+                      <path d="M11 9.5c1.5 0 3.5 1 3.5 3" stroke="#64748b" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 1 }}>예상 인원</div>
+                    <div
+                      style={{
+                        fontSize: mob ? 13 : 14,
+                        color: "#1B2A4A",
+                        fontWeight: 500,
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                        maxWidth: "100%",
+                      }}
+                    >
+                      {briefingEvent.expected_people}명
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(() => {
+                const rr = briefingEvent.recurrence_rule as string | null | undefined;
+                const recurrenceLabel = rr ? RECURRENCE.find((r) => r.value === rr)?.label ?? rr : "";
+                if (!rr || !recurrenceLabel || recurrenceLabel === "안함") return null;
+                return (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "12px 0",
+                      borderBottom: "1px solid #f0f0f0",
+                      minWidth: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        background: "#f1f5f9",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                        <path d="M2 8a6 6 0 0 1 10.5-4" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                        <path d="M14 8a6 6 0 0 1-10.5 4" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                        <polyline
+                          points="12,2 13,4.5 10.5,4.5"
+                          stroke="#64748b"
+                          strokeWidth="1.3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                        />
+                        <polyline
+                          points="4,14 3,11.5 5.5,11.5"
+                          stroke="#64748b"
+                          strokeWidth="1.3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                        />
+                      </svg>
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 1 }}>반복</div>
+                      <div
+                        style={{
+                          fontSize: mob ? 13 : 14,
+                          color: "#1B2A4A",
+                          fontWeight: 500,
+                          wordBreak: "break-word",
+                          overflowWrap: "break-word",
+                          maxWidth: "100%",
+                        }}
+                      >
+                        {recurrenceLabel}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {(briefingEvent.memo || briefingEvent.description) && (
+                <div style={{ padding: "12px 0", minWidth: 0 }}>
+                  <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 6 }}>메모</div>
+                  <div
+                    style={{
+                      fontSize: mob ? 13 : 14,
+                      color: "#475569",
+                      fontWeight: 400,
+                      lineHeight: 1.6,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                      maxWidth: "100%",
+                      background: "#f8f9fc",
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                    }}
+                  >
+                    {briefingEvent.memo ?? briefingEvent.description}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                padding: mob ? "8px 18px 20px" : "8px 24px 24px",
+                display: "flex",
+                gap: 8,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  const ev = briefingEvent;
+                  setBriefingEvent(null);
+                  openEditEvent(ev);
+                }}
+                style={{
+                  flex: 1,
+                  height: mob ? 44 : 48,
+                  background: "#1B2A4A",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 12,
+                  fontSize: mob ? 13 : 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                수정
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!confirm("이 일정을 삭제하시겠습니까?")) return;
+                  if (!supabase) {
+                    alert("삭제 실패: 연결을 확인하세요.");
+                    return;
+                  }
+                  const { error } = await supabase.from(TB_EVENTS).delete().eq("id", briefingEvent.id);
+                  if (error) {
+                    alert("삭제 실패: " + error.message);
+                    return;
+                  }
+                  setBriefingEvent(null);
+                  await loadEvents();
+                }}
+                style={{
+                  width: mob ? 44 : 48,
+                  height: mob ? 44 : 48,
+                  background: "#fff",
+                  color: "#EF4444",
+                  border: "1.5px solid #f0f0f0",
+                  borderRadius: 12,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+                aria-label="삭제"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+                  <path d="M3 5h12" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d="M7 5V3.5A1.5 1.5 0 0 1 8.5 2h1A1.5 1.5 0 0 1 11 3.5V5" stroke="#EF4444" strokeWidth="1.5" />
+                  <path
+                    d="M4.5 5l.7 9.1a1.5 1.5 0 0 0 1.5 1.4h4.6a1.5 1.5 0 0 0 1.5-1.4L13.5 5"
+                    stroke="#EF4444"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                  <line x1="7.5" y1="8" x2="7.5" y2="13" stroke="#EF4444" strokeWidth="1.3" strokeLinecap="round" />
+                  <line x1="10.5" y1="8" x2="10.5" y2="13" stroke="#EF4444" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBriefingEvent(null)}
+                style={{
+                  width: mob ? 44 : 48,
+                  height: mob ? 44 : 48,
+                  background: "#f1f5f9",
+                  color: "#64748b",
+                  border: "none",
+                  borderRadius: 12,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+                aria-label="닫기"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <line x1="4" y1="4" x2="12" y2="12" stroke="#64748b" strokeWidth="1.8" strokeLinecap="round" />
+                  <line x1="12" y1="4" x2="4" y2="12" stroke="#64748b" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {eventModalOpen && (
         <EventModalOverlay
           mob={mob}
+          cardSize="event"
           title={editingEventId ? "일정 수정" : "일정 추가"}
           onClose={() => {
             setEventModalOpen(false);
             resetEventForm();
           }}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: NAVY, margin: "0 0 24px" }}>{editingEventId ? "일정 수정" : "일정 추가"}</h2>
-          <label style={lbl}>제목 *</label>
+          <h2 style={{ fontSize: mob ? 16 : 20, fontWeight: 700, color: NAVY, margin: "0 0 24px" }}>
+            {editingEventId ? "일정 수정" : "일정 추가"}
+          </h2>
+          <label style={plannerFieldLabel(mob)}>제목 *</label>
           <FieldInput
+            mob={mob}
             value={eventForm.title}
             onChange={(v) => setEventForm((f) => ({ ...f, title: v }))}
             placeholder="일정 제목을 입력하세요"
           />
-          <label style={lbl}>부서</label>
+          <label style={plannerFieldLabel(mob)}>부서</label>
           <select
             value={eventForm.department_id}
             onChange={(e) => setEventForm((f) => ({ ...f, department_id: e.target.value }))}
-            style={sel}
+            style={plannerFieldControl(mob)}
           >
             <option value="">부서 선택</option>
             {departments.filter((d) => d.is_active !== false).map((d) => (
@@ -2181,33 +2969,93 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               </option>
             ))}
           </select>
-          <label style={lbl}>일정 유형</label>
-          <select
-            value={eventForm.event_type}
-            onChange={(e) => setEventForm((f) => ({ ...f, event_type: e.target.value }))}
-            style={sel}
-          >
-            {EVENT_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-          <label style={lbl}>시작일 *</label>
+          <div>
+            <label style={plannerFieldLabel(mob)}>일정 유형</label>
+            {!useCustomEventType ? (
+              <div style={{ display: "flex", gap: 6 }}>
+                <select
+                  value={EVENT_TYPES.some((t) => t.value === eventForm.event_type) ? eventForm.event_type : ""}
+                  onChange={(e) => {
+                    if (e.target.value === "__custom__") {
+                      setUseCustomEventType(true);
+                      setCustomEventType("");
+                      setEventForm((f) => ({ ...f, event_type: "" }));
+                    } else {
+                      setEventForm((f) => ({ ...f, event_type: e.target.value }));
+                    }
+                  }}
+                  style={{ ...plannerFieldControl(mob), flex: 1, marginBottom: 18 }}
+                >
+                  <option value="">유형 선택</option>
+                  {EVENT_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                  <option value="__custom__">✏️ 직접 입력</option>
+                </select>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+                <input
+                  type="text"
+                  placeholder="유형을 입력하세요"
+                  value={customEventType}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCustomEventType(v);
+                    setEventForm((f) => ({ ...f, event_type: v }));
+                  }}
+                  style={{ ...plannerFieldControl(mob), flex: 1, marginBottom: 0 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseCustomEventType(false);
+                    setCustomEventType("");
+                    setEventForm((f) => ({ ...f, event_type: "" }));
+                  }}
+                  style={{
+                    background: "#f1f5f9",
+                    border: "1.5px solid #e0e3ea",
+                    borderRadius: mob ? 8 : 10,
+                    padding: "0 10px",
+                    fontSize: mob ? 11 : 12,
+                    color: "#64748b",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    height: mob ? 38 : 44,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  목록
+                </button>
+              </div>
+            )}
+          </div>
+          <label style={plannerFieldLabel(mob)}>시작일 *</label>
           <input
             type="date"
             value={eventForm.start_date}
             onChange={(e) => setEventForm((f) => ({ ...f, start_date: e.target.value }))}
-            style={sel}
+            style={plannerFieldControl(mob)}
           />
-          <label style={lbl}>종료일 (선택)</label>
+          <label style={plannerFieldLabel(mob)}>종료일 (선택)</label>
           <input
             type="date"
             value={eventForm.end_date}
             onChange={(e) => setEventForm((f) => ({ ...f, end_date: e.target.value }))}
-            style={sel}
+            style={plannerFieldControl(mob)}
           />
-          <label style={{ ...lbl, display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+          <label
+            style={{
+              ...plannerFieldLabel(mob),
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+            }}
+          >
             <input
               type="checkbox"
               checked={eventForm.is_all_day}
@@ -2218,43 +3066,96 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
           {!eventForm.is_all_day && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
               <div>
-                <label style={lbl}>시작 시간</label>
+                <label style={plannerFieldLabel(mob)}>시작 시간</label>
                 <input
                   type="time"
                   value={eventForm.start_time}
                   onChange={(e) => setEventForm((f) => ({ ...f, start_time: e.target.value }))}
-                  style={sel}
+                  style={plannerFieldControl(mob)}
                 />
               </div>
               <div>
-                <label style={lbl}>종료 시간</label>
+                <label style={plannerFieldLabel(mob)}>종료 시간</label>
                 <input
                   type="time"
                   value={eventForm.end_time}
                   onChange={(e) => setEventForm((f) => ({ ...f, end_time: e.target.value }))}
-                  style={sel}
+                  style={plannerFieldControl(mob)}
                 />
               </div>
             </div>
           )}
-          <label style={lbl}>장소</label>
-          <select
-            value={eventForm.place_id}
-            onChange={(e) => setEventForm((f) => ({ ...f, place_id: e.target.value }))}
-            style={sel}
-          >
-            <option value="">장소 선택</option>
-            {places.filter((p) => p.is_active !== false).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <label style={lbl}>반복</label>
+          <div>
+            <label style={plannerFieldLabel(mob)}>장소</label>
+            {!useCustomPlace ? (
+              <div style={{ display: "flex", gap: 6 }}>
+                <select
+                  value={eventForm.place_id || ""}
+                  onChange={(e) => {
+                    if (e.target.value === "__custom__") {
+                      setUseCustomPlace(true);
+                      setCustomPlace("");
+                      setEventForm((f) => ({ ...f, place_id: "", place_name: "" }));
+                    } else {
+                      setEventForm((f) => ({ ...f, place_id: e.target.value, place_name: "" }));
+                    }
+                  }}
+                  style={{ ...plannerFieldControl(mob), flex: 1, marginBottom: 18 }}
+                >
+                  <option value="">장소 선택</option>
+                  {places
+                    .filter((p) => p.is_active !== false)
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  <option value="__custom__">✏️ 직접 입력</option>
+                </select>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+                <input
+                  type="text"
+                  placeholder="장소를 입력하세요"
+                  value={customPlace}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCustomPlace(v);
+                    setEventForm((f) => ({ ...f, place_id: "", place_name: v }));
+                  }}
+                  style={{ ...plannerFieldControl(mob), flex: 1, marginBottom: 0 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseCustomPlace(false);
+                    setCustomPlace("");
+                    setEventForm((f) => ({ ...f, place_name: "" }));
+                  }}
+                  style={{
+                    background: "#f1f5f9",
+                    border: "1.5px solid #e0e3ea",
+                    borderRadius: mob ? 8 : 10,
+                    padding: "0 10px",
+                    fontSize: mob ? 11 : 12,
+                    color: "#64748b",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    height: mob ? 38 : 44,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  목록
+                </button>
+              </div>
+            )}
+          </div>
+          <label style={plannerFieldLabel(mob)}>반복</label>
           <select
             value={eventForm.recurrence_rule}
             onChange={(e) => setEventForm((f) => ({ ...f, recurrence_rule: e.target.value }))}
-            style={sel}
+            style={plannerFieldControl(mob)}
           >
             {RECURRENCE.map((r) => (
               <option key={r.value || "x"} value={r.value}>
@@ -2262,22 +3163,29 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               </option>
             ))}
           </select>
-          <label style={lbl}>예상 인원</label>
+          <label style={plannerFieldLabel(mob)}>예상 인원</label>
           <input
             type="number"
             min={0}
             value={eventForm.expected_people}
             onChange={(e) => setEventForm((f) => ({ ...f, expected_people: e.target.value }))}
-            style={sel}
+            style={plannerFieldControl(mob)}
           />
-          <label style={lbl}>메모</label>
+          <label style={plannerFieldLabel(mob)}>메모</label>
           <textarea
             rows={3}
             value={eventForm.description}
             onChange={(e) => setEventForm((f) => ({ ...f, description: e.target.value }))}
-            style={{ ...sel, height: "auto", minHeight: 88, paddingTop: 12, paddingBottom: 12, resize: "vertical" }}
+            style={{
+              ...plannerFieldControl(mob),
+              height: "auto",
+              minHeight: mob ? 80 : 100,
+              paddingTop: mob ? 10 : 14,
+              paddingBottom: mob ? 10 : 14,
+              resize: "vertical",
+            }}
           />
-          <button type="button" onClick={() => void handleSaveEvent()} style={btnPrimary}>
+          <button type="button" onClick={() => void handleSaveEvent()} style={plannerPrimaryButton(mob)}>
             저장
           </button>
           {editingEventId && (
@@ -2299,12 +3207,12 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               }}
               style={{
                 width: "100%",
-                height: 44,
+                height: mob ? 40 : 44,
                 background: "#fff",
                 color: "#EF4444",
                 border: "1.5px solid #FECACA",
                 borderRadius: 14,
-                fontSize: 14,
+                fontSize: mob ? 13 : 14,
                 fontWeight: 600,
                 cursor: "pointer",
                 marginTop: 8,
@@ -2553,6 +3461,47 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   );
 }
 
+function plannerFieldLabel(mob: boolean): CSSProperties {
+  return {
+    fontSize: mob ? 12 : 13,
+    fontWeight: 600,
+    color: "#475569",
+    marginBottom: 6,
+    display: "block",
+  };
+}
+
+function plannerFieldControl(mob: boolean): CSSProperties {
+  return {
+    width: "100%",
+    height: mob ? 38 : 44,
+    fontSize: mob ? 13 : 14,
+    padding: mob ? "0 10px" : "0 14px",
+    borderRadius: mob ? 8 : 10,
+    border: "1.5px solid #e0e3ea",
+    boxSizing: "border-box",
+    outline: "none",
+    marginBottom: 18,
+    background: "#fff",
+    color: "#1B2A4A",
+  };
+}
+
+function plannerPrimaryButton(mob: boolean): CSSProperties {
+  return {
+    width: "100%",
+    height: mob ? 42 : 48,
+    background: ACCENT,
+    color: "#fff",
+    borderRadius: mob ? 10 : 14,
+    fontSize: mob ? 14 : 15,
+    fontWeight: 700,
+    cursor: "pointer",
+    border: "none",
+    marginTop: 8,
+  };
+}
+
 const lbl: CSSProperties = {
   fontSize: 13,
   fontWeight: 700,
@@ -2602,10 +3551,12 @@ function FieldInput({
   value,
   onChange,
   placeholder,
+  mob = false,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  mob?: boolean;
 }) {
   const [focus, setFocus] = useState(false);
   return (
@@ -2616,7 +3567,7 @@ function FieldInput({
       onFocus={() => setFocus(true)}
       onBlur={() => setFocus(false)}
       style={{
-        ...sel,
+        ...plannerFieldControl(mob),
         borderColor: focus ? ACCENT : "#e0e3ea",
       }}
     />
@@ -2628,12 +3579,18 @@ function EventModalOverlay({
   title,
   onClose,
   children,
+  cardSize = "standard",
 }: {
   mob: boolean;
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  cardSize?: "event" | "standard";
 }) {
+  const isEvent = cardSize === "event";
+  const maxWidth = mob ? 400 : isEvent ? 520 : 480;
+  const padding = mob ? "20px 18px" : isEvent ? "32px 28px" : "28px 24px";
+  const width = mob ? "90%" : "100%";
   return (
     <div
       role="presentation"
@@ -2663,9 +3620,9 @@ function EventModalOverlay({
         style={{
           background: "#fff",
           borderRadius: 20,
-          padding: mob ? 24 : 32,
-          maxWidth: mob ? 400 : 500,
-          width: mob ? "90%" : undefined,
+          width,
+          maxWidth,
+          padding,
           boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
           maxHeight: "85vh",
           overflowY: "auto",
