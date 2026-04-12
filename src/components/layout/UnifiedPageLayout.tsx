@@ -108,10 +108,14 @@ export interface NavSection {
 }
 
 export interface UnifiedPageLayoutProps {
-  /** 사이드바 상단 탭 이름 */
+  /** `churchName`이 없을 때 사이드바 1행 대체 텍스트(예: "플래너", "주보") */
   pageTitle: string;
-  /** 사이드바 상단 부제 (또는 날짜 표시용) */
-  pageSubtitle: string;
+  /** @deprecated 사이드바 날짜는 레이아웃 내부에서 생성합니다. 호환용으로만 유지 */
+  pageSubtitle?: string;
+  /** 교회 이름 — 사이드바 1행 우선. 없으면 `pageTitle`, 둘 다 없으면 "교회 이름" */
+  churchName?: string;
+  /** 사이드바 컨텍스트 줄(없으면 `headerTitle` 사용) */
+  sidebarTitle?: string;
   /** 사이드바 메뉴 그룹들 (섹션 제목 + 메뉴 아이템) */
   navSections: NavSection[];
   /** 현재 활성 메뉴 id */
@@ -134,11 +138,15 @@ export interface UnifiedPageLayoutProps {
   accentColor?: string;
   /** true면 모바일 상단 가로 서브탭 바를 숨김(재정 등 본문에서 자체 네비 사용) */
   hideMobileSubTabs?: boolean;
+  /** 메인 콘텐츠 상단 여백(px) — `children` 래퍼 `marginTop`. 미지정 시 모바일 16·데스크톱 20 */
+  contentTopGap?: number;
 }
 
 export function UnifiedPageLayout({
   pageTitle,
-  pageSubtitle,
+  pageSubtitle: _pageSubtitle,
+  churchName,
+  sidebarTitle,
   navSections,
   activeId,
   onNav,
@@ -150,6 +158,7 @@ export function UnifiedPageLayout({
   SidebarIcon,
   accentColor,
   hideMobileSubTabs = false,
+  contentTopGap,
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
   const [sideOpen, setSideOpen] = useState(false);
@@ -196,6 +205,18 @@ export function UnifiedPageLayout({
 
   const IconComp = SidebarIcon ?? Home;
 
+  const sidebarChurchLine =
+    (churchName && churchName.trim()) || (pageTitle && pageTitle.trim()) || "교회 이름";
+  const sidebarDateLine = new Date().toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const sidebarContextLine = (sidebarTitle && sidebarTitle.trim()) || headerTitle;
+  const sidebarExpanded = mob || sideOpen;
+  const contentMarginTop = contentTopGap !== undefined ? contentTopGap : mob ? 16 : 20;
+  const compactMainChrome = contentTopGap === 0;
+
   return (
     <div
       style={{
@@ -237,55 +258,80 @@ export function UnifiedPageLayout({
             : {}),
         }}
       >
-        <div
-          style={{
-            padding: SIDEBAR_HEADER_FIXED.padding,
-            borderBottom: SIDEBAR_HEADER_FIXED.borderBottom,
-            marginBottom: mob ? 0 : 8,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
+        {sidebarExpanded ? (
           <div
             style={{
-              width: LAYOUT.sidebarHeaderIconSize,
-              height: LAYOUT.sidebarHeaderIconSize,
-              borderRadius: LAYOUT.sidebarHeaderIconRadius,
-              background: "rgba(255,255,255,0.1)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
+              padding: "24px 20px 20px 20px",
+              borderBottom: "1px solid #e9ecf0",
+              background: "transparent",
+              boxSizing: "border-box",
             }}
           >
-            <IconComp size={20} strokeWidth={1.5} />
-          </div>
-          <div style={{ minWidth: 0, overflow: "hidden" }}>
             <div
               style={{
-                fontWeight: SIDEBAR_HEADER_FIXED.titleFontWeight,
-                fontSize: SIDEBAR_HEADER_FIXED.titleFontSize,
-                letterSpacing: SIDEBAR_HEADER_FIXED.titleLetterSpacing,
+                fontSize: 20,
+                fontWeight: 800,
+                color: "#f8fafc",
+                letterSpacing: "-0.3px",
+                lineHeight: 1.3,
+                marginBottom: 4,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                color: "#ffffff",
               }}
             >
-              {pageTitle}
+              {sidebarChurchLine}
             </div>
             <div
               style={{
-                fontSize: SIDEBAR_HEADER_FIXED.subtitleFontSize,
+                fontSize: 15,
+                fontWeight: 600,
+                color: "#64748b",
+                marginBottom: 6,
                 whiteSpace: "nowrap",
-                color: "rgba(255,255,255,0.6)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
-              {pageSubtitle}
+              {sidebarContextLine}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 400,
+                color: "#94a3b8",
+              }}
+            >
+              {sidebarDateLine}
             </div>
           </div>
-        </div>
+        ) : (
+          <div
+            style={{
+              padding: "16px 10px",
+              borderBottom: SIDEBAR_HEADER_FIXED.borderBottom,
+              marginBottom: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                width: LAYOUT.sidebarHeaderIconSize,
+                height: LAYOUT.sidebarHeaderIconSize,
+                borderRadius: LAYOUT.sidebarHeaderIconRadius,
+                background: "rgba(255,255,255,0.1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <IconComp size={20} strokeWidth={1.5} />
+            </div>
+          </div>
+        )}
 
         <nav
           style={{
@@ -426,10 +472,11 @@ export function UnifiedPageLayout({
                 mob
                   ? {
                       flexShrink: 0,
-                      height: MOB_TOP_HEADER_H,
-                      minHeight: MOB_TOP_HEADER_H,
-                      maxHeight: MOB_TOP_HEADER_H,
-                      padding: "12px 16px 0",
+                      height: compactMainChrome ? "auto" : MOB_TOP_HEADER_H,
+                      minHeight: compactMainChrome ? 0 : MOB_TOP_HEADER_H,
+                      maxHeight: compactMainChrome ? "none" : MOB_TOP_HEADER_H,
+                      padding: compactMainChrome ? "8px 16px 0" : "12px 16px 0",
+                      marginBottom: compactMainChrome ? 0 : undefined,
                       boxSizing: "border-box",
                       overflow: "hidden",
                       background: "#fff",
@@ -440,8 +487,10 @@ export function UnifiedPageLayout({
                       gap: 8,
                     }
                   : {
-                      minHeight: LAYOUT.mainHeaderHeight,
-                      padding: LAYOUT.mainHeaderPadding,
+                      minHeight: compactMainChrome ? 0 : LAYOUT.mainHeaderHeight,
+                      padding: compactMainChrome ? "10px 28px 0" : LAYOUT.mainHeaderPadding,
+                      marginBottom: compactMainChrome ? 0 : undefined,
+                      paddingBottom: compactMainChrome ? 0 : undefined,
                       background: "#ffffff",
                       borderBottom: `1px solid ${LAYOUT.border}`,
                       display: "flex",
@@ -575,24 +624,26 @@ export function UnifiedPageLayout({
           </div>
         )}
 
-          <div
-            onTouchStart={mob ? handleSwipeTouchStart : undefined}
-            onTouchEnd={mob ? handleSwipeTouchEnd : undefined}
-            style={{
-              flex: 1,
-              minHeight: 0,
-              width: "100%",
-              overflowY: "auto",
-              background: "#f8f9fc",
-              WebkitOverflowScrolling: "touch",
-              padding: mob ? `8px ${LAYOUT.mainContentPaddingMob}px ${LAYOUT.mainContentPaddingMob}px` : `0px ${LAYOUT.mainContentPadding}px ${LAYOUT.mainContentPadding}px`,
-              paddingBottom: 120,
-              fontSize: mob ? 14 : 15,
-              lineHeight: 1.55,
-            }}
-          >
-            {children}
-          </div>
+        <div
+          onTouchStart={mob ? handleSwipeTouchStart : undefined}
+          onTouchEnd={mob ? handleSwipeTouchEnd : undefined}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            width: "100%",
+            overflowY: "auto",
+            background: "#f8f9fc",
+            WebkitOverflowScrolling: "touch",
+            paddingTop: 0,
+            paddingLeft: mob ? LAYOUT.mainContentPaddingMob : LAYOUT.mainContentPadding,
+            paddingRight: mob ? LAYOUT.mainContentPaddingMob : LAYOUT.mainContentPadding,
+            paddingBottom: 120,
+            fontSize: mob ? 14 : 15,
+            lineHeight: 1.55,
+          }}
+        >
+          <div style={{ marginTop: contentMarginTop }}>{children}</div>
+        </div>
         </div>
       </main>
     </div>

@@ -69,7 +69,7 @@ export function MessagingPage({ db, toast }: MessagingPageProps) {
   return (
     <UnifiedPageLayout
       pageTitle="문자"
-      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      churchName={((db.settings?.churchName ?? "") as string).trim() || "교회 이름"}
       navSections={NAV_SECTIONS}
       activeId={subTab}
       onNav={(id) => setSubTab(id as MessagingSubTab)}

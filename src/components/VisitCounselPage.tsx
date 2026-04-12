@@ -2076,7 +2076,7 @@ const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string }> = {
-  dash: { title: "대시보드", desc: "심방과 상담 현황을 한눈에 확인하세요" },
+  dash: { title: "심방·상담 대시보드", desc: "심방과 상담 현황을 한눈에 확인하세요" },
   visits: { title: "심방 기록", desc: "심방 일정과 기록을 관리합니다" },
   counsels: { title: "상담 기록", desc: "상담 내역을 기록하고 관리합니다" },
   followup: { title: "후속 조치", desc: "후속 조치가 필요한 항목을 확인합니다" },
@@ -2091,6 +2091,8 @@ export interface VisitCounselPageProps {
 export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPageProps = {}) {
   const mob = useIsMobile();
   const { refreshVisits: contextRefreshVisits, rawAttendance, db: appDb } = useAppData();
+  const visitChurchName =
+    ((mainDb?.settings?.churchName ?? appDb.settings?.churchName ?? "") as string).trim() || "교회 이름";
   const [db, setDb] = useState<VCDB>(() => loadVC());
   const [activeSub, setActiveSub] = useState<SubPage>("dash");
   const [visitsLoading, setVisitsLoading] = useState(false);
@@ -2482,7 +2484,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   return (
     <UnifiedPageLayout
       pageTitle="심방 · 상담"
-      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      churchName={visitChurchName}
       navSections={navSections}
       activeId={activeSub}
       onNav={(id) => handleNav(id as SubPage)}

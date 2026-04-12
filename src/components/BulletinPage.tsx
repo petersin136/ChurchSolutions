@@ -2408,7 +2408,8 @@ export function BulletinPage() {
   return (
     <UnifiedPageLayout
       pageTitle="주보"
-      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      churchName={(db.settings.church || "").trim() || "교회 이름"}
+      contentTopGap={0}
       navSections={navSections}
       activeId={activeSub}
       onNav={(id) => handleNav(id as SubPage)}

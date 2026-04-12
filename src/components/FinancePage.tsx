@@ -3629,16 +3629,19 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
   const navSections = [{ sectionLabel: "재정", items: financeSidebarItems.map((t) => ({ id: t.id, label: t.label, Icon: t.Icon })) }];
   const activeCategoryId = LEAF_TO_FINANCE_CATEGORY[activeTab] ?? "fin_income";
   const activeLabel = tabs.find(t => t.id === activeTab)?.label ?? "대시보드";
+  const financeHeaderTitle = activeTab === "dashboard" ? "재정 대시보드" : activeLabel;
+  const financeChurchName =
+    ((settings?.churchName ?? db?.settings?.churchName ?? "") as string).trim() || "교회 이름";
 
   return (
     <UnifiedPageLayout
       pageTitle="재정"
-      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      churchName={financeChurchName}
       navSections={navSections}
       activeId={activeCategoryId}
       onNav={handleNav}
       versionText="재정 v1.0"
-      headerTitle={activeLabel}
+      headerTitle={financeHeaderTitle}
       headerDesc="교회 재정 관리 시스템"
       headerActions={!mob ? <Badge color={C.navy} bg="#f0f2f5">정상 운영중</Badge> : undefined}
       SidebarIcon={Church}

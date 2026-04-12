@@ -3249,7 +3249,7 @@ const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: string }> = {
-  dashboard: { title: "대시보드", desc: "목양 현황을 한눈에 파악합니다" },
+  dashboard: { title: "목양 대시보드", desc: "목양 현황을 한눈에 파악합니다" },
   members: { title: "성도 관리", desc: "성도의 삶을 기억하고 돌봅니다" },
   attendance: { title: "출석부", desc: "52주 출석 기록을 관리합니다" },
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기도" },
@@ -3757,8 +3757,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   return (
     <>
     <UnifiedPageLayout
-      pageTitle={((db.settings.churchName || "").trim() || "목양")}
-      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      pageTitle="목양"
+      churchName={((db.settings.churchName || "").trim() || "교회 이름")}
       navSections={navSections}
       activeId={activeSub}
       onNav={(id) => handleNav(id as SubPage)}

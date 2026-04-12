@@ -269,7 +269,7 @@ export function SettingsPage({
   return (
     <UnifiedPageLayout
       pageTitle="설정"
-      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      churchName={((db.settings?.churchName ?? "") as string).trim() || "교회 이름"}
       navSections={navSections}
       activeId={settingsSubTab}
       onNav={(id) => setSettingsSubTab(id as SettingsSubTab)}

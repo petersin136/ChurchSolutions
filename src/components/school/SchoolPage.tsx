@@ -13,7 +13,7 @@ import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 type SchoolSubTab = "dashboard" | "departments" | "students" | "attendance" | "transfer";
 
 const PAGE_INFO: Record<SchoolSubTab, { title: string; desc: string }> = {
-  dashboard: { title: "대시보드", desc: "교회학교 현황을 한눈에 확인하세요" },
+  dashboard: { title: "교회학교 대시보드", desc: "교회학교 현황을 한눈에 확인하세요" },
   departments: { title: "부서 관리", desc: "부서와 반을 관리합니다" },
   students: { title: "학생 명단", desc: "교육부서 학생을 관리합니다" },
   attendance: { title: "출석부", desc: "52주 출석 기록을 관리합니다" },
@@ -57,7 +57,7 @@ export function SchoolPage({ db, toast }: SchoolPageProps) {
   return (
     <UnifiedPageLayout
       pageTitle="교회학교"
-      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      churchName={((db.settings?.churchName ?? "") as string).trim() || "교회 이름"}
       navSections={NAV_SECTIONS}
       activeId={subTab}
       onNav={(id) => setSubTab(id as SchoolSubTab)}

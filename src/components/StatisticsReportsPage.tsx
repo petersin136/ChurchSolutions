@@ -51,7 +51,7 @@ export function StatisticsReportsPage({ db, toast }: StatisticsReportsPageProps)
   return (
     <UnifiedPageLayout
       pageTitle="통계 · 보고"
-      pageSubtitle={new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+      churchName={((db.settings?.churchName ?? "") as string).trim() || "교회 이름"}
       navSections={NAV_SECTIONS}
       activeId={subTab}
       onNav={(id) => setSubTab(id as StatsSubTab)}
