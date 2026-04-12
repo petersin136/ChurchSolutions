@@ -891,7 +891,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       type="button"
                       onClick={() => openAddEvent(cell.y, cell.m, cell.d)}
                       style={{
-                        minHeight: mob ? 38 : 110,
+                        minHeight: mob ? 38 : 140,
                         padding: mob ? 2 : 8,
                         cursor: "pointer",
                         transition: "background 0.15s",
@@ -2069,7 +2069,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
+                gridTemplateColumns: mob ? "repeat(4, 1fr)" : "repeat(6, 1fr)",
                 gap: mob ? 3 : 16,
               }}
             >

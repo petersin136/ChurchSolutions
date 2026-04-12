@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSPrope
 import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
+import { getChurchId } from "@/lib/tenant";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppData } from "@/contexts/AppDataContext";
 import { toMember } from "@/lib/supabase-db";
@@ -3617,14 +3618,30 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     if (typeof window !== "undefined" && !window.confirm("삭제하시겠습니까?")) return;
     const member = db.members.find(m => m.id === id);
     await deleteMemberPhotoFromStorage(member?.photo);
+
+    if (supabase) {
+      try {
+        const cid = churchId ?? getChurchId();
+        const { error } = await supabase.from("members").delete().eq("id", id).eq("church_id", cid);
+        if (error) {
+          console.error("성도 삭제 실패:", error);
+          toast("삭제 실패: " + error.message, "err");
+          return;
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("성도 삭제 실패:", e);
+        toast("삭제 실패: " + msg, "err");
+        return;
+      }
+    }
+
     setDb(prev => {
       const { [id]: _a, ...att } = prev.attendance;
       const { [id]: _ar, ...attReasons } = prev.attendanceReasons || {};
       const { [id]: _n, ...notes } = prev.notes;
       const newFamilyPrograms = (prev.newFamilyPrograms || []).filter(p => p.member_id !== id);
-      const next = { ...prev, members: prev.members.filter(m => m.id !== id), attendance: att, attendanceReasons: attReasons, notes, newFamilyPrograms };
-      saveDb?.(next).catch(() => toast("저장 실패", "err"));
-      return next;
+      return { ...prev, members: prev.members.filter(m => m.id !== id), attendance: att, attendanceReasons: attReasons, notes, newFamilyPrograms };
     });
     refreshMembers();
     setShowDetailModal(false);
@@ -3639,15 +3656,31 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       const member = db.members.find(m => m.id === id);
       await deleteMemberPhotoFromStorage(member?.photo);
     }
+
+    if (supabase) {
+      try {
+        const cid = churchId ?? getChurchId();
+        const { error } = await supabase.from("members").delete().in("id", ids).eq("church_id", cid);
+        if (error) {
+          console.error("성도 삭제 실패:", error);
+          toast("삭제 실패: " + error.message, "err");
+          return;
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("성도 삭제 실패:", e);
+        toast("삭제 실패: " + msg, "err");
+        return;
+      }
+    }
+
     const idSet = new Set(ids);
     setDb(prev => {
       const attendance = { ...prev.attendance }; ids.forEach(id => delete attendance[id]);
       const attendanceReasons = { ...(prev.attendanceReasons || {}) }; ids.forEach(id => delete attendanceReasons[id]);
       const notes = { ...prev.notes }; ids.forEach(id => delete notes[id]);
       const newFamilyPrograms = (prev.newFamilyPrograms || []).filter(p => !idSet.has(p.member_id));
-      const next = { ...prev, members: prev.members.filter(m => !idSet.has(m.id)), attendance, attendanceReasons, notes, newFamilyPrograms };
-      saveDb?.(next).catch(() => toast("저장 실패", "err"));
-      return next;
+      return { ...prev, members: prev.members.filter(m => !idSet.has(m.id)), attendance, attendanceReasons, notes, newFamilyPrograms };
     });
     refreshMembers();
     setShowDetailModal(false);

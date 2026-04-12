@@ -391,6 +391,21 @@ export function Modals({
     const member = db.members.find((m) => m.id === id);
     const imageUrl = member?.photo;
     await deleteMemberPhotoFromStorage(imageUrl);
+
+    if (supabase) {
+      const churchId = getChurchId();
+      const { error } = await supabase
+        .from("members")
+        .delete()
+        .eq("id", id)
+        .eq("church_id", churchId);
+      if (error) {
+        console.error("성도 삭제 실패:", error);
+        toast("삭제 실패: " + error.message, "err");
+        return;
+      }
+    }
+
     setDb((prev) => {
       const { [id]: _, ...att } = prev.attendance;
       const { [id]: _r, ...attReasons } = prev.attendanceReasons || {};
@@ -403,7 +418,6 @@ export function Modals({
         notes,
       };
     });
-    save();
     setOpenDetailModal(false);
     setDetailMemberId(null);
     toast("삭제 완료", "warn");

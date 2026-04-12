@@ -2238,6 +2238,38 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
   const [churchId, setChurchId] = useState<string | null>(null);
   const [churchSettings, setChurchSettings] = useState<{ church_registration_number?: string | null; representative_name?: string | null; church_address?: string | null; church_tel?: string | null; seal_image_url?: string | null } | null>(null);
   const [sealSettingsOpen, setSealSettingsOpen] = useState(false);
+  const sealSettingsFormRef = useRef<HTMLDivElement>(null);
+
+  const sealSettingsToast = useCallback(
+    (msg: string, type?: "ok" | "err" | "warn") => {
+      const t = toast ?? (() => {});
+      if (type === "ok" && msg.includes("기부금영수증 설정이 저장")) {
+        t("저장 완료", "ok");
+        return;
+      }
+      t(msg, type);
+    },
+    [toast]
+  );
+
+  const triggerSealSettingsSave = useCallback(() => {
+    const root = sealSettingsFormRef.current;
+    const t = toast ?? (() => {});
+    if (!root) {
+      t("설정 폼을 불러올 수 없습니다", "err");
+      return;
+    }
+    for (const btn of root.querySelectorAll("button[type='button']")) {
+      const el = btn as HTMLButtonElement;
+      if (el.disabled) continue;
+      const label = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (label === "저장") {
+        el.click();
+        return;
+      }
+    }
+    t("저장 버튼을 찾을 수 없습니다", "err");
+  }, [toast]);
 
   const yearStr = String(year);
 
@@ -2683,11 +2715,68 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
       {sealSettingsOpen && (
         <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setSealSettingsOpen(false)}>
           <div style={{ maxWidth: 480, width: "100%", height: "90vh", maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff", borderRadius: 20 }} onClick={e => e.stopPropagation()}>
-            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 20 }}>
-              <SealSettingsSection churchId={churchId} toast={toast ?? (() => {})} onSaved={() => { setSealSettingsOpen(false); if (supabase && churchId) supabase.from("church_settings").select("church_registration_number, representative_name, church_address, church_tel, seal_image_url").eq("church_id", churchId).maybeSingle().then(({ data }) => setChurchSettings(data ?? null)); }} />
+            <div ref={sealSettingsFormRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 20 }}>
+              <SealSettingsSection
+                churchId={churchId}
+                toast={sealSettingsToast}
+                onSaved={() => {
+                  setSealSettingsOpen(false);
+                  if (supabase && churchId) {
+                    supabase
+                      .from("church_settings")
+                      .select("church_registration_number, representative_name, church_address, church_tel, seal_image_url")
+                      .eq("church_id", churchId)
+                      .maybeSingle()
+                      .then(({ data }) => setChurchSettings(data ?? null));
+                  }
+                }}
+              />
             </div>
-            <div style={{ flexShrink: 0, paddingTop: 12 }}>
-              <button type="button" onClick={() => setSealSettingsOpen(false)} style={{ width: "100%", padding: mob ? "10px" : "12px 16px", borderRadius: mob ? 8 : 10, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer", fontSize: mob ? 13 : 14 }}>닫기</button>
+            <div
+              style={{
+                flexShrink: 0,
+                padding: mob ? "10px 16px 16px" : "12px 20px 20px",
+                borderTop: `1px solid ${C.border}`,
+                display: "flex",
+                gap: 10,
+              }}
+            >
+              <button
+                type="button"
+                onClick={triggerSealSettingsSave}
+                style={{
+                  flex: 1,
+                  padding: mob ? "10px 12px" : "12px 16px",
+                  borderRadius: mob ? 8 : 10,
+                  border: "none",
+                  background: "#1B2A4A",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: mob ? 13 : 14,
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                }}
+              >
+                저장
+              </button>
+              <button
+                type="button"
+                onClick={() => setSealSettingsOpen(false)}
+                style={{
+                  flex: 1,
+                  padding: mob ? "10px 12px" : "12px 16px",
+                  borderRadius: mob ? 8 : 10,
+                  border: `1px solid ${C.border}`,
+                  background: C.bg,
+                  color: "#555",
+                  cursor: "pointer",
+                  fontSize: mob ? 13 : 14,
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                }}
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>
