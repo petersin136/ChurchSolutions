@@ -21,6 +21,8 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
   const [churchTel, setChurchTel] = useState("");
   const [sealPreviewUrl, setSealPreviewUrl] = useState<string | null>(null);
   const [sealFile, setSealFile] = useState<File | null>(null);
+  /** 직인 UI에서 삭제한 뒤 저장 시 DB/Storage에서 제거 */
+  const [sealDeleted, setSealDeleted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [previewModal, setPreviewModal] = useState(false);
   const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
@@ -41,6 +43,7 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
 
   useEffect(() => {
     if (!churchId || !supabase) return;
+    setSealDeleted(false);
     (async () => {
       const { data } = await supabase.from("church_settings").select("*").eq("church_id", churchId).maybeSingle();
       if (data) {
@@ -64,6 +67,7 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
   const handleFile = (file: File | null) => {
     if (!file) {
       setSealFile(null);
+      setSealDeleted(true);
       setSealPreviewUrl((prev) => {
         if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
         return null;
@@ -78,6 +82,7 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
       toast("파일 크기는 최대 2MB입니다", "err");
       return;
     }
+    setSealDeleted(false);
     setSealFile(file);
     const url = URL.createObjectURL(file);
     setSealPreviewUrl((prev) => {
@@ -87,7 +92,9 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
   };
 
   const handleSave = async () => {
+    console.log("=== handleSave 시작 ===", { churchId, supabase: !!supabase, sealFile: !!sealFile, sealDeleted });
     if (!churchId || !supabase) {
+      console.log("=== churchId 또는 supabase 없음, 중단 ===");
       toast("교회 정보를 불러올 수 없습니다", "err");
       return;
     }
@@ -96,16 +103,29 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
       let sealUrl: string | null = null;
       if (sealFile) {
         const path = `${churchId}/seal.png`;
+        console.log("=== Storage 업로드 시작 ===", { path, fileType: sealFile.type, fileSize: sealFile.size });
         const { error: uploadErr } = await supabase.storage.from("church-seals").upload(path, sealFile, {
           contentType: sealFile.type,
           upsert: true,
         });
+        console.log("=== Storage 업로드 결과 ===", { uploadErr });
         if (uploadErr) throw uploadErr;
         sealUrl = path;
+      } else if (sealDeleted) {
+        console.log("=== sealDeleted: 직인 삭제 후 저장 → DB null, Storage remove ===");
+        sealUrl = null;
+        const path = `${churchId}/seal.png`;
+        const { error: removeErr } = await supabase.storage.from("church-seals").remove([path]);
+        console.log("=== Storage remove 결과 ===", { removeErr });
+        if (removeErr) throw removeErr;
       } else {
+        console.log("=== 직인 변경 없음, 기존 URL 조회 ===");
         const { data: existing } = await supabase.from("church_settings").select("seal_image_url").eq("church_id", churchId).maybeSingle();
         sealUrl = (existing as { seal_image_url?: string } | null)?.seal_image_url ?? null;
+        console.log("=== 기존 URL ===", sealUrl);
       }
+
+      console.log("=== DB upsert 시작 ===", { sealUrl });
       const { error } = await supabase.from("church_settings").upsert(
         {
           church_id: churchId,
@@ -118,14 +138,35 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
         },
         { onConflict: "church_id" }
       );
+      console.log("=== DB upsert 결과 ===", { error });
       if (error) throw error;
-      toast("✅ 기부금영수증 설정이 저장되었습니다", "ok");
+
+      if (sealFile && sealUrl) {
+        console.log("=== 직인 미리보기 URL 갱신(createSignedUrl) 시작 ===", { sealUrl });
+        const { data: signed } = await supabase.storage.from("church-seals").createSignedUrl(sealUrl, 3600);
+        console.log("=== createSignedUrl 결과 ===", { hasUrl: !!signed?.signedUrl });
+        if (signed?.signedUrl) {
+          const sep = signed.signedUrl.includes("?") ? "&" : "?";
+          const busted = `${signed.signedUrl}${sep}t=${Date.now()}`;
+          setSealPreviewUrl((prev) => {
+            if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+            return busted;
+          });
+        }
+        setSealFile(null);
+        console.log("=== 직인 미리보기 URL 갱신 완료 ===");
+      }
+
+      console.log("=== 저장 성공 ===");
+      toast("저장 완료", "ok");
+      setSealDeleted(false);
       onSaved?.();
     } catch (e) {
-      console.error(e);
+      console.error("=== 저장 실패 ===", e);
       toast("저장 실패: " + (e instanceof Error ? e.message : String(e)), "err");
     } finally {
       setLoading(false);
+      console.log("=== handleSave 종료 ===");
     }
   };
 
@@ -146,22 +187,42 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
       doc.text("총액: ₩1,000,000  귀속연도: " + new Date().getFullYear(), 20, 56);
       doc.text("소득세법 제34조, 조세특례제한법 제76조, 제88조의4에 의하여 위와 같이 기부금 영수증을 발급합니다.", 20, 80);
       doc.text(`대표자: ${representativeName || "-"}`, 20, 95);
-      if (sealPreviewUrl) {
+
+      let sealBlob: Blob | null = null;
+      if (sealFile) {
+        sealBlob = sealFile;
+      } else if (sealPreviewUrl) {
         try {
-          const img = await fetch(sealPreviewUrl).then((r) => r.blob());
+          const sep = sealPreviewUrl.includes("?") ? "&" : "?";
+          const busted = `${sealPreviewUrl}${sep}nocache=${Date.now()}`;
+          const res = await fetch(busted);
+          if (res.ok) sealBlob = await res.blob();
+        } catch {
+          sealBlob = null;
+        }
+      }
+
+      if (sealBlob) {
+        try {
           const reader = new FileReader();
           reader.onload = () => {
             doc.addImage(reader.result as string, "PNG", 150, 85, 25, 25);
-            const blob = doc.output("blob");
-            setPreviewPdfUrl(URL.createObjectURL(blob));
+            const pdfBlob = doc.output("blob");
+            setPreviewPdfUrl(URL.createObjectURL(pdfBlob));
             setPreviewModal(true);
           };
-          reader.readAsDataURL(img);
+          reader.onerror = () => {
+            const pdfBlob = doc.output("blob");
+            setPreviewPdfUrl(URL.createObjectURL(pdfBlob));
+            setPreviewModal(true);
+          };
+          reader.readAsDataURL(sealBlob);
           return;
         } catch {
-          // 직인 로드 실패 시 그냥 PDF만
+          /* 직인 로드 실패 시 아래에서 직인 없는 PDF */
         }
       }
+
       const blob = doc.output("blob");
       setPreviewPdfUrl(URL.createObjectURL(blob));
       setPreviewModal(true);
@@ -268,7 +329,16 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button type="button" onClick={handleSave} disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">
+          <button
+            type="button"
+            data-seal-settings-save
+            onClick={() => {
+              console.log("=== 저장 버튼 클릭 ===");
+              void handleSave();
+            }}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50"
+          >
             저장
           </button>
           <button type="button" onClick={handlePreview} className="px-4 py-2 border border-gray-300 rounded-lg font-semibold flex items-center gap-1 hover:bg-gray-50">

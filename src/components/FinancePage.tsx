@@ -2253,10 +2253,20 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
   );
 
   const triggerSealSettingsSave = useCallback(() => {
+    console.log("[ReceiptTab] 모달 푸터 저장 클릭 → SealSettingsSection 저장 연결");
     const root = sealSettingsFormRef.current;
     const t = toast ?? (() => {});
     if (!root) {
       t("설정 폼을 불러올 수 없습니다", "err");
+      return;
+    }
+    const saveBtn = root.querySelector<HTMLButtonElement>("[data-seal-settings-save]");
+    if (saveBtn) {
+      if (saveBtn.disabled) {
+        t("저장 처리 중입니다", "warn");
+        return;
+      }
+      saveBtn.click();
       return;
     }
     for (const btn of root.querySelectorAll("button[type='button']")) {
@@ -2743,7 +2753,10 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             >
               <button
                 type="button"
-                onClick={triggerSealSettingsSave}
+                onClick={() => {
+                  console.log("=== 모달 하단 [저장] 클릭 ===");
+                  triggerSealSettingsSave();
+                }}
                 style={{
                   flex: 1,
                   padding: mob ? "10px 12px" : "12px 16px",
