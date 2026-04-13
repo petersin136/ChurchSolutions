@@ -15,7 +15,7 @@ import { UpcomingEvents } from "@/components/reports/UpcomingEvents";
 import { AttendanceStatistics } from "@/components/attendance/AttendanceStatistics";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
-import { getSundayForWeekNum } from "@/lib/store";
+import { getSundayForWeekNum, saveSettingsToSupabase } from "@/lib/store";
 
 const NAVY = "#1B2A4A";
 const MUTED = "#6b7b9e";
@@ -263,7 +263,7 @@ const sectionCard: React.CSSProperties = {
   borderRadius: 8,
   border: `1px solid ${BORDER}`,
   padding: 12,
-  maxWidth: 560,
+  maxWidth: "100%",
   boxSizing: "border-box",
 };
 
@@ -293,9 +293,15 @@ function ChurchInfoSettingsCard({ db, setDb, save, toast }: Pick<ReportsSettings
   const patch = (partial: Partial<Settings>) => {
     setDb((prev) => ({ ...prev, settings: { ...prev.settings, ...partial } }));
   };
-  const handleSave = () => {
-    save();
-    toast("교회 정보가 저장되었습니다", "ok");
+  const handleSave = async () => {
+    try {
+      await saveSettingsToSupabase(db.settings);
+      save();
+      toast("교회 정보가 저장되었습니다", "ok");
+    } catch (e) {
+      console.error(e);
+      toast("교회 정보 저장 실패: " + (e instanceof Error ? e.message : String(e)), "err");
+    }
   };
   return (
     <div style={sectionCard}>
@@ -643,7 +649,6 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
   const mob = useIsMobile();
   const { rawAttendance } = useAppData();
 
-  const [mainTab, setMainTab] = useState<"reports" | "settings">("reports");
   const [selectedReport, setSelectedReport] = useState<ReportCardDef | null>(null);
   const endD = useMemo(() => new Date(), []);
   const startD = useMemo(() => {
@@ -805,19 +810,6 @@ ${printArea.innerHTML}
       printWindow.close();
     }, 500);
   }, [selectedReport?.title, toast]);
-
-  const mainTabToggleStyle = (active: boolean): React.CSSProperties => ({
-    flex: 1,
-    height: 36,
-    fontSize: 13,
-    fontWeight: 600,
-    border: "none",
-    fontFamily: "inherit",
-    cursor: "pointer",
-    boxSizing: "border-box",
-    background: active ? NAVY : WHITE,
-    color: active ? WHITE : TEXT,
-  });
 
   const cardStyle: React.CSSProperties = {
     padding: 12,
@@ -1087,223 +1079,238 @@ ${printArea.innerHTML}
           flexShrink: 0,
         }}
       >
-        <div style={{ fontSize: mob ? 16 : 18, fontWeight: 700, color: NAVY, marginBottom: 10 }}>보고서 · 설정</div>
-        <div
-          style={{
-            width: "100%",
-            display: "flex",
-            borderRadius: 8,
-            overflow: "hidden",
-            border: `1px solid ${BORDER}`,
-          }}
-        >
-          <button type="button" style={mainTabToggleStyle(mainTab === "reports")} onClick={() => { setMainTab("reports"); setSelectedReport(null); }}>
-            보고서
-          </button>
-          <button type="button" style={mainTabToggleStyle(mainTab === "settings")} onClick={() => { setMainTab("settings"); setSelectedReport(null); }}>
-            설정
-          </button>
-        </div>
+        <div style={{ fontSize: mob ? 16 : 18, fontWeight: 700, color: NAVY }}>보고서 · 설정</div>
       </header>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: mob ? 12 : 20 }}>
-        {mainTab === "settings" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <ChurchInfoSettingsCard db={db} setDb={setDb} save={save} toast={toast} />
-            <NotificationSettingsCard db={db} setDb={setDb} save={save} />
-            <DataBackupPanel db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
-          </div>
-        )}
+      <div style={{ flex: 1, overflowY: "auto", padding: 16, boxSizing: "border-box" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: mob ? "1fr" : "1fr 1fr",
+            gap: 24,
+            maxWidth: 1400,
+            margin: "0 auto",
+            width: "100%",
+            boxSizing: "border-box",
+            alignItems: "start",
+          }}
+        >
+          {/* 왼쪽(모바일: 위): 보고서 */}
+          <div style={{ minWidth: 0, width: "100%" }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: NAVY, margin: "0 0 12px" }}>보고서</h2>
+            {!selectedReport && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {REPORT_GROUPS.map((g) => (
+                  <div key={g.category}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: MUTED, marginBottom: 8 }}>{g.category}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {g.items.map((item) => (
+                        <button key={item.id} type="button" style={cardStyle} onClick={() => setSelectedReport(item)}>
+                          <div
+                            style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: "50%",
+                              background: "#f0f2f5",
+                              color: NAVY,
+                              fontSize: 14,
+                              fontWeight: 700,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {item.initial}
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginBottom: 4 }}>{item.title}</div>
+                            <div style={{ fontSize: 11, color: SUB, lineHeight: 1.4 }}>{item.desc}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {selectedReport && (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedReport(null)}
+                    style={{
+                      height: 28,
+                      padding: "0 10px",
+                      fontSize: 11,
+                      borderRadius: 6,
+                      border: `1px solid ${BORDER}`,
+                      background: WHITE,
+                      color: TEXT,
+                      cursor: "pointer",
+                      flexShrink: 0,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    ← 뒤로
+                  </button>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: NAVY, minWidth: 0 }}>{detailTitle}</div>
+                </div>
 
-        {mainTab === "reports" && !selectedReport && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {REPORT_GROUPS.map((g) => (
-              <div key={g.category}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: MUTED, marginBottom: 8 }}>{g.category}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {g.items.map((item) => (
-                    <button key={item.id} type="button" style={cardStyle} onClick={() => setSelectedReport(item)}>
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: "50%",
-                          background: "#f0f2f5",
-                          color: NAVY,
-                          fontSize: 14,
-                          fontWeight: 700,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {item.initial}
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginBottom: 4 }}>{item.title}</div>
-                        <div style={{ fontSize: 11, color: SUB, lineHeight: 1.4 }}>{item.desc}</div>
-                      </div>
-                    </button>
-                  ))}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "stretch",
+                    gap: 6,
+                    marginBottom: 8,
+                    flexWrap: "nowrap",
+                    width: "100%",
+                    boxSizing: "border-box",
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <span style={{ fontSize: 10, color: SUB, flexShrink: 0, lineHeight: 1 }} title="시작일">
+                      시작
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+                      <CalendarDropdown
+                        id="report-filter-start"
+                        value={startDate}
+                        onChange={setStartDate}
+                        compact
+                        style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
+                        triggerStyle={reportFilterDateTrigger}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <span style={{ fontSize: 10, color: SUB, flexShrink: 0, lineHeight: 1 }} title="종료일">
+                      종료
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+                      <CalendarDropdown
+                        id="report-filter-end"
+                        value={endDate}
+                        onChange={setEndDate}
+                        compact
+                        style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
+                        triggerStyle={reportFilterDateTrigger}
+                      />
+                    </div>
+                  </div>
+                  {showDeptFilter && (
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+                      <ModernSelect
+                        id="report-filter-dept"
+                        value={deptFilter}
+                        onChange={setDeptFilter}
+                        options={[{ value: "", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))]}
+                        compact
+                        uniform32
+                        placeholder="전체"
+                        style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    style={{
+                      height: 32,
+                      padding: "0 14px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      borderRadius: 6,
+                      background: NAVY,
+                      color: WHITE,
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    PDF / 인쇄
+                  </button>
+                </div>
+
+                <div
+                  id="report-print-area"
+                  style={{
+                    background: WHITE,
+                    borderRadius: 8,
+                    border: `1px solid ${BORDER}`,
+                    padding: 20,
+                    minHeight: 120,
+                  }}
+                >
+                  <ReportPrintHeader
+                    churchName={churchName}
+                    reportTitle={detailTitle}
+                    startDate={startDate}
+                    endDate={endDate}
+                  />
+                  {selectedReport.id === "p_member_list" ? (
+                    <MemberListPrintBody
+                      members={membersFiltered}
+                      totalMembers={memberListPrintData.totalMembers}
+                      activeMembers={memberListPrintData.activeMembers}
+                      newFamilyCount={memberListPrintData.newFamilyCount}
+                      riskCount={memberListPrintData.riskCount}
+                      departments={memberListPrintData.departments}
+                    />
+                  ) : (
+                    <div style={{ fontSize: 12 }}>{renderPreview()}</div>
+                  )}
+                  <ReportPrintFooter churchName={churchName} />
                 </div>
               </div>
-            ))}
+            )}
           </div>
-        )}
 
-        {mainTab === "reports" && selectedReport && (
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <button
-                type="button"
-                onClick={() => setSelectedReport(null)}
-                style={{
-                  height: 28,
-                  padding: "0 10px",
-                  fontSize: 11,
-                  borderRadius: 6,
-                  border: `1px solid ${BORDER}`,
-                  background: WHITE,
-                  color: TEXT,
-                  cursor: "pointer",
-                  flexShrink: 0,
-                  fontFamily: "inherit",
-                }}
-              >
-                ← 뒤로
-              </button>
-              <div style={{ fontSize: 15, fontWeight: 700, color: NAVY, minWidth: 0 }}>{detailTitle}</div>
-            </div>
-
+          {/* 오른쪽(모바일: 아래): 설정 */}
+          <div style={{ minWidth: 0, width: "100%" }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: NAVY, margin: "0 0 12px" }}>설정</h2>
             <div
               style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "stretch",
-                gap: 6,
-                marginBottom: 8,
-                flexWrap: "nowrap",
+                display: "grid",
+                gridTemplateColumns: mob ? "1fr" : "1fr 1fr",
+                gap: 24,
+                alignItems: "start",
                 width: "100%",
                 boxSizing: "border-box",
-                minWidth: 0,
               }}
             >
-              <div
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                <span style={{ fontSize: 10, color: SUB, flexShrink: 0, lineHeight: 1 }} title="시작일">
-                  시작
-                </span>
-                <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
-                  <CalendarDropdown
-                    id="report-filter-start"
-                    value={startDate}
-                    onChange={setStartDate}
-                    compact
-                    style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
-                    triggerStyle={reportFilterDateTrigger}
-                  />
-                </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, width: "100%" }}>
+                <ChurchInfoSettingsCard db={db} setDb={setDb} save={save} toast={toast} />
               </div>
-              <div
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                <span style={{ fontSize: 10, color: SUB, flexShrink: 0, lineHeight: 1 }} title="종료일">
-                  종료
-                </span>
-                <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
-                  <CalendarDropdown
-                    id="report-filter-end"
-                    value={endDate}
-                    onChange={setEndDate}
-                    compact
-                    style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
-                    triggerStyle={reportFilterDateTrigger}
-                  />
-                </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, width: "100%" }}>
+                <NotificationSettingsCard db={db} setDb={setDb} save={save} />
+                <DataBackupPanel db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
               </div>
-              {showDeptFilter && (
-                <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
-                  <ModernSelect
-                    id="report-filter-dept"
-                    value={deptFilter}
-                    onChange={setDeptFilter}
-                    options={[{ value: "", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))]}
-                    compact
-                    uniform32
-                    placeholder="전체"
-                    style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-              <button
-                type="button"
-                onClick={handlePrint}
-                style={{
-                  height: 32,
-                  padding: "0 14px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  borderRadius: 6,
-                  background: NAVY,
-                  color: WHITE,
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                PDF / 인쇄
-              </button>
-            </div>
-
-            <div
-              id="report-print-area"
-              style={{
-                background: WHITE,
-                borderRadius: 8,
-                border: `1px solid ${BORDER}`,
-                padding: 20,
-                minHeight: 120,
-              }}
-            >
-              <ReportPrintHeader
-                churchName={churchName}
-                reportTitle={detailTitle}
-                startDate={startDate}
-                endDate={endDate}
-              />
-              {selectedReport.id === "p_member_list" ? (
-                <MemberListPrintBody
-                  members={membersFiltered}
-                  totalMembers={memberListPrintData.totalMembers}
-                  activeMembers={memberListPrintData.activeMembers}
-                  newFamilyCount={memberListPrintData.newFamilyCount}
-                  riskCount={memberListPrintData.riskCount}
-                  departments={memberListPrintData.departments}
-                />
-              ) : (
-                <div style={{ fontSize: 12 }}>{renderPreview()}</div>
-              )}
-              <ReportPrintFooter churchName={churchName} />
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

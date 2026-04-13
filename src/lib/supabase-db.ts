@@ -389,6 +389,19 @@ export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<
     const { error } = await supabase.from("settings").insert(payload);
     if (error) throw new Error(error.message);
   }
+
+  const nameTrim = (settings.churchName ?? "").trim();
+  if (nameTrim) {
+    const { error: churchErr } = await supabase.from("churches").update({ name: nameTrim }).eq("id", churchId);
+    if (churchErr) console.warn("[saveSettingsToSupabase] churches.name 동기화 실패:", churchErr.message);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("church_solution_church_name", nameTrim);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
 }
 
 /**

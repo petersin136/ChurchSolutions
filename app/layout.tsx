@@ -37,6 +37,25 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        {process.env.NODE_ENV === "development" && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+(function() {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) { r.unregister(); });
+  });
+  if (typeof caches !== "undefined" && caches.keys) {
+    caches.keys().then(function(keys) {
+      keys.forEach(function(k) { caches.delete(k); });
+    });
+  }
+})();
+              `.trim(),
+            }}
+          />
+        )}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -60,7 +79,7 @@ export default function RootLayout({
       <body className="antialiased" suppressHydrationWarning={true}>
         <Script
           src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           crossOrigin="anonymous"
         />
         <Providers>{children}</Providers>

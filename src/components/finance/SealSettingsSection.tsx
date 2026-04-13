@@ -204,22 +204,17 @@ export function SealSettingsSection({ churchId, toast, onSaved }: SealSettingsSe
 
       if (sealBlob) {
         try {
-          const reader = new FileReader();
-          reader.onload = () => {
-            doc.addImage(reader.result as string, "PNG", 150, 85, 25, 25);
-            const pdfBlob = doc.output("blob");
-            setPreviewPdfUrl(URL.createObjectURL(pdfBlob));
-            setPreviewModal(true);
-          };
-          reader.onerror = () => {
-            const pdfBlob = doc.output("blob");
-            setPreviewPdfUrl(URL.createObjectURL(pdfBlob));
-            setPreviewModal(true);
-          };
-          reader.readAsDataURL(sealBlob);
-          return;
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result as string);
+            r.onerror = () => reject(new Error("read"));
+            r.readAsDataURL(sealBlob!);
+          });
+          const fmt =
+            sealBlob.type === "image/jpeg" || sealBlob.type === "image/jpg" ? "JPEG" : "PNG";
+          doc.addImage(dataUrl, fmt, 150, 85, 25, 25);
         } catch {
-          /* 직인 로드 실패 시 아래에서 직인 없는 PDF */
+          /* 직인 디코딩 실패 시 직인 없이 출력 */
         }
       }
 
