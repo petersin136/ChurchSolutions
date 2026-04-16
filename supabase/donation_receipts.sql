@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS donation_receipts (
   church_address TEXT,
   church_tel TEXT,
   church_representative TEXT,
+  resident_number_masked TEXT,
+  memo TEXT,
   status TEXT NOT NULL DEFAULT '발급완료' CHECK (status IN ('발급완료','취소')),
   cancelled_at TIMESTAMPTZ,
   cancel_reason TEXT,

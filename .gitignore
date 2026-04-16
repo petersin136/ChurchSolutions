@@ -24,6 +24,11 @@ npm-debug.log*
 # Vercel
 .vercel
 
+# Playwright / E2E
+.auth/
+test-results/
+playwright-report/
+
 # Embedded repo (제외)
 ChurchSolutions/
 BucheonChurch/

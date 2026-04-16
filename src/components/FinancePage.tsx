@@ -2193,7 +2193,7 @@ const RECEIPT_CSS = `
   .donation-table-r tfoot td { padding: 10px; font-size: 14px; font-weight: 700; border-top: 2px solid #1a2a4a; background: #f5f6f8; }
   .donation-table-r tfoot .total-label-r { text-align: center; color: #1a2a4a; }
   .donation-table-r tfoot .total-amount-r { text-align: right; color: #1a2a4a; }
-  .receipt-pages-container { display: flex; flex-direction: column; align-items: center; gap: 32px; padding: 24px 0 0; background: #fff; width: 100%; box-sizing: border-box; }
+  .receipt-pages-container { display: flex; flex-direction: column; align-items: center; gap: 32px; padding: 24px 0 0; background: transparent; width: 100%; box-sizing: border-box; }
   .receipt-page { width: 210mm; min-height: 297mm; height: auto; box-sizing: border-box; padding: 15mm 18mm; background: #fff; box-shadow: none; border: 1px solid #e5e7eb; break-after: page; overflow: visible; display: flex; flex-direction: column; flex-shrink: 0; }
   .monthly-table-r tbody tr { break-inside: avoid; page-break-inside: avoid; }
   @media print {
@@ -2214,10 +2214,109 @@ const RECEIPT_CONFIG_DEFAULTS = {
   donationCategory: "금전",
 } as const;
 
-/** 영수증 미리보기·PDF(html2canvas)용 주민번호 표시 (뒷자리 첫 자리만 노출) */
+/** 영수증 미리보기·PDF·발급대장용 주민번호 표시 (앞 6자리-뒷 첫 1자리 + 마스킹 6자리) */
+function maskResidentNumber(front: string, back: string): string {
+  if (!front) return "";
+  if (!back) return front;
+  return `${front}-${back.charAt(0)}${"*".repeat(6)}`;
+}
+
+/** 완전한 13자리 숫자일 때만 법정 형식으로 마스킹, 그 외에는 비식별 placeholder */
 function maskReceiptResidentNumber(front: string, back: string): string {
   if (front.length !== 6 || back.length !== 7 || !/^\d+$/.test(front) || !/^\d+$/.test(back)) return "******-*******";
-  return `${front}-${back.charAt(0)}${"*".repeat(6)}`;
+  return maskResidentNumber(front, back);
+}
+
+/** 뒷 7자리 입력란: 첫 자리만 보이고 이후는 ● (실제 state는 숫자만 저장) */
+const RESIDENT_LAST_MASK_DOT = "\u25CF";
+
+function residentLastPartDisplay(realDigits: string): string {
+  if (!realDigits) return "";
+  if (realDigits.length === 1) return realDigits;
+  return realDigits.charAt(0) + RESIDENT_LAST_MASK_DOT.repeat(realDigits.length - 1);
+}
+
+function applyResidentLastPartInput(prevReal: string, rawFromInput: string): string {
+  const digits = rawFromInput.replace(/\D/g, "");
+  if (digits.length > prevReal.length + 1 || digits.length >= 7) return digits.slice(0, 7);
+  const prevDisp = residentLastPartDisplay(prevReal);
+  if (rawFromInput.length > prevDisp.length) {
+    const last = rawFromInput.slice(-1);
+    return /^\d$/.test(last) ? (prevReal + last).slice(0, 7) : prevReal;
+  }
+  if (rawFromInput.length < prevDisp.length) return prevReal.slice(0, Math.max(0, rawFromInput.length));
+  return prevReal;
+}
+
+type DonationReceiptPersistCfg = {
+  churchName: string;
+  churchAddress: string | null;
+  representativeName: string | null;
+};
+
+/** 발급 이력(donation_receipts) — 5년 보관 대장용 */
+async function persistDonationReceiptRow(
+  client: SupabaseClient | null,
+  toast: ((msg: string, type?: "ok" | "err" | "warn") => void) | undefined,
+  opts: {
+    churchId: string;
+    donor: Pick<Donor, "id" | "name">;
+    taxYear: number;
+    total: number;
+    offerings: Offering[];
+    cfg: DonationReceiptPersistCfg;
+    residentMasked: string;
+    memo?: string | null;
+  }
+): Promise<boolean> {
+  if (!client) return false;
+  try {
+    const { data: receiptNumber, error: rpcErr } = await client.rpc("generate_receipt_number", {
+      p_church_id: opts.churchId,
+      p_tax_year: opts.taxYear,
+    });
+    if (rpcErr) console.warn("[donation_receipts] generate_receipt_number", rpcErr);
+    const num =
+      typeof receiptNumber === "string" && receiptNumber.trim()
+        ? receiptNumber.trim()
+        : `DR-${opts.taxYear}-00001`;
+    const details = opts.offerings
+      .filter(o => o.donorId === opts.donor.id && o.date.startsWith(String(opts.taxYear)))
+      .reduce<{ category: string; amount: number }[]>((acc, o) => {
+        const cat = DEFAULT_CATEGORIES.find(c => c.id === o.categoryId);
+        const name = cat?.name ?? o.categoryId;
+        const existing = acc.find(x => x.category === name);
+        if (existing) existing.amount += o.amount;
+        else acc.push({ category: name, amount: o.amount });
+        return acc;
+      }, []);
+    const { error: insErr } = await client.from("donation_receipts").insert({
+      member_id: opts.donor.id,
+      member_name: opts.donor.name,
+      receipt_number: num,
+      tax_year: opts.taxYear,
+      issue_date: new Date().toISOString().slice(0, 10),
+      total_amount: opts.total,
+      donation_details: details,
+      church_name: opts.cfg.churchName,
+      church_address: opts.cfg.churchAddress || null,
+      church_representative: opts.cfg.representativeName || null,
+      church_id: opts.churchId,
+      resident_number_masked: opts.residentMasked,
+      memo: opts.memo ?? null,
+      status: "발급완료",
+    });
+    if (insErr) {
+      console.warn("[donation_receipts] insert", insErr);
+      toast?.("발급 대장(donation_receipts) 저장에 실패했습니다. 테이블·RPC·RLS를 확인해 주세요.", "warn");
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn("[donation_receipts]", e);
+    toast?.("발급 대장 저장 중 오류가 발생했습니다.", "warn");
+    return false;
+  }
 }
 
 function lastDonationDateInYearForDonor(offerings: Offering[], donorId: string, yearStr: string): string {
@@ -2249,8 +2348,8 @@ async function insertDonationReceiptLog(
     receiptYear: string;
     channelNote: string;
   }
-): Promise<void> {
-  if (!client || !cid) return;
+): Promise<boolean> {
+  if (!client || !cid) return false;
   try {
     const { data: serial, error: rpcErr } = await client.rpc("next_receipt_log_serial", {
       p_church_id: cid,
@@ -2258,7 +2357,7 @@ async function insertDonationReceiptLog(
     });
     if (rpcErr) {
       console.warn("[donation_receipt_log] rpc", rpcErr);
-      return;
+      return false;
     }
     const serialNumber = typeof serial === "string" && serial.trim() ? serial.trim() : `${params.receiptYear}-001`;
     const { error: insErr } = await client.from("donation_receipt_log").insert({
@@ -2273,9 +2372,14 @@ async function insertDonationReceiptLog(
       donation_type: "법정기부금",
       note: params.channelNote,
     });
-    if (insErr) console.warn("[donation_receipt_log] insert", insErr);
+    if (insErr) {
+      console.warn("[donation_receipt_log] insert", insErr);
+      return false;
+    }
+    return true;
   } catch (e) {
     console.warn("[donation_receipt_log]", e);
+    return false;
   }
 }
 
@@ -2330,11 +2434,30 @@ function awaitReceiptSealImagesLoaded(): Promise<void> {
 
 /* ====== 기부금 영수증 탭 ====== */
 type ReceiptSubTab = "individual" | "bulk" | "history";
+
+const FINANCE_RECEIPT_SUBTAB_STORAGE_KEY = "finance_receipt_subtab";
+
 function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; offerings: Offering[]; settings?: { churchName?: string; address?: string; pastor?: string; businessNumber?: string }; toast?: (msg: string, type?: "ok" | "err" | "warn") => void }) {
   const mob = useIsMobile();
   const listRefBatch = useRef<HTMLDivElement>(null);
   const currentYear = new Date().getFullYear();
-  const [receiptSubTab, setReceiptSubTab] = useState<ReceiptSubTab>("individual");
+  const [receiptSubTab, setReceiptSubTabState] = useState<ReceiptSubTab>("individual");
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FINANCE_RECEIPT_SUBTAB_STORAGE_KEY);
+      if (raw === "individual" || raw === "bulk" || raw === "history") setReceiptSubTabState(raw);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const setReceiptSubTab = useCallback((tab: ReceiptSubTab) => {
+    setReceiptSubTabState(tab);
+    try {
+      localStorage.setItem(FINANCE_RECEIPT_SUBTAB_STORAGE_KEY, tab);
+    } catch {
+      /* ignore */
+    }
+  }, []);
   const [year, setYear] = useState(currentYear);
   const [currentPageBatch, setCurrentPageBatch] = useState(1);
   const [selectedDonorId, setSelectedDonorId] = useState<string>("");
@@ -2354,9 +2477,30 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
   const residentLastInputRef = useRef<HTMLInputElement>(null);
   const reprintSsnLastInputRef = useRef<HTMLInputElement>(null);
   const pdfRef = useRef<{ addPage: () => void; addImage: (a: string, b: string, c: number, d: number, e: number, f: number) => void; save: (n: string) => void } | null>(null);
-  const [receiptHistory, setReceiptHistory] = useState<{ id: string; receipt_number: string; member_name: string; tax_year: number; total_amount: number; issue_date: string; status: string }[]>([]);
+  const [receiptHistory, setReceiptHistory] = useState<
+    {
+      id: string;
+      receipt_number: string;
+      member_name: string;
+      tax_year: number;
+      total_amount: number;
+      issue_date: string;
+      status: string;
+      resident_number_masked?: string | null;
+      memo?: string | null;
+      created_at?: string;
+    }[]
+  >([]);
   const [historyYearFilter, setHistoryYearFilter] = useState(currentYear);
   const [historySearch, setHistorySearch] = useState("");
+  const [receiptHistoryFetchError, setReceiptHistoryFetchError] = useState<string | null>(null);
+  const [receiptHistoryEmptyAfterFetch, setReceiptHistoryEmptyAfterFetch] = useState(false);
+
+  useEffect(() => {
+    setReceiptHistoryFetchError(null);
+    setReceiptHistoryEmptyAfterFetch(false);
+    setReceiptHistory([]);
+  }, [historyYearFilter]);
   const [reprintModal, setReprintModal] = useState<{ receipt: (typeof receiptHistory)[0]; ssnFirst: string; ssnLast: string } | null>(null);
   const [cancelModal, setCancelModal] = useState<{ receipt: (typeof receiptHistory)[0]; reason: string } | null>(null);
   const [bulkFile, setBulkFile] = useState<{ name: string; ssn: string; address: string }[]>([]);
@@ -2640,10 +2784,103 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
           receiptYear: yearStr,
           channelNote: "이미지 저장",
         });
+        if (cid && supabase) {
+          await persistDonationReceiptRow(supabase, toast, {
+            churchId: cid,
+            donor: receiptDonor,
+            taxYear: year,
+            total: receiptData.total,
+            offerings,
+            cfg: {
+              churchName: cfg.churchName,
+              churchAddress: cfg.churchAddress || null,
+              representativeName: cfg.representativeName || null,
+            },
+            residentMasked: maskReceiptResidentNumber(residentFirst, residentLast),
+            memo: "이미지 저장",
+          });
+        }
       }
     } catch (e) {
       console.error(e);
       toast?.("이미지 저장에 실패했습니다.", "err");
+    }
+  };
+
+  const handleIssueReceipt = async () => {
+    if (receiptSubTab !== "individual") return;
+    if (!receiptDonor) return;
+    if (
+      !selectedDonor ||
+      residentFirst.length !== 6 ||
+      residentLast.length !== 7 ||
+      !/^\d+$/.test(residentFirst) ||
+      !/^\d+$/.test(residentLast)
+    ) {
+      toast?.("주민등록번호 13자리를 모두 입력해 주세요.", "warn");
+      return;
+    }
+    if (!supabase) {
+      alert("발급에 실패했습니다. 다시 시도해주세요.");
+      return;
+    }
+    const maskedForLog = maskReceiptResidentNumber(residentFirst, residentLast);
+    let logCid: string | null = null;
+    try {
+      logCid = churchId ?? getChurchId();
+    } catch {
+      logCid = null;
+    }
+    try {
+      let receiptChurchId: string | null = null;
+      try {
+        receiptChurchId = getChurchId();
+      } catch {
+        receiptChurchId = null;
+      }
+      if (!receiptChurchId || !receiptDonor) {
+        alert("발급에 실패했습니다. 다시 시도해주세요.");
+        return;
+      }
+      const okPersist = await persistDonationReceiptRow(supabase, toast, {
+        churchId: receiptChurchId,
+        donor: receiptDonor,
+        taxYear: year,
+        total: receiptData.total,
+        offerings,
+        cfg: {
+          churchName: cfg.churchName,
+          churchAddress: cfg.churchAddress || null,
+          representativeName: cfg.representativeName || null,
+        },
+        residentMasked: maskedForLog,
+        memo: "발급하기",
+      });
+      if (!okPersist) {
+        alert("발급에 실패했습니다. 다시 시도해주세요.");
+        return;
+      }
+      const okLog = await insertDonationReceiptLog(supabase, logCid, {
+        donorName: receiptDonor.name,
+        residentMasked: maskedForLog,
+        donationAmount: receiptData.total,
+        donationDate: lastDonationDateInYearForDonor(offerings, receiptDonor.id, yearStr),
+        issuedDate: new Date().toISOString().slice(0, 10),
+        receiptYear: yearStr,
+        channelNote: "발급하기",
+      });
+      if (!okLog) {
+        alert("발급에 실패했습니다. 다시 시도해주세요.");
+        return;
+      }
+      alert("기부금 영수증이 발급되었습니다.");
+      await handleDownloadPdf();
+      void fetchReceiptLogRows();
+      setResidentFirst("");
+      setResidentLast("");
+    } catch (err) {
+      console.error("발급 실패:", err);
+      alert("발급에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -2671,63 +2908,6 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
         pdf.addImage(dataUrl, "PNG", 0, 0, a4W, a4H);
       });
       pdf.save(`기부금영수증_${receiptDonor.name}_${year}.pdf`);
-
-      const maskedForLog = maskReceiptResidentNumber(residentFirst, residentLast);
-      const logDonorId = receiptDonor.id;
-      const logDonorName = receiptDonor.name;
-      const logTotal = receiptData.total;
-      let logCid: string | null = null;
-      try {
-        logCid = churchId ?? getChurchId();
-      } catch {
-        logCid = null;
-      }
-      if (receiptSubTab === "individual") {
-        await insertDonationReceiptLog(supabase, logCid, {
-          donorName: logDonorName,
-          residentMasked: maskedForLog,
-          donationAmount: logTotal,
-          donationDate: lastDonationDateInYearForDonor(offerings, logDonorId, yearStr),
-          issuedDate: new Date().toISOString().slice(0, 10),
-          receiptYear: yearStr,
-          channelNote: "PDF 다운로드",
-        });
-      }
-
-      if (supabase && receiptSubTab === "individual") {
-        try {
-          const receiptChurchId = getChurchId();
-          if (receiptChurchId) {
-            const { data: receiptNumber } = await supabase.rpc("generate_receipt_number", { p_church_id: receiptChurchId, p_tax_year: year });
-            const details = offerings
-              .filter(o => o.donorId === receiptDonor.id && o.date.startsWith(String(year)))
-              .reduce<{ category: string; amount: number }[]>((acc, o) => {
-                const cat = DEFAULT_CATEGORIES.find(c => c.id === o.categoryId);
-                const name = cat?.name ?? o.categoryId;
-                const existing = acc.find(x => x.category === name);
-                if (existing) existing.amount += o.amount;
-                else acc.push({ category: name, amount: o.amount });
-                return acc;
-              }, []);
-            const churchId = getChurchId();
-            await supabase.from("donation_receipts").insert({
-              member_id: receiptDonor.id,
-              member_name: receiptDonor.name,
-              receipt_number: receiptNumber ?? `DR-${year}-00001`,
-              tax_year: year,
-              issue_date: new Date().toISOString().slice(0, 10),
-              total_amount: receiptData.total,
-              donation_details: details,
-              church_name: cfg.churchName,
-              church_address: cfg.churchAddress || null,
-              church_representative: cfg.representativeName || null,
-              church_id: churchId,
-            });
-          }
-        } catch (_) { /* RLS or table 없으면 무시 */ }
-      }
-      setResidentFirst("");
-      setResidentLast("");
     } catch (e) {
       console.error(e);
       toast?.("PDF 저장에 실패했습니다.", "err");
@@ -2935,6 +3115,22 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             receiptYear: yearStr,
             channelNote: "일괄 PDF",
           });
+          if (cidBatch && supabase) {
+            await persistDonationReceiptRow(supabase, toast, {
+              churchId: cidBatch,
+              donor: d,
+              taxYear: year,
+              total: totalB,
+              offerings,
+              cfg: {
+                churchName: cfg.churchName,
+                churchAddress: cfg.churchAddress || null,
+                representativeName: cfg.representativeName || null,
+              },
+              residentMasked: maskReceiptResidentNumber(rn.first, rn.last),
+              memo: "일괄 PDF",
+            });
+          }
         }
       } catch (e) {
         console.error(e);
@@ -2942,7 +3138,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
       setBatchIndex(i => i + 1);
     }, 400);
     return () => clearTimeout(timer);
-  }, [batchGenerating, batchIndex, batchPdfList, batchResidentNumbers, offerings, yearStr, year, supabase, churchId, churchSettings]);
+  }, [batchGenerating, batchIndex, batchPdfList, batchResidentNumbers, offerings, yearStr, year, supabase, churchId, churchSettings, cfg.churchName, cfg.churchAddress, cfg.representativeName, toast]);
 
   const handleBatchPdf = () => {
     const list = donorsWithOfferingsInYear.filter(d => batchSelected.has(d.id));
@@ -2977,7 +3173,14 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
   ];
 
   const handleReprintPdf = useCallback(async () => {
-    if (!reprintModal || reprintModal.ssnFirst.length !== 6 || reprintModal.ssnLast.length !== 7) return;
+    if (
+      !reprintModal ||
+      reprintModal.ssnFirst.length !== 6 ||
+      reprintModal.ssnLast.length !== 7 ||
+      !/^\d+$/.test(reprintModal.ssnFirst) ||
+      !/^\d+$/.test(reprintModal.ssnLast)
+    )
+      return;
     try {
       const { jsPDF } = await import("jspdf");
       const { registerKoreanFont } = await import("@/utils/fontLoader");
@@ -3260,7 +3463,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   style={{ ...receiptInputBase, margin: 0 }}
                 />
               </div>
-              <div ref={donorDropdownRef} style={{ position: "relative" }}>
+              <div ref={donorDropdownRef} data-testid="donor-dropdown" style={{ position: "relative" }}>
                 <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: "#1B2A4A", marginBottom: mob ? 6 : 8 }}>교인 선택</label>
                 <button
                   type="button"
@@ -3354,10 +3557,11 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: "#1B2A4A", marginBottom: mob ? 2 : 6 }}>주민등록번호 (13자리, - 제외)</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <input
-                      type="password"
+                      type="text"
                       className="receipt-form-input finance-nav-btn"
                       inputMode="numeric"
                       maxLength={6}
+                      autoComplete="off"
                       value={residentFirst}
                       onChange={e => {
                         const val = e.target.value.replace(/\D/g, "").slice(0, 6);
@@ -3370,12 +3574,13 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     <span style={{ color: "#6b7b9e", fontWeight: 600, fontSize: mob ? 11 : 13 }}>-</span>
                     <input
                       ref={residentLastInputRef}
-                      type="password"
+                      type="text"
                       className="receipt-form-input finance-nav-btn"
                       inputMode="numeric"
                       maxLength={7}
-                      value={residentLast}
-                      onChange={e => setResidentLast(e.target.value.replace(/\D/g, "").slice(0, 7))}
+                      autoComplete="off"
+                      value={residentLastPartDisplay(residentLast)}
+                      onChange={e => setResidentLast(applyResidentLastPartInput(residentLast, e.target.value))}
                       placeholder="뒷 7자리"
                       style={{ ...receiptInputBase, width: 100, margin: 0 }}
                     />
@@ -3399,7 +3604,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 margin: 0,
                 padding: "0 0 12px",
                 boxSizing: "border-box",
-                backgroundColor: "#fff",
+                backgroundColor: "transparent",
                 boxShadow: "none",
               }}
             >
@@ -3407,7 +3612,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 key={`receipt-${receiptDonor.id}-${year}`}
                 id="receipt-card"
                 className="receipt-wrapper-r"
-                style={{ margin: "0 auto", boxSizing: "border-box", background: "#fff", width: "100%", maxWidth: "210mm", boxShadow: "none" }}
+                style={{ margin: "0 auto", boxSizing: "border-box", background: "#ffffff", width: "100%", maxWidth: "210mm", boxShadow: "none" }}
               >
                 <style dangerouslySetInnerHTML={{ __html: RECEIPT_CSS }} />
                 <div className="receipt-pages-container">
@@ -3607,9 +3812,27 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   </div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginTop: 16, position: "relative", zIndex: 2 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", marginTop: 16, position: "relative", zIndex: 2 }}>
                 <Button onClick={handleSaveImage} variant="accent">이미지 저장</Button>
-                <Button onClick={handleDownloadPdf} variant="ghost">PDF 다운로드</Button>
+                <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "24px" }}>
+                  <button
+                    type="button"
+                    onClick={() => void handleIssueReceipt()}
+                    style={{
+                      padding: "12px 32px",
+                      backgroundColor: "#2563eb",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    발급하기
+                  </button>
+                  <Button onClick={handleDownloadPdf} variant="ghost">미리보기 PDF</Button>
+                </div>
                 <Button onClick={handleShare} variant="soft">카카오톡 공유</Button>
               </div>
             </div>
@@ -3671,8 +3894,13 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                               className="receipt-form-input finance-nav-btn"
                               inputMode="numeric"
                               maxLength={7}
-                              value={rn.last}
-                              onChange={e => setBatchResidentNumbers(prev => ({ ...prev, [d.id]: { ...(prev[d.id] ?? { first: "", last: "" }), last: e.target.value.replace(/\D/g, "").slice(0, 7) } }))}
+                              autoComplete="off"
+                              value={residentLastPartDisplay(rn.last)}
+                              onChange={e => {
+                                const prev = rn.last;
+                                const next = applyResidentLastPartInput(prev, e.target.value);
+                                setBatchResidentNumbers(p => ({ ...p, [d.id]: { ...(p[d.id] ?? { first: "", last: "" }), last: next } }));
+                              }}
                               placeholder="뒷7"
                               style={{ width: mob ? 64 : 72, height: mob ? 28 : 36, padding: mob ? "0 6px" : "0 8px", fontSize: mob ? 11 : 13, border: `1px solid ${C.border}`, borderRadius: mob ? 6 : 10, boxSizing: "border-box" }}
                             />
@@ -3831,7 +4059,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                       {bulkFile.slice(0, 50).map((row, i) => (
                         <tr key={i} style={{ borderBottom: `1px solid ${C.borderLight}`, background: donors.some(d => d.name.trim() === row.name) ? "transparent" : "#fafbfc" }}>
                           <td style={{ padding: "6px 8px", fontSize: 11, color: "#555" }}>{row.name}</td>
-                          <td style={{ padding: "6px 8px", fontSize: 11, color: "#555" }}>{row.ssn ? "***-**-*******" : "-"}</td>
+                          <td style={{ padding: "6px 8px", fontSize: 11, color: "#555" }}>{row.ssn.length === 13 ? maskReceiptResidentNumber(row.ssn.slice(0, 6), row.ssn.slice(6, 13)) : row.ssn ? "—" : "-"}</td>
                           <td style={{ padding: "6px 8px", fontSize: 11, color: "#555" }}>{row.address || "-"}</td>
                         </tr>
                       ))}
@@ -3840,7 +4068,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   {bulkFile.length > 50 && <p style={{ padding: 6, margin: 0, fontSize: 10, color: "#999" }}>외 {bulkFile.length - 50}명</p>}
                 </div>
                 {!bulkProgress.done && bulkProgress.total === 0 && (
-                  <button type="button" disabled={bulkFile.length === 0} onClick={async () => { setBulkProgress({ current: 0, total: bulkFile.length, done: false }); const JSZip = (await import("jszip")).default; const { saveAs } = await import("file-saver"); const zip = new JSZip(); let churchId: string | null = null; try { churchId = getChurchId(); } catch (_) {} let sealBase64: string | null = null; if (churchId && churchSettings?.seal_image_url && supabase) { try { const path = churchSettings.seal_image_url.includes("/") ? churchSettings.seal_image_url : `${churchId}/seal.png`; const { data: sealData } = await supabase.storage.from("church-seals").download(path); if (sealData) { sealBase64 = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(sealData); }); } } catch (_) {} } for (let i = 0; i < bulkFile.length; i++) { const row = bulkFile[i]; const donor = donors.find(d => d.name.trim() === row.name); if (!donor || row.ssn.length !== 13) continue; const list = offerings.filter(o => o.donorId === donor.id && o.date.startsWith(String(year))); const total = list.reduce((s, o) => s + o.amount, 0); if (total === 0) continue; setBulkProgress({ current: i + 1, total: bulkFile.length, done: false }); await new Promise(r => setTimeout(r, 50)); const { jsPDF } = await import("jspdf"); const { registerKoreanFont } = await import("@/utils/fontLoader"); const pdf = new jsPDF({ unit: "mm", format: "a4" }); await registerKoreanFont(pdf); pdf.setFont("NanumGothic", "normal"); pdf.setFontSize(16); pdf.text("기부금 영수증", 105, 20, { align: "center" }); pdf.setFontSize(10); pdf.text(`기부자: ${donor.name}  주민등록번호: ${maskReceiptResidentNumber(row.ssn.slice(0, 6), row.ssn.slice(6, 13))}  주소: ${row.address || "-"}`, 20, 35); const receiptNum = `DR-${year}-${String(i + 1).padStart(5, "0")}`; pdf.text(`단체: ${cfg.churchName}  총액: ₩${total.toLocaleString("ko-KR")}  귀속연도: ${year}`, 20, 42); pdf.text(`발급일: ${new Date().toISOString().slice(0, 10)}  발급번호: ${receiptNum}`, 20, 49); if (sealBase64) pdf.addImage(sealBase64, "PNG", 150, 85, 25, 25); const blob = pdf.output("blob"); zip.file(`기부금영수증_${donor.name}_${year}.pdf`, blob); if (churchId && supabase) { try { const { data: genNum } = await supabase.rpc("generate_receipt_number", { p_church_id: churchId, p_tax_year: year }); const details = list.reduce<{ category: string; amount: number }[]>((acc, o) => { const cat = DEFAULT_CATEGORIES.find(c => c.id === o.categoryId); const name = cat?.name ?? o.categoryId; const existing = acc.find(x => x.category === name); if (existing) existing.amount += o.amount; else acc.push({ category: name, amount: o.amount }); return acc; }, []); await supabase.from("donation_receipts").insert({ church_id: churchId, member_id: donor.id, member_name: donor.name, receipt_number: genNum ?? receiptNum, tax_year: year, issue_date: new Date().toISOString().slice(0, 10), total_amount: total, donation_details: details, church_name: cfg.churchName, church_address: cfg.churchAddress || null, church_representative: cfg.representativeName || null }); await insertDonationReceiptLog(supabase, churchId, { donorName: donor.name, residentMasked: maskReceiptResidentNumber(row.ssn.slice(0, 6), row.ssn.slice(6, 13)), donationAmount: total, donationDate: lastDonationDateInYearForDonor(offerings, donor.id, String(year)), issuedDate: new Date().toISOString().slice(0, 10), receiptYear: String(year), channelNote: "일괄 ZIP PDF" }); } catch (_) { /* ignore */ } } } setBulkProgress({ current: bulkFile.length, total: bulkFile.length, done: true }); const blob = await zip.generateAsync({ type: "blob" }); saveAs(blob, `기부금영수증_일괄_${year}.zip`); setBulkFile([]); setBulkMatched({}); }} style={{ height: 32, padding: "0 16px", borderRadius: 6, border: "none", background: C.accent, color: "#fff", fontWeight: 600, fontSize: 11, cursor: "pointer" }}>일괄 PDF 생성 (ZIP)</button>
+                  <button type="button" disabled={bulkFile.length === 0} onClick={async () => { setBulkProgress({ current: 0, total: bulkFile.length, done: false }); const JSZip = (await import("jszip")).default; const { saveAs } = await import("file-saver"); const zip = new JSZip(); let churchId: string | null = null; try { churchId = getChurchId(); } catch (_) {} let sealBase64: string | null = null; if (churchId && churchSettings?.seal_image_url && supabase) { try { const path = churchSettings.seal_image_url.includes("/") ? churchSettings.seal_image_url : `${churchId}/seal.png`; const { data: sealData } = await supabase.storage.from("church-seals").download(path); if (sealData) { sealBase64 = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(sealData); }); } } catch (_) {} } for (let i = 0; i < bulkFile.length; i++) { const row = bulkFile[i]; const donor = donors.find(d => d.name.trim() === row.name); if (!donor || row.ssn.length !== 13) continue; const list = offerings.filter(o => o.donorId === donor.id && o.date.startsWith(String(year))); const total = list.reduce((s, o) => s + o.amount, 0); if (total === 0) continue; setBulkProgress({ current: i + 1, total: bulkFile.length, done: false }); await new Promise(r => setTimeout(r, 50)); const { jsPDF } = await import("jspdf"); const { registerKoreanFont } = await import("@/utils/fontLoader"); const pdf = new jsPDF({ unit: "mm", format: "a4" }); await registerKoreanFont(pdf); pdf.setFont("NanumGothic", "normal"); pdf.setFontSize(16); pdf.text("기부금 영수증", 105, 20, { align: "center" }); pdf.setFontSize(10); pdf.text(`기부자: ${donor.name}  주민등록번호: ${maskReceiptResidentNumber(row.ssn.slice(0, 6), row.ssn.slice(6, 13))}  주소: ${row.address || "-"}`, 20, 35); const receiptNum = `DR-${year}-${String(i + 1).padStart(5, "0")}`; pdf.text(`단체: ${cfg.churchName}  총액: ₩${total.toLocaleString("ko-KR")}  귀속연도: ${year}`, 20, 42); pdf.text(`발급일: ${new Date().toISOString().slice(0, 10)}  발급번호: ${receiptNum}`, 20, 49); if (sealBase64) pdf.addImage(sealBase64, "PNG", 150, 85, 25, 25); const blob = pdf.output("blob"); zip.file(`기부금영수증_${donor.name}_${year}.pdf`, blob); if (churchId && supabase) { try { const details = list.reduce<{ category: string; amount: number }[]>((acc, o) => { const cat = DEFAULT_CATEGORIES.find(c => c.id === o.categoryId); const name = cat?.name ?? o.categoryId; const existing = acc.find(x => x.category === name); if (existing) existing.amount += o.amount; else acc.push({ category: name, amount: o.amount }); return acc; }, []); await persistDonationReceiptRow(supabase, undefined, { churchId, donor, taxYear: year, total, offerings: list, cfg: { churchName: cfg.churchName, churchAddress: cfg.churchAddress || null, representativeName: cfg.representativeName || null }, residentMasked: maskReceiptResidentNumber(row.ssn.slice(0, 6), row.ssn.slice(6, 13)), memo: "일괄 ZIP PDF" }); await insertDonationReceiptLog(supabase, churchId, { donorName: donor.name, residentMasked: maskReceiptResidentNumber(row.ssn.slice(0, 6), row.ssn.slice(6, 13)), donationAmount: total, donationDate: lastDonationDateInYearForDonor(offerings, donor.id, String(year)), issuedDate: new Date().toISOString().slice(0, 10), receiptYear: String(year), channelNote: "일괄 ZIP PDF" }); } catch (_) { /* ignore */ } } } setBulkProgress({ current: bulkFile.length, total: bulkFile.length, done: true }); const blob = await zip.generateAsync({ type: "blob" }); saveAs(blob, `기부금영수증_일괄_${year}.zip`); setBulkFile([]); setBulkMatched({}); }} style={{ height: 32, padding: "0 16px", borderRadius: 6, border: "none", background: C.accent, color: "#fff", fontWeight: 600, fontSize: 11, cursor: "pointer" }}>일괄 PDF 생성 (ZIP)</button>
                 )}
                 {bulkProgress.total > 0 && !bulkProgress.done && <p style={{ margin: 0, fontSize: 11, color: "#6b7b9e" }}>처리 중... {bulkProgress.current}/{bulkProgress.total}</p>}
                 {bulkProgress.done && <p style={{ margin: 0, fontSize: 11, color: "#555" }}>완료. ZIP이 다운로드되었습니다. 엑셀 데이터는 폐기되었습니다.</p>}
@@ -3857,7 +4085,48 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
             </select>
             <input type="text" className="receipt-form-input finance-nav-btn" value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="교인명 검색" style={{ height: mob ? 32 : 40, padding: mob ? "0 10px" : "0 14px", borderRadius: mob ? 6 : 10, border: `1px solid ${C.border}`, width: mob ? 160 : 220, fontSize: mob ? 12 : 14, boxSizing: "border-box" }} />
-            <button type="button" className="finance-nav-btn" onClick={async () => { if (!supabase) return; const cid = getChurchId(); const { data } = await supabase.from("donation_receipts").select("id, receipt_number, member_name, tax_year, total_amount, issue_date, status").eq("church_id", cid).eq("tax_year", historyYearFilter).order("created_at", { ascending: false }); setReceiptHistory(data ?? []); }} style={{ height: mob ? 32 : 40, padding: mob ? "0 14px" : "0 20px", borderRadius: mob ? 6 : 10, border: "none", background: C.navy, color: "#fff", fontWeight: 600, fontSize: mob ? 11 : 14, cursor: "pointer" }}>조회</button>
+            <button
+              type="button"
+              className="finance-nav-btn"
+              onClick={async () => {
+                console.log("[donation_receipts] 조회 버튼 클릭", { historyYearFilter });
+                if (!supabase) {
+                  toast?.("Supabase가 연결되지 않았습니다.", "warn");
+                  return;
+                }
+                let cid: string;
+                try {
+                  cid = getChurchId();
+                } catch {
+                  toast?.("교회 ID를 확인할 수 없습니다.", "warn");
+                  return;
+                }
+                const taxYear = Number(historyYearFilter);
+                console.log("[donation_receipts] 조회 조건", { church_id: cid, tax_year: taxYear, taxYearRaw: historyYearFilter });
+                const { data, error } = await supabase
+                  .from("donation_receipts")
+                  .select("id, receipt_number, member_name, tax_year, total_amount, issue_date, status, resident_number_masked, memo, created_at")
+                  .eq("church_id", cid)
+                  .eq("tax_year", taxYear)
+                  .order("created_at", { ascending: false });
+                console.log("[donation_receipts] 조회 결과", { rowCount: data?.length ?? 0, error: error ?? null, data });
+                if (error) {
+                  console.warn("[donation_receipts] select", error);
+                  setReceiptHistoryFetchError(error.message);
+                  setReceiptHistoryEmptyAfterFetch(false);
+                  toast?.(`발급 이력 조회 실패: ${error.message}`, "warn");
+                  setReceiptHistory([]);
+                  return;
+                }
+                setReceiptHistoryFetchError(null);
+                const rows = data ?? [];
+                setReceiptHistoryEmptyAfterFetch(rows.length === 0);
+                setReceiptHistory(rows);
+              }}
+              style={{ height: mob ? 32 : 40, padding: mob ? "0 14px" : "0 20px", borderRadius: mob ? 6 : 10, border: "none", background: C.navy, color: "#fff", fontWeight: 600, fontSize: mob ? 11 : 14, cursor: "pointer" }}
+            >
+              조회
+            </button>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -3865,9 +4134,11 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 <tr>
                   <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>발급번호</th>
                   <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>교인명</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>주민번호(마스킹)</th>
                   <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>귀속연도</th>
                   <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>총액</th>
                   <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>발급일</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>비고</th>
                   <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>상태</th>
                   <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>액션</th>
                 </tr>
@@ -3877,9 +4148,11 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   <tr key={r.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
                     <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 11 : 14, color: "#555" }}>{r.receipt_number}</td>
                     <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 11 : 14, color: "#555" }}>{r.member_name}</td>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 10 : 13, color: "#555" }}>{r.resident_number_masked ?? "—"}</td>
                     <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 11 : 14, color: "#555" }}>{r.tax_year}년</td>
                     <td style={{ padding: mob ? "6px 8px" : "12px 14px", textAlign: "right", fontSize: mob ? 11 : 14, fontWeight: 600, color: C.navy }}>₩{r.total_amount.toLocaleString("ko-KR")}</td>
-                    <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 10 : 13, color: "#999" }}>{r.issue_date}</td>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 10 : 13, color: "#999" }}>{String(r.issue_date).slice(0, 10)}</td>
+                    <td style={{ padding: mob ? "6px 8px" : "12px 14px", fontSize: mob ? 10 : 13, color: "#555" }}>{r.memo ?? "—"}</td>
                     <td style={{ padding: mob ? "6px 8px" : "12px 14px" }}><span style={{ padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, fontSize: mob ? 10 : 12, fontWeight: 600, background: "#f0f2f5", color: "#555" }}>{r.status}</span></td>
                     <td style={{ padding: mob ? "6px 8px" : "12px 14px" }}>
                       {r.status === "발급완료" && (
@@ -3894,7 +4167,17 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               </tbody>
             </table>
           </div>
-          {receiptHistory.length === 0 && <p style={{ margin: "12px 0 0", fontSize: mob ? 11 : 14, color: "#999", lineHeight: mob ? 1.4 : 1.6 }}>발급 이력을 조회하려면 위에서 연도를 선택한 뒤 [조회]를 누르세요. churches 테이블과 donation_receipts 테이블이 있어야 합니다.</p>}
+          {receiptHistoryFetchError && (
+            <p style={{ margin: "12px 0 0", fontSize: mob ? 11 : 14, color: "#c00", lineHeight: mob ? 1.4 : 1.6 }}>
+              발급 이력 조회에 실패했습니다. churches 테이블과 donation_receipts 테이블·RLS·컬럼을 확인해 주세요. ({receiptHistoryFetchError})
+            </p>
+          )}
+          {!receiptHistoryFetchError && receiptHistoryEmptyAfterFetch && (
+            <p style={{ margin: "12px 0 0", fontSize: mob ? 11 : 14, color: "#999", lineHeight: mob ? 1.4 : 1.6 }}>해당 연도에 발급된 영수증이 없습니다.</p>
+          )}
+          {!receiptHistoryFetchError && !receiptHistoryEmptyAfterFetch && receiptHistory.length === 0 && (
+            <p style={{ margin: "12px 0 0", fontSize: mob ? 11 : 14, color: "#999", lineHeight: mob ? 1.4 : 1.6 }}>귀속 연도를 선택한 뒤 [조회]를 눌러 발급 이력을 불러오세요.</p>
+          )}
           {reprintModal && (
             <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setReprintModal(null)}>
               <div style={{ background: C.card, borderRadius: 16, padding: 24, maxWidth: 400, width: "100%" }} onClick={e => e.stopPropagation()}>
@@ -3903,9 +4186,10 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 <p style={{ margin: "0 0 12px", fontSize: 11, color: "#999" }}>주민등록번호는 서버에 저장되지 않으며, PDF 생성 후 즉시 폐기됩니다.</p>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
                   <input
-                    type="password"
+                    type="text"
                     inputMode="numeric"
                     maxLength={6}
+                    autoComplete="off"
                     value={reprintModal.ssnFirst}
                     onChange={e => {
                       const val = e.target.value.replace(/\D/g, "").slice(0, 6);
@@ -3918,18 +4202,34 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   <span>-</span>
                   <input
                     ref={reprintSsnLastInputRef}
-                    type="password"
+                    type="text"
                     inputMode="numeric"
                     maxLength={7}
-                    value={reprintModal.ssnLast}
-                    onChange={e => setReprintModal(m => m ? { ...m, ssnLast: e.target.value.replace(/\D/g, "").slice(0, 7) } : null)}
+                    autoComplete="off"
+                    value={residentLastPartDisplay(reprintModal.ssnLast)}
+                    onChange={e => {
+                      const v = e.target.value;
+                      setReprintModal(m => (m ? { ...m, ssnLast: applyResidentLastPartInput(m.ssnLast, v) } : null));
+                    }}
                     placeholder="뒷 7자리"
                     style={{ width: 90, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}` }}
                   />
                 </div>
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                   <button type="button" onClick={() => setReprintModal(null)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer" }}>닫기</button>
-                  <button type="button" disabled={reprintModal.ssnFirst.length !== 6 || reprintModal.ssnLast.length !== 7} onClick={handleReprintPdf} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.accent, color: "#fff", fontWeight: 600, cursor: "pointer" }}>PDF 다운로드</button>
+                  <button
+                    type="button"
+                    disabled={
+                      reprintModal.ssnFirst.length !== 6 ||
+                      reprintModal.ssnLast.length !== 7 ||
+                      !/^\d+$/.test(reprintModal.ssnFirst) ||
+                      !/^\d+$/.test(reprintModal.ssnLast)
+                    }
+                    onClick={handleReprintPdf}
+                    style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.accent, color: "#fff", fontWeight: 600, cursor: "pointer" }}
+                  >
+                    PDF 다운로드
+                  </button>
                 </div>
               </div>
             </div>
