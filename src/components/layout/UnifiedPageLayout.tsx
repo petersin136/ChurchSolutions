@@ -91,7 +91,7 @@ function getSidebarBg(accent: string): string {
   return darkMap[normalized] || "#1a2332";
 }
 
-function useIsMobile(bp = 768) {
+function useIsMobile(bp = 1024) {
   const [m, setM] = useState(false);
   useEffect(() => {
     const c = () => setM(window.innerWidth <= bp);

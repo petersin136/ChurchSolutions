@@ -491,8 +491,8 @@
   }
 }
 
-/* ========== 모바일 전용 (767px 이하). 데스크탑 레이아웃 변경 금지 ========== */
-@media (max-width: 767px) {
+/* ========== 모바일·태블릿 (1024px 이하). 데스크톱(1025px+) 레이아웃 변경 금지 ========== */
+@media (max-width: 1024px) {
   html { -webkit-text-size-adjust: 100%; }
   body {
     -webkit-text-size-adjust: 100%;
@@ -741,7 +741,7 @@
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1025px) {
   .modal-bg { align-items: center; }
   .modal {
     width: 100%;
@@ -756,7 +756,7 @@
   .modal-body { min-height: 0; }
   .modal-foot .btn { width: auto; min-height: auto; }
 }
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .stats-grid { grid-template-columns: repeat(2,1fr); }
   .fg-row { grid-template-columns: 1fr; }
 }
@@ -772,7 +772,7 @@
   .card { box-shadow: none; border: 1px solid #ddd; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   select:not(.compact-select),
   select.select-modern:not(.compact-select),
   .select-modern:not(.compact-select) {
@@ -796,7 +796,7 @@
     background-image: none !important;
     background-color: #fff !important;
   }
-  /* ≤768px에서도 부서 이동 select가 40px 규칙에 잡히지 않도록 이중 고정 */
+  /* ≤1024px에서도 부서 이동 select가 40px 규칙에 잡히지 않도록 이중 고정 */
   #page-school select.school-dept-transfer-control.compact-select {
     height: 32px !important;
     min-height: 32px !important;
@@ -834,7 +834,7 @@
 }
 
 /* ── Mobile compact utilities (목양·향후 재사용) ── */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .mob-card { padding: 8px 10px !important; border-radius: 8px !important; }
   .mob-card-sm { padding: 6px 8px !important; border-radius: 6px !important; }
   .mob-input { height: 32px !important; font-size: 12px !important; border-radius: 8px !important; }
