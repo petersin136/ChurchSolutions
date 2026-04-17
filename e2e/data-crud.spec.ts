@@ -172,50 +172,53 @@ test('성도 등록 후 목록에 표시된다 (DB 저장 확인)', async ({ pag
   await clickTab(page, '목양');
   await page.waitForTimeout(2000);
 
-  // 성도 관리 서브탭 클릭
   const membersTab = page.locator('text=성도 관리').first();
   if (await membersTab.isVisible({ timeout: 3000 }).catch(() => false)) {
     await membersTab.click();
     await page.waitForTimeout(2000);
   }
 
-  // "새 교인 등록" 버튼 클릭
+  // "새 교인 등록" 버튼
   const addBtn = page.locator('button:has-text("새 교인 등록")').first();
   await addBtn.waitFor({ state: 'visible', timeout: 10000 });
   await addBtn.click();
   console.log('  ✅ 새 교인 등록 모달 열기');
   await page.waitForTimeout(2000);
 
-  // 모달 안에서 이름 입력 (필수 필드)
+  // 이름 입력
   const testName = `테스트교인${Date.now().toString().slice(-4)}`;
   const nameInput = page.locator('input[placeholder="이름"]').first();
   if (await nameInput.isVisible({ timeout: 5000 }).catch(() => false)) {
     await nameInput.fill(testName);
-    console.log(`  ✏️ 이름 입력: ${testName}`);
+    console.log(`  ✏️ 이름: ${testName}`);
   }
 
-  // 성별 선택 (필수일 수 있음)
-  const genderSelect = page.locator('select').filter({ has: page.locator('option:has-text("남")') }).first();
-  if (await genderSelect.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await genderSelect.selectOption({ label: '남' });
-    console.log('  ✏️ 성별: 남');
-  }
+  // 성별은 건너뜀 (필수 아님) – 바로 저장
+  await page.waitForTimeout(500);
 
-  // 저장 버튼 클릭
-  const saveBtn = page.locator('button:has-text("저장")').last();
-  if (await saveBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await saveBtn.click();
+  // 저장 버튼 – 모달 하단의 마지막 "저장"
+  const saveBtns = page.locator('button:has-text("저장"):visible');
+  const saveCount = await saveBtns.count();
+  console.log(`  📋 "저장" 버튼 수: ${saveCount}`);
+  if (saveCount > 0) {
+    await saveBtns.last().click();
     console.log('  💾 저장 클릭');
     await page.waitForTimeout(3000);
   }
 
-  // 새로고침 후 목록에서 확인
+  // 에러 토스트 확인 (필수 필드 누락 시)
+  const errorToast = page.locator('text=이름').first();
+  const bodyAfterSave = await page.locator('body').innerText();
+  if (bodyAfterSave.includes('필수') || bodyAfterSave.includes('입력')) {
+    console.log('  ⚠️ 필수 필드 에러 감지 – 이름만으로 저장 시도');
+  }
+
+  // 새로고침 후 확인
   await page.reload();
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(5000);
   await clickTab(page, '목양');
   await page.waitForTimeout(2000);
-
   const membersTab2 = page.locator('text=성도 관리').first();
   if (await membersTab2.isVisible({ timeout: 3000 }).catch(() => false)) {
     await membersTab2.click();
@@ -224,7 +227,7 @@ test('성도 등록 후 목록에 표시된다 (DB 저장 확인)', async ({ pag
 
   const body = await page.locator('body').innerText();
   const found = body.includes(testName);
-  console.log(`  🔍 목록에서 "${testName}" 발견: ${found}`);
+  console.log(`  🔍 "${testName}" 발견: ${found}`);
   expect(found).toBeTruthy();
   console.log('✅ 성도 등록 DB 저장 확인');
 });
@@ -234,43 +237,74 @@ test('심방 기록 등록 후 목록에 표시된다 (DB 저장 확인)', async
   await clickTab(page, '심방·상담');
   await page.waitForTimeout(3000);
 
-  // "심방 등록" 버튼 클릭 (setShowAddModal(true))
+  // "심방 기록" 서브탭 클릭 (activeSub → "visits")
+  const visitSubTab = page.locator('text=심방 기록').first();
+  if (await visitSubTab.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await visitSubTab.click();
+    console.log('  📂 심방 기록 서브탭 클릭');
+    await page.waitForTimeout(2000);
+  } else {
+    console.log('  ⚠️ 심방 기록 서브탭 안 보임, 현재 화면에서 진행');
+  }
+
+  // "심방 등록" 버튼 클릭
   const addBtn = page.locator('button:has-text("심방 등록")').first();
   if (await addBtn.isVisible({ timeout: 10000 }).catch(() => false)) {
     await addBtn.click();
     console.log('  ✅ 심방 등록 모달 열기');
     await page.waitForTimeout(2000);
   } else {
-    console.log('  ❌ 심방 등록 버튼 없음');
+    // 헤더 액션 버튼으로 시도 (UnifiedPageLayout 상단)
+    const headerBtn = page.locator('button').filter({ hasText: /심방|등록/ }).first();
+    if (await headerBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await headerBtn.click();
+      console.log('  ✅ 헤더 버튼으로 심방 모달 열기');
+      await page.waitForTimeout(2000);
+    } else {
+      console.log('  ❌ 심방 등록 버튼을 찾을 수 없음');
+    }
   }
 
-  // 성도 선택 (FSelect – 실제로는 select 태그)
-  const memberSelect = page.locator('select').filter({ has: page.locator('option:has-text("선택")') }).first();
-  if (await memberSelect.isVisible({ timeout: 5000 }).catch(() => false)) {
-    // 두 번째 옵션 (첫 번째 실제 성도) 선택
-    const options = memberSelect.locator('option');
-    const count = await options.count();
-    if (count > 1) {
-      const secondOption = await options.nth(1).getAttribute('value');
-      if (secondOption) {
-        await memberSelect.selectOption(secondOption);
+  // 성도 선택 (FSelect → 실제로 <select> 또는 ModernSelect)
+  // FSelect가 네이티브 select인지 먼저 확인
+  const nativeSelect = page.locator('select:visible').first();
+  if (await nativeSelect.isVisible({ timeout: 3000 }).catch(() => false)) {
+    const options = nativeSelect.locator('option');
+    const optCount = await options.count();
+    console.log(`  📋 select 옵션 수: ${optCount}`);
+    if (optCount > 1) {
+      const val = await options.nth(1).getAttribute('value');
+      if (val) {
+        await nativeSelect.selectOption(val);
         const text = await options.nth(1).textContent();
         console.log(`  👤 성도 선택: ${text?.trim()}`);
       }
     }
     await page.waitForTimeout(1000);
+  } else {
+    // ModernSelect일 수 있음 – "선택" 버튼 클릭 후 첫 option
+    const trigger = page.locator('button:has-text("선택"):visible').first();
+    if (await trigger.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await trigger.click();
+      await page.waitForTimeout(500);
+      const opt = page.locator('[role="option"]').first();
+      if (await opt.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await opt.click();
+        console.log('  👤 ModernSelect로 성도 선택');
+      }
+    }
   }
 
   // 내용 입력
   const testMemo = `테스트심방${Date.now().toString().slice(-4)}`;
-  const contentArea = page.locator('textarea[placeholder*="심방 내용"], textarea:visible').first();
+  const contentArea = page.locator('textarea:visible').first();
   if (await contentArea.isVisible({ timeout: 5000 }).catch(() => false)) {
     await contentArea.fill(testMemo);
-    console.log(`  ✏️ 내용 입력: ${testMemo}`);
+    console.log(`  ✏️ 내용: ${testMemo}`);
   }
 
-  // 저장 클릭
-  const saveBtn = page.locator('button:has-text("저장")').last();
+  // 저장
+  const saveBtn = page.locator('button:has-text("저장"):visible').last();
   if (await saveBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
     await saveBtn.click();
     console.log('  💾 저장 클릭');
@@ -282,11 +316,16 @@ test('심방 기록 등록 후 목록에 표시된다 (DB 저장 확인)', async
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(5000);
   await clickTab(page, '심방·상담');
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(2000);
+  const visitSubTab2 = page.locator('text=심방 기록').first();
+  if (await visitSubTab2.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await visitSubTab2.click();
+    await page.waitForTimeout(2000);
+  }
 
   const body = await page.locator('body').innerText();
   const found = body.includes(testMemo);
-  console.log(`  🔍 목록에서 "${testMemo}" 발견: ${found}`);
+  console.log(`  🔍 "${testMemo}" 발견: ${found}`);
   expect(found).toBeTruthy();
   console.log('✅ 심방 기록 DB 저장 확인');
 });

@@ -3609,6 +3609,106 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               }}
             >
               <div
+                style={{
+                  width: "100%",
+                  maxWidth: "210mm",
+                  margin: "0 auto",
+                  marginBottom: 20,
+                  boxSizing: "border-box",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  position: "relative",
+                  zIndex: 2,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => void handleIssueReceipt()}
+                  style={{
+                    width: "100%",
+                    height: 48,
+                    padding: 0,
+                    boxSizing: "border-box",
+                    backgroundColor: "#2563EB",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                  }}
+                >
+                  발급하기
+                </button>
+                <div style={{ display: "flex", gap: 8, width: "100%", boxSizing: "border-box" }}>
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdf}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      height: 40,
+                      padding: "0 8px",
+                      boxSizing: "border-box",
+                      background: "#fff",
+                      color: "#1B2A4A",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                    }}
+                  >
+                    미리보기 PDF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveImage}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      height: 40,
+                      padding: "0 8px",
+                      boxSizing: "border-box",
+                      background: "#fff",
+                      color: "#1B2A4A",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                    }}
+                  >
+                    이미지 저장
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      height: 40,
+                      padding: "0 8px",
+                      boxSizing: "border-box",
+                      background: "#fff",
+                      color: "#1B2A4A",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                    }}
+                  >
+                    카카오톡 공유
+                  </button>
+                </div>
+              </div>
+              <div
                 key={`receipt-${receiptDonor.id}-${year}`}
                 id="receipt-card"
                 className="receipt-wrapper-r"
@@ -3811,29 +3911,6 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     <div style={{ fontSize: 12, color: "#666", textAlign: "center", marginTop: 20, borderTop: "1px solid #eee", paddingTop: 10 }}>- 2 / 2 -</div>
                   </div>
                 </div>
-              </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", alignItems: "center", marginTop: 16, position: "relative", zIndex: 2 }}>
-                <Button onClick={handleSaveImage} variant="accent">이미지 저장</Button>
-                <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "24px" }}>
-                  <button
-                    type="button"
-                    onClick={() => void handleIssueReceipt()}
-                    style={{
-                      padding: "12px 32px",
-                      backgroundColor: "#2563eb",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    발급하기
-                  </button>
-                  <Button onClick={handleDownloadPdf} variant="ghost">미리보기 PDF</Button>
-                </div>
-                <Button onClick={handleShare} variant="soft">카카오톡 공유</Button>
               </div>
             </div>
           )}
