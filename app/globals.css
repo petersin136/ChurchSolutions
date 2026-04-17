@@ -124,25 +124,32 @@
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 0.5px solid var(--border);
   }
-  .tab-bar {
+  nav.tab-bar {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    width: 100%;
+    max-width: 100%;
     height: 64px;
     padding-bottom: env(safe-area-inset-bottom, 0);
-    display: flex; align-items: stretch;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-evenly;
     background: #fff;
     border-top: 1px solid #e5e7eb;
     box-sizing: border-box;
   }
-  .tab-item {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  nav.tab-bar > button.tab-item {
+    flex: 1 1 0%;
+    min-width: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
     font-size: 11px; font-weight: 500; color: #9ca3af;
     background: none; border: none; cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: color 0.15s;
   }
-  .tab-item.active { color: #1b2a4a; font-weight: 600; }
-  .tab-item .tab-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
-  .tab-item .tab-label { line-height: 1; }
+  nav.tab-bar > button.tab-item.active { color: #1b2a4a; font-weight: 600; }
+  nav.tab-bar > button.tab-item .tab-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
+  nav.tab-bar > button.tab-item .tab-label { line-height: 1; text-align: center; width: 100%; }
   .page { display: none; max-width: 960px; margin: 0 auto; padding: 16px; }
   .page.active { display: block; }
   #page-finance.page { max-width: 100%; padding: 0; margin: 0; --finance-accent: #1b2a4a; }
@@ -525,26 +532,29 @@
     line-height: 1.2 !important;
     -webkit-text-size-adjust: 100% !important;
   }
-  .tab-bar {
-    overflow-x: auto;
+  nav.tab-bar {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     overflow-y: hidden;
     flex-wrap: nowrap;
-    justify-content: flex-start;
+    flex-direction: row;
+    justify-content: space-evenly;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: max(env(safe-area-inset-bottom, 0), 8px);
     height: auto;
     min-height: 64px;
   }
-  .tab-bar::-webkit-scrollbar { display: none; }
-  .tab-item {
-    flex: 0 0 auto;
-    min-width: 72px;
+  nav.tab-bar::-webkit-scrollbar { display: none; }
+  nav.tab-bar > button.tab-item {
+    flex: 1 1 0%;
+    min-width: 0;
     font-size: 10px;
-    padding: 8px 6px;
+    padding: 8px 4px;
   }
-  .tab-item .tab-icon { flex-shrink: 0; }
-  .tab-item .tab-label {
+  nav.tab-bar > button.tab-item .tab-icon { flex-shrink: 0; }
+  nav.tab-bar > button.tab-item .tab-label {
     font-size: 10px;
     line-height: 1.2;
     white-space: nowrap;
@@ -552,6 +562,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+    text-align: center;
+    width: 100%;
   }
   .mobile-sub-tabs::-webkit-scrollbar { display: none; }
   .modal-bg {
@@ -766,7 +778,7 @@
   .week-cell { width: 18px; height: 18px; font-size: 8px; }
 }
 @media print {
-  .app-header, .tab-bar, .btn, .modal-bg, .search-wrap, .segment { display: none !important; }
+  .app-header, nav.tab-bar, .btn, .modal-bg, .search-wrap, .segment { display: none !important; }
   body { background: #fff; padding: 0; }
   .page { display: block !important; }
   .card { box-shadow: none; border: 1px solid #ddd; }
@@ -846,4 +858,19 @@
   .mob-text-base { font-size: 13px !important; }
   .mob-gap-sm { gap: 6px !important; }
   .mob-gap-xs { gap: 4px !important; }
+}
+
+/* 앱 하단 탭바 — 전체 너비·균등 열 (Tailwind @layer utilities보다 우선, 탭바만) */
+nav.tab-bar {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-evenly;
+  box-sizing: border-box;
+}
+nav.tab-bar > button.tab-item {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
 }
