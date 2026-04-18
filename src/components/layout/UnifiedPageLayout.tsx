@@ -32,7 +32,7 @@ const LAYOUT = {
   mainHeaderPaddingMob: "8px 12px",
   mainContentPadding: 24,
   mainContentPaddingMob: 10,
-  mainBg: "#eaedf7",
+  mainBg: "transparent",
   headerTitleFontSize: 24,
   headerTitleFontSizeMob: 18,
   headerDescFontSize: 14,
@@ -205,15 +205,17 @@ export function UnifiedPageLayout({
       style={{
         fontFamily: "'Inter','Noto Sans KR',-apple-system,sans-serif",
         background: LAYOUT.mainBg,
-        position: "fixed",
-        top: 56,
-        left: 6,
-        right: 6,
-        bottom: 6,
-        borderRadius: 16,
-        border: "1px solid #cdd4ea",
+        position: "relative" as const,
+        top: "auto",
+        left: "auto",
+        right: "auto",
+        bottom: "auto",
+        width: "100%",
+        height: "100%",
+        borderRadius: 0,
+        border: "none",
+        boxShadow: "none",
         display: "flex",
-        boxShadow: "0 2px 12px rgba(140,150,190,0.08)",
         color: "#1f2937",
         overflow: "hidden",
       }}
@@ -358,9 +360,9 @@ export function UnifiedPageLayout({
                   transition: SIDEBAR_MENU_ITEM.transition,
                   borderRadius: 8,
                   border: "none",
-                  borderLeft: isActive ? "3px solid #2563eb" : "3px solid transparent",
-                  backgroundColor: isActive ? "#dbe4ff" : "transparent",
-                  color: isActive ? "#1e40af" : "#4b5563",
+                  borderLeft: isActive ? "2px solid #2563eb" : "2px solid transparent",
+                  backgroundColor: isActive ? "rgba(37,99,235,0.06)" : "transparent",
+                  color: isActive ? "#2563eb" : "#64748b",
                   cursor: "pointer" as const,
                   fontFamily: "inherit",
                   textAlign: "left" as const,
@@ -377,7 +379,7 @@ export function UnifiedPageLayout({
                     style={navBtnStyle}
                     onMouseEnter={(e) => {
                       if (mob || isActive) return;
-                      e.currentTarget.style.backgroundColor = "#e8edff";
+                      e.currentTarget.style.backgroundColor = "rgba(37,99,235,0.04)";
                     }}
                     onMouseLeave={(e) => {
                       if (mob || isActive) return;
@@ -387,7 +389,7 @@ export function UnifiedPageLayout({
                     <Icon
                       size={SIDEBAR_MENU_ITEM.iconSize}
                       strokeWidth={1.5}
-                      color={isActive ? "#2563eb" : "#6b7280"}
+                      color={isActive ? "#2563eb" : "#94a3b8"}
                       style={{
                         width: SIDEBAR_MENU_ITEM.iconSize,
                         height: SIDEBAR_MENU_ITEM.iconSize,
@@ -495,7 +497,7 @@ export function UnifiedPageLayout({
                 onClick={() => setSideOpen(true)}
                 className="min-w-[36px] min-h-[36px] w-9 h-9 flex items-center justify-center flex-shrink-0 border-0 rounded-lg cursor-pointer"
                 style={{
-                  background: LAYOUT.mainBg,
+                  background: "#eaedf7",
                   lineHeight: 1,
                   alignSelf: "center",
                 }}
