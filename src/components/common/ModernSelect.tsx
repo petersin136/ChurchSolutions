@@ -6,7 +6,7 @@ import { ChevronDown } from "lucide-react";
 const SURFACE = "#FFFFFF";
 const TEXT = "#1C1C1E";
 const TEXT_MUTED = "#8E8E93";
-const BORDER = "rgba(60,60,67,0.15)";
+const BORDER = "#c7d2e8";
 const BORDER_FOCUS = "#007AFF";
 const BLUE_LIGHT = "#E8F2FF";
 const RADIUS = 8;
@@ -56,7 +56,7 @@ export function ModernSelect({
   const u32 = compact && uniform32 && !uniform30 && !uniform28;
   const u30 = compact && uniform30 && !u32;
   const u28 = compact && uniform28 && !u30 && !u32;
-  const FILTER_BORDER = "#e8ecf1";
+  const FILTER_BORDER = "#c7d0e8";
   const pad = u32 || u30 ? "0 26px 0 8px" : u28 ? "0 22px 0 6px" : compact ? "4px 28px 4px 8px" : "10px 40px 10px 14px";
   const fs = u32 ? 11 : u30 ? 12 : compact ? 11 : 14;
   const br = u32 || u30 || u28 ? 6 : compact ? 4 : RADIUS;
@@ -80,7 +80,7 @@ export function ModernSelect({
   return (
     <div ref={ref} style={{ marginBottom: label ? 16 : 0, position: "relative", ...style }} className={className}>
       {label && (
-        <label htmlFor={id} style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#1b2a4a", marginBottom: 6 }}>
+        <label htmlFor={id} style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#2563eb", marginBottom: 6 }}>
           {label}
         </label>
       )}

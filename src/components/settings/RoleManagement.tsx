@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Role } from "@/types/db";
 
-const NAVY = "#1e3a5f";
+const NAVY = "#1e40af";
 const PERM_KEYS = ["members", "finance", "attendance", "reports", "settings", "donation_receipt"] as const;
 const PERM_LABELS: Record<string, string> = {
   members: "교인관리",

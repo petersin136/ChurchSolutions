@@ -833,7 +833,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(7, 1fr)",
-                    borderBottom: mob ? "1.5px solid #e9ecf0" : "2px solid #e5e7eb",
+                    borderBottom: mob ? "1.5px solid #e9ecf0" : "2px solid #c7d0e8",
                     marginBottom: 0,
                   }}
                 >
@@ -873,7 +873,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         ? "#EF4444"
                         : saturday
                           ? "#3B82F6"
-                          : "#1B2A4A"
+                          : "#2563eb"
                     : !cell.inMonth
                       ? "#d1d5db"
                       : sunday
@@ -929,7 +929,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           height: isTodayCell ? 28 : undefined,
                           minWidth: isTodayCell ? 28 : undefined,
                           borderRadius: isTodayCell ? "50%" : undefined,
-                          background: isTodayCell ? (mob ? "#1B2A4A" : ACCENT) : "transparent",
+                          background: isTodayCell ? (mob ? "#2563eb" : ACCENT) : "transparent",
                           boxSizing: "border-box",
                         }}
                       >
@@ -986,7 +986,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                       marginRight: 4,
                                       cursor: "pointer",
                                       flexShrink: 0,
-                                      accentColor: "#1B2A4A",
+                                      accentColor: "#2563eb",
                                     }}
                                   />
                                 )}
@@ -1197,7 +1197,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       style={{
                         fontSize: 15,
                         fontWeight: 700,
-                        color: "#1B2A4A",
+                        color: "#2563eb",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -1308,7 +1308,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       type="button"
                       onClick={() => openAddEvent(cursorY, cursorM, addEventDayForHeader)}
                       style={{
-                        background: "#1B2A4A",
+                        background: "#2563eb",
                         color: "#fff",
                         border: "none",
                         fontSize: 11,
@@ -1385,7 +1385,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         style={{
                           background: "#fff",
                           color: "#64748b",
-                          border: "1.5px solid #e5e7eb",
+                          border: "1.5px solid #c7d0e8",
                           borderRadius: 8,
                           padding: "6px 12px",
                           fontSize: 12,
@@ -1433,7 +1433,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
                 <div
                   style={{
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid #c7d0e8",
                     borderRadius: 12,
                     overflow: "hidden",
                   }}
@@ -1490,7 +1490,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       style={{
                         fontSize: 20,
                         fontWeight: 700,
-                        color: "#1B2A4A",
+                        color: "#2563eb",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -1633,7 +1633,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         style={{
                           background: "#fff",
                           color: "#64748b",
-                          border: "1.5px solid #e5e7eb",
+                          border: "1.5px solid #c7d0e8",
                           borderRadius: 8,
                           padding: "6px 12px",
                           fontSize: 12,
@@ -1681,7 +1681,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
                 <div
                   style={{
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid #c7d0e8",
                     borderRadius: 12,
                     overflow: "hidden",
                   }}
@@ -1766,7 +1766,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               style={{
                 fontSize: mob ? 15 : 17,
                 fontWeight: 700,
-                color: "#1B2A4A",
+                color: "#2563eb",
                 margin: mob ? "0 0 10px" : "0 0 16px",
               }}
             >
@@ -1791,7 +1791,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       style={{
                         background: isToday ? "#f8f9fc" : "#fff",
                         borderRadius: 16,
-                        border: isToday ? "1.5px solid #1B2A4A" : "1.5px solid #e9ecf0",
+                        border: isToday ? "1.5px solid #2563eb" : "1.5px solid #e9ecf0",
                         padding: "10px 12px",
                         boxShadow: "none",
                       }}
@@ -1808,7 +1808,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           style={{
                             fontSize: 13,
                             fontWeight: 700,
-                            color: isSunday ? "#EF4444" : isSaturday ? "#3B82F6" : "#1B2A4A",
+                            color: isSunday ? "#EF4444" : isSaturday ? "#3B82F6" : "#2563eb",
                           }}
                         >
                           {m + 1}/{day}
@@ -1819,7 +1819,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                             style={{
                               fontSize: 9,
                               fontWeight: 700,
-                              background: "#1B2A4A",
+                              background: "#2563eb",
                               color: "#fff",
                               borderRadius: 6,
                               padding: "2px 6px",
@@ -1882,7 +1882,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                     style={{
                                       width: 14,
                                       height: 14,
-                                      accentColor: "#1B2A4A",
+                                      accentColor: "#2563eb",
                                       flexShrink: 0,
                                       cursor: "pointer",
                                     }}
@@ -2060,7 +2060,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               style={{
                 fontSize: mob ? 15 : 17,
                 fontWeight: 700,
-                color: "#1B2A4A",
+                color: "#2563eb",
                 margin: mob ? "0 0 10px" : "0 0 16px",
               }}
             >
@@ -2082,7 +2082,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 const todayStr = dateKey(todayY, todayM, todayD);
                 const cardBorder = mob
                   ? isActiveMonth
-                    ? "1.5px solid #1B2A4A"
+                    ? "1.5px solid #2563eb"
                     : isHovered
                       ? "1.5px solid #cbd5e1"
                       : "1.5px solid #e9ecf0"
@@ -2090,7 +2090,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     ? "2px solid #4A90D9"
                     : isHovered
                       ? "1.5px solid #4A90D9"
-                      : "1.5px solid #e5e7eb";
+                      : "1.5px solid #c7d0e8";
                 return (
                   <button
                     key={monthNum}
@@ -2141,7 +2141,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         style={{
                           fontSize: mob ? 9 : 14,
                           fontWeight: mob ? 600 : 700,
-                          color: "#1B2A4A",
+                          color: "#2563eb",
                         }}
                       >
                         {monthNum}월
@@ -2615,7 +2615,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   <div
                     style={{
                       fontSize: mob ? 13 : 14,
-                      color: "#1B2A4A",
+                      color: "#2563eb",
                       fontWeight: 600,
                       wordBreak: "break-word",
                       overflowWrap: "break-word",
@@ -2679,7 +2679,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     <div
                       style={{
                         fontSize: mob ? 13 : 14,
-                        color: "#1B2A4A",
+                        color: "#2563eb",
                         fontWeight: 500,
                         wordBreak: "break-word",
                         overflowWrap: "break-word",
@@ -2732,7 +2732,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     <div
                       style={{
                         fontSize: mob ? 13 : 14,
-                        color: "#1B2A4A",
+                        color: "#2563eb",
                         fontWeight: 500,
                         wordBreak: "break-word",
                         overflowWrap: "break-word",
@@ -2798,7 +2798,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       <div
                         style={{
                           fontSize: mob ? 13 : 14,
-                          color: "#1B2A4A",
+                          color: "#2563eb",
                           fontWeight: 500,
                           wordBreak: "break-word",
                           overflowWrap: "break-word",
@@ -2853,7 +2853,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 style={{
                   flex: 1,
                   height: mob ? 44 : 48,
-                  background: "#1B2A4A",
+                  background: "#2563eb",
                   color: "#fff",
                   border: "none",
                   borderRadius: 12,
@@ -3258,7 +3258,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   height: 32,
                   borderRadius: "50%",
                   background: c,
-                  border: deptForm.color === c ? `3px solid ${NAVY}` : "2px solid #e5e7eb",
+                  border: deptForm.color === c ? `3px solid ${NAVY}` : "2px solid #c7d0e8",
                   cursor: "pointer",
                   padding: 0,
                 }}
@@ -3361,7 +3361,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 padding: "12px 14px",
                 marginBottom: 8,
                 borderRadius: 12,
-                border: "1px solid #e5e7eb",
+                border: "1px solid #c7d0e8",
                 background: "#fafafa",
                 cursor: "pointer",
                 fontWeight: 600,
@@ -3410,7 +3410,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 marginBottom: 20,
               }}
             >
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#1B2A4A" }}>부서 색상</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#2563eb" }}>부서 색상</span>
               <button
                 type="button"
                 onClick={() => setShowLegendModal(false)}
@@ -3483,7 +3483,7 @@ function plannerFieldControl(mob: boolean): CSSProperties {
     outline: "none",
     marginBottom: 18,
     background: "#fff",
-    color: "#1B2A4A",
+    color: "#2563eb",
   };
 }
 

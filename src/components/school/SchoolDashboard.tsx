@@ -5,11 +5,11 @@ import type { SchoolDepartment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 
-const NAVY = "#1B2A4A";
+const NAVY = "#2563eb";
 const SUB = "#6b7b9e";
 const MUTED = "#999";
 const TEXT = "#555";
-const BORDER = "#e8ecf1";
+const BORDER = "#c7d0e8";
 const BG = "#fff";
 
 function useIsMobile(bp = 768) {

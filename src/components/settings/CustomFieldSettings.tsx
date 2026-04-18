@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { CustomField } from "@/types/db";
 
-const NAVY = "#1e3a5f";
+const NAVY = "#1e40af";
 const TARGETS = [{ id: "members", label: "교인정보" }, { id: "income", label: "수입" }, { id: "expense", label: "지출" }] as const;
 const FIELD_TYPES: { value: CustomField["field_type"]; label: string }[] = [
   { value: "text", label: "텍스트" },

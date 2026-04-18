@@ -71,12 +71,12 @@ export function ServiceTypeSettings({ serviceTypes, onSave }: ServiceTypeSetting
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-[#1e3a5f]">예배 유형 설정</h3>
+        <h3 className="text-lg font-semibold text-[#1e40af]">예배 유형 설정</h3>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={add}
-            className="px-4 py-2 rounded-xl border border-[#1e3a5f] text-[#1e3a5f] text-sm font-semibold hover:bg-[#1e3a5f]/5"
+            className="px-4 py-2 rounded-xl border border-[#1e40af] text-[#1e40af] text-sm font-semibold hover:bg-[#1e40af]/5"
           >
             + 추가
           </button>
@@ -84,7 +84,7 @@ export function ServiceTypeSettings({ serviceTypes, onSave }: ServiceTypeSetting
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 rounded-xl bg-[#1e3a5f] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-60"
+            className="px-4 py-2 rounded-xl bg-[#1e40af] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-60"
           >
             {saving ? "저장 중..." : "저장"}
           </button>
@@ -95,12 +95,12 @@ export function ServiceTypeSettings({ serviceTypes, onSave }: ServiceTypeSetting
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50/50">
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f] w-8">순서</th>
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">이름</th>
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">요일</th>
-              <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">시간</th>
-              <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">활성</th>
-              <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">액션</th>
+              <th className="text-left py-3 px-4 font-semibold text-[#1e40af] w-8">순서</th>
+              <th className="text-left py-3 px-4 font-semibold text-[#1e40af]">이름</th>
+              <th className="text-left py-3 px-4 font-semibold text-[#1e40af]">요일</th>
+              <th className="text-left py-3 px-4 font-semibold text-[#1e40af]">시간</th>
+              <th className="text-center py-3 px-4 font-semibold text-[#1e40af]">활성</th>
+              <th className="text-center py-3 px-4 font-semibold text-[#1e40af]">액션</th>
             </tr>
           </thead>
           <tbody>

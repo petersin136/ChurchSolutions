@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import type { Organization, OrganizationMember, Member } from "@/types/db";
 
 const ORG_TYPES = ["교구", "구역", "목장", "속", "전도회", "선교회", "부서", "기타"] as const;
-const NAVY = "#1e3a5f";
+const NAVY = "#1e40af";
 
 export interface OrganizationManagementProps {
   organizations: Organization[];

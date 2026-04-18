@@ -24,15 +24,15 @@ function useIsMobile(bp = 768) {
 }
 
 const C = {
-  navy: "#1B2A4A", navyLight: "#2d4373", navyHover: "#152a45",
-  bg: "#f8f7f4", card: "#fff", border: "#e8e6e1", borderLight: "#f0efe9",
+  navy: "#2563eb", navyLight: "#2d4373", navyHover: "#152a45",
+  bg: "#f8f7f4", card: "#fff", border: "#c7d0e8", borderLight: "#f0efe9",
   text: "#555", textMuted: "#6b7b9e", textFaint: "#999",
-  blue: "#1B2A4A", blueBg: "#f0f2f5", blueDark: "#1B2A4A",
-  accent: "#1B2A4A", accentLight: "#f0f2f5", accentBg: "#f0f2f5",
-  purple: "#1B2A4A", purpleBg: "#f0f2f5", green: "#1B2A4A", greenBg: "#f0f2f5",
-  yellow: "#555", yellowBg: "#f5f6f8", red: "#555", redBg: "#f0f2f5",
-  orange: "#1B2A4A", orangeBg: "#f0f2f5", pink: "#1B2A4A", pinkBg: "#f0f2f5",
-  teal: "#1B2A4A", tealBg: "#f0f2f5", indigo: "#1B2A4A", indigoBg: "#f0f2f5",
+  blue: "#2563eb", blueBg: "#f0f2f5", blueDark: "#2563eb",
+  accent: "#2563eb", accentLight: "#f0f2f5", accentBg: "#f0f2f5",
+  purple: "#2563eb", purpleBg: "#f0f2f5", green: "#2563eb", greenBg: "#f0f2f5",
+  yellow: "#555", yellowBg: "#f5f8ff", red: "#555", redBg: "#f0f2f5",
+  orange: "#2563eb", orangeBg: "#f0f2f5", pink: "#2563eb", pinkBg: "#f0f2f5",
+  teal: "#2563eb", tealBg: "#f0f2f5", indigo: "#2563eb", indigoBg: "#f0f2f5",
 };
 
 const TODAY = new Date();
@@ -450,7 +450,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style }: { c
     secondary: { background: C.borderLight, color: C.text, border: `1px solid ${C.border}` },
     ghost: { background: "transparent", color: C.textMuted },
     danger: { background: C.red, color: "#fff" },
-    accent: { background: "#1B2A4A", color: "#fff" },
+    accent: { background: "#2563eb", color: "#fff" },
   };
   return <button onClick={onClick} style={{ ...base, ...sizes[size], ...variants[variant], ...style }}>{children}</button>;
 }
@@ -857,7 +857,7 @@ const getDecorSVG = (style: string, color: string, gold: string): { topRight: st
       };
     case "teachers":
       return {
-        topRight: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" style="position:absolute;top:5px;right:5px;opacity:0.7;"><rect x="25" y="30" width="50" height="40" rx="2" fill="#f5e6c8" opacity="0.8" stroke="#2563EB" stroke-width="1"/><line x1="50" y1="30" x2="50" y2="70" stroke="#2563EB" stroke-width="0.8"/><line x1="30" y1="42" x2="46" y2="42" stroke="#1E3A5F" stroke-width="0.4"/><line x1="30" y1="48" x2="46" y2="48" stroke="#1E3A5F" stroke-width="0.4"/><line x1="30" y1="54" x2="46" y2="54" stroke="#1E3A5F" stroke-width="0.4"/><line x1="54" y1="42" x2="70" y2="42" stroke="#1E3A5F" stroke-width="0.4"/><line x1="54" y1="48" x2="70" y2="48" stroke="#1E3A5F" stroke-width="0.4"/><path d="M70 20 L78 68" stroke="#D4A017" stroke-width="1.2" stroke-linecap="round"/><path d="M78 68 L76 72 L80 72Z" fill="#D4A017" opacity="0.9"/></svg>`,
+        topRight: `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" style="position:absolute;top:5px;right:5px;opacity:0.7;"><rect x="25" y="30" width="50" height="40" rx="2" fill="#f5e6c8" opacity="0.8" stroke="#2563EB" stroke-width="1"/><line x1="50" y1="30" x2="50" y2="70" stroke="#2563EB" stroke-width="0.8"/><line x1="30" y1="42" x2="46" y2="42" stroke="#1e40af" stroke-width="0.4"/><line x1="30" y1="48" x2="46" y2="48" stroke="#1e40af" stroke-width="0.4"/><line x1="30" y1="54" x2="46" y2="54" stroke="#1e40af" stroke-width="0.4"/><line x1="54" y1="42" x2="70" y2="42" stroke="#1e40af" stroke-width="0.4"/><line x1="54" y1="48" x2="70" y2="48" stroke="#1e40af" stroke-width="0.4"/><path d="M70 20 L78 68" stroke="#D4A017" stroke-width="1.2" stroke-linecap="round"/><path d="M78 68 L76 72 L80 72Z" fill="#D4A017" opacity="0.9"/></svg>`,
         bottomLeft: "",
       };
     case "creation":
@@ -2291,8 +2291,8 @@ export function BulletinPage() {
                 height: "24px",
                 padding: 0,
                 border: "none",
-                borderLeft: "1px solid #e5e7eb",
-                borderRight: "1px solid #e5e7eb",
+                borderLeft: "1px solid #c7d0e8",
+                borderRight: "1px solid #c7d0e8",
               }}
             />
             <button
@@ -2484,7 +2484,7 @@ export function BulletinPage() {
                   if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                 }}
                 className="w-12 text-center text-xs text-gray-600 font-medium bg-transparent outline-none"
-                style={{ height: 28, padding: 0, border: "none", borderLeft: "1px solid #e5e7eb", borderRight: "1px solid #e5e7eb" }}
+                style={{ height: 28, padding: 0, border: "none", borderLeft: "1px solid #c7d0e8", borderRight: "1px solid #c7d0e8" }}
               />
             );
             const zoomPlusDesktop = (
@@ -2528,7 +2528,7 @@ export function BulletinPage() {
                             minHeight: ps.minHeight,
                             backgroundColor: "#ffffff",
                             borderRadius: 4,
-                            border: "1px solid #e5e7eb",
+                            border: "1px solid #c7d0e8",
                           }),
                       padding: ps.padding,
                       flexShrink: 0,
@@ -2614,7 +2614,7 @@ export function BulletinPage() {
                 <div
                   style={{
                     padding: "12px 6px",
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: "1px solid #c7d0e8",
                     background: "#fafafa",
                     flexShrink: 0,
                   }}
@@ -2631,7 +2631,7 @@ export function BulletinPage() {
                           background: "#fff",
                           borderRadius: 10,
                           padding: "12px 16px",
-                          border: "1px solid #e5e7eb",
+                          border: "1px solid #c7d0e8",
                         }}
                       >
                         <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{c.label}</div>
@@ -2651,7 +2651,7 @@ export function BulletinPage() {
                           background: "#fff",
                           borderRadius: 10,
                           padding: "12px 16px",
-                          border: "1px solid #e5e7eb",
+                          border: "1px solid #c7d0e8",
                         }}
                       >
                         <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{c.label}</div>
@@ -2664,7 +2664,7 @@ export function BulletinPage() {
 
               <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full" style={{ minHeight: 0 }}>
                 {mob ? (
-                  <div style={{ padding: "8px 6px", borderBottom: "1px solid #e5e7eb", flexShrink: 0, display: "flex", flexDirection: "column", gap: 6, background: "transparent" }}>
+                  <div style={{ padding: "8px 6px", borderBottom: "1px solid #c7d0e8", flexShrink: 0, display: "flex", flexDirection: "column", gap: 6, background: "transparent" }}>
                     <div style={{ display: "flex", gap: 6 }}>
                       {[
                         { key: "print", label: "인쇄용" },
@@ -2959,7 +2959,7 @@ export function BulletinPage() {
         height: auto !important;
         min-height: 0 !important;
         background: #ffffff !important;
-        border: 1px solid #e5e7eb !important;
+        border: 1px solid #c7d0e8 !important;
       }
       .mobile-dash-preview .bp-spread {
         height: auto !important;
@@ -2973,7 +2973,7 @@ export function BulletinPage() {
       }
       .mobile-dash-preview .bp-four-face .bp-spread {
         background: #ffffff !important;
-        border: 1px solid #e5e7eb !important;
+        border: 1px solid #c7d0e8 !important;
         box-shadow: 0 1px 6px rgba(0,0,0,.1) !important;
         border-radius: 4px !important;
       }
@@ -3060,7 +3060,7 @@ export function BulletinPage() {
             mob ? (
               <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", minHeight: 0 }}>
                 {!mobileKbOpen && (<>
-                <div style={{ flexShrink: 0, borderBottom: "1px solid #e5e7eb" }}>
+                <div style={{ flexShrink: 0, borderBottom: "1px solid #c7d0e8" }}>
                   <button type="button" onClick={() => setMobileDesignOpen(v => !v)}
                     style={{
                       display: "flex", justifyContent: "center", alignItems: "center",
@@ -3133,7 +3133,7 @@ export function BulletinPage() {
                               <button key={t.id} type="button"
                                 onClick={() => setDb(p => ({ ...p, current: { ...p.current, template: t.id } }))}
                                 style={{
-                                  padding: 4, border: db.current.template === t.id ? "2px solid #3b82f6" : "1px solid #e5e7eb",
+                                  padding: 4, border: db.current.template === t.id ? "2px solid #3b82f6" : "1px solid #c7d0e8",
                                   borderRadius: 6, background: "#fff", cursor: "pointer",
                                 }}>
                                 <div style={{ display: "flex", gap: 2, justifyContent: "center", marginBottom: 2 }}>
@@ -3155,7 +3155,7 @@ export function BulletinPage() {
                               return (
                                 <button key={d.id} type="button"
                                   onClick={() => setDb(p => ({ ...p, current: { ...p.current, coverDecor: d.id } }))}
-                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
+                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #c7d0e8", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
                                   <div style={{ width: "100%", aspectRatio: "1", borderRadius: 4, position: "relative", overflow: "hidden", marginBottom: 2, background: tpl.headerBg, border: `1px solid ${tpl.borderColor}` }}>
                                     {d.id !== "none" && previewHtml ? <div style={{ position: "absolute", inset: 0, opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: previewHtml }} /> : null}
                                   </div>
@@ -3174,7 +3174,7 @@ export function BulletinPage() {
                               return (
                                 <button key={d.id} type="button"
                                   onClick={() => setDb(p => ({ ...p, current: { ...p.current, coverDecor: d.id } }))}
-                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #e5e7eb", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
+                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #c7d0e8", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
                                   <div style={{ width: "100%", aspectRatio: "1", borderRadius: 4, position: "relative", overflow: "hidden", marginBottom: 2, background: tpl.headerBg, border: `1px solid ${tpl.borderColor}` }}>
                                     {previewHtml ? <div style={{ position: "absolute", inset: 0, opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: previewHtml }} /> : null}
                                   </div>
@@ -3191,7 +3191,7 @@ export function BulletinPage() {
                             onChange={(e) => setCurrent(c => ({ ...c, youtubeUrl: e.target.value }))}
                             style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
                           {extractYoutubeId(db.current.youtubeUrl ?? "") && (
-                            <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+                            <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #c7d0e8" }}>
                               <img src={`https://img.youtube.com/vi/${extractYoutubeId(db.current.youtubeUrl ?? "")}/mqdefault.jpg`} alt="YouTube 썸네일" style={{ width: "100%", display: "block" }} />
                             </div>
                           )}
@@ -3200,7 +3200,7 @@ export function BulletinPage() {
                     );
                   })()}
                 </div>
-                <div style={{ padding: "8px 6px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+                <div style={{ padding: "8px 6px", borderBottom: "1px solid #c7d0e8", flexShrink: 0 }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     {[
                       { key: "print", label: "인쇄용" },
@@ -3289,7 +3289,7 @@ export function BulletinPage() {
                 <div style={{
                   display: "flex",
                   overflowX: "auto",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid #c7d0e8",
                   background: "#fff",
                   padding: "0 2px",
                   flexShrink: 0,
@@ -3334,7 +3334,7 @@ export function BulletinPage() {
                   alignItems: "center",
                   gap: 8,
                   padding: "6px 0",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid #c7d0e8",
                   flexShrink: 0,
                 }}>
                   <button type="button" onClick={() => { setMobilePreviewScale(s => Math.max(0.3, +(s - 0.1).toFixed(1))); setMobilePan({ x: 0, y: 0 }); }}
@@ -3363,7 +3363,7 @@ export function BulletinPage() {
                         height: 80,
                         overflow: "hidden",
                         background: "#f9fafb",
-                        borderBottom: "1px solid #e5e7eb",
+                        borderBottom: "1px solid #c7d0e8",
                         position: "relative",
                         cursor: "pointer",
                       }}
@@ -3399,7 +3399,7 @@ export function BulletinPage() {
                     height: "30vh",
                     overflow: "hidden",
                     background: "#f9fafb",
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: "1px solid #c7d0e8",
                     padding: "4px",
                     touchAction: "none",
                   }}
@@ -3446,7 +3446,7 @@ export function BulletinPage() {
                     fontWeight: 700,
                     color: "#374151",
                     padding: "8px 0",
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: "1px solid #c7d0e8",
                     marginBottom: 8,
                   }}
                   >
@@ -3456,7 +3456,7 @@ export function BulletinPage() {
                     {editDisplaySections.map((item) => {
                       if (item.key !== mobileEditSection) return null;
                       const keys = "keys" in item && item.keys ? item.keys : undefined;
-                      const hrStyle = { border: "none" as const, borderTop: "1px solid #e5e7eb", margin: "12px 0" };
+                      const hrStyle = { border: "none" as const, borderTop: "1px solid #c7d0e8", margin: "12px 0" };
                       return (
                         <div key={item.key}>
                           {keys ? keys.map((k, i) => (
@@ -3536,7 +3536,7 @@ export function BulletinPage() {
                   </div>
                 )}
                 {/* 출력 형식 — 아코디언 스타일 통일 */}
-                <div style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                <div style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #c7d0e8", overflow: "hidden" }}>
                   <button
                     type="button"
                     onClick={() => setShowFormatPanel(prev => !prev)}
@@ -3746,7 +3746,7 @@ export function BulletinPage() {
                           }}
                         />
                         {extractYoutubeId(db.current.youtubeUrl ?? "") && (
-                          <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+                          <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #c7d0e8" }}>
                             <img src={`https://img.youtube.com/vi/${extractYoutubeId(db.current.youtubeUrl ?? "")}/mqdefault.jpg`} alt="YouTube 썸네일" style={{ width: "100%", display: "block" }} />
                           </div>
                         )}
@@ -3757,14 +3757,14 @@ export function BulletinPage() {
                 </div>
 
                 {(() => {
-                  const hrStyle = { border: "none" as const, borderTop: "1px solid #e5e7eb", margin: "12px 0" };
+                  const hrStyle = { border: "none" as const, borderTop: "1px solid #c7d0e8", margin: "12px 0" };
                   return editDisplaySections.map((item) => {
                     const displayKey = item.key;
                     const name = item.name;
                     const desc = item.desc;
                     const keys = "keys" in item ? item.keys : undefined;
                     return (
-                      <div key={displayKey} style={{ background: "#fff", borderRadius: mob ? 12 : 16, marginBottom: mob ? 8 : 12, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                      <div key={displayKey} style={{ background: "#fff", borderRadius: mob ? 12 : 16, marginBottom: mob ? 8 : 12, border: "1px solid #c7d0e8", overflow: "hidden" }}>
                         <button type="button" onClick={() => toggleSection(displayKey)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: mob ? "14px 16px" : "16px 20px", background: "none", border: "none", cursor: "pointer", fontSize: mob ? 14 : 16, fontWeight: 700, color: "#1a1a1a" }}>
                           <span>{name}</span>
                           <span style={{ transform: (openSections[displayKey] ?? false) ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-flex" }}>
@@ -3795,7 +3795,7 @@ export function BulletinPage() {
                   <div style={{ color: "#9ca3af", textAlign: "center", padding: 40, fontSize: 14 }}>저장된 주보가 없습니다. 편집에서 저장하면 여기에 표시됩니다.</div>
                 ) : (
                   <>
-                    <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", padding: mob ? "12px 20px" : "14px 24px", borderBottom: "2px solid #e5e7eb", background: "#f9fafb", flexShrink: 0 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", padding: mob ? "12px 20px" : "14px 24px", borderBottom: "2px solid #c7d0e8", background: "#f9fafb", flexShrink: 0 }}>
                       <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: "#6b7280" }}>날짜</span>
                       <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: "#6b7280" }}>설교 제목</span>
                       <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: "#6b7280", textAlign: "right" }}>관리</span>
@@ -3811,7 +3811,7 @@ export function BulletinPage() {
                         </div>
                       ))}
                     </div>
-                    <div style={{ borderTop: "1px solid #e5e7eb", padding: "12px 20px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
+                    <div style={{ borderTop: "1px solid #c7d0e8", padding: "12px 20px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
                       <span style={{ fontSize: mob ? 13 : 14, color: "#6b7280" }}>
                         총 {db.history.length}건 중 {historyRangeStart}–{historyRangeEnd} 표시
                       </span>
@@ -3832,7 +3832,7 @@ export function BulletinPage() {
           {activeSub === "settings" && (
             <div style={{ width: "100%" }}>
               <Card style={{ padding: 0, overflow: "hidden" }}>
-                <div style={{ padding: "16px 28px", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
+                <div style={{ padding: "16px 28px", borderBottom: "1px solid #c7d0e8", background: "#f9fafb" }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>교회 기본 정보</span>
                 </div>
                 <div style={{ padding: mob ? 16 : 28, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -3925,7 +3925,7 @@ export function BulletinPage() {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "8px 12px",
-              borderBottom: "1px solid #e5e7eb",
+              borderBottom: "1px solid #c7d0e8",
               backgroundColor: "#ffffff",
               flexShrink: 0,
             }}
@@ -3996,7 +3996,7 @@ export function BulletinPage() {
               justifyContent: "center",
               gap: 8,
               padding: "6px 0",
-              borderBottom: "1px solid #e5e7eb",
+              borderBottom: "1px solid #c7d0e8",
               flexShrink: 0,
             }}
           >
@@ -4065,7 +4065,7 @@ export function BulletinPage() {
                   width: bulletinFormatDisplay === "6면" ? 1134 : bulletinFormatDisplay === "4면" ? 756 : 595,
                   backgroundColor: "#ffffff",
                   padding: bulletinFormatDisplay === "온라인" ? 40 : 0,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid #c7d0e8",
                   borderRadius: 4,
                   flexShrink: 0,
                   transformOrigin: "top left",
@@ -4224,7 +4224,7 @@ export function BulletinPage() {
         [data-bview="outside"] .bp-tri-in { display:none !important; }
         [data-bview="inside"] .bp-tri-out { display:none !important; }
 
-        .bulletin-page-content .bp-cell { padding:16px; overflow:auto; box-sizing:border-box; border-right:1px dashed #e5e7eb; }
+        .bulletin-page-content .bp-cell { padding:16px; overflow:auto; box-sizing:border-box; border-right:1px dashed #c7d0e8; }
         .bulletin-page-content .bp-cell:last-child { border-right:none; }
 
         /* ==================== HALF-FOLD (2면 접지) ==================== */
@@ -4248,7 +4248,7 @@ export function BulletinPage() {
         .bulletin-page-content .bp-date-line { font-size:10px; opacity:.75; letter-spacing:1px; }
         .bulletin-page-content .bp-time-line { font-size:9px; opacity:.5; margin-top:2px; }
         .bulletin-page-content .bp-pastor-line { font-size:10px; opacity:.6; margin-top:18px; letter-spacing:2px; }
-        .bulletin-page-content .bp-page-hd { font-size:12px; font-weight:800; padding:10px 16px; border-bottom:2px solid #1e3a5f; letter-spacing:.8px; background:#fafbfc; font-family:'Inter','Noto Sans KR',sans-serif; }
+        .bulletin-page-content .bp-page-hd { font-size:12px; font-weight:800; padding:10px 16px; border-bottom:2px solid #1e40af; letter-spacing:.8px; background:#fafbfc; font-family:'Inter','Noto Sans KR',sans-serif; }
         .bulletin-page-content .bp-page-bd { padding:12px 16px 16px; font-size:10px; line-height:1.6; color:#333; }
         .bulletin-page-content .bp-note { font-size:9px; color:#666; margin-bottom:3px; }
         .bulletin-page-content .bp-colbox { background:linear-gradient(135deg,#faf5ef,#f3ebe0); border-radius:5px; padding:11px; margin-top:10px; border-left:3px solid; }
@@ -4287,22 +4287,22 @@ export function BulletinPage() {
         .bulletin-page-content .ol-sub { font-size:9px; opacity:.5; letter-spacing:2px; margin-top:2px; }
         .bulletin-page-content .ol-date { font-size:10px; opacity:.7; margin-top:12px; letter-spacing:.5px; }
         .bulletin-page-content .ol-sermon { text-align:center; padding:18px 24px; background:var(--al,#e8eef6); }
-        .bulletin-page-content .ol-sermon-t { font-size:18px; font-weight:800; color:var(--ac,#1e3a5f); letter-spacing:1px; }
+        .bulletin-page-content .ol-sermon-t { font-size:18px; font-weight:800; color:var(--ac,#1e40af); letter-spacing:1px; }
         .bulletin-page-content .ol-sermon-p { font-size:11px; color:#666; margin-top:4px; }
         .bulletin-page-content .ol-sermon-th { font-size:10px; color:#999; margin-top:2px; font-style:italic; }
         .bulletin-page-content .ol-body { padding:16px 20px; }
         .bulletin-page-content .ol-sec { margin-bottom:18px; }
-        .bulletin-page-content .ol-sec-t { font-size:13px; font-weight:800; color:var(--ac,#1e3a5f); margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid var(--ac,#1e3a5f); letter-spacing:.5px; }
+        .bulletin-page-content .ol-sec-t { font-size:13px; font-weight:800; color:var(--ac,#1e40af); margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid var(--ac,#1e40af); letter-spacing:.5px; }
         .bulletin-page-content .ol-note { font-size:11px; color:#666; margin-top:6px; }
         .bulletin-page-content .ol-col-txt { font-size:12px; line-height:1.8; color:#444; background:var(--al,#f5f7fa); padding:14px; border-radius:8px; border-left:3px solid var(--gold,#c5a55a); }
-        .bulletin-page-content .ol-ad { padding:10px 12px; margin-bottom:8px; background:#f8f9fa; border-radius:8px; border-left:3px solid var(--ac,#1e3a5f); }
-        .bulletin-page-content .ol-ad-dept { font-size:10px; font-weight:700; color:var(--ac,#1e3a5f); letter-spacing:.3px; }
+        .bulletin-page-content .ol-ad { padding:10px 12px; margin-bottom:8px; background:#f8f9fa; border-radius:8px; border-left:3px solid var(--ac,#1e40af); }
+        .bulletin-page-content .ol-ad-dept { font-size:10px; font-weight:700; color:var(--ac,#1e40af); letter-spacing:.3px; }
         .bulletin-page-content .ol-ad-txt { font-size:11.5px; color:#444; line-height:1.6; margin-top:2px; }
         .bulletin-page-content .ol-bdays { display:flex; flex-wrap:wrap; gap:5px; }
-        .bulletin-page-content .ol-bday { background:var(--al,#e8eef6); padding:4px 10px; border-radius:12px; font-size:11px; font-weight:500; color:var(--ac,#1e3a5f); }
+        .bulletin-page-content .ol-bday { background:var(--al,#e8eef6); padding:4px 10px; border-radius:12px; font-size:11px; font-weight:500; color:var(--ac,#1e40af); }
         .bulletin-page-content .ol-info-sec { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
         .bulletin-page-content .ol-info-item { background:#f8f9fa; padding:10px; border-radius:8px; font-size:11px; line-height:1.6; color:#555; }
-        .bulletin-page-content .ol-info-item strong { display:block; margin-bottom:4px; color:var(--ac,#1e3a5f); font-size:10px; }
+        .bulletin-page-content .ol-info-item strong { display:block; margin-bottom:4px; color:var(--ac,#1e40af); font-size:10px; }
         .bulletin-page-content .ol-footer { padding:16px 20px; color:inherit; font-size:10px; text-align:center; line-height:1.8; opacity:.9; }
 
         /* 미리보기: 스프레드/표지 높이 채우기 */

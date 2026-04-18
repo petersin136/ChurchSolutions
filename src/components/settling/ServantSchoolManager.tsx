@@ -162,7 +162,7 @@ export function ServantSchoolManager({ members, toast }: Props) {
       >
         <h3
           className={
-            mob ? "mb-2 text-[12px] font-bold text-[#1e3a5f]" : "mb-4 text-base font-bold text-[#1e3a5f]"
+            mob ? "mb-2 text-[12px] font-bold text-[#1e40af]" : "mb-4 text-base font-bold text-[#1e40af]"
           }
         >
           섬김이 학교 수료자 등록
@@ -174,7 +174,7 @@ export function ServantSchoolManager({ members, toast }: Props) {
             className={
               mob
                 ? "h-7 w-full rounded border border-gray-200 px-2 py-1.5 text-[11px]"
-                : "min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-[#1e3a5f] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20"
+                : "min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-[#1e40af] focus:outline-none focus:ring-2 focus:ring-[#1e40af]/20"
             }
           >
             <option value="">-- 성도 선택 ({availableMembers.length}명) --</option>
@@ -216,8 +216,8 @@ export function ServantSchoolManager({ members, toast }: Props) {
             disabled={!selectedMemberId || saving}
             className={
               mob
-                ? "h-7 w-full rounded-lg bg-[#1e3a5f] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-40"
-                : "shrink-0 whitespace-nowrap rounded-xl bg-[#1e3a5f] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40"
+                ? "h-7 w-full rounded-lg bg-[#1e40af] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-40"
+                : "shrink-0 whitespace-nowrap rounded-xl bg-[#1e40af] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40"
             }
           >
             {saving ? "등록 중..." : "수료자 등록"}
@@ -233,7 +233,7 @@ export function ServantSchoolManager({ members, toast }: Props) {
         }
       >
         <div className={mob ? "border-b border-gray-100 px-3 py-2" : "border-b border-gray-100 px-5 py-3"}>
-          <h3 className={mob ? "text-[11px] font-bold text-[#1e3a5f]" : "text-base font-bold text-[#1e3a5f]"}>
+          <h3 className={mob ? "text-[11px] font-bold text-[#1e40af]" : "text-base font-bold text-[#1e40af]"}>
             수료자 목록{" "}
             <span className={mob ? "ml-1 text-[10px] font-normal text-gray-400" : "ml-1 text-sm font-normal text-gray-400"}>
               ({activeGraduates.length}명 활성)
@@ -245,8 +245,8 @@ export function ServantSchoolManager({ members, toast }: Props) {
             <span
               className={
                 mob
-                  ? "inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#1e3a5f] border-t-transparent"
-                  : "inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#1e3a5f] border-t-transparent"
+                  ? "inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#1e40af] border-t-transparent"
+                  : "inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#1e40af] border-t-transparent"
               }
             />
             <span className={mob ? "ml-2 text-[10px] text-gray-500" : "ml-2 text-gray-500"}>로딩 중...</span>
@@ -279,11 +279,11 @@ export function ServantSchoolManager({ members, toast }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/50">
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">이름</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">수료일</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">메모</th>
-                <th className="px-4 py-3 text-center font-semibold text-[#1e3a5f]">활성</th>
-                <th className="px-4 py-3 text-center font-semibold text-[#1e3a5f]">액션</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">이름</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">수료일</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">메모</th>
+                <th className="px-4 py-3 text-center font-semibold text-[#1e40af]">활성</th>
+                <th className="px-4 py-3 text-center font-semibold text-[#1e40af]">액션</th>
               </tr>
             </thead>
             <tbody>

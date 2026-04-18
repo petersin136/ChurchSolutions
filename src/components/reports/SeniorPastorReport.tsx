@@ -58,38 +58,38 @@ export function SeniorPastorReport({ db, toast }: SeniorPastorReportProps) {
     <ReportLayout title="담임목사 보고서" period={`${monthStr} 요약`} churchName={db.settings.churchName ?? undefined}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">출석 추이 (최근 4주)</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">출석 추이 (최근 4주)</h3>
           {recentWeeks.some((d) => d.출석 > 0) ? (
             <ResponsiveContainer width="100%" height={120}>
               <LineChart data={recentWeeks}>
                 <XAxis dataKey="week" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="출석" stroke="#1e3a5f" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="출석" stroke="#1e40af" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : <p className="text-gray-500">데이터 없음</p>}
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">재정 요약 (이번 달)</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">재정 요약 (이번 달)</h3>
           <p>수입 {incomeThisMonth.toLocaleString()}원</p>
           <p>지출 {expenseThisMonth.toLocaleString()}원</p>
           <p>잔액 {(incomeThisMonth - expenseThisMonth).toLocaleString()}원</p>
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">새가족 (이번 달)</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">새가족 (이번 달)</h3>
           <p>{newFamilyThisMonth.length}명</p>
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">심방 (이번 달)</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">심방 (이번 달)</h3>
           <p>{visitsThisMonth.length}건</p>
         </section>
         <section className="md:col-span-2">
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">주의 필요 (3주 연속 결석)</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">주의 필요 (3주 연속 결석)</h3>
           {consecutiveAbsent.length === 0 ? <p className="text-gray-500">해당 없음</p> : <ul className="list-disc pl-5">{consecutiveAbsent.slice(0, 15).map((m) => <li key={m.id}>{m.name}</li>)}</ul>}
         </section>
         <section className="md:col-span-2">
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">경조사 예정 (이번 주)</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">경조사 예정 (이번 주)</h3>
           <UpcomingEvents members={db.members} db={db} />
         </section>
       </div>

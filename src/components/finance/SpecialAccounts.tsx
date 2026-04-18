@@ -84,7 +84,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
   const selectedTx = selectedId ? (transactions[selectedId] || []).slice().sort((a, b) => b.date.localeCompare(a.date)) : [];
 
   const progressColor = (pct: number) => {
-    if (pct >= 100) return "bg-[#1e3a5f]";
+    if (pct >= 100) return "bg-[#1e40af]";
     if (pct >= 80) return "bg-green-500";
     if (pct >= 50) return "bg-yellow-500";
     return "bg-red-500";
@@ -209,7 +209,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
+        <span className="inline-block w-8 h-8 rounded-full border-2 border-[#1e40af] border-t-transparent animate-spin" />
         <span className="ml-3 text-gray-600">특별회계 로딩 중...</span>
       </div>
     );
@@ -218,8 +218,8 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-[#1e3a5f]">특별회계</h3>
-        <button type="button" onClick={openAddAccount} className="px-4 py-2 lg:px-6 lg:py-3 rounded-xl bg-[#1e3a5f] text-white text-sm lg:text-base font-semibold hover:opacity-90">
+        <h3 className="text-lg font-semibold text-[#1e40af]">특별회계</h3>
+        <button type="button" onClick={openAddAccount} className="px-4 py-2 lg:px-6 lg:py-3 rounded-xl bg-[#1e40af] text-white text-sm lg:text-base font-semibold hover:opacity-90">
           + 새 특별회계
         </button>
       </div>
@@ -239,7 +239,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
                 onClick={() => setSelectedId(acc.id)}
                 className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6 text-left hover:shadow-md transition"
               >
-                <div className="font-semibold text-[#1e3a5f] mb-1 text-base lg:text-lg">{acc.account_name}</div>
+                <div className="font-semibold text-[#1e40af] mb-1 text-base lg:text-lg">{acc.account_name}</div>
                 {acc.description && <div className="text-xs lg:text-sm text-gray-500 mb-2">{acc.description}</div>}
                 <div className="flex justify-between text-sm lg:text-base mb-2">
                   <span className="text-gray-500">목표</span>
@@ -270,12 +270,12 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h4 className="text-lg font-semibold text-[#1e3a5f]">{selected.account_name}</h4>
+              <h4 className="text-lg font-semibold text-[#1e40af]">{selected.account_name}</h4>
               {selected.description && <p className="text-sm text-gray-500 mt-1">{selected.description}</p>}
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={() => openEditAccount(selected)} className="px-3 py-1 lg:px-4 lg:py-2 rounded-lg border border-gray-200 text-sm lg:text-base">수정</button>
-              <button type="button" onClick={openAddTransaction} className="px-3 py-1 lg:px-4 lg:py-2 rounded-lg bg-[#1e3a5f] text-white text-sm lg:text-base">+ 거래 추가</button>
+              <button type="button" onClick={openAddTransaction} className="px-3 py-1 lg:px-4 lg:py-2 rounded-lg bg-[#1e40af] text-white text-sm lg:text-base">+ 거래 추가</button>
               <button type="button" onClick={() => deleteAccount(selected.id)} className="px-3 py-1 lg:px-4 lg:py-2 rounded-lg border border-red-200 text-red-600 text-sm lg:text-base">삭제</button>
               <button type="button" onClick={() => setSelectedId(null)} className="px-3 py-1 lg:px-4 lg:py-2 rounded-lg border border-gray-200 text-sm lg:text-base">닫기</button>
             </div>
@@ -308,7 +308,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       {showAccountModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => !saving && setShowAccountModal(false)}>
           <div className="bg-white rounded-xl shadow-xl max-w-md lg:max-w-lg w-full p-5 lg:p-8" onClick={(e) => e.stopPropagation()}>
-            <h4 className="text-lg font-semibold text-[#1e3a5f] mb-4">{editingAccount ? "특별회계 수정" : "새 특별회계"}</h4>
+            <h4 className="text-lg font-semibold text-[#1e40af] mb-4">{editingAccount ? "특별회계 수정" : "새 특별회계"}</h4>
             <div className="space-y-3">
               <label className="block text-sm lg:text-base font-medium text-gray-700">계좌 이름 *</label>
               <input type="text" value={accountForm.account_name ?? ""} onChange={(e) => setAccountForm((f) => ({ ...f, account_name: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" placeholder="예: 건축헌금" />
@@ -330,7 +330,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
               </select>
             </div>
             <div className="flex gap-2 mt-6">
-              <button type="button" onClick={saveAccount} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg bg-[#1e3a5f] text-white text-sm lg:text-base font-semibold disabled:opacity-60">{saving ? "저장 중..." : "저장"}</button>
+              <button type="button" onClick={saveAccount} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg bg-[#1e40af] text-white text-sm lg:text-base font-semibold disabled:opacity-60">{saving ? "저장 중..." : "저장"}</button>
               <button type="button" onClick={() => setShowAccountModal(false)} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base">취소</button>
             </div>
           </div>
@@ -340,7 +340,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
       {showTxModal && selected && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => !saving && setShowTxModal(false)}>
           <div className="bg-white rounded-xl shadow-xl max-w-md lg:max-w-lg w-full p-5 lg:p-8" onClick={(e) => e.stopPropagation()}>
-            <h4 className="text-lg font-semibold text-[#1e3a5f] mb-4">거래 추가</h4>
+            <h4 className="text-lg font-semibold text-[#1e40af] mb-4">거래 추가</h4>
             <div className="space-y-3">
               <label className="block text-sm lg:text-base font-medium text-gray-700">날짜</label>
               <input type="date" value={txForm.date} onChange={(e) => setTxForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
@@ -357,7 +357,7 @@ export function SpecialAccounts({ toast }: SpecialAccountsProps) {
               <input type="text" value={txForm.member_name} onChange={(e) => setTxForm((f) => ({ ...f, member_name: e.target.value }))} className="w-full px-3 py-2 lg:px-4 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base" />
             </div>
             <div className="flex gap-2 mt-6">
-              <button type="button" onClick={saveTransaction} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg bg-[#1e3a5f] text-white text-sm lg:text-base font-semibold disabled:opacity-60">{saving ? "저장 중..." : "저장"}</button>
+              <button type="button" onClick={saveTransaction} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg bg-[#1e40af] text-white text-sm lg:text-base font-semibold disabled:opacity-60">{saving ? "저장 중..." : "저장"}</button>
               <button type="button" onClick={() => setShowTxModal(false)} disabled={saving} className="px-4 py-2 lg:px-6 lg:py-3 rounded-lg border border-gray-200 text-sm lg:text-base">취소</button>
             </div>
           </div>

@@ -14,16 +14,6 @@ import { SchoolPage } from "./school/SchoolPage";
 import { ReportsSettingsPage } from "./ReportsSettingsPage";
 import { useAuth } from "@/contexts/AuthContext";
 
-const PAGE_LABELS: Record<PageId, string> = {
-  pastoral: "목양",
-  finance: "재정관리",
-  visit: "심방·상담",
-  school: "교회학교",
-  planner: "플래너",
-  bulletin: "주보",
-  reports: "보고서·설정",
-};
-
 const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[] = [
   { id: "pastoral", label: "목양", Icon: Users },
   { id: "visit", label: "심방·상담", Icon: Heart },
@@ -33,17 +23,6 @@ const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[
   { id: "bulletin", label: "주보", Icon: Newspaper },
   { id: "reports", label: "보고서·설정", Icon: FileBarChart },
 ];
-
-/** 상단 탭별 accent — 각 UnifiedPageLayout `accentColor`와 동일한 팔레트 */
-const PAGE_TAB_ACCENT: Record<PageId, string> = {
-  pastoral: "#1e3a5f",
-  visit: "#2563eb",
-  school: "#1B2A4A",
-  finance: "#1B2A4A",
-  planner: "#4A90D9",
-  bulletin: "#8b6f47",
-  reports: "#6b7280",
-};
 
 export interface SuperPlannerUIProps {
   currentPage: PageId;
@@ -102,6 +81,38 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
 
   return (
     <div className="superplanner-root">
+      <header className="pc-top-nav">
+        <div className="pc-top-nav-left">
+          <span className="pc-top-nav-logo">목양노트</span>
+        </div>
+        <nav className="pc-top-nav-tabs" aria-label="주 메뉴">
+          {TAB_CONFIG.map(({ id, label, Icon }) => {
+            const isActive = currentPage === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`pc-nav-tab ${isActive ? "active" : ""}`}
+                onClick={() => setCurrentPage(id)}
+              >
+                <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+        <div className="pc-top-nav-right">
+          {user && (
+            <span className="pc-user-email">{user.email?.split("@")[0]}</span>
+          )}
+          {user && (
+            <button type="button" className="pc-nav-logout" onClick={handleLogout} title={user.email ?? ""}>
+              <LogOut size={18} strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
+      </header>
+
       <main>
         <div className={`page ${currentPage === "pastoral" ? "active" : ""}`} id="page-pastoral">
           <PastoralPage db={db} setDb={setDb} saveDb={saveDb} />
@@ -125,37 +136,6 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
           <ReportsSettingsPage db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
         </div>
       </main>
-
-      <nav className="tab-bar">
-        {TAB_CONFIG.map(({ id, label, Icon }) => {
-          const isActive = currentPage === id;
-          const accent = PAGE_TAB_ACCENT[id];
-          const iconColor = isActive ? accent : "#9ca3af";
-          const strokeWidth = isActive ? 2 : 1.5;
-          return (
-            <button
-              key={id}
-              type="button"
-              className={`tab-item ${isActive ? "active" : ""}`}
-              onClick={() => setCurrentPage(id)}
-              style={isActive ? { color: accent } : undefined}
-            >
-              <span className="tab-icon">
-                <Icon size={24} strokeWidth={strokeWidth} style={{ color: iconColor }} />
-              </span>
-              <span className="tab-label">{label}</span>
-            </button>
-          );
-        })}
-        {user && (
-          <button type="button" className="tab-item" onClick={handleLogout} title={user.email ?? ""}>
-            <span className="tab-icon">
-              <LogOut size={24} strokeWidth={1.5} style={{ color: "#9ca3af" }} />
-            </span>
-            <span className="tab-label">로그아웃</span>
-          </button>
-        )}
-      </nav>
 
       <Modals
         db={db}

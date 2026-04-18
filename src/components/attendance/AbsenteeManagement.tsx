@@ -198,7 +198,7 @@ export function AbsenteeManagement({
                         <button
                           type="button"
                           onClick={() => onAddVisit(member.id)}
-                          className="h-6 shrink-0 rounded bg-[#1e3a5f] px-1.5 text-[9px] font-medium text-white"
+                          className="h-6 shrink-0 rounded bg-[#1e40af] px-1.5 text-[9px] font-medium text-white"
                         >
                           심방
                         </button>
@@ -222,13 +222,13 @@ export function AbsenteeManagement({
             </colgroup>
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/50">
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">이름</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">부서</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">목장</th>
-                <th className="px-4 py-3 text-center font-semibold text-[#1e3a5f]">연속 결석</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">마지막 출석일</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">연락처</th>
-                <th className="whitespace-nowrap py-3 pl-4 pr-6 text-left font-semibold text-[#1e3a5f]">액션</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">이름</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">부서</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">목장</th>
+                <th className="px-4 py-3 text-center font-semibold text-[#1e40af]">연속 결석</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">마지막 출석일</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">연락처</th>
+                <th className="whitespace-nowrap py-3 pl-4 pr-6 text-left font-semibold text-[#1e40af]">액션</th>
               </tr>
             </thead>
             <tbody>
@@ -252,7 +252,7 @@ export function AbsenteeManagement({
                     <td className="px-4 py-3 text-gray-600">{lastPresentDate || "-"}</td>
                     <td className="px-4 py-3">
                       {member.phone ? (
-                        <a href={`tel:${member.phone}`} className="text-[#1e3a5f] hover:underline">
+                        <a href={`tel:${member.phone}`} className="text-[#1e40af] hover:underline">
                           {member.phone}
                         </a>
                       ) : (
@@ -275,7 +275,7 @@ export function AbsenteeManagement({
                           <button
                             type="button"
                             onClick={() => onAddVisit(member.id)}
-                            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#1e3a5f] px-3 py-1 text-xs font-medium whitespace-nowrap text-white hover:opacity-90"
+                            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#1e40af] px-3 py-1 text-xs font-medium whitespace-nowrap text-white hover:opacity-90"
                           >
                             심방 등록
                           </button>

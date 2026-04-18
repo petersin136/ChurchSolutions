@@ -322,8 +322,8 @@ export function AttendanceCheck({
           <span
             className={
               mob
-                ? "rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#1e3a5f]"
-                : "rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-[#1e3a5f]"
+                ? "rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#1e40af]"
+                : "rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-[#1e40af]"
             }
           >
             주일예배
@@ -366,9 +366,9 @@ export function AttendanceCheck({
                 cursor: "pointer",
                 fontFamily: "inherit",
                 boxSizing: "border-box",
-                background: active ? "#1B2A4A" : "#fff",
+                background: active ? "#2563eb" : "#fff",
                 color: active ? "#fff" : "#555",
-                border: active ? "1px solid #1B2A4A" : "1px solid #e8ecf1",
+                border: active ? "1px solid #2563eb" : "1px solid #c7d0e8",
               }}
             >
               {dept}
@@ -382,7 +382,7 @@ export function AttendanceCheck({
         <div
           className={`flex items-center justify-center py-12 bg-white rounded-xl border border-gray-100 ${mob ? "shrink-0" : ""}`}
         >
-          <span className="inline-block w-6 h-6 rounded-full border-2 border-[#1e3a5f] border-t-transparent animate-spin" />
+          <span className="inline-block w-6 h-6 rounded-full border-2 border-[#1e40af] border-t-transparent animate-spin" />
           <span className="ml-2 text-gray-500">출석 데이터 로딩 중...</span>
         </div>
       ) : mob ? (
@@ -450,11 +450,11 @@ export function AttendanceCheck({
           <table className="w-full text-sm min-w-[320px]">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">교인</th>
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">직분</th>
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">목장</th>
-                <th className="text-center py-3 px-4 font-semibold text-[#1e3a5f]">출석 상태</th>
-                <th className="text-left py-3 px-4 font-semibold text-[#1e3a5f]">사유</th>
+                <th className="text-left py-3 px-4 font-semibold text-[#1e40af]">교인</th>
+                <th className="text-left py-3 px-4 font-semibold text-[#1e40af]">직분</th>
+                <th className="text-left py-3 px-4 font-semibold text-[#1e40af]">목장</th>
+                <th className="text-center py-3 px-4 font-semibold text-[#1e40af]">출석 상태</th>
+                <th className="text-left py-3 px-4 font-semibold text-[#1e40af]">사유</th>
               </tr>
             </thead>
             <tbody>

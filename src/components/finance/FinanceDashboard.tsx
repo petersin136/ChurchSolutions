@@ -13,9 +13,9 @@ import {
 } from "recharts";
 import LazyChart from "../common/LazyChart";
 
-const NAVY = "#1B2A4A";
+const NAVY = "#2563eb";
 const MUTED_LINE = "#6b7b9e";
-const BORDER = "#e8ecf1";
+const BORDER = "#c7d0e8";
 const LABEL_SUB = "#6b7b9e";
 const LABEL_SMALL = "#999";
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
@@ -138,7 +138,7 @@ export function FinanceDashboard({
         <LazyChart height={260}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={monthlyTrend} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e8ecf1" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#c7d0e8" />
               <XAxis dataKey="month" tick={{ fontSize: 9, fill: LABEL_SMALL }} />
               <YAxis tick={{ fontSize: 9, fill: LABEL_SMALL }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
               <Tooltip formatter={(value) => [`₩${fmt(Number(value))}`, ""]} />

@@ -167,7 +167,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col flex-1 min-h-0">
       {/* 프로필 헤더 */}
-      <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8e] text-white p-6 flex flex-wrap items-center gap-4">
+      <div className="bg-gradient-to-r from-[#1e40af] to-[#2d5a8e] text-white p-6 flex flex-wrap items-center gap-4">
         <div className="w-[100px] h-[100px] rounded-full border-4 border-white/30 overflow-hidden bg-white/20 flex items-center justify-center shrink-0">
           {member.photo ? (
             <img src={member.photo} alt="" className="w-full h-full object-cover" />
@@ -197,19 +197,19 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
       {/* 미니 통계 카드 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border-b border-gray-100">
         <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-[#1e3a5f]">{attendanceRate}%</div>
+          <div className="text-2xl font-bold text-[#1e40af]">{attendanceRate}%</div>
           <div className="text-xs text-gray-500">출석률 (최근 12주)</div>
         </div>
         <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-xl font-bold text-[#1e3a5f]">{givingTotal.toLocaleString()}원</div>
+          <div className="text-xl font-bold text-[#1e40af]">{givingTotal.toLocaleString()}원</div>
           <div className="text-xs text-gray-500">올해 헌금</div>
         </div>
         <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-[#1e3a5f]">{visitCount}</div>
+          <div className="text-2xl font-bold text-[#1e40af]">{visitCount}</div>
           <div className="text-xs text-gray-500">올해 심방</div>
         </div>
         <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-xl font-bold text-[#1e3a5f]">{newFamilyProgress != null ? `${newFamilyProgress}%` : "해당없음"}</div>
+          <div className="text-xl font-bold text-[#1e40af]">{newFamilyProgress != null ? `${newFamilyProgress}%` : "해당없음"}</div>
           <div className="text-xs text-gray-500">새가족 정착</div>
         </div>
       </div>
@@ -221,7 +221,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition ${activeTab === tab ? "border-[#1e3a5f] text-[#1e3a5f]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition ${activeTab === tab ? "border-[#1e40af] text-[#1e40af]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
           >
             {tab === "info" && "기본 정보"}
             {tab === "attendance" && "출결 현황"}
@@ -301,8 +301,8 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
                   <XAxis dataKey="week" tick={{ fontSize: 10 }} />
                   <YAxis hide />
                   <Tooltip />
-                  <Bar dataKey="present" fill="#1e3a5f" name="출석" stackId="a" />
-                  <Bar dataKey="absent" fill="#e5e7eb" name="결석" stackId="a" />
+                  <Bar dataKey="present" fill="#1e40af" name="출석" stackId="a" />
+                  <Bar dataKey="absent" fill="#c7d0e8" name="결석" stackId="a" />
                 </BarChart>
               </ResponsiveContainer>
             </LazyChart>
@@ -328,7 +328,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={categoryGiving} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={(e) => e.name}>
-                      {categoryGiving.map((_, i) => <Cell key={i} fill={["#1e3a5f", "#d4a574", "#6B7280", "#10B981", "#F59E0B"][i % 5]} />)}
+                      {categoryGiving.map((_, i) => <Cell key={i} fill={["#1e40af", "#d4a574", "#6B7280", "#10B981", "#F59E0B"][i % 5]} />)}
                     </Pie>
                     <Tooltip formatter={(v: any) => [`${Number(v ?? 0).toLocaleString()}원`, ""]} />
                   </PieChart>

@@ -122,27 +122,27 @@ export function MonthlyReport({ db, toast }: MonthlyReportProps) {
       </div>
       <div className="space-y-6 text-sm">
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">월간 출석 현황</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">월간 출석 현황</h3>
           <p>출석 {attendanceSummary.present}명 / 결석 {attendanceSummary.absent}명{attendanceRows.length === 0 ? " (Supabase 출석 데이터 없음)" : ""}</p>
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">월간 새가족 현황</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">월간 새가족 현황</h3>
           <p>{newFamilyThisMonth.length}명</p>
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">월간 심방 현황</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">월간 심방 현황</h3>
           <p>{visitsThisMonth.length}건</p>
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">월간 재정 현황</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">월간 재정 현황</h3>
           <p>수입 {incomeThisMonth.toLocaleString()}원 / 지출 {expenseThisMonth.toLocaleString()}원</p>
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">주요 사역 내용</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">주요 사역 내용</h3>
           <textarea value={content} onChange={(e) => saveContent(e.target.value)} className="w-full rounded border p-2 text-sm min-h-[80px]" placeholder="수동 입력" />
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">다음 달 계획</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">다음 달 계획</h3>
           <textarea value={plan} onChange={(e) => savePlan(e.target.value)} className="w-full rounded border p-2 text-sm min-h-[80px]" placeholder="수동 입력" />
         </section>
       </div>

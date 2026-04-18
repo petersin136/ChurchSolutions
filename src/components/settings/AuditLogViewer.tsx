@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import type { AuditLog } from "@/types/db";
 
-const NAVY = "#1e3a5f";
+const NAVY = "#1e40af";
 const ACTION_COLORS: Record<string, string> = {
   CREATE: "bg-green-100 text-green-800",
   UPDATE: "bg-blue-100 text-blue-800",

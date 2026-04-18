@@ -354,8 +354,8 @@ function WheelColumn({ items, selected, onChange, format }: { items: number[]; s
           right: 0,
           height: WHEEL_ITEM_HEIGHT,
           transform: "translateY(-50%)",
-          borderTop: "1px solid #e5e7eb",
-          borderBottom: "1px solid #e5e7eb",
+          borderTop: "1px solid #c7d0e8",
+          borderBottom: "1px solid #c7d0e8",
           background: "rgba(59,130,246,0.06)",
           pointerEvents: "none",
           zIndex: 1,
@@ -428,7 +428,7 @@ function DateWheelPicker({ value, onChange, onConfirm }: { value: string; onChan
         <WheelColumn items={months} selected={month} onChange={handleMonthChange} format={(n) => `${n}월`} />
         <WheelColumn items={days} selected={Math.min(day, daysInCur)} onChange={handleDayChange} format={(n) => `${n}일`} />
       </div>
-      <div style={{ padding: "12px 16px", borderTop: "1px solid #e5e7eb" }}>
+      <div style={{ padding: "12px 16px", borderTop: "1px solid #c7d0e8" }}>
         <button
           type="button"
           onClick={() => {
@@ -553,7 +553,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: 
       style={{
         background: "#fff",
         borderRadius: mob ? 8 : 14,
-        border: "1px solid #e5e7eb",
+        border: "1px solid #c7d0e8",
         boxShadow: hover ? "0 4px 12px rgba(0,0,0,0.12)" : "0 1px 3px rgba(0,0,0,0.08)",
         padding: mob ? "10px 12px" : "16px 20px",
         marginBottom: mob ? 6 : 12,
@@ -1026,7 +1026,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
         <Card style={{ padding: 0, overflow: "visible", minWidth: 0 }}>
           {mob ? (
             <div style={{ padding: "8px 12px", borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1B2A4A", marginBottom: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", marginBottom: 8 }}>
                 출석 추이
               </div>
               <div
@@ -1038,17 +1038,17 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                   minWidth: 0,
                 }}
               >
-                <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", border: "1px solid #e8ecf1", flexShrink: 0 }}>
+                <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", border: "1px solid #c7d0e8", flexShrink: 0 }}>
                   {[currentYear, currentYear - 1, currentYear - 2].map((y, i, arr) => {
                     const active = attChartYear === y;
                     return (
-                      <button key={y} type="button" onClick={() => setAttChartYear(y)} style={{ height: 28, padding: "0 8px", fontSize: 11, fontWeight: 600, border: "none", borderRight: i < arr.length - 1 ? "1px solid #e8ecf1" : undefined, fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box", background: active ? "#1B2A4A" : "#fff", color: active ? "#fff" : "#555", whiteSpace: "nowrap" }}>
+                      <button key={y} type="button" onClick={() => setAttChartYear(y)} style={{ height: 28, padding: "0 8px", fontSize: 11, fontWeight: 600, border: "none", borderRight: i < arr.length - 1 ? "1px solid #c7d0e8" : undefined, fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box", background: active ? "#2563eb" : "#fff", color: active ? "#fff" : "#555", whiteSpace: "nowrap" }}>
                         {y}년
                       </button>
                     );
                   })}
                 </div>
-                <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", border: "1px solid #e8ecf1", flexShrink: 0 }}>
+                <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", border: "1px solid #c7d0e8", flexShrink: 0 }}>
                   {periodSegmentItems.map((item, i) => {
                     const active = attChartView === item.id;
                     const isLast = i === periodSegmentItems.length - 1;
@@ -1063,11 +1063,11 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                           fontSize: 11,
                           fontWeight: 600,
                           border: "none",
-                          borderRight: !isLast ? "1px solid #e8ecf1" : undefined,
+                          borderRight: !isLast ? "1px solid #c7d0e8" : undefined,
                           fontFamily: "inherit",
                           cursor: "pointer",
                           boxSizing: "border-box",
-                          background: active ? "#1B2A4A" : "#fff",
+                          background: active ? "#2563eb" : "#fff",
                           color: active ? "#fff" : "#555",
                           whiteSpace: "nowrap",
                         }}
@@ -1767,7 +1767,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
         style={{
           padding: mob ? "12px" : "16px 20px",
           borderRadius: mob ? 10 : 12,
-          ...(mob ? { border: "1px solid #e8ecf1", background: "#fff", flexShrink: 0 } : {}),
+          ...(mob ? { border: "1px solid #c7d0e8", background: "#fff", flexShrink: 0 } : {}),
         }}
       >
         {mob ? (
@@ -1809,10 +1809,10 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", minWidth: 0 }}>
-              <button type="button" onClick={goPrevWeek} style={{ width: 30, height: 30, borderRadius: 6, padding: 0, border: "1px solid #e8ecf1", background: "#f5f6f8", fontSize: 13, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxSizing: "border-box", color: C.navy, fontFamily: "inherit" }}>◀</button>
+              <button type="button" onClick={goPrevWeek} style={{ width: 30, height: 30, borderRadius: 6, padding: 0, border: "1px solid #c7d0e8", background: "#f5f8ff", fontSize: 13, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxSizing: "border-box", color: C.navy, fontFamily: "inherit" }}>◀</button>
               <span style={{ fontSize: 13, fontWeight: 700, flexShrink: 0, color: C.navy }}>{currentWeek}주차</span>
-              <button type="button" onClick={goNextWeek} style={{ width: 30, height: 30, borderRadius: 6, padding: 0, border: "1px solid #e8ecf1", background: "#f5f6f8", fontSize: 13, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxSizing: "border-box", color: C.navy, fontFamily: "inherit" }}>▶</button>
-              <div style={{ width: 1, height: 20, background: "#e8ecf1", flexShrink: 0 }} aria-hidden />
+              <button type="button" onClick={goNextWeek} style={{ width: 30, height: 30, borderRadius: 6, padding: 0, border: "1px solid #c7d0e8", background: "#f5f8ff", fontSize: 13, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxSizing: "border-box", color: C.navy, fontFamily: "inherit" }}>▶</button>
+              <div style={{ width: 1, height: 20, background: "#c7d0e8", flexShrink: 0 }} aria-hidden />
               <div style={{ display: "flex", gap: 4, flex: 1, minWidth: 0, justifyContent: "flex-end", alignItems: "center" }}>
                 {weeksInRange.map((w, idx) => {
                   const isActive = w === currentWeek;
@@ -1820,9 +1820,9 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
                     <div key={w} onClick={() => setCurrentWeek(w)} style={{
                       minWidth: 36, height: 28, padding: "0 6px", borderRadius: 8, fontSize: 11, fontWeight: 600, flexShrink: 0,
                       display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxSizing: "border-box",
-                      background: isActive ? "#1B2A4A" : "#fff",
+                      background: isActive ? "#2563eb" : "#fff",
                       color: isActive ? "#fff" : "#555",
-                      border: isActive ? "1px solid #1B2A4A" : "1px solid #e8ecf1",
+                      border: isActive ? "1px solid #2563eb" : "1px solid #c7d0e8",
                       transition: "background 0.15s, color 0.15s, border-color 0.15s",
                       whiteSpace: "nowrap",
                     }}>{idx + 1}주</div>
@@ -1831,8 +1831,8 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
               </div>
             </div>
             <div style={{ display: "flex", gap: 6, width: "100%", minWidth: 0 }}>
-              <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ flex: 1, minWidth: 0, height: 34, fontSize: 12, fontWeight: 600, borderRadius: 8, border: viewModeAtt === "list" ? "1px solid #1B2A4A" : "1px solid #e8ecf1", fontFamily: "inherit", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, boxSizing: "border-box", background: viewModeAtt === "list" ? "#1B2A4A" : "#fff", color: viewModeAtt === "list" ? "#fff" : "#555" }}><span style={{ display: "flex" }}><Icons.Table /></span> 전체 목록</button>
-              <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ flex: 1, minWidth: 0, height: 34, fontSize: 12, fontWeight: 600, borderRadius: 8, border: viewModeAtt === "group" ? "1px solid #1B2A4A" : "1px solid #e8ecf1", fontFamily: "inherit", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, boxSizing: "border-box", background: viewModeAtt === "group" ? "#1B2A4A" : "#fff", color: viewModeAtt === "group" ? "#fff" : "#555" }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
+              <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ flex: 1, minWidth: 0, height: 34, fontSize: 12, fontWeight: 600, borderRadius: 8, border: viewModeAtt === "list" ? "1px solid #2563eb" : "1px solid #c7d0e8", fontFamily: "inherit", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, boxSizing: "border-box", background: viewModeAtt === "list" ? "#2563eb" : "#fff", color: viewModeAtt === "list" ? "#fff" : "#555" }}><span style={{ display: "flex" }}><Icons.Table /></span> 전체 목록</button>
+              <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ flex: 1, minWidth: 0, height: 34, fontSize: 12, fontWeight: 600, borderRadius: 8, border: viewModeAtt === "group" ? "1px solid #2563eb" : "1px solid #c7d0e8", fontFamily: "inherit", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, boxSizing: "border-box", background: viewModeAtt === "group" ? "#2563eb" : "#fff", color: viewModeAtt === "group" ? "#fff" : "#555" }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
             </div>
           </div>
         ) : (
@@ -1888,27 +1888,27 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
 
       {!mob && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-          <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: viewModeAtt === "list" ? "1px solid #1B2A4A" : "1px solid #e8ecf1", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "list" ? "#1B2A4A" : "#fff", color: viewModeAtt === "list" ? "#fff" : "#555", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, boxSizing: "border-box" }}><span style={{ display: "flex" }}><Icons.Table /></span> 전체 목록</button>
-          <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: viewModeAtt === "group" ? "1px solid #1B2A4A" : "1px solid #e8ecf1", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "group" ? "#1B2A4A" : "#fff", color: viewModeAtt === "group" ? "#fff" : "#555", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, boxSizing: "border-box" }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
+          <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: viewModeAtt === "list" ? "1px solid #2563eb" : "1px solid #c7d0e8", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "list" ? "#2563eb" : "#fff", color: viewModeAtt === "list" ? "#fff" : "#555", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, boxSizing: "border-box" }}><span style={{ display: "flex" }}><Icons.Table /></span> 전체 목록</button>
+          <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: viewModeAtt === "group" ? "1px solid #2563eb" : "1px solid #c7d0e8", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "group" ? "#2563eb" : "#fff", color: viewModeAtt === "group" ? "#fff" : "#555", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, boxSizing: "border-box" }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
         </div>
       )}
 
       {mob ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, alignItems: "stretch", flexShrink: 0 }}>
-          <div style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e8ecf1", background: "#fff", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
+          <div style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #c7d0e8", background: "#fff", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 10, color: "#6b7b9e" }}>출석</span>
               <span style={{ fontSize: 10, color: "#e74c3c" }}>결석</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span style={{ fontSize: 20, fontWeight: 800, color: "#1B2A4A" }}>{present}명</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: "#2563eb" }}>{present}명</span>
               <span style={{ fontSize: 20, fontWeight: 800, color: "#e74c3c" }}>{absent}명</span>
             </div>
           </div>
-          <div style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #e8ecf1", background: "#fff", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
+          <div style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #c7d0e8", background: "#fff", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8, justifyContent: "center" }}>
             <div style={{ fontSize: 10, color: "#6b7b9e" }}>출석률</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 20, fontWeight: 800, color: "#1B2A4A" }}>{rate}%</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: "#2563eb" }}>{rate}%</span>
               <span style={{ fontSize: 10, color: "#999" }}>{unchecked}명 미체크</span>
             </div>
           </div>
@@ -2185,7 +2185,7 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
               fontFamily: "inherit",
               fontSize: mob ? 12 : 14,
               background: "#fff",
-              border: `1px solid ${searchFocused ? "#4F46E5" : "#e5e7eb"}`,
+              border: `1px solid ${searchFocused ? "#4F46E5" : "#c7d0e8"}`,
               borderRadius: mob ? 8 : 12,
               color: C.text,
               outline: "none",
@@ -2453,7 +2453,7 @@ function PrayerModal({
                     style={{
                       background: answered ? "#F0FDF4" : "#fff",
                       borderRadius: 16,
-                      border: "1px solid #e5e7eb",
+                      border: "1px solid #c7d0e8",
                       padding: 16,
                       transition: "background 0.2s",
                     }}
@@ -2653,9 +2653,9 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
             onClick={() => setNfSubTab(tab.id)}
             style={{
               padding: mob ? "5px 10px" : "8px 16px", borderRadius: 8, fontSize: mob ? 11 : 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              background: nfSubTab === tab.id ? "#1B2A4A" : "#fff",
+              background: nfSubTab === tab.id ? "#2563eb" : "#fff",
               color: nfSubTab === tab.id ? "#fff" : "#555",
-              border: nfSubTab === tab.id ? "1px solid #1B2A4A" : "1px solid #e8ecf1",
+              border: nfSubTab === tab.id ? "1px solid #2563eb" : "1px solid #c7d0e8",
               boxSizing: "border-box",
             }}
           >
@@ -2679,7 +2679,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
             key={row.label}
             style={{
               background: "#fff",
-              border: "1px solid #e8ecf1",
+              border: "1px solid #c7d0e8",
               borderRadius: mob ? 8 : 14,
               padding: mob ? "8px 10px" : "14px 18px",
               boxShadow: "none",
@@ -2687,7 +2687,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
             }}
           >
             <div style={{ fontSize: 10, color: "#6b7b9e", marginBottom: 4, lineHeight: 1.2 }}>{row.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#1B2A4A", lineHeight: 1.15, letterSpacing: "-0.02em" }}>{row.value}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#2563eb", lineHeight: 1.15, letterSpacing: "-0.02em" }}>{row.value}</div>
             <div style={{ fontSize: 9, color: "#999", marginTop: 4, lineHeight: 1.2 }}>{row.sub}</div>
           </div>
         ))}
@@ -2698,9 +2698,9 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
           {(["all", "진행중", "수료", "중단", "no_mentor"] as const).map(f => (
             <button key={f} type="button" onClick={() => { setFilter(f); setCurrentPage(1); }} style={{
               padding: mob ? "4px 10px" : "8px 14px", borderRadius: 8, fontSize: mob ? 10 : 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box",
-              background: filter === f ? "#1B2A4A" : "#fff",
+              background: filter === f ? "#2563eb" : "#fff",
               color: filter === f ? "#fff" : "#555",
-              border: filter === f ? "1px solid #1B2A4A" : "1px solid #e8ecf1",
+              border: filter === f ? "1px solid #2563eb" : "1px solid #c7d0e8",
             }}>{f === "all" ? "전체" : f === "no_mentor" ? "섬김이 미배정" : f}</button>
           ))}
         </div>
@@ -2722,20 +2722,20 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
                 nfBadgeColor = "#999";
               } else if (program.status === "수료") {
                 nfBadgeLabel = "수료";
-                nfBadgeColor = "#1B2A4A";
+                nfBadgeColor = "#2563eb";
               } else {
                 nfBadgeLabel = "진행중";
-                nfBadgeColor = "#1B2A4A";
+                nfBadgeColor = "#2563eb";
               }
               return (
                 <Card key={member.id} onClick={() => openProgramDetail(member.id)} style={{ cursor: "pointer", padding: mob ? "10px 12px" : 16 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: mob ? 8 : 10, minWidth: 0 }}>
-                      <div style={{ width: mob ? 32 : 44, height: mob ? 32 : 44, borderRadius: "50%", background: "#f0f2f5", color: "#1B2A4A", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: mob ? 12 : 16, overflow: "hidden", flexShrink: 0 }}>
+                      <div style={{ width: mob ? 32 : 44, height: mob ? 32 : 44, borderRadius: "50%", background: "#f0f2f5", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: mob ? 12 : 16, overflow: "hidden", flexShrink: 0 }}>
                         {member.photo ? <img src={member.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (member.name || "?")[0]}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: mob ? 13 : 16, color: "#1B2A4A", display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ fontWeight: 700, fontSize: mob ? 13 : 16, color: "#2563eb", display: "flex", alignItems: "center", gap: 6 }}>
                           {member.name}
                         </div>
                         <div style={{ fontSize: mob ? 10 : 12, color: "#999", marginTop: 2 }}>
@@ -2748,7 +2748,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                     {mentor ? <span style={{ fontSize: mob ? 11 : 13, color: "#555" }}>섬김이: {mentor.name}</span> : <span style={{ fontSize: mob ? 11 : 13, fontWeight: 600, color: "#999" }}>섬김이 미배정</span>}
                   </div>
-                  <div style={{ height: mob ? 4 : 6, background: "#e8ecf1", borderRadius: 3, overflow: "hidden", display: "flex" }}>
+                  <div style={{ height: mob ? 4 : 6, background: "#c7d0e8", borderRadius: 3, overflow: "hidden", display: "flex" }}>
                     {[1, 2, 3, 4].map(i => (
                       <div key={i} style={{ flex: 1, height: "100%", background: [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed][i - 1] ? "#c5cad3" : "#f0f2f5", marginRight: i < 4 ? 2 : 0 }} />
                     ))}
@@ -2879,7 +2879,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
       </div>
 
       <div style={{ position: "relative", paddingLeft: 24 }}>
-        <div style={{ position: "absolute", left: 11, top: 12, bottom: 12, width: 2, background: "#e5e7eb", borderRadius: 1 }} />
+        <div style={{ position: "absolute", left: 11, top: 12, bottom: 12, width: 2, background: "#c7d0e8", borderRadius: 1 }} />
         {WEEK_CONFIG.map((week, wi) => {
           const completed = [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed][wi];
           const isCurrent = currentWeekNum === wi + 1 && program.status === "진행중";
@@ -3017,7 +3017,7 @@ function ReportsSub({ db, currentWeek, toast, churchId }: { db: DB; currentWeek:
               display: "flex", flexDirection: "column", alignItems: "flex-start",
               padding: mob ? 16 : 20,
               background: "#fff",
-              border: "1px solid #e5e7eb",
+              border: "1px solid #c7d0e8",
               borderRadius: 12,
               cursor: "pointer",
               textAlign: "left",
@@ -3025,7 +3025,7 @@ function ReportsSub({ db, currentWeek, toast, churchId }: { db: DB; currentWeek:
               transition: "all 0.2s",
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = "#9ca3af"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.08)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "#c7d0e8"; e.currentTarget.style.boxShadow = "none"; }}
           >
             <report.Icon size={22} strokeWidth={1.5} color="#9ca3af" style={{ marginBottom: 12 }} />
             <span style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 4 }}>{report.title}</span>
@@ -3116,8 +3116,8 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
   const formInMob: CSSProperties | undefined = mob
     ? { height: 32, fontSize: 12, padding: "6px 10px", borderRadius: 8, boxSizing: "border-box" }
     : undefined;
-  const mokRowBtnPrimary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "#1B2A4A", color: "#fff", boxSizing: "border-box" };
-  const mokRowBtnSecondary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "1px solid #e8ecf1", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "#f5f6f8", color: "#555", boxSizing: "border-box" };
+  const mokRowBtnPrimary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "#2563eb", color: "#fff", boxSizing: "border-box" };
+  const mokRowBtnSecondary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "1px solid #c7d0e8", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "#f5f8ff", color: "#555", boxSizing: "border-box" };
   const mokRowBtnMuted: CSSProperties = { ...mokRowBtnSecondary, color: "#999" };
 
   return (
@@ -3142,11 +3142,11 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
       <Card
         style={
           mob
-            ? { padding: "10px 12px", borderRadius: 8, border: "1px solid #e8ecf1", background: "#fff", boxShadow: "none" }
-            : { border: "1px solid #e8ecf1", background: "#fff", boxShadow: "none" }
+            ? { padding: "10px 12px", borderRadius: 8, border: "1px solid #c7d0e8", background: "#fff", boxShadow: "none" }
+            : { border: "1px solid #c7d0e8", background: "#fff", boxShadow: "none" }
         }
       >
-        <h4 style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#1B2A4A", margin: 0, marginBottom: mob ? 8 : 16 }}>목장 관리</h4>
+        <h4 style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#2563eb", margin: 0, marginBottom: mob ? 8 : 16 }}>목장 관리</h4>
         <p style={{ fontSize: mob ? 11 : 13, color: "#999", margin: 0, marginBottom: mob ? 8 : 12, lineHeight: 1.45 }}>목장을 생성·이름 변경·삭제하고, 그룹원을 추가·제거할 수 있습니다.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 0, marginBottom: 12 }}>
           {mokjangList.map((g, idx) => {
@@ -3164,7 +3164,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
                   borderBottom: idx < mokjangList.length - 1 ? "1px solid #f0f2f5" : "none",
                 }}
               >
-                <span style={{ fontWeight: 700, color: "#1B2A4A", flex: mob ? "1 1 100%" : undefined, minWidth: 0 }}>{g}</span>
+                <span style={{ fontWeight: 700, color: "#2563eb", flex: mob ? "1 1 100%" : undefined, minWidth: 0 }}>{g}</span>
                 <span style={{ fontSize: mob ? 11 : 12, color: "#999" }}>{count}명</span>
                 <button type="button" onClick={() => { setMokjangManage(g); setAddMemberSelect(""); }} style={mokRowBtnPrimary}>그룹원 관리</button>
                 <button type="button" onClick={() => renameMokjang(g)} style={mokRowBtnSecondary}>이름 변경</button>
@@ -3181,7 +3181,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
             fontSize: mob ? 12 : 13,
             padding: mob ? "0 12px" : "0 14px",
             borderRadius: mob ? 6 : 8,
-            background: "#1B2A4A",
+            background: "#2563eb",
             color: "#fff",
             border: "none",
             fontWeight: 600,
@@ -3209,7 +3209,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
                   <li key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: `1px solid ${C.borderLight}`, fontSize: 14, minWidth: 0 }}>
                     <span style={{ fontWeight: 600, color: C.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span>
                     <span style={{ fontSize: 12, color: C.textMuted }}>{m.dept || ""} {m.role || ""}</span>
-                    <button type="button" onClick={() => removeMemberFromMokjang(m.id)} style={{ padding: "4px 10px", fontSize: 12, border: "1px solid #e8ecf1", background: "#f5f6f8", color: "#999", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>목장에서 제거</button>
+                    <button type="button" onClick={() => removeMemberFromMokjang(m.id)} style={{ padding: "4px 10px", fontSize: 12, border: "1px solid #c7d0e8", background: "#f5f8ff", color: "#999", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>목장에서 제거</button>
                   </li>
                 ))}
               </ul>
@@ -3859,11 +3859,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                                 fontSize: 11,
                                 fontWeight: 600,
                                 borderRadius: 8,
-                                border: active ? "1px solid #1B2A4A" : `1px solid ${C.border}`,
+                                border: active ? "1px solid #2563eb" : `1px solid ${C.border}`,
                                 fontFamily: "inherit",
                                 cursor: "pointer",
                                 boxSizing: "border-box",
-                                background: active ? "#1B2A4A" : "#fff",
+                                background: active ? "#2563eb" : "#fff",
                                 color: active ? "#fff" : "#555",
                               }}
                             >
@@ -3942,7 +3942,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               display: "block",
               width: 100, height: 100, borderRadius: "50%", background: "#f3f4f6", cursor: "pointer",
               overflow: "hidden", flexShrink: 0, position: "relative",
-              border: "2px solid #e5e7eb",
+              border: "2px solid #c7d0e8",
             }}
           >
             <input

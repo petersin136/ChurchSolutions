@@ -7,8 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAppData } from "@/contexts/AppDataContext";
 
-const NAVY = "#1B2A4A";
-const BORDER = "#e8ecf1";
+const NAVY = "#2563eb";
+const BORDER = "#c7d0e8";
 const ROW_LINE = "#f0f2f5";
 const MUTED = "#999";
 const TEXT = "#555";

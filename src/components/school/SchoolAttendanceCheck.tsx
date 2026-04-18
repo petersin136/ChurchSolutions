@@ -81,7 +81,7 @@ function PortalSelect({
         minWidth: position.width,
         zIndex: 9999,
         background: "#fff",
-        border: "1px solid #e5e7eb",
+        border: "1px solid #c7d0e8",
         borderRadius: 8,
         boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         maxHeight: 280,
@@ -436,7 +436,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3 bg-white rounded-lg border p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4" style={{ borderColor: "#e8ecf1" }}>
+      <div className="space-y-3 bg-white rounded-lg border p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4" style={{ borderColor: "#c7d0e8" }}>
         <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4">
           <label className="flex items-center gap-2 shrink-0">
             <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">날짜</span>
@@ -451,7 +451,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
           </label>
           <span
             className="text-xs md:text-sm font-semibold px-3 py-2 rounded-md"
-            style={{ color: "#1B2A4A", background: "#f0f2f5" }}
+            style={{ color: "#2563eb", background: "#f0f2f5" }}
           >
             주일예배
           </span>
@@ -496,8 +496,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                   borderRadius: 6,
                   whiteSpace: "nowrap",
                   flexShrink: 0,
-                  border: on ? "none" : "1px solid #e8ecf1",
-                  background: on ? "#1B2A4A" : "#f5f6f8",
+                  border: on ? "none" : "1px solid #c7d0e8",
+                  background: on ? "#2563eb" : "#f5f8ff",
                   color: on ? "#fff" : "#555",
                   cursor: "pointer",
                 }}
@@ -510,24 +510,24 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12 bg-white rounded-lg border" style={{ borderColor: "#e8ecf1" }}>
+        <div className="flex items-center justify-center py-12 bg-white rounded-lg border" style={{ borderColor: "#c7d0e8" }}>
           <span
             className="inline-block w-6 h-6 rounded-full animate-spin"
-            style={{ border: "2px solid #e8ecf1", borderTopColor: "#1B2A4A" }}
+            style={{ border: "2px solid #c7d0e8", borderTopColor: "#2563eb" }}
           />
           <span className="ml-2" style={{ fontSize: 12, color: "#999" }}>출석 데이터 로딩 중...</span>
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 bg-white rounded-lg border" style={{ borderColor: "#e8ecf1" }}>
+        <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 bg-white rounded-lg border" style={{ borderColor: "#c7d0e8" }}>
           <table className="w-full min-w-[320px]" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>교인</th>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>역할</th>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>반</th>
-                <th className="text-center py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>출석 상태</th>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>사유</th>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#1B2A4A", borderBottom: "2px solid #1B2A4A" }}>연속출석</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>교인</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>역할</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>반</th>
+                <th className="text-center py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>출석 상태</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>사유</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>연속출석</th>
               </tr>
             </thead>
             <tbody>
@@ -560,8 +560,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                               borderRadius: 6,
                               fontSize: 11,
                               fontWeight: 600,
-                              border: status === "출석" ? "none" : "1px solid #e8ecf1",
-                              background: status === "출석" ? "#1B2A4A" : "#f5f6f8",
+                              border: status === "출석" ? "none" : "1px solid #c7d0e8",
+                              background: status === "출석" ? "#2563eb" : "#f5f8ff",
                               color: status === "출석" ? "#fff" : "#555",
                             }}
                           >
@@ -575,8 +575,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                               borderRadius: 6,
                               fontSize: 11,
                               fontWeight: 600,
-                              border: status === "결석" ? "none" : "1px solid #e8ecf1",
-                              background: status === "결석" ? "#1B2A4A" : "#f5f6f8",
+                              border: status === "결석" ? "none" : "1px solid #c7d0e8",
+                              background: status === "결석" ? "#2563eb" : "#f5f8ff",
                               color: status === "결석" ? "#fff" : "#555",
                             }}
                           >
@@ -593,8 +593,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                           disabled={!isAbsent}
                           className="px-3 py-1.5 text-sm rounded-md w-40"
                           style={{
-                            border: "1px solid #e8ecf1",
-                            background: isAbsent ? "#fff" : "#f5f6f8",
+                            border: "1px solid #c7d0e8",
+                            background: isAbsent ? "#fff" : "#f5f8ff",
                             color: isAbsent ? "#555" : "#999",
                           }}
                         />
@@ -603,7 +603,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                         {streak > 0 ? (
                           <span
                             className="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold"
-                            style={{ background: "#f0f2f5", color: "#1B2A4A" }}
+                            style={{ background: "#f0f2f5", color: "#2563eb" }}
                           >
                             {streak}주 연속
                           </span>
@@ -618,10 +618,10 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
         </div>
       )}
 
-      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 flex flex-wrap items-center justify-between gap-4 rounded-t-lg" style={{ borderColor: "#e8ecf1" }}>
+      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 flex flex-wrap items-center justify-between gap-4 rounded-t-lg" style={{ borderColor: "#c7d0e8" }}>
         <div className="flex gap-4 text-sm" style={{ color: "#555" }}>
-          <span>출석 <strong style={{ color: "#1B2A4A" }}>{count출석}명</strong></span>
-          <span>결석 <strong style={{ color: "#1B2A4A" }}>{count결석}명</strong></span>
+          <span>출석 <strong style={{ color: "#2563eb" }}>{count출석}명</strong></span>
+          <span>결석 <strong style={{ color: "#2563eb" }}>{count결석}명</strong></span>
           <span style={{ color: "#999" }}>/ 전체 {filteredEnrollments.length}명</span>
         </div>
         <div className="text-sm">
@@ -631,7 +631,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
               저장 중...
             </span>
           ) : saved ? (
-            <span style={{ color: "#1B2A4A", fontWeight: 600 }}>자동 저장됨</span>
+            <span style={{ color: "#2563eb", fontWeight: 600 }}>자동 저장됨</span>
           ) : saveError ? (
             <span style={{ color: "#555" }}>저장 실패 - 다시 시도해주세요</span>
           ) : null}

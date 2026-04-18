@@ -114,7 +114,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
       {/* Member Selection */}
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1b2a4a" }}>수신자 선택</h3>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#2563eb" }}>수신자 선택</h3>
           <span
             style={{
               display: "inline-flex",
@@ -144,7 +144,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
                 width: "100%",
                 padding: "9px 12px 9px 32px",
                 borderRadius: 10,
-                border: "1px solid #e5e7eb",
+                border: "1px solid #c7d0e8",
                 fontSize: 14,
                 outline: "none",
                 boxSizing: "border-box",
@@ -198,7 +198,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
                 ) : (
                   <Square size={18} style={{ color: "#d1d5db", flexShrink: 0 }} />
                 )}
-                <span style={{ fontSize: 14, fontWeight: 500, color: "#1b2a4a" }}>{m.name}</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#2563eb" }}>{m.name}</span>
                 {m.dept && <span style={{ fontSize: 12, color: "#9ca3af" }}>{m.dept}</span>}
               </div>
             );
@@ -208,7 +208,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
 
       {/* Message Compose */}
       <div style={card}>
-        <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: "#1b2a4a" }}>메시지 작성</h3>
+        <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: "#2563eb" }}>메시지 작성</h3>
 
         {/* Templates */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
@@ -220,7 +220,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
               style={{
                 padding: "7px 14px",
                 borderRadius: 20,
-                border: activeTemplate === i ? "1.5px solid #4361ee" : "1px solid #e5e7eb",
+                border: activeTemplate === i ? "1.5px solid #4361ee" : "1px solid #c7d0e8",
                 background: activeTemplate === i ? "#eef0ff" : "#ffffff",
                 color: activeTemplate === i ? "#4361ee" : "#374151",
                 fontSize: 13,
@@ -246,7 +246,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
             minHeight: 140,
             padding: "12px 14px",
             borderRadius: 12,
-            border: "1px solid #e5e7eb",
+            border: "1px solid #c7d0e8",
             fontSize: 14,
             lineHeight: 1.6,
             resize: "vertical",
@@ -274,7 +274,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
 const btnOutline: React.CSSProperties = {
   padding: "8px 14px",
   borderRadius: 10,
-  border: "1px solid #e5e7eb",
+  border: "1px solid #c7d0e8",
   background: "#ffffff",
   fontSize: 13,
   fontWeight: 500,

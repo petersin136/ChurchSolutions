@@ -11,9 +11,9 @@ import { AbsenteeManagement } from "@/components/attendance/AbsenteeManagement";
 import { AttendanceStatistics } from "@/components/attendance/AttendanceStatistics";
 import { SchoolAttendanceCheck } from "./SchoolAttendanceCheck";
 
-const NAVY = "#1B2A4A";
-const BORDER = "#e8ecf1";
-const UNSEL_BG = "#f5f6f8";
+const NAVY = "#2563eb";
+const BORDER = "#c7d0e8";
+const UNSEL_BG = "#f5f8ff";
 const UNSEL_TEXT = "#555";
 
 type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "weekly";

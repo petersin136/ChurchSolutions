@@ -382,7 +382,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
 
   const cardClass = "bg-white rounded-xl shadow-sm border border-gray-100 p-5";
   const labelClass = "block text-xs font-medium text-gray-500 mb-1";
-  const inputClass = "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-[#1e3a5f]";
+  const inputClass = "w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-[#1e40af]";
 
   return (
     <div className="max-h-[90vh] overflow-y-auto space-y-6 p-4">
@@ -394,7 +394,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
 
       {/* 섹션 1: 기본 정보 */}
       <section className={cardClass}>
-        <h3 className="text-lg font-semibold text-[#1e3a5f] mb-4">기본 정보</h3>
+        <h3 className="text-lg font-semibold text-[#1e40af] mb-4">기본 정보</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>이름 *</label>
@@ -452,7 +452,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
                   justifyContent: "center",
                   flexDirection: "column",
                   cursor: "pointer",
-                  border: "2px solid #e5e7eb",
+                  border: "2px solid #c7d0e8",
                 }}
               >
                 {photoPreview ? null : (
@@ -482,7 +482,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
 
       {/* 섹션 2: 교회 정보 */}
       <section className={cardClass}>
-        <h3 className="text-lg font-semibold text-[#1e3a5f] mb-4">교회 정보</h3>
+        <h3 className="text-lg font-semibold text-[#1e40af] mb-4">교회 정보</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>부서</label>
@@ -526,7 +526,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
 
       {/* 섹션 3: 세례/침례·가족 */}
       <section className={cardClass}>
-        <h3 className="text-lg font-semibold text-[#1e3a5f] mb-4">{baptismSectionLabel}</h3>
+        <h3 className="text-lg font-semibold text-[#1e40af] mb-4">{baptismSectionLabel}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>{baptismTypeLabel}</label>
@@ -577,7 +577,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
       {/* 섹션 4: 새가족 정보 */}
       <section className={cardClass}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-[#1e3a5f]">새가족 정보</h3>
+          <h3 className="text-lg font-semibold text-[#1e40af]">새가족 정보</h3>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={isNewFamily} onChange={(e) => setIsNewFamily(e.target.checked)} className="rounded" />
             <span className="text-sm">새가족</span>
@@ -613,7 +613,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
 
       {/* 섹션 5: 상태/메모 */}
       <section className={cardClass}>
-        <h3 className="text-lg font-semibold text-[#1e3a5f] mb-4">상태/메모</h3>
+        <h3 className="text-lg font-semibold text-[#1e40af] mb-4">상태/메모</h3>
         <div className="space-y-4">
           <div>
             <label className={labelClass}>성도 상태</label>
@@ -647,7 +647,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
         <button type="button" onClick={onCancel} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">
           취소
         </button>
-        <button type="button" onClick={save} disabled={saving} className="px-4 py-2 rounded-lg bg-[#1e3a5f] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={save} disabled={saving} className="px-4 py-2 rounded-lg bg-[#1e40af] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50">
           {saving ? "저장 중…" : "저장"}
         </button>
       </div>
@@ -656,7 +656,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
       {familySearchOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setFamilySearchOpen(false)}>
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-5 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h4 className="font-semibold text-[#1e3a5f] mb-3">가족 그룹 선택</h4>
+            <h4 className="font-semibold text-[#1e40af] mb-3">가족 그룹 선택</h4>
             <ul className="space-y-2">
               {families.map((f) => (
                 <li key={f.id}>
@@ -675,7 +675,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
       {referrerSearchOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setReferrerSearchOpen(false)}>
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-5 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h4 className="font-semibold text-[#1e3a5f] mb-3">인도자 검색</h4>
+            <h4 className="font-semibold text-[#1e40af] mb-3">인도자 검색</h4>
             <input type="text" value={referrerSearchQ} onChange={(e) => setReferrerSearchQ(e.target.value)} placeholder="이름 또는 연락처" className={inputClass + " mb-3"} />
             <ul className="space-y-1">
               {referrerCandidates.slice(0, 15).map((m) => (
@@ -695,11 +695,11 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
       {statusReasonModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setStatusReasonModalOpen(false)}>
           <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-5" onClick={(e) => e.stopPropagation()}>
-            <h4 className="font-semibold text-[#1e3a5f] mb-3">상태 변경 사유 (선택)</h4>
+            <h4 className="font-semibold text-[#1e40af] mb-3">상태 변경 사유 (선택)</h4>
             <textarea value={statusReason} onChange={(e) => setStatusReason(e.target.value)} placeholder="사유 입력" rows={3} className={inputClass + " mb-3"} />
             <div className="flex gap-2">
               <button type="button" onClick={() => setStatusReasonModalOpen(false)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm">취소</button>
-              <button type="button" onClick={confirmStatusChange} className="flex-1 py-2 rounded-lg bg-[#1e3a5f] text-white text-sm">확인</button>
+              <button type="button" onClick={confirmStatusChange} className="flex-1 py-2 rounded-lg bg-[#1e40af] text-white text-sm">확인</button>
             </div>
           </div>
         </div>

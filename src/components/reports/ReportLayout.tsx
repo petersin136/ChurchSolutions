@@ -48,7 +48,7 @@ export function ReportLayout({
             <button
               type="button"
               onClick={onPdfDownload}
-              className="px-4 py-2 rounded-xl bg-[#1e3a5f] text-white text-sm font-semibold hover:opacity-90"
+              className="px-4 py-2 rounded-xl bg-[#1e40af] text-white text-sm font-semibold hover:opacity-90"
             >
               PDF 다운로드
             </button>
@@ -87,12 +87,12 @@ export function ReportLayout({
                     <img src={logoUrl} alt="로고" className="h-12 w-auto object-contain" />
                   )}
                   <div>
-                    <h1 className="text-xl font-bold text-[#1e3a5f]">{churchName || "교회"}</h1>
+                    <h1 className="text-xl font-bold text-[#1e40af]">{churchName || "교회"}</h1>
                     <p className="text-lg font-semibold text-gray-700 mt-0.5">{title}</p>
                     {period && <p className="text-sm text-gray-500 mt-1">{period}</p>}
                   </div>
                 </div>
-                {!logoUrl && churchName && <h1 className="text-xl font-bold text-[#1e3a5f]">{churchName}</h1>}
+                {!logoUrl && churchName && <h1 className="text-xl font-bold text-[#1e40af]">{churchName}</h1>}
               </div>
               <p className="text-xs text-gray-400 mt-2">작성일: {new Date().toLocaleDateString("ko-KR")}</p>
             </header>

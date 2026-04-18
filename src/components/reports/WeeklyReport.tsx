@@ -178,29 +178,29 @@ export function WeeklyReport({ db, toast }: WeeklyReportProps) {
 
       <div className="space-y-6 text-sm">
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">예배 출석 현황</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">예배 출석 현황</h3>
           <p>출석 {attendanceSummary.present}명 / 온라인 - / 결석 {attendanceSummary.absent}명 (총 {attendanceSummary.total}명)</p>
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">새가족 현황</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">새가족 현황</h3>
           {newFamilyThisWeek.length === 0 ? <p>이번 주 등록 새가족 없음</p> : <ul className="list-disc pl-5">{newFamilyThisWeek.map((m) => <li key={m.id}>{m.name} ({m.dept ?? "-"})</li>)}</ul>}
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">심방 현황</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">심방 현황</h3>
           <p>이번 주 심방 {visitsThisWeek.length}건</p>
           {visitsThisWeek.length > 0 && <ul className="list-disc pl-5 mt-1">{visitsThisWeek.slice(0, 20).map((v, i) => <li key={i}>{v.date} - {v.type}</li>)}</ul>}
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">헌금 현황</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">헌금 현황</h3>
           <p>이번 주 총 수입 {incomeThisWeek.total.toLocaleString()}원</p>
           {Object.entries(incomeThisWeek.byCat).length > 0 && <ul className="list-disc pl-5 mt-1">{Object.entries(incomeThisWeek.byCat).map(([cat, amt]) => <li key={cat}>{cat}: {amt.toLocaleString()}원</li>)}</ul>}
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">주요 일정/메모</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">주요 일정/메모</h3>
           <textarea value={memo} onChange={(e) => saveMemo(e.target.value)} className="w-full rounded border p-2 text-sm min-h-[80px]" placeholder="수동 입력" />
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">기도제목</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">기도제목</h3>
           <textarea value={prayer} onChange={(e) => savePrayer(e.target.value)} className="w-full rounded border p-2 text-sm min-h-[80px]" placeholder="수동 입력" />
         </section>
       </div>

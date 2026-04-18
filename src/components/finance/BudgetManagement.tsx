@@ -36,8 +36,8 @@ const BUDGET_TABLE_COLGROUP = (
   </colgroup>
 );
 
-const NAVY = "#1B2A4A";
-const BORDER = "#e8ecf1";
+const NAVY = "#2563eb";
+const BORDER = "#c7d0e8";
 const ROW_LINE = "#f0f2f5";
 
 function useIsMobile(bp = 768) {
@@ -434,7 +434,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
           fontSize: btnFs,
           padding: mob ? "0 10px" : "0 14px",
           borderRadius: btnBr,
-          background: "#f5f6f8",
+          background: "#f5f8ff",
           color: "#555",
           border: "1.5px solid #e0e3ea",
           cursor: "pointer",
@@ -461,7 +461,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
           fontSize: 14,
           padding: "0 20px",
           borderRadius: 10,
-          background: "#1B2A4A",
+          background: "#2563eb",
           color: "#fff",
           border: "none",
           cursor: saving ? "not-allowed" : "pointer",

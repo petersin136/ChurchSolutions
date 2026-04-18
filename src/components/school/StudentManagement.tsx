@@ -19,12 +19,12 @@ function useIsMobile(bp = 768) {
   return m;
 }
 
-const NAVY = "#1B2A4A";
-const BORDER = "#e8ecf1";
+const NAVY = "#2563eb";
+const BORDER = "#c7d0e8";
 const ROW_LINE = "#f0f2f5";
 const MUTED = "#999";
 const TEXT = "#555";
-const UNSEL_BG = "#f5f6f8";
+const UNSEL_BG = "#f5f8ff";
 
 type MemberInfo = { id: string; name: string; phone?: string } | null;
 type EnrollmentRow = SchoolEnrollment & { members?: MemberInfo; member?: MemberInfo };

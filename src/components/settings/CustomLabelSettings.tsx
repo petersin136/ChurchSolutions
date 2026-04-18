@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { CustomLabel } from "@/types/db";
 
-const NAVY = "#1e3a5f";
+const NAVY = "#1e40af";
 const DEFAULT_LABELS = ["구역", "목장", "속", "교구", "전도회", "선교회", "장로", "집사", "권사"];
 
 export interface CustomLabelSettingsProps {

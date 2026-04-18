@@ -89,14 +89,14 @@ function SectionTitle({ num, title }: { num: string; title: string }) {
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, marginTop: 4 }}>
       <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", color: "#111" }}>{num}</span>
       <span style={{ fontSize: 14, fontWeight: 700, color: "#111" }}>{title}</span>
-      <div style={{ flex: 1, height: 1, background: "#e5e7eb", marginLeft: 8 }} />
+      <div style={{ flex: 1, height: 1, background: "#c7d0e8", marginLeft: 8 }} />
     </div>
   );
 }
 
 function StatBox({ label, value, unit }: { label: string; value: string | number; unit: string }) {
   return (
-    <div style={{ padding: 14, border: "1px solid #e5e7eb", borderRadius: 6 }}>
+    <div style={{ padding: 14, border: "1px solid #c7d0e8", borderRadius: 6 }}>
       <p style={{ fontSize: 10, color: "#6b7280", margin: "0 0 4px" }}>{label}</p>
       <p style={{ fontSize: 22, fontWeight: 700, lineHeight: 1, margin: 0 }}>{value}<span style={{ fontSize: 11, fontWeight: 400, color: "#6b7280" }}>{unit}</span></p>
     </div>
@@ -117,7 +117,7 @@ function ReportHeader({ churchName, enTitle, krTitle, dateLabel }: { churchName:
 
 function ReportFooter({ churchName, reportTitle }: { churchName: string; reportTitle: string }) {
   return (
-    <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid #c7d0e8", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>{churchName} · {reportTitle}</p>
       <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>생성일: {new Date().toLocaleDateString("ko-KR")}</p>
     </div>
@@ -350,7 +350,7 @@ export function MembersReport({ db, churchName }: { db: DB; churchName: string }
         <SectionTitle num="02" title="부서별 현황" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
           {Object.entries(deptMap).sort((a, b) => b[1] - a[1]).map(([dept, cnt]) => (
-            <div key={dept} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+            <div key={dept} style={{ padding: 12, border: "1px solid #c7d0e8", borderRadius: 8 }}>
               <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 2px" }}>{dept}</p>
               <p style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{cnt}<span style={{ fontSize: 12, fontWeight: 400, color: "#6b7280" }}>명</span></p>
             </div>
@@ -735,10 +735,10 @@ export function ReportPreviewModal({
   const handlePrint = () => { window.print(); };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#e5e7eb", zIndex: 9999, display: "flex", flexDirection: "column" }}>
+    <div style={{ position: "fixed", inset: 0, background: "#c7d0e8", zIndex: 9999, display: "flex", flexDirection: "column" }}>
       {/* Toolbar */}
       <div style={{
-        background: "#fff", borderBottom: "1px solid #e5e7eb",
+        background: "#fff", borderBottom: "1px solid #c7d0e8",
         padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

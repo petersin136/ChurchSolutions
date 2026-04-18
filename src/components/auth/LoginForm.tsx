@@ -61,11 +61,11 @@ export default function LoginForm() {
       <div style={{ width: "100%", maxWidth: 384 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>⛪</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "#1b2a4a" }}>교역자 슈퍼플래너</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "#2563eb" }}>교역자 슈퍼플래너</div>
           <div style={{ fontSize: 14, color: "#6b7b9e", marginTop: 4 }}>교회 관리의 시작</div>
         </div>
 
-        <form onSubmit={handleLogin} style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #e8e6e1", padding: 24 }}>
+        <form onSubmit={handleLogin} style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #c7d0e8", padding: 24 }}>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#6b7b9e", marginBottom: 6 }}>이메일</label>
             <input
@@ -75,7 +75,7 @@ export default function LoginForm() {
               placeholder="example@church.com"
               required
               autoComplete="email"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e8e6e1", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #c7d0e8", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
           </div>
           <div style={{ marginBottom: 16 }}>
@@ -87,7 +87,7 @@ export default function LoginForm() {
               placeholder="••••••••"
               required
               autoComplete="current-password"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e8e6e1", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #c7d0e8", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
           </div>
 
@@ -104,7 +104,7 @@ export default function LoginForm() {
               width: "100%",
               padding: "12px 0",
               borderRadius: 12,
-              backgroundColor: loading ? "#9ca3af" : "#1b2a4a",
+              backgroundColor: loading ? "#9ca3af" : "#2563eb",
               color: "#ffffff",
               fontSize: 14,
               fontWeight: 600,

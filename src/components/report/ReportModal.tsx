@@ -78,7 +78,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            borderBottom: "1px solid #E5E7EB",
+            borderBottom: "1px solid #c7d0e8",
             flexShrink: 0,
           }}
         >
@@ -142,7 +142,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
                         fontWeight: 600,
                         color: "#6B7280",
                         textAlign: col.align || "left",
-                        borderBottom: "2px solid #E5E7EB",
+                        borderBottom: "2px solid #c7d0e8",
                         whiteSpace: "nowrap",
                         width: col.width,
                       }}
@@ -197,7 +197,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
           <div
             style={{
               padding: "16px 28px",
-              borderTop: "1px solid #E5E7EB",
+              borderTop: "1px solid #c7d0e8",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",

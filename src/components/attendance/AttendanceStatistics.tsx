@@ -269,7 +269,7 @@ export function AttendanceStatistics({
 
       {mob ? (
         <div className="overflow-hidden rounded-lg border border-gray-100 bg-white">
-          <div className="flex items-center border-b border-gray-100 bg-gray-50/50 px-1.5 py-1 text-[9px] font-semibold text-[#1e3a5f]">
+          <div className="flex items-center border-b border-gray-100 bg-gray-50/50 px-1.5 py-1 text-[9px] font-semibold text-[#1e40af]">
             <span className="w-[44px] shrink-0">이름</span>
             <span className="min-w-0 flex-1 truncate">부서</span>
             <span className="w-[26px] shrink-0 text-right">총</span>
@@ -300,12 +300,12 @@ export function AttendanceStatistics({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/50">
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">이름</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#1e3a5f]">부서</th>
-                <th className="px-4 py-3 text-right font-semibold text-[#1e3a5f]">총 주일수</th>
-                <th className="px-4 py-3 text-right font-semibold text-[#1e3a5f]">출석</th>
-                <th className="px-4 py-3 text-right font-semibold text-[#1e3a5f]">결석</th>
-                <th className="px-4 py-3 text-right font-semibold text-[#1e3a5f]">출석률</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">이름</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#1e40af]">부서</th>
+                <th className="px-4 py-3 text-right font-semibold text-[#1e40af]">총 주일수</th>
+                <th className="px-4 py-3 text-right font-semibold text-[#1e40af]">출석</th>
+                <th className="px-4 py-3 text-right font-semibold text-[#1e40af]">결석</th>
+                <th className="px-4 py-3 text-right font-semibold text-[#1e40af]">출석률</th>
               </tr>
             </thead>
             <tbody>
@@ -334,12 +334,12 @@ export function AttendanceStatistics({
 
       <div className={mob ? "grid grid-cols-1 gap-2" : "grid grid-cols-1 gap-6 lg:grid-cols-2"}>
         <div className={mob ? "rounded-lg border border-gray-100 bg-white p-2" : "rounded-xl border border-gray-100 bg-white p-4 shadow-sm"}>
-          <h4 className={mob ? "mb-2 text-[12px] font-semibold text-[#1e3a5f]" : "mb-4 text-sm font-semibold text-[#1e3a5f]"}>
+          <h4 className={mob ? "mb-2 text-[12px] font-semibold text-[#1e40af]" : "mb-4 text-sm font-semibold text-[#1e40af]"}>
             부서별 요약
           </h4>
           {mob ? (
             <div className="space-y-0">
-              <div className="flex border-b border-gray-100 px-1 py-1 text-[9px] font-semibold text-[#1e3a5f]">
+              <div className="flex border-b border-gray-100 px-1 py-1 text-[9px] font-semibold text-[#1e40af]">
                 <span className="min-w-0 flex-1">부서</span>
                 <span className="w-[40px] shrink-0 text-right">인원</span>
                 <span className="w-[44px] shrink-0 text-right">평균</span>
@@ -356,9 +356,9 @@ export function AttendanceStatistics({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="py-2 text-left font-semibold text-[#1e3a5f]">부서</th>
-                  <th className="py-2 text-right font-semibold text-[#1e3a5f]">등록 인원</th>
-                  <th className="py-2 text-right font-semibold text-[#1e3a5f]">평균 출석률</th>
+                  <th className="py-2 text-left font-semibold text-[#1e40af]">부서</th>
+                  <th className="py-2 text-right font-semibold text-[#1e40af]">등록 인원</th>
+                  <th className="py-2 text-right font-semibold text-[#1e40af]">평균 출석률</th>
                 </tr>
               </thead>
               <tbody>
@@ -377,7 +377,7 @@ export function AttendanceStatistics({
           className={mob ? "rounded-lg border border-gray-100 bg-white p-2" : "rounded-xl border border-gray-100 bg-white p-4 shadow-sm"}
           style={{ minHeight: mob ? chartH + 48 : 280 }}
         >
-          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold text-[#1e3a5f]" : "mb-4 text-sm font-semibold text-[#1e3a5f]"}>
+          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold text-[#1e40af]" : "mb-4 text-sm font-semibold text-[#1e40af]"}>
             월별 출석률 추이
           </h4>
           {monthlyChart.length === 0 ? (
@@ -391,7 +391,7 @@ export function AttendanceStatistics({
                     <XAxis dataKey="month" tick={{ fontSize: mob ? 9 : 11 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: mob ? 9 : 11 }} width={mob ? 28 : undefined} />
                     <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
-                    <Bar dataKey="rate" name="출석률" fill="#1b2a4a" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="rate" name="출석률" fill="#2563eb" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </LazyChart>

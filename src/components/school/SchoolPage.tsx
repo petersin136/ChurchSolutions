@@ -65,7 +65,7 @@ export function SchoolPage({ db, toast }: SchoolPageProps) {
       headerTitle={info.title}
       headerDesc={info.desc}
       SidebarIcon={LayoutDashboard}
-      accentColor="#1B2A4A"
+      accentColor="#2563eb"
     >
       {subTab === "dashboard" && <SchoolDashboard toast={toast} />}
       {subTab === "departments" && <DepartmentManagement db={db} toast={toast} />}

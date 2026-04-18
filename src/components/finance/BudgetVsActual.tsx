@@ -15,8 +15,8 @@ import {
 } from "@/components/finance/budgetYearToolbarStyles";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
-const NAVY = "#1B2A4A";
-const BORDER = "#e8ecf1";
+const NAVY = "#2563eb";
+const BORDER = "#c7d0e8";
 const ROW_LINE = "#f0f2f5";
 
 function useIsMobile(bp = 768) {
@@ -63,7 +63,7 @@ function togglePill(selected: boolean, mob = true): CSSProperties {
     fontWeight: 600,
     borderRadius: mob ? 6 : 8,
     border: selected ? "none" : `1px solid ${BORDER}`,
-    background: selected ? NAVY : "#f5f6f8",
+    background: selected ? NAVY : "#f5f8ff",
     color: selected ? "#fff" : "#555",
     cursor: "pointer",
     outline: "none",

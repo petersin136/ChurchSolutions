@@ -86,8 +86,8 @@ export function Pagination({
   const btnBase: React.CSSProperties = {
     padding: tight ? "4px 8px" : desktopLoose ? "10px 14px" : "8px 12px",
     borderRadius: tight ? 6 : desktopLoose ? 10 : 6,
-    border: "1px solid #e8ecf1",
-    background: "#f5f6f8",
+    border: "1px solid #c7d0e8",
+    background: "#f5f8ff",
     color: "#555",
     fontSize: tight ? (pinBottom ? 10 : 11) : desktopLoose ? 14 : 13,
     fontWeight: 500,
@@ -172,7 +172,7 @@ export function Pagination({
             style={{
               ...btnBase,
               flexShrink: 0,
-              ...(p === safePage ? { background: "#1B2A4A", color: "#fff", borderColor: "#1B2A4A" } : {}),
+              ...(p === safePage ? { background: "#2563eb", color: "#fff", borderColor: "#2563eb" } : {}),
             }}
           >
             {p}

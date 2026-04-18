@@ -52,7 +52,7 @@ export function DepartmentReport({ db, toast }: DepartmentReportProps) {
       </div>
       <div className="space-y-6 text-sm">
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">소속 교인 ({membersInDept.length}명)</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">소속 교인 ({membersInDept.length}명)</h3>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead><tr className="border-b"><th className="text-left py-2">이름</th><th className="text-left py-2">직분</th><th className="text-right py-2">출석률</th></tr></thead>
@@ -75,11 +75,11 @@ export function DepartmentReport({ db, toast }: DepartmentReportProps) {
           </div>
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">부서 출석률</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">부서 출석률</h3>
           <p>{attendanceRate}%</p>
         </section>
         <section>
-          <h3 className="font-semibold text-[#1e3a5f] mb-2">심방 현황</h3>
+          <h3 className="font-semibold text-[#1e40af] mb-2">심방 현황</h3>
           <p>{visitsForDept.length}건</p>
         </section>
       </div>

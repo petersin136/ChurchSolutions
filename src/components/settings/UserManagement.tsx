@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { UserRole, Role, Member } from "@/types/db";
 
-const NAVY = "#1e3a5f";
+const NAVY = "#1e40af";
 
 export interface UserManagementProps {
   userRoles: (UserRole & { role?: Role; member?: Member })[];

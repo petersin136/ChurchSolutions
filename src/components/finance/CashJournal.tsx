@@ -6,8 +6,8 @@ import type { CashJournalEntry } from "@/types/db";
 import type { Income } from "@/types/db";
 import type { Expense } from "@/types/db";
 
-const NAVY = "#1B2A4A";
-const BORDER = "#e8ecf1";
+const NAVY = "#2563eb";
+const BORDER = "#c7d0e8";
 const ROW = "#f0f2f5";
 const TEXT = "#555";
 const MUTED = "#999";
@@ -249,7 +249,7 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
           </div>
         )}
         {onExportPdf && (
-          <button type="button" onClick={() => onExportPdf(filtered)} style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, border: `1px solid ${BORDER}`, background: "#f5f6f8", color: TEXT, cursor: "pointer" }}>
+          <button type="button" onClick={() => onExportPdf(filtered)} style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, border: `1px solid ${BORDER}`, background: "#f5f8ff", color: TEXT, cursor: "pointer" }}>
             PDF
           </button>
         )}

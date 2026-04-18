@@ -4,45 +4,54 @@
 
 @layer base {
   :root {
-    --bg: #F2F2F7;
+    --bg: #f0f4ff;
     --surface: #FFFFFF;
-    --surface2: #F9F9FB;
-    --blue: #007AFF;
-    --blue-light: #E8F2FF;
-    --blue-dark: #0056CC;
-    --green: #34C759;
-    --green-light: #E8F9ED;
-    --orange: #FF9500;
-    --orange-light: #FFF4E5;
-    --red: #FF3B30;
-    --red-light: #FFE9E8;
-    --purple: #AF52DE;
-    --purple-light: #F4EAFA;
-    --teal: #5AC8FA;
-    --teal-light: #E8F7FE;
-    --indigo: #5856D6;
-    --indigo-light: #EEEEFE;
-    --pink: #FF2D55;
-    --pink-light: #FFE5EB;
-    --text1: #1C1C1E;
-    --text2: #8E8E93;
-    --text3: #AEAEB2;
-    --border: rgba(60,60,67,0.08);
-    --border2: rgba(60,60,67,0.15);
-    --sep: rgba(60,60,67,0.06);
+    --surface2: #f5f8ff;
+    --blue: #2563eb;
+    --blue-light: #dbeafe;
+    --blue-dark: #1d4ed8;
+    --green: #22c55e;
+    --green-light: #dcfce7;
+    --orange: #f59e0b;
+    --orange-light: #fef3c7;
+    --red: #ef4444;
+    --red-light: #fee2e2;
+    --purple: #8b5cf6;
+    --purple-light: #ede9fe;
+    --teal: #06b6d4;
+    --teal-light: #cffafe;
+    --indigo: #6366f1;
+    --indigo-light: #e0e7ff;
+    --pink: #ec4899;
+    --pink-light: #fce7f3;
+    --text1: #1e293b;
+    --text2: #64748b;
+    --text3: #94a3b8;
+    --border: #c7d0e8;
+    --border-light: #dce4f5;
+    --border2: #b8c4e0;
+    --sep: #e8edf5;
     --font: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.04);
-    --shadow-md: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-lg: 0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
-    --shadow-xl: 0 16px 48px rgba(0,0,0,0.12);
-    --shadow-card: 0 0.5px 0 rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.04);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.03);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.04);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.06);
+    --shadow-xl: 0 16px 48px rgba(0,0,0,0.08);
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.03);
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 20px;
     --radius-full: 9999px;
-    --header-h: 56px;
-    --tab-h: 64px;
+    --header-h: 52px;
+    --tab-h: 0px;
+    --pc-nav-h: 52px;
+    --pc-nav-bg: #ffffff;
+    --pc-nav-border: #c7d0e8;
+    --pc-nav-text: #64748b;
+    --pc-nav-text-active: #1e3a5f;
+    --pc-nav-hover-bg: #f5f8ff;
+    --pc-accent: #2563eb;
+    --pc-surface: #f0f4ff;
   }
   *, *::before, *::after {
     box-sizing: border-box;
@@ -57,11 +66,11 @@
     font-size: 15px;
     line-height: 1.5;
     color: var(--text1);
-    background: var(--bg);
+    background: #e4e8f6 !important;
     min-height: 100vh;
     min-height: 100dvh;
     overflow-x: hidden;
-    padding-bottom: calc(var(--tab-h) + 20px);
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-thumb { background: var(--text3); border-radius: var(--radius-full); }
@@ -114,44 +123,6 @@
 }
 
 @layer components {
-  .app-header {
-    position: sticky; top: 0; z-index: 100;
-    height: var(--header-h);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 16px;
-    background: rgba(255,255,255,0.78);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-bottom: 0.5px solid var(--border);
-  }
-  nav.tab-bar {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-    width: 100%;
-    max-width: 100%;
-    height: 64px;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    justify-content: space-evenly;
-    background: #fff;
-    border-top: 1px solid #e5e7eb;
-    box-sizing: border-box;
-  }
-  nav.tab-bar > button.tab-item {
-    flex: 1 1 0%;
-    min-width: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-    font-size: 11px; font-weight: 500; color: #9ca3af;
-    background: none; border: none; cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: color 0.15s;
-  }
-  nav.tab-bar > button.tab-item.active { color: #1b2a4a; font-weight: 600; }
-  nav.tab-bar > button.tab-item .tab-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
-  nav.tab-bar > button.tab-item .tab-label { line-height: 1; text-align: center; width: 100%; }
-  .page { display: none; max-width: 960px; margin: 0 auto; padding: 16px; }
-  .page.active { display: block; }
   #page-finance.page { max-width: 100%; padding: 0; margin: 0; --finance-accent: #1b2a4a; }
   #page-finance.page .finance-sub-pills { scrollbar-width: none; -ms-overflow-style: none; }
   #page-finance.page .finance-sub-pills::-webkit-scrollbar { display: none; }
@@ -350,7 +321,7 @@
     transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
   }
   .modal-bg.open .modal { transform: translateY(0); }
-  .modal-handle { width: 36px; height: 5px; border-radius: var(--radius-full); background: rgba(60,60,67,0.15); margin: 8px auto 4px; flex-shrink: 0; }
+  .modal-handle { width: 36px; height: 5px; border-radius: var(--radius-full); background: #b8c4e0; margin: 8px auto 4px; flex-shrink: 0; }
   .modal-head {
     display: flex; align-items: center; justify-content: space-between;
     padding: 12px 20px; border-bottom: 0.5px solid var(--sep); flex-shrink: 0;
@@ -503,7 +474,7 @@
   html { -webkit-text-size-adjust: 100%; }
   body {
     -webkit-text-size-adjust: 100%;
-    padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0) + 12px);
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0));
   }
   input,
   select:not(.compact-select),
@@ -531,39 +502,6 @@
     box-sizing: border-box !important;
     line-height: 1.2 !important;
     -webkit-text-size-adjust: 100% !important;
-  }
-  nav.tab-bar {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-    overflow-y: hidden;
-    flex-wrap: nowrap;
-    flex-direction: row;
-    justify-content: space-evenly;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: max(env(safe-area-inset-bottom, 0), 8px);
-    height: auto;
-    min-height: 64px;
-  }
-  nav.tab-bar::-webkit-scrollbar { display: none; }
-  nav.tab-bar > button.tab-item {
-    flex: 1 1 0%;
-    min-width: 0;
-    font-size: 10px;
-    padding: 8px 4px;
-  }
-  nav.tab-bar > button.tab-item .tab-icon { flex-shrink: 0; }
-  nav.tab-bar > button.tab-item .tab-label {
-    font-size: 10px;
-    line-height: 1.2;
-    white-space: nowrap;
-    word-break: keep-all;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    text-align: center;
-    width: 100%;
   }
   .mobile-sub-tabs::-webkit-scrollbar { display: none; }
   .modal-bg {
@@ -778,7 +716,7 @@
   .week-cell { width: 18px; height: 18px; font-size: 8px; }
 }
 @media print {
-  .app-header, nav.tab-bar, .btn, .modal-bg, .search-wrap, .segment { display: none !important; }
+  header.pc-top-nav, .btn, .modal-bg, .search-wrap, .segment { display: none !important; }
   body { background: #fff; padding: 0; }
   .page { display: block !important; }
   .card { box-shadow: none; border: 1px solid #ddd; }
@@ -860,17 +798,370 @@
   .mob-gap-xs { gap: 4px !important; }
 }
 
-/* 앱 하단 탭바 — 전체 너비·균등 열 (Tailwind @layer utilities보다 우선, 탭바만) */
-nav.tab-bar {
-  width: 100%;
-  max-width: 100%;
+/* ── Planning Center 스타일 상단 네비게이션 ── */
+
+.superplanner-root {
   display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  justify-content: space-evenly;
-  box-sizing: border-box;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #e4e8f6 !important;
 }
-nav.tab-bar > button.tab-item {
-  flex: 1 1 0% !important;
-  min-width: 0 !important;
+
+/* ── Planning Center 상단 네비게이션 (파일철 탭 스타일) ── */
+
+.pc-top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  background: #e8ecf7 !important;
+  border-bottom: 1px solid #cdd4ea !important;
+  padding: 0 20px;
+  gap: 0;
+}
+
+.pc-top-nav-left {
+  display: flex;
+  align-items: center;
+  margin-right: 24px;
+  position: relative;
+}
+
+.pc-top-nav-left::after {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 28px;
+  background: #c7d0e8;
+  margin-left: 20px;
+}
+
+.pc-top-nav-logo {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e3a5f;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+
+/* 탭 영역 — 파일철(folder tab) 스타일 */
+.pc-top-nav-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  flex: 1;
+  height: 100%;
+  padding-left: 4px;
+}
+
+.pc-nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--pc-nav-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  position: relative;
+  height: 100%;
+  border-bottom: 2px solid transparent;
+}
+
+.pc-nav-tab:hover {
+  color: var(--text1);
+  background: var(--pc-nav-hover-bg);
+}
+
+.pc-nav-tab.active {
+  color: #1e3a5f;
+  font-weight: 600;
+  border-bottom: 2px solid #2563eb;
+  background: none;
+}
+
+/* 오른쪽 유저 영역 */
+.pc-top-nav-right {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  gap: 12px;
+}
+
+.pc-user-email {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pc-nav-text);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-nav-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--pc-nav-border);
+  background: #ffffff;
+  border-radius: 8px;
+  color: var(--pc-nav-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pc-nav-logout:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+/* main 영역 */
+.superplanner-root > main {
+  flex: 1;
+  padding-bottom: 0;
+  background: transparent;
+}
+
+/* 기존 page 표시 규칙 */
+.page {
+  display: none;
+}
+.page.active {
+  display: block;
+}
+
+/* 전체 화면 사용 페이지 (재정, 목양 등) */
+#page-finance.page {
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+}
+#page-pastoral.page {
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+}
+#page-visit.page {
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+}
+#page-school.page {
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+}
+#page-planner.page {
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+}
+#page-bulletin.page {
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+}
+#page-reports.page {
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+/* ── 모바일 (1024px 이하) ── */
+@media (max-width: 1024px) {
+  .pc-top-nav {
+    padding: 0 8px;
+    height: 46px;
+  }
+
+  .pc-top-nav-left {
+    margin-right: 8px;
+  }
+
+  .pc-top-nav-left::after {
+    display: none;
+  }
+
+  .pc-top-nav-logo {
+    font-size: 14px;
+  }
+
+  .pc-top-nav-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-left: 0;
+  }
+
+  .pc-top-nav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pc-nav-tab {
+    padding: 8px 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .pc-nav-tab svg {
+    display: none;
+  }
+
+  .pc-user-email {
+    display: none;
+  }
+
+  .pc-nav-logout {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ── Planning Center 전체 프레임 테두리 ── */
+
+.pc-card {
+  background: #ffffff;
+  border: 1px solid #c7d0e8;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.card {
+  background: #ffffff !important;
+  border: 1px solid #c7d0e8 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+table.tbl {
+  border: 1px solid #c7d0e8;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+table.tbl thead th {
+  background: #f5f8ff;
+  border-bottom: 1px solid #c7d0e8;
+  color: #4b5563;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+table.tbl tbody tr {
+  border-bottom: 1px solid #f0f3f8;
+}
+
+table.tbl tbody tr:hover {
+  background: #f5f8ff;
+}
+
+.stat-card {
+  background: #ffffff !important;
+  border: 1px solid #c7d0e8 !important;
+  border-radius: 12px !important;
+}
+
+.modal-bg .modal {
+  border: 1px solid #c7d0e8;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.btn-primary {
+  background: #2563eb !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8 !important;
+}
+
+.segment {
+  background: #f0f4ff !important;
+  border: 1px solid #c7d0e8 !important;
+}
+
+.segment .seg-btn.on {
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ── Planning Center 컬러 톤 — 인라인/컴포넌트 오버라이드 ── */
+
+aside button[style*="background"] {
+  transition: all 0.15s ease !important;
+}
+
+aside nav button {
+  color: #64748b !important;
+}
+
+aside nav button[style*="#dbe4ff"],
+aside nav button[style*="219, 228, 255"],
+aside nav button[style*="rgb(219, 228, 255)"] {
+  background-color: #dbeafe !important;
+  color: #2563eb !important;
+}
+
+div[style*="gap"][style*="grid"] > div[style*="background: rgb(255, 255, 255)"],
+div[style*="gap"][style*="grid"] > div[style*="background: #fff"],
+div[style*="gap"][style*="grid"] > div[style*="background: white"] {
+  border: 1px solid #c7d0e8 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+div[style*="background: rgb(255, 255, 255)"],
+div[style*="background: #fff"],
+div[style*="background: white"],
+div[style*="background:#fff"],
+div[style*="background: #ffffff"],
+div[style*="background:#ffffff"] {
+  border: 1px solid #c7d0e8 !important;
+  border-radius: 12px !important;
+}
+
+canvas {
+  border-radius: 8px;
+}
+
+.finance-nav-btn {
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
+}
+
+.finance-sub-pills button {
+  border-radius: 20px !important;
+  border: 1px solid #c7d0e8 !important;
+  transition: all 0.15s ease !important;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c7d2e8;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

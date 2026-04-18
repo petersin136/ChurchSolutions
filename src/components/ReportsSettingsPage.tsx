@@ -17,12 +17,12 @@ import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { getSundayForWeekNum, saveSettingsToSupabase } from "@/lib/store";
 
-const NAVY = "#1B2A4A";
+const NAVY = "#2563eb";
 const MUTED = "#6b7b9e";
 const SUB = "#999";
 const TEXT = "#555";
 const WHITE = "#fff";
-const BORDER = "#e8ecf1";
+const BORDER = "#c7d0e8";
 const BG_SUMMARY = "#f8f9fb";
 const BAR_TRACK = "#f0f2f5";
 const ROW_ALT = "#fafbfc";
@@ -769,7 +769,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
-      color: #1B2A4A;
+      color: #2563eb;
       padding: 0;
       margin: 0;
     }
@@ -783,11 +783,11 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
       font-size: 11px;
     }
     th {
-      border-bottom: 2px solid #1B2A4A;
+      border-bottom: 2px solid #2563eb;
       font-weight: 700;
     }
     td {
-      border-bottom: 1px solid #e8ecf1;
+      border-bottom: 1px solid #c7d0e8;
     }
     tr:nth-child(even) {
       background: #fafbfc;
