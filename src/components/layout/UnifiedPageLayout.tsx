@@ -10,9 +10,9 @@ export type NavItemIcon = ComponentType<any>;
 const LAYOUT = {
   sidebarWidth: 260,
   sidebarWidthCollapsed: 64,
-  sidebarBg: "#e4e8f4",
+  sidebarBg: "#f0f2fa",
   sidebarHeaderPadding: "24px 20px",
-  sidebarHeaderBorder: "1px solid #c7d0e8",
+  sidebarHeaderBorder: "1px solid #dde2f0",
   sidebarHeaderIconSize: 36,
   sidebarHeaderIconRadius: 10,
   sidebarHeaderTitleFontSize: 18,
@@ -33,6 +33,7 @@ const LAYOUT = {
   mainContentPadding: 24,
   mainContentPaddingMob: 10,
   mainBg: "transparent",
+  contentAreaBg: "#f4f5fb",
   headerTitleFontSize: 24,
   headerTitleFontSizeMob: 18,
   headerDescFontSize: 14,
@@ -51,7 +52,7 @@ const MOB_TOP_TABS_H = 40;
 /** 사이드바 상단(교회명/날짜) — 모바일·데스크톱 동일 */
 const SIDEBAR_HEADER_FIXED = {
   padding: "24px 20px 16px 20px",
-  borderBottom: "1px solid #c7d0e8",
+  borderBottom: "1px solid #dde2f0",
   titleFontSize: 18,
   titleFontWeight: 700,
   titleLetterSpacing: -0.5,
@@ -233,7 +234,7 @@ export function UnifiedPageLayout({
         style={{
           width: mob ? LAYOUT.sidebarWidth : sideOpen ? LAYOUT.sidebarWidth : LAYOUT.sidebarWidthCollapsed,
           background: LAYOUT.sidebarBg,
-          borderRight: "1px solid #c0c9e2",
+          borderRight: "1px solid #dde2f0",
           color: "#1f2937",
           display: "flex",
           flexDirection: "column",
@@ -259,7 +260,7 @@ export function UnifiedPageLayout({
               style={{
                 fontSize: 20,
                 fontWeight: 800,
-                color: "#1e3a5f",
+                color: "#3a4670",
                 letterSpacing: "-0.3px",
                 lineHeight: 1.3,
                 marginBottom: 4,
@@ -337,7 +338,7 @@ export function UnifiedPageLayout({
                 style={{
                   fontSize: LAYOUT.sidebarSectionFontSize,
                   textTransform: "uppercase",
-                  color: "#9ca3af",
+                  color: "#a0a8be",
                   padding: LAYOUT.sidebarSectionPadding,
                   letterSpacing: "0.05em",
                   fontWeight: 600,
@@ -360,9 +361,9 @@ export function UnifiedPageLayout({
                   transition: SIDEBAR_MENU_ITEM.transition,
                   borderRadius: 8,
                   border: "none",
-                  borderLeft: isActive ? "2px solid #2563eb" : "2px solid transparent",
-                  backgroundColor: isActive ? "rgba(37,99,235,0.06)" : "transparent",
-                  color: isActive ? "#2563eb" : "#64748b",
+                  borderLeft: isActive ? "2.5px solid #4466e0" : "2.5px solid transparent",
+                  backgroundColor: isActive ? "rgba(68,102,224,0.04)" : "transparent",
+                  color: isActive ? "#3355cc" : "#7a839e",
                   cursor: "pointer" as const,
                   fontFamily: "inherit",
                   textAlign: "left" as const,
@@ -379,7 +380,7 @@ export function UnifiedPageLayout({
                     style={navBtnStyle}
                     onMouseEnter={(e) => {
                       if (mob || isActive) return;
-                      e.currentTarget.style.backgroundColor = "rgba(37,99,235,0.04)";
+                      e.currentTarget.style.backgroundColor = "rgba(68,102,224,0.03)";
                     }}
                     onMouseLeave={(e) => {
                       if (mob || isActive) return;
@@ -389,7 +390,7 @@ export function UnifiedPageLayout({
                     <Icon
                       size={SIDEBAR_MENU_ITEM.iconSize}
                       strokeWidth={1.5}
-                      color={isActive ? "#2563eb" : "#94a3b8"}
+                      color={isActive ? "#4466e0" : "#9ba3b8"}
                       style={{
                         width: SIDEBAR_MENU_ITEM.iconSize,
                         height: SIDEBAR_MENU_ITEM.iconSize,
@@ -621,7 +622,7 @@ export function UnifiedPageLayout({
             minHeight: 0,
             width: "100%",
             overflowY: "auto",
-            background: LAYOUT.mainBg,
+            background: LAYOUT.contentAreaBg,
             WebkitOverflowScrolling: "touch",
             paddingTop: 0,
             paddingLeft: mob ? LAYOUT.mainContentPaddingMob : LAYOUT.mainContentPadding,
