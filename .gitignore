@@ -32,3 +32,7 @@ playwright-report/
 # Embedded repo (제외)
 ChurchSolutions/
 BucheonChurch/
+
+# PWA 빌드 산출물 (next build 시 public에 생성 — 커밋하지 않음)
+public/sw.js
+public/workbox-*.js

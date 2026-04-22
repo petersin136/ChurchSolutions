@@ -24,7 +24,7 @@ function useIsMobile(bp = 768) {
 }
 
 const C = {
-  navy: "#2563eb", navyLight: "#2d4373", navyHover: "#152a45",
+  navy: "#2563eb", navyLight: "#2d4373", navyHover: "#3355cc",
   bg: "#f8f7f4", card: "#fff", border: "#c7d0e8", borderLight: "#f0efe9",
   text: "#555", textMuted: "#6b7b9e", textFaint: "#999",
   blue: "#2563eb", blueBg: "#f0f2f5", blueDark: "#2563eb",

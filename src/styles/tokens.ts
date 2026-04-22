@@ -7,11 +7,11 @@ export const tokens = {
     // Surfaces & text (Pastoral / 목양)
     bg: "#f8f7f4",
     card: "#ffffff",
-    navy: "#1b2a4a",
+    navy: "#4466e0",
     navyLight: "#2d4373",
     /** Headers, 출석 대시보드 강조, UnifiedPageLayout accent — slightly brighter than `navy` */
     navyEmphasis: "#1e3a5f",
-    text: "#1b2a4a",
+    text: "#4466e0",
     /** 세그먼트·보조 텍스트 (비강조 라벨) */
     sub: "#6b7b9e",
     textMuted: "#6b7b9e",

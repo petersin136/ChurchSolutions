@@ -4,9 +4,9 @@
 export const C = {
   bg: "#f8f7f4",
   card: "#ffffff",
-  navy: "#1b2a4a",
+  navy: "#4466e0",
   navyLight: "#2d4373",
-  text: "#1b2a4a",
+  text: "#4466e0",
   textMuted: "#6b7b9e",
   textFaint: "#a0aec0",
   border: "#e8e6e1",

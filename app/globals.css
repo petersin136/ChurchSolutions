@@ -7,9 +7,9 @@
     --bg: #f0f4ff;
     --surface: #FFFFFF;
     --surface2: #f5f8ff;
-    --blue: #2563eb;
+    --blue: #4466e0;
     --blue-light: #dbeafe;
-    --blue-dark: #1d4ed8;
+    --blue-dark: #3355cc;
     --green: #22c55e;
     --green-light: #dcfce7;
     --orange: #f59e0b;
@@ -50,7 +50,7 @@
     --pc-nav-text: #64748b;
     --pc-nav-text-active: #1e3a5f;
     --pc-nav-hover-bg: #f5f8ff;
-    --pc-accent: #2563eb;
+    --pc-accent: #4466e0;
     --pc-surface: #f0f4ff;
   }
   *, *::before, *::after {
@@ -66,14 +66,12 @@
     font-size: 15px;
     line-height: 1.5;
     color: var(--text1);
-    background: #e8ecf8 !important;
+    background: #ffffff !important;
     min-height: 100vh;
     min-height: 100dvh;
     overflow-x: hidden;
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-thumb { background: var(--text3); border-radius: var(--radius-full); }
   .wheel-column-scroll::-webkit-scrollbar { display: none; }
   /* 스크롤은 되지만 스크롤바 비표시 (연도 선택 등) */
   .scrollbar-hide {
@@ -123,7 +121,7 @@
 }
 
 @layer components {
-  #page-finance.page { max-width: 100%; padding: 0; margin: 0; --finance-accent: #1b2a4a; }
+  #page-finance.page { max-width: 100%; padding: 0; margin: 0; --finance-accent: #4466e0; }
   #page-finance.page .finance-sub-pills { scrollbar-width: none; -ms-overflow-style: none; }
   #page-finance.page .finance-sub-pills::-webkit-scrollbar { display: none; }
   /* 재정 상·하위 탭: 브라우저 기본 포커스/탭 링(노란 테두리) 제거 */
@@ -140,10 +138,10 @@
   }
   #page-pastoral.page { max-width: 100%; padding: 0; margin: 0; }
   #page-planner.page { max-width: 100%; padding: 0; margin: 0; }
-  /* 심방·상담: 앱 인라인 스타일과 동일 팔레트(#1B2A4A 등). 레거시 파란 버튼 클래스가 붙는 경우만 보정 */
-  #page-visit.page { max-width: 100%; padding: 0; margin: 0; --visit-accent: #1b2a4a; }
-  #page-visit.page .btn-primary { background: #1b2a4a; color: #fff; box-shadow: none; }
-  #page-visit.page .btn-primary:hover { background: #152a45; }
+  /* 심방·상담: 앱 인라인 스타일과 동일 팔레트(#4466e0 등). 레거시 파란 버튼 클래스가 붙는 경우만 보정 */
+  #page-visit.page { max-width: 100%; padding: 0; margin: 0; --visit-accent: #4466e0; }
+  #page-visit.page .btn-primary { background: #4466e0; color: #fff; box-shadow: none; }
+  #page-visit.page .btn-primary:hover { background: #3355cc; }
   #page-visit.page .btn-secondary { background: #f5f6f8; color: #555; border: 1px solid #e8ecf1; }
   #page-visit.page .btn-ghost { color: #6b7b9e; }
   #page-bulletin.page { max-width: 100%; padding: 0; margin: 0; }
@@ -151,9 +149,9 @@
   #page-statistics.page { max-width: 100%; padding: 0; margin: 0; }
   #page-messaging.page { max-width: 100%; padding: 0; margin: 0; }
   /* 교회학교: 목양과 동일 네이비 액센트 */
-  #page-school.page { max-width: 100%; padding: 0; margin: 0; --school-accent: #1b2a4a; }
-  #page-school.page .btn-primary { background: #1b2a4a; color: #fff; box-shadow: none; }
-  #page-school.page .btn-primary:hover { background: #152a45; }
+  #page-school.page { max-width: 100%; padding: 0; margin: 0; --school-accent: #4466e0; }
+  #page-school.page .btn-primary { background: #4466e0; color: #fff; box-shadow: none; }
+  #page-school.page .btn-primary:hover { background: #3355cc; }
   #page-school.page .btn-secondary { background: #f5f6f8; color: #555; border: 1px solid #e8ecf1; }
   #page-school.page .btn-ghost { color: #6b7b9e; }
   #page-school .school-transfer-reason::placeholder {
@@ -168,8 +166,8 @@
     -webkit-tap-highlight-color: transparent; user-select: none;
   }
   .btn:active { transform: scale(0.96); }
-  .btn-primary { background: var(--blue); color: #FFF; box-shadow: 0 2px 8px rgba(0,122,255,0.3); }
-  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-primary { background: #4466e0; color: #FFF; box-shadow: 0 2px 8px rgba(68,102,224,0.25); }
+  .btn-primary:hover { background: #3355cc; }
   .btn-secondary { background: var(--blue-light); color: var(--blue); }
   .btn-success { background: var(--green); color: #FFF; }
   .btn-danger { background: var(--red-light); color: var(--red); }
@@ -347,25 +345,82 @@
     padding: 24px; -webkit-overflow-scrolling: touch;
   }
   .modal-foot {
-    padding: 16px 24px; border-top: 1px solid #e8ecf4;
-    display: flex; gap: 10px; justify-content: flex-end; flex-shrink: 0;
+    padding: 16px 24px;
+    border-top: 1px solid #e8ecf4;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+  .modal-foot .btn {
+    padding: 10px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 80px;
+    text-align: center;
+  }
+  .modal-bg .modal .modal-foot .btn-primary,
+  .modal-bg .modal .modal-foot .btn.primary {
+    background: #4466e0 !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(68,102,224,0.2) !important;
+  }
+  .modal-bg .modal .modal-foot .btn-primary:hover,
+  .modal-bg .modal .modal-foot .btn.primary:hover {
+    background: #3355cc !important;
+  }
+  .modal-foot .btn-secondary {
+    background: #ffffff;
+    color: #475569;
+    border: 1px solid #c4cbe4;
+  }
+  .modal-foot .btn-secondary:hover {
+    background: #f0f2fa;
   }
   .fg { margin-bottom: 20px; }
   .fg > label, .modal-body label {
-    display: block; font-size: 13px; font-weight: 600;
-    color: #475569; margin-bottom: 6px; letter-spacing: 0.01em;
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
   }
-  /* ===== 모달 내 폼 요소 통일 ===== */
-  .modal-body input[type="text"],
-  .modal-body input[type="number"],
-  .modal-body input[type="email"],
-  .modal-body input[type="tel"],
-  .modal-body input[type="date"],
-  .modal-body input[type="time"],
-  .modal-body input[type="password"],
-  .modal-body input:not([type]),
-  .modal-body select,
-  .modal-body textarea {
+  /* CalendarDropdown 등 커스텀 컴포넌트 라벨 통일 */
+  .modal-body .fl,
+  .modal-body label.fl,
+  .modal-body .fg label,
+  .modal-body .fg > label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #475569 !important;
+    text-transform: none !important;
+    letter-spacing: 0.01em !important;
+  }
+  /* 체크박스 / 라디오 인라인 */
+  .modal-body input[type="checkbox"],
+  .modal-body input[type="radio"] {
+    width: auto;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    accent-color: #4466e0;
+  }
+  .fl {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
+  .fi, .fs, .ft {
     width: 100%;
     padding: 10px 14px;
     font-size: 15px;
@@ -380,82 +435,26 @@
     -webkit-appearance: none;
     appearance: none;
   }
-  .modal-body input:focus,
-  .modal-body select:focus,
-  .modal-body textarea:focus {
+  .fi:focus, .fs:focus, .ft:focus {
     border-color: #4466e0;
     box-shadow: 0 0 0 3px rgba(68,102,224,0.1);
   }
-  .modal-body input::placeholder,
-  .modal-body textarea::placeholder {
+  .fi::placeholder, .ft::placeholder {
     color: #a0a8be;
   }
-  .modal-body textarea {
-    min-height: 100px;
-    resize: vertical;
-    line-height: 1.5;
-  }
-  .modal-body select {
+  .fs {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     padding-right: 36px;
     cursor: pointer;
   }
-  .modal-body input[type="date"] {
-    padding-right: 12px;
+  .ft {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
   }
-
-  /* 체크박스 / 라디오 인라인 */
-  .modal-body input[type="checkbox"],
-  .modal-body input[type="radio"] {
-    width: auto;
-    padding: 0;
-    border: none;
-    box-shadow: none;
-    accent-color: #4466e0;
-  }
-  /* 모달 푸터 버튼 */
-  .modal-foot .btn {
-    padding: 10px 24px;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .modal-foot .btn-primary,
-  .modal-foot .btn.primary {
-    background: #4466e0;
-    color: #ffffff;
-    border: none;
-    box-shadow: 0 2px 8px rgba(68,102,224,0.25);
-  }
-  .modal-foot .btn-primary:hover,
-  .modal-foot .btn.primary:hover {
-    background: #3355cc;
-  }
-  .modal-foot .btn-secondary,
-  .modal-foot .btn:not(.btn-primary):not(.primary):not(.btn-danger) {
-    background: #ffffff;
-    color: #475569;
-    border: 1px solid #c4cbe4;
-  }
-  .modal-foot .btn-secondary:hover,
-  .modal-foot .btn:not(.btn-primary):not(.primary):not(.btn-danger):hover {
-    background: #f0f2fa;
-  }
-  .fl { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
-  .fi, .fs, .ft {
-    width: 100%; padding: 10px 14px; font-family: var(--font); font-size: 15px;
-    background: var(--surface2); border: 1.5px solid var(--border);
-    border-radius: var(--radius-md); color: var(--text1); outline: none; transition: all 0.15s;
-  }
-  .fi:focus, .fs:focus, .ft:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,0.12); }
-  .ft { resize: vertical; min-height: 72px; }
-  .fi::placeholder, .ft::placeholder { color: var(--text3); }
-  .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .upload-area {
     border: 2px dashed var(--border2); border-radius: var(--radius-md);
     padding: 20px; text-align: center; cursor: pointer; transition: all 0.15s;
@@ -636,9 +635,9 @@
     width: 100%;
   }
   .fi, .fs, .ft {
-    min-height: 44px;
     font-size: 16px;
     padding: 12px 14px;
+    border-radius: 10px;
   }
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -911,7 +910,7 @@
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  background: #e8ecf8 !important;
+  background: #ffffff !important;
 }
 
 /* ── Planning Center 상단 네비게이션 (파일철 탭 스타일) ── */
@@ -1287,110 +1286,58 @@ table.tbl thead th {
   font-size: 13px;
 }
 
-table.tbl tbody tr {
-  border-bottom: 1px solid #f0f3f8;
-}
+/* ══════════════════════════════════════
+   Global Overrides (정리 완료)
+   ══════════════════════════════════════ */
 
+/* 테이블 공통 */
+table.tbl tbody tr {
+  border-bottom: 1px solid #e8ecf4;
+}
 table.tbl tbody tr:hover {
   background: #f5f8ff;
 }
 
-.stat-card {
-  background: #ffffff !important;
-  border: 1px solid #c7d0e8 !important;
-  border-radius: 12px !important;
-}
-
-.modal-bg .modal {
-  border: 1px solid #c7d0e8;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-}
-
+/* 버튼 — 전역 primary */
 .btn-primary {
-  background: #2563eb !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
+  background: #4466e0;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(68,102,224,0.2);
 }
-
 .btn-primary:hover {
-  background: #1d4ed8 !important;
+  background: #3355cc;
 }
 
-.segment {
-  background: #f0f4ff !important;
-  border: 1px solid #c7d0e8 !important;
+/* 재정 탭 전용 */
+.finance-nav-btn {
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+.finance-sub-pills button {
+  border-radius: 20px;
+  border: 1px solid #c7d0e8;
+  transition: all 0.15s ease;
 }
 
-.segment .seg-btn.on {
-  background: #ffffff !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
-}
-
-/* ── Planning Center 컬러 톤 — 인라인/컴포넌트 오버라이드 ── */
-
-aside button[style*="background"] {
-  transition: all 0.15s ease !important;
-}
-
-aside nav button {
-  color: #64748b !important;
-}
-
-aside nav button[style*="#dbe4ff"],
-aside nav button[style*="219, 228, 255"],
-aside nav button[style*="rgb(219, 228, 255)"] {
-  background-color: #dbeafe !important;
-  color: #2563eb !important;
-}
-
-div[style*="gap"][style*="grid"] > div[style*="background: rgb(255, 255, 255)"],
-div[style*="gap"][style*="grid"] > div[style*="background: #fff"],
-div[style*="gap"][style*="grid"] > div[style*="background: white"] {
-  border: 1px solid #c7d0e8 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
-}
-
-div[style*="background: rgb(255, 255, 255)"],
-div[style*="background: #fff"],
-div[style*="background: white"],
-div[style*="background:#fff"],
-div[style*="background: #ffffff"],
-div[style*="background:#ffffff"] {
-  border: 1px solid #c7d0e8 !important;
-  border-radius: 12px !important;
-}
-
-canvas {
+/* 차트 캔버스 — 차트 컨테이너 안에서만 */
+.chart-wrap canvas,
+div[style*="height"] canvas {
   border-radius: 8px;
 }
 
-.finance-nav-btn {
-  border-radius: 8px !important;
-  transition: all 0.15s ease !important;
-}
-
-.finance-sub-pills button {
-  border-radius: 20px !important;
-  border: 1px solid #c7d0e8 !important;
-  transition: all 0.15s ease !important;
-}
-
+/* 스크롤바 — 단일 정의 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #c7d2e8;
+  background: #c4cbe4;
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }

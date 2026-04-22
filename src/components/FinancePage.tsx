@@ -637,14 +637,14 @@ function Modal({ open, onClose, title, children, width = 520 }: {
     <div style={{
       position: "fixed", inset: 0, zIndex: 1000,
       display: "flex", alignItems: mob ? "flex-end" : "center", justifyContent: "center",
-      background: "rgba(27,42,74,0.4)", backdropFilter: "blur(4px)", padding: mob ? 0 : 20,
+      background: "rgba(68, 102, 224,0.4)", backdropFilter: "blur(4px)", padding: mob ? 0 : 20,
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: "#fff", borderRadius: mob ? "20px 20px 0 0" : 20, padding: mob ? 20 : 32,
         width: mob ? "100%" : "90%", maxWidth: mob ? "100%" : width,
         height: modalHeight, maxHeight: modalHeight,
         display: "flex", flexDirection: "column", overflow: "hidden",
-        boxShadow: "0 20px 60px rgba(27,42,74,0.15)",
+        boxShadow: "0 20px 60px rgba(68, 102, 224,0.15)",
       }}>
         {mob && <div style={{ width: 36, height: 4, background: C.border, borderRadius: 4, margin: "0 auto 12px", flexShrink: 0 }} />}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
