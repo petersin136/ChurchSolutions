@@ -304,11 +304,18 @@
   }
   .week-cell.active { background: var(--blue); color: #FFF; box-shadow: 0 1px 4px rgba(0,122,255,0.3); }
   .modal-bg {
-    position: fixed; inset: 0; z-index: 1000;
-    background: rgba(30,40,70,0.35);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    display: flex; align-items: flex-end; justify-content: center;
-    opacity: 0; visibility: hidden; transition: all 0.2s ease;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
   }
   .modal-bg.open { opacity: 1; visibility: visible; }
   .modal {

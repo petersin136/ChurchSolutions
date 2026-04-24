@@ -50,27 +50,27 @@ const HALVES = ["상반기 (1-6월)","하반기 (7-12월)"];
 /* ---------- 기본 헌금 카테고리 (주일헌금, 십일조, 감사헌금, 건축헌금, 선교헌금, 기타) ---------- */
 interface Category { id: string; name: string; color: string; icon: string; }
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: "sunday", name: "주일헌금", color: "#2563eb", icon: "" },
-  { id: "tithe", name: "십일조", color: "#2563eb", icon: "" },
-  { id: "thanks", name: "감사헌금", color: "#2563eb", icon: "" },
-  { id: "building", name: "건축헌금", color: "#2563eb", icon: "" },
-  { id: "mission", name: "선교헌금", color: "#2563eb", icon: "" },
-  { id: "other", name: "기타", color: "#2563eb", icon: "" },
+  { id: "sunday", name: "주일헌금", color: "#4466e0", icon: "" },
+  { id: "tithe", name: "십일조", color: "#4466e0", icon: "" },
+  { id: "thanks", name: "감사헌금", color: "#4466e0", icon: "" },
+  { id: "building", name: "건축헌금", color: "#4466e0", icon: "" },
+  { id: "mission", name: "선교헌금", color: "#4466e0", icon: "" },
+  { id: "other", name: "기타", color: "#4466e0", icon: "" },
 ];
 
 /* ---------- 기본 부서 ---------- */
 interface Department { id: string; name: string; color: string; }
 const DEFAULT_DEPARTMENTS: Department[] = [
-  { id: "worship", name: "예배부", color: "#2563eb" },
-  { id: "education", name: "교육부", color: "#2563eb" },
-  { id: "mission_dept", name: "선교부", color: "#2563eb" },
-  { id: "youth_dept", name: "청년부", color: "#2563eb" },
-  { id: "children_dept", name: "주일학교부", color: "#2563eb" },
-  { id: "facility", name: "시설관리부", color: "#2563eb" },
-  { id: "admin", name: "행정부", color: "#2563eb" },
-  { id: "social", name: "사회봉사부", color: "#2563eb" },
-  { id: "music", name: "찬양부", color: "#2563eb" },
-  { id: "general", name: "총무부", color: "#2563eb" },
+  { id: "worship", name: "예배부", color: "#4466e0" },
+  { id: "education", name: "교육부", color: "#4466e0" },
+  { id: "mission_dept", name: "선교부", color: "#4466e0" },
+  { id: "youth_dept", name: "청년부", color: "#4466e0" },
+  { id: "children_dept", name: "주일학교부", color: "#4466e0" },
+  { id: "facility", name: "시설관리부", color: "#4466e0" },
+  { id: "admin", name: "행정부", color: "#4466e0" },
+  { id: "social", name: "사회봉사부", color: "#4466e0" },
+  { id: "music", name: "찬양부", color: "#4466e0" },
+  { id: "general", name: "총무부", color: "#4466e0" },
 ];
 
 /* ---------- 지출 카테고리 ---------- */
@@ -208,50 +208,68 @@ const Icons = {
 
 /* ---------- 스타일 (Planning Center 톤 + 기존 C.* 호환) ---------- */
 const C = {
-  primary: "#2563eb",
-  primaryHover: "#1d4ed8",
-  primaryLight: "#dbeafe",
-  primaryLighter: "#eff6ff",
-  text1: "#1e293b",
-  text2: "#475569",
-  text3: "#94a3b8",
-  bg: "#f8faff",
+  // 메인 — 앱 공통 액센트 블루 (#4466e0)
+  primary: "#4466e0",
+  primaryHover: "#3355cc",
+  primaryLight: "#eef2ff",
+  primaryLighter: "#f3f6fb",
+
+  // 텍스트
+  text1: "#1a2138",
+  text2: "#5a6578",
+  text3: "#8d95a3",
+
+  // 배경·표면
+  bg: "#f5f7fb",
   surface: "#ffffff",
-  surfaceHover: "#f1f5f9",
-  border: "#c7d0e8",
-  borderLight: "#dce4f5",
-  income: "#059669",
-  incomeLight: "#ecfdf5",
-  expense: "#dc2626",
-  expenseLight: "#fef2f2",
-  balance: "#2563eb",
-  balanceLight: "#eff6ff",
-  chart1: "#2563eb",
-  chart2: "#7c3aed",
-  chart3: "#059669",
-  chart4: "#f59e0b",
-  chart5: "#ec4899",
-  shadow: "0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)",
-  shadowMd: "0 4px 12px rgba(0,0,0,0.06)",
+  surfaceHover: "#f8f9fc",
+
+  // 테두리 — 아주 연한 회청색
+  border: "#dde3ee",
+  borderLight: "#eaeff6",
+
+  // 수입·지출 — 채도 낮춘 톤
+  income: "#2e7d6f",
+  incomeLight: "#eef7f5",
+  expense: "#c0392b",
+  expenseLight: "#fdf0ee",
+
+  // 잔액
+  balance: "#4466e0",
+  balanceLight: "#f3f6fb",
+
+  // 차트 — 파스텔 톤 통일
+  chart1: "#4466e0",
+  chart2: "#8b6caf",
+  chart3: "#5aab8b",
+  chart4: "#d4a24c",
+  chart5: "#c7729a",
+
+  // 그림자 — 아주 연하게
+  shadow: "0 1px 3px rgba(0,0,0,0.03)",
+  shadowMd: "0 4px 12px rgba(0,0,0,0.04)",
+
+  // 기본
   white: "#ffffff",
-  danger: "#dc2626",
-  dangerLight: "#fef2f2",
-  warning: "#f59e0b",
-  warningLight: "#fffbeb",
-  /** 호환: 본 파일 기존 참조 */
-  navy: "#2563eb",
-  accent: "#2563eb",
+  danger: "#c0392b",
+  dangerLight: "#fdf0ee",
+  warning: "#d4a24c",
+  warningLight: "#fdf8ee",
+
+  // 호환 별칭
+  navy: "#4466e0",
+  accent: "#4466e0",
   card: "#ffffff",
-  text: "#475569",
-  textMuted: "#94a3b8",
-  success: "#059669",
-  purple: "#7c3aed",
-  purpleLight: "#ede9fe",
-  blue: "#2563eb",
-  blueBg: "#f1f5f9",
-  accentLight: "#dbeafe",
-  accentBg: "#eff6ff",
-  successLight: "#ecfdf5",
+  text: "#5a6578",
+  textMuted: "#8d95a3",
+  success: "#2e7d6f",
+  purple: "#8b6caf",
+  purpleLight: "#f0ecf5",
+  blue: "#4466e0",
+  blueBg: "#f5f7fb",
+  accentLight: "#eef2ff",
+  accentBg: "#f3f6fb",
+  successLight: "#eef7f5",
 } as const;
 
 /** 재정 상단 2×2 카테고리 버튼 */
@@ -266,7 +284,7 @@ function financeCategoryGridBtnStyle(selected: boolean, mob = true): CSSProperti
     color: C.white,
     border: "none",
     cursor: "pointer",
-    boxShadow: "0 2px 8px rgba(37,99,235,0.25)",
+    boxShadow: "0 2px 8px rgba(68,102,224,0.25)",
     transition: "all 0.15s ease",
     whiteSpace: "nowrap",
     outline: "none",
@@ -299,6 +317,10 @@ function financeSubTabStyle(isSelected: boolean, layout: "rowEqual" | "gridCell"
   const fs = mob ? 11 : 14;
   const padX = mob ? "6px 10px" : "8px 18px";
   const base: CSSProperties = {
+    boxSizing: "border-box",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     height: h,
     minHeight: h,
     maxHeight: h,
@@ -306,11 +328,11 @@ function financeSubTabStyle(isSelected: boolean, layout: "rowEqual" | "gridCell"
     fontWeight: isSelected ? 600 : 500,
     padding: padX,
     borderRadius: 8,
-    border: isSelected ? `1px solid ${C.primary}` : `1px solid transparent`,
-    background: isSelected ? C.primaryLighter : "transparent",
+    border: isSelected ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
+    background: isSelected ? C.primaryLighter : C.surface,
     color: isSelected ? C.primary : C.text2,
     whiteSpace: "nowrap",
-    lineHeight: `${h - 2}px`,
+    lineHeight: 1.2,
     cursor: "pointer",
     outline: "none",
     boxShadow: "none",
@@ -666,14 +688,13 @@ function StatCard({ label, value, icon, color, sub }: {
   color: string;
   sub?: string;
 }) {
-  const colorMap: Record<string, { bg: string; text: string; iconBg: string }> = {
-    [C.income]: { bg: C.incomeLight, text: C.income, iconBg: "#d1fae5" },
-    [C.expense]: { bg: C.expenseLight, text: C.expense, iconBg: "#fecaca" },
-    /* C.balance === C.primary 동일 hex — 한 키로 조회 */
-    [C.primary]: { bg: C.balanceLight, text: C.balance, iconBg: "#bfdbfe" },
-    [C.chart2]: { bg: "#ede9fe", text: C.chart2, iconBg: "#ddd6fe" },
+  const colorMap: Record<string, { bg: string; text: string; iconBg: string; iconColor: string }> = {
+    [C.income]: { bg: C.incomeLight, text: C.income, iconBg: "#f0f1f5", iconColor: "#6b7280" },
+    [C.expense]: { bg: C.expenseLight, text: C.expense, iconBg: "#f0f1f5", iconColor: "#6b7280" },
+    [C.primary]: { bg: C.balanceLight, text: C.balance, iconBg: "#f0f1f5", iconColor: "#6b7280" },
+    [C.chart2]: { bg: C.purpleLight, text: C.chart2, iconBg: "#f0f1f5", iconColor: "#6b7280" },
   };
-  const cm = colorMap[color] ?? { bg: C.primaryLighter, text: C.primary, iconBg: C.primaryLight };
+  const cm = colorMap[color] ?? { bg: C.primaryLighter, text: C.primary, iconBg: "#f0f1f5", iconColor: "#6b7280" };
 
   return (
     <div
@@ -703,7 +724,7 @@ function StatCard({ label, value, icon, color, sub }: {
           flexShrink: 0,
         }}
       >
-        <span style={{ color: cm.text, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</span>
+        <span style={{ color: cm.iconColor, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</span>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
@@ -848,7 +869,7 @@ function DashboardTab({ offerings, expenses, categories, departments }: {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <h4 style={{ margin: 0, color: C.navy, fontSize: 16 }}>월별 헌금 추이</h4>
-            <Badge color={C.income}>2025년</Badge>
+            <Badge color={C.white} bg={C.primary}>2025년</Badge>
           </div>
           <div style={{ display: "flex", alignItems: "end", gap: 6, height: 160 }}>
             {monthlyOfferings.map((v, i) => {
@@ -871,7 +892,7 @@ function DashboardTab({ offerings, expenses, categories, departments }: {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <h4 style={{ margin: 0, color: C.navy, fontSize: 16 }}>월별 지출 추이</h4>
-            <Badge color={C.expense}>2025년</Badge>
+            <Badge color={C.white} bg={C.primary}>2025년</Badge>
           </div>
           <div style={{ display: "flex", alignItems: "end", gap: 6, height: 160 }}>
             {monthlyExpenses.map((v, i) => {
@@ -1987,7 +2008,7 @@ function BudgetActualTab({
                       <Tooltip formatter={(value) => `₩${fmt(Number(value))}`} />
                       <Legend />
                       <Bar dataKey="예산" fill="#6b7b9e" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="실적" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="실적" fill={C.primary} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </LazyChart>
@@ -2081,7 +2102,7 @@ function BudgetTab({ departments, expenses }: { departments: Department[]; expen
                   <tr key={d.id}>
                     <td style={{ ...financeTableCellTd(even, "left", mob), minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: 4, background: "#2563eb", flexShrink: 0 }} />
+                        <div style={{ width: 8, height: 8, borderRadius: 4, background: C.primary, flexShrink: 0 }} />
                         <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.name}</span>
                       </div>
                     </td>
@@ -2233,11 +2254,11 @@ function ExportTab({ offerings, expenses, categories, departments, expenseCatego
           <Card key={i} onClick={item.action} style={{ cursor: "pointer", transition: "all 0.2s ease", padding: mob ? "10px 12px" : "20px 24px", marginBottom: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: mob ? 10 : 16 }}>
               <div style={{
-                width: mob ? 32 : 44, height: mob ? 32 : 44, borderRadius: "50%", background: "#f0f2f5", color: "#2563eb",
+                width: mob ? 32 : 44, height: mob ? 32 : 44, borderRadius: "50%", background: "#f0f2f5", color: C.primary,
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 11 : 14, fontWeight: 700, flexShrink: 0,
               }}>{item.initial}</div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 700, color: "#2563eb", fontSize: mob ? 12 : 15, marginBottom: 2 }}>{item.title}</div>
+                <div style={{ fontWeight: 700, color: C.primary, fontSize: mob ? 12 : 15, marginBottom: 2 }}>{item.title}</div>
                 <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", lineHeight: 1.35 }}>{item.desc}</div>
               </div>
               <div style={{ marginLeft: "auto", color: "#6b7b9e", display: "flex", alignItems: "center", flexShrink: 0, fontSize: mob ? 14 : 18 }}><Icons.Export /></div>
@@ -3455,7 +3476,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   padding: mob ? "10px 12px" : "12px 16px",
                   borderRadius: mob ? 8 : 10,
                   border: "none",
-                  background: "#2563eb",
+                  background: C.primary,
                   color: "#fff",
                   cursor: "pointer",
                   fontSize: mob ? 13 : 14,
@@ -3589,7 +3610,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             <h4 style={{ margin: "0 0 12px", fontSize: mob ? 13 : 16, fontWeight: 700, color: C.navy }}>교인 선택</h4>
             <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: "#2563eb", marginBottom: mob ? 6 : 8 }}>이름으로 검색</label>
+                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: C.primary, marginBottom: mob ? 6 : 8 }}>이름으로 검색</label>
                 <input
                   type="text"
                   className="receipt-form-input finance-nav-btn"
@@ -3600,7 +3621,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 />
               </div>
               <div ref={donorDropdownRef} data-testid="donor-dropdown" style={{ position: "relative" }}>
-                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: "#2563eb", marginBottom: mob ? 6 : 8 }}>교인 선택</label>
+                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: C.primary, marginBottom: mob ? 6 : 8 }}>교인 선택</label>
                 <button
                   type="button"
                   className="finance-nav-btn"
@@ -3690,7 +3711,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     <p style={{ margin: 0, fontSize: mob ? 12 : 15, fontWeight: 700, color: C.navy }}>개인정보 보호</p>
                     <p style={{ margin: "4px 0 0", fontSize: mob ? 11 : 14, color: "#555", lineHeight: mob ? 1.4 : 1.6 }}>주민등록번호는 서버에 저장되지 않으며, 영수증 PDF 생성 후 즉시 폐기됩니다.</p>
                   </div>
-                  <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: "#2563eb", marginBottom: mob ? 2 : 6 }}>주민등록번호 (13자리, - 제외)</label>
+                  <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: C.primary, marginBottom: mob ? 2 : 6 }}>주민등록번호 (13자리, - 제외)</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <input
                       type="text"
@@ -3807,7 +3828,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                         padding: "0 8px",
                         boxSizing: "border-box",
                         background: "#fff",
-                        color: "#2563eb",
+                        color: C.primary,
                         border: "1px solid #d1d5db",
                         borderRadius: 8,
                         fontSize: 13,
@@ -3829,7 +3850,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                         padding: "0 8px",
                         boxSizing: "border-box",
                         background: "#fff",
-                        color: "#2563eb",
+                        color: C.primary,
                         border: "1px solid #d1d5db",
                         borderRadius: 8,
                         fontSize: 13,
@@ -3851,7 +3872,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                         padding: "0 8px",
                         boxSizing: "border-box",
                         background: "#fff",
-                        color: "#2563eb",
+                        color: C.primary,
                         border: "1px solid #d1d5db",
                         borderRadius: 8,
                         fontSize: 13,
@@ -4766,7 +4787,7 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
       headerDesc="교회 재정 관리 시스템"
       headerActions={!mob ? <Badge color={C.navy} bg="#f0f2f5">정상 운영중</Badge> : undefined}
       SidebarIcon={Church}
-      accentColor="#2563eb"
+      accentColor={C.primary}
       hideMobileSubTabs
     >
           {activeTab === "budgetManagement" ? (

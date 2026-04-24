@@ -35,4 +35,14 @@ BucheonChurch/
 
 # PWA 빌드 산출물 (next build 시 public에 생성 — 커밋하지 않음)
 public/sw.js
+public/sw.js.map
 public/workbox-*.js
+public/worker-*.js
+public/fallback-*.js
+
+# PWA Service Worker (자동 생성 — 커밋 금지)
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/worker-*.js
+public/fallback-*.js
