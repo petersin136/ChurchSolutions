@@ -24,16 +24,36 @@ function useIsMobile(bp = 768) {
 }
 
 const C = {
-  navy: "#2563eb", navyLight: "#2d4373", navyHover: "#3355cc",
-  bg: "#f8f7f4", card: "#fff", border: "#c7d0e8", borderLight: "#f0efe9",
-  text: "#555", textMuted: "#6b7b9e", textFaint: "#999",
-  blue: "#2563eb", blueBg: "#f0f2f5", blueDark: "#2563eb",
-  accent: "#2563eb", accentLight: "#f0f2f5", accentBg: "#f0f2f5",
-  purple: "#2563eb", purpleBg: "#f0f2f5", green: "#2563eb", greenBg: "#f0f2f5",
-  yellow: "#555", yellowBg: "#f5f8ff", red: "#555", redBg: "#f0f2f5",
-  orange: "#2563eb", orangeBg: "#f0f2f5", pink: "#2563eb", pinkBg: "#f0f2f5",
-  teal: "#2563eb", tealBg: "#f0f2f5", indigo: "#2563eb", indigoBg: "#f0f2f5",
-};
+  primary: "#4466e0",
+  primaryHover: "#3355cc",
+  primaryLight: "#eef1fb",
+  primaryLighter: "#f6f7fd",
+  text: "#1a1d26",
+  textSub: "#4a5068",
+  textFaint: "#8b90a0",
+  textMuted: "#4a5068",
+  bg: "#f5f7fb",
+  card: "#ffffff",
+  border: "#e2e5ef",
+  borderLight: "#eef0f6",
+  success: "#16a34a",
+  successLight: "#f0fdf4",
+  danger: "#dc2626",
+  dangerLight: "#fef2f2",
+  warning: "#e59500",
+  warningLight: "#fffbeb",
+  purple: "#7c5ce0",
+  purpleLight: "#f3f0ff",
+  accent: "#4466e0",
+  accentLight: "#eef1fb",
+  accentBg: "#eef1fb",
+  navy: "#1a1d26",
+  white: "#ffffff",
+  red: "#dc2626",
+  redBg: "#fef2f2",
+  shadow: "0 1px 3px rgba(0,0,0,0.04)",
+  shadowMd: "0 4px 16px rgba(0,0,0,0.06)",
+} as const;
 
 const TODAY = new Date();
 const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -450,7 +470,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style }: { c
     secondary: { background: C.borderLight, color: C.text, border: `1px solid ${C.border}` },
     ghost: { background: "transparent", color: C.textMuted },
     danger: { background: C.red, color: "#fff" },
-    accent: { background: "#2563eb", color: "#fff" },
+    accent: { background: "#4466e0", color: "#fff" },
   };
   return <button onClick={onClick} style={{ ...base, ...sizes[size], ...variants[variant], ...style }}>{children}</button>;
 }
@@ -2219,7 +2239,7 @@ export function BulletinPage() {
                     cursor: outputMode === "print" ? "pointer" : "default",
                     ...(previewView === v && outputMode === "print"
                       ? {
-                          background: "#2563eb",
+                          background: "#4466e0",
                           color: "#ffffff",
                           boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
                         }
@@ -2291,8 +2311,8 @@ export function BulletinPage() {
                 height: "24px",
                 padding: 0,
                 border: "none",
-                borderLeft: "1px solid #c7d0e8",
-                borderRight: "1px solid #c7d0e8",
+                borderLeft: "1px solid #e2e5ef",
+                borderRight: "1px solid #e2e5ef",
               }}
             />
             <button
@@ -2484,7 +2504,7 @@ export function BulletinPage() {
                   if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                 }}
                 className="w-12 text-center text-xs text-gray-600 font-medium bg-transparent outline-none"
-                style={{ height: 28, padding: 0, border: "none", borderLeft: "1px solid #c7d0e8", borderRight: "1px solid #c7d0e8" }}
+                style={{ height: 28, padding: 0, border: "none", borderLeft: "1px solid #e2e5ef", borderRight: "1px solid #e2e5ef" }}
               />
             );
             const zoomPlusDesktop = (
@@ -2528,7 +2548,7 @@ export function BulletinPage() {
                             minHeight: ps.minHeight,
                             backgroundColor: "#ffffff",
                             borderRadius: 4,
-                            border: "1px solid #c7d0e8",
+                            border: "1px solid #e2e5ef",
                           }),
                       padding: ps.padding,
                       flexShrink: 0,
@@ -2614,7 +2634,7 @@ export function BulletinPage() {
                 <div
                   style={{
                     padding: "12px 6px",
-                    borderBottom: "1px solid #c7d0e8",
+                    borderBottom: "1px solid #e2e5ef",
                     background: "#fafafa",
                     flexShrink: 0,
                   }}
@@ -2631,7 +2651,7 @@ export function BulletinPage() {
                           background: "#fff",
                           borderRadius: 10,
                           padding: "12px 16px",
-                          border: "1px solid #c7d0e8",
+                          border: "1px solid #e2e5ef",
                         }}
                       >
                         <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{c.label}</div>
@@ -2651,7 +2671,7 @@ export function BulletinPage() {
                           background: "#fff",
                           borderRadius: 10,
                           padding: "12px 16px",
-                          border: "1px solid #c7d0e8",
+                          border: "1px solid #e2e5ef",
                         }}
                       >
                         <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{c.label}</div>
@@ -2664,7 +2684,7 @@ export function BulletinPage() {
 
               <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full" style={{ minHeight: 0 }}>
                 {mob ? (
-                  <div style={{ padding: "8px 6px", borderBottom: "1px solid #c7d0e8", flexShrink: 0, display: "flex", flexDirection: "column", gap: 6, background: "transparent" }}>
+                  <div style={{ padding: "8px 6px", borderBottom: "1px solid #e2e5ef", flexShrink: 0, display: "flex", flexDirection: "column", gap: 6, background: "transparent" }}>
                     <div style={{ display: "flex", gap: 6 }}>
                       {[
                         { key: "print", label: "인쇄용" },
@@ -2869,7 +2889,7 @@ export function BulletinPage() {
                         style={{
                           padding: "4px 14px",
                           borderRadius: 6,
-                          background: "#2563eb",
+                          background: "#4466e0",
                           color: "#fff",
                           fontSize: 12,
                           fontWeight: 700,
@@ -2959,7 +2979,7 @@ export function BulletinPage() {
         height: auto !important;
         min-height: 0 !important;
         background: #ffffff !important;
-        border: 1px solid #c7d0e8 !important;
+        border: 1px solid #e2e5ef !important;
       }
       .mobile-dash-preview .bp-spread {
         height: auto !important;
@@ -2973,7 +2993,7 @@ export function BulletinPage() {
       }
       .mobile-dash-preview .bp-four-face .bp-spread {
         background: #ffffff !important;
-        border: 1px solid #c7d0e8 !important;
+        border: 1px solid #e2e5ef !important;
         box-shadow: 0 1px 6px rgba(0,0,0,.1) !important;
         border-radius: 4px !important;
       }
@@ -3060,7 +3080,7 @@ export function BulletinPage() {
             mob ? (
               <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", minHeight: 0 }}>
                 {!mobileKbOpen && (<>
-                <div style={{ flexShrink: 0, borderBottom: "1px solid #c7d0e8" }}>
+                <div style={{ flexShrink: 0, borderBottom: "1px solid #e2e5ef" }}>
                   <button type="button" onClick={() => setMobileDesignOpen(v => !v)}
                     style={{
                       display: "flex", justifyContent: "center", alignItems: "center",
@@ -3133,7 +3153,7 @@ export function BulletinPage() {
                               <button key={t.id} type="button"
                                 onClick={() => setDb(p => ({ ...p, current: { ...p.current, template: t.id } }))}
                                 style={{
-                                  padding: 4, border: db.current.template === t.id ? "2px solid #3b82f6" : "1px solid #c7d0e8",
+                                  padding: 4, border: db.current.template === t.id ? "2px solid #3b82f6" : "1px solid #e2e5ef",
                                   borderRadius: 6, background: "#fff", cursor: "pointer",
                                 }}>
                                 <div style={{ display: "flex", gap: 2, justifyContent: "center", marginBottom: 2 }}>
@@ -3155,7 +3175,7 @@ export function BulletinPage() {
                               return (
                                 <button key={d.id} type="button"
                                   onClick={() => setDb(p => ({ ...p, current: { ...p.current, coverDecor: d.id } }))}
-                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #c7d0e8", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
+                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #e2e5ef", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
                                   <div style={{ width: "100%", aspectRatio: "1", borderRadius: 4, position: "relative", overflow: "hidden", marginBottom: 2, background: tpl.headerBg, border: `1px solid ${tpl.borderColor}` }}>
                                     {d.id !== "none" && previewHtml ? <div style={{ position: "absolute", inset: 0, opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: previewHtml }} /> : null}
                                   </div>
@@ -3174,7 +3194,7 @@ export function BulletinPage() {
                               return (
                                 <button key={d.id} type="button"
                                   onClick={() => setDb(p => ({ ...p, current: { ...p.current, coverDecor: d.id } }))}
-                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #c7d0e8", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
+                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #e2e5ef", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
                                   <div style={{ width: "100%", aspectRatio: "1", borderRadius: 4, position: "relative", overflow: "hidden", marginBottom: 2, background: tpl.headerBg, border: `1px solid ${tpl.borderColor}` }}>
                                     {previewHtml ? <div style={{ position: "absolute", inset: 0, opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: previewHtml }} /> : null}
                                   </div>
@@ -3191,7 +3211,7 @@ export function BulletinPage() {
                             onChange={(e) => setCurrent(c => ({ ...c, youtubeUrl: e.target.value }))}
                             style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
                           {extractYoutubeId(db.current.youtubeUrl ?? "") && (
-                            <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #c7d0e8" }}>
+                            <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #e2e5ef" }}>
                               <img src={`https://img.youtube.com/vi/${extractYoutubeId(db.current.youtubeUrl ?? "")}/mqdefault.jpg`} alt="YouTube 썸네일" style={{ width: "100%", display: "block" }} />
                             </div>
                           )}
@@ -3200,7 +3220,7 @@ export function BulletinPage() {
                     );
                   })()}
                 </div>
-                <div style={{ padding: "8px 6px", borderBottom: "1px solid #c7d0e8", flexShrink: 0 }}>
+                <div style={{ padding: "8px 6px", borderBottom: "1px solid #e2e5ef", flexShrink: 0 }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     {[
                       { key: "print", label: "인쇄용" },
@@ -3289,7 +3309,7 @@ export function BulletinPage() {
                 <div style={{
                   display: "flex",
                   overflowX: "auto",
-                  borderBottom: "1px solid #c7d0e8",
+                  borderBottom: "1px solid #e2e5ef",
                   background: "#fff",
                   padding: "0 2px",
                   flexShrink: 0,
@@ -3334,7 +3354,7 @@ export function BulletinPage() {
                   alignItems: "center",
                   gap: 8,
                   padding: "6px 0",
-                  borderBottom: "1px solid #c7d0e8",
+                  borderBottom: "1px solid #e2e5ef",
                   flexShrink: 0,
                 }}>
                   <button type="button" onClick={() => { setMobilePreviewScale(s => Math.max(0.3, +(s - 0.1).toFixed(1))); setMobilePan({ x: 0, y: 0 }); }}
@@ -3363,7 +3383,7 @@ export function BulletinPage() {
                         height: 80,
                         overflow: "hidden",
                         background: "#f9fafb",
-                        borderBottom: "1px solid #c7d0e8",
+                        borderBottom: "1px solid #e2e5ef",
                         position: "relative",
                         cursor: "pointer",
                       }}
@@ -3399,7 +3419,7 @@ export function BulletinPage() {
                     height: "30vh",
                     overflow: "hidden",
                     background: "#f9fafb",
-                    borderBottom: "1px solid #c7d0e8",
+                    borderBottom: "1px solid #e2e5ef",
                     padding: "4px",
                     touchAction: "none",
                   }}
@@ -3446,7 +3466,7 @@ export function BulletinPage() {
                     fontWeight: 700,
                     color: "#374151",
                     padding: "8px 0",
-                    borderBottom: "1px solid #c7d0e8",
+                    borderBottom: "1px solid #e2e5ef",
                     marginBottom: 8,
                   }}
                   >
@@ -3456,7 +3476,7 @@ export function BulletinPage() {
                     {editDisplaySections.map((item) => {
                       if (item.key !== mobileEditSection) return null;
                       const keys = "keys" in item && item.keys ? item.keys : undefined;
-                      const hrStyle = { border: "none" as const, borderTop: "1px solid #c7d0e8", margin: "12px 0" };
+                      const hrStyle = { border: "none" as const, borderTop: "1px solid #e2e5ef", margin: "12px 0" };
                       return (
                         <div key={item.key}>
                           {keys ? keys.map((k, i) => (
@@ -3536,7 +3556,7 @@ export function BulletinPage() {
                   </div>
                 )}
                 {/* 출력 형식 — 아코디언 스타일 통일 */}
-                <div style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #c7d0e8", overflow: "hidden" }}>
+                <div style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #e2e5ef", overflow: "hidden" }}>
                   <button
                     type="button"
                     onClick={() => setShowFormatPanel(prev => !prev)}
@@ -3746,7 +3766,7 @@ export function BulletinPage() {
                           }}
                         />
                         {extractYoutubeId(db.current.youtubeUrl ?? "") && (
-                          <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #c7d0e8" }}>
+                          <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #e2e5ef" }}>
                             <img src={`https://img.youtube.com/vi/${extractYoutubeId(db.current.youtubeUrl ?? "")}/mqdefault.jpg`} alt="YouTube 썸네일" style={{ width: "100%", display: "block" }} />
                           </div>
                         )}
@@ -3757,14 +3777,14 @@ export function BulletinPage() {
                 </div>
 
                 {(() => {
-                  const hrStyle = { border: "none" as const, borderTop: "1px solid #c7d0e8", margin: "12px 0" };
+                  const hrStyle = { border: "none" as const, borderTop: "1px solid #e2e5ef", margin: "12px 0" };
                   return editDisplaySections.map((item) => {
                     const displayKey = item.key;
                     const name = item.name;
                     const desc = item.desc;
                     const keys = "keys" in item ? item.keys : undefined;
                     return (
-                      <div key={displayKey} style={{ background: "#fff", borderRadius: mob ? 12 : 16, marginBottom: mob ? 8 : 12, border: "1px solid #c7d0e8", overflow: "hidden" }}>
+                      <div key={displayKey} style={{ background: "#fff", borderRadius: mob ? 12 : 16, marginBottom: mob ? 8 : 12, border: "1px solid #e2e5ef", overflow: "hidden" }}>
                         <button type="button" onClick={() => toggleSection(displayKey)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: mob ? "14px 16px" : "16px 20px", background: "none", border: "none", cursor: "pointer", fontSize: mob ? 14 : 16, fontWeight: 700, color: "#1a1a1a" }}>
                           <span>{name}</span>
                           <span style={{ transform: (openSections[displayKey] ?? false) ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-flex" }}>
@@ -3795,7 +3815,7 @@ export function BulletinPage() {
                   <div style={{ color: "#9ca3af", textAlign: "center", padding: 40, fontSize: 14 }}>저장된 주보가 없습니다. 편집에서 저장하면 여기에 표시됩니다.</div>
                 ) : (
                   <>
-                    <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", padding: mob ? "12px 20px" : "14px 24px", borderBottom: "2px solid #c7d0e8", background: "#f9fafb", flexShrink: 0 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "180px 1fr 100px", padding: mob ? "12px 20px" : "14px 24px", borderBottom: "2px solid #e2e5ef", background: "#f9fafb", flexShrink: 0 }}>
                       <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: "#6b7280" }}>날짜</span>
                       <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: "#6b7280" }}>설교 제목</span>
                       <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600, color: "#6b7280", textAlign: "right" }}>관리</span>
@@ -3811,7 +3831,7 @@ export function BulletinPage() {
                         </div>
                       ))}
                     </div>
-                    <div style={{ borderTop: "1px solid #c7d0e8", padding: "12px 20px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
+                    <div style={{ borderTop: "1px solid #e2e5ef", padding: "12px 20px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 0 }}>
                       <span style={{ fontSize: mob ? 13 : 14, color: "#6b7280" }}>
                         총 {db.history.length}건 중 {historyRangeStart}–{historyRangeEnd} 표시
                       </span>
@@ -3832,7 +3852,7 @@ export function BulletinPage() {
           {activeSub === "settings" && (
             <div style={{ width: "100%" }}>
               <Card style={{ padding: 0, overflow: "hidden" }}>
-                <div style={{ padding: "16px 28px", borderBottom: "1px solid #c7d0e8", background: "#f9fafb" }}>
+                <div style={{ padding: "16px 28px", borderBottom: "1px solid #e2e5ef", background: "#f9fafb" }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>교회 기본 정보</span>
                 </div>
                 <div style={{ padding: mob ? 16 : 28, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -3925,7 +3945,7 @@ export function BulletinPage() {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "8px 12px",
-              borderBottom: "1px solid #c7d0e8",
+              borderBottom: "1px solid #e2e5ef",
               backgroundColor: "#ffffff",
               flexShrink: 0,
             }}
@@ -3996,7 +4016,7 @@ export function BulletinPage() {
               justifyContent: "center",
               gap: 8,
               padding: "6px 0",
-              borderBottom: "1px solid #c7d0e8",
+              borderBottom: "1px solid #e2e5ef",
               flexShrink: 0,
             }}
           >
@@ -4065,7 +4085,7 @@ export function BulletinPage() {
                   width: bulletinFormatDisplay === "6면" ? 1134 : bulletinFormatDisplay === "4면" ? 756 : 595,
                   backgroundColor: "#ffffff",
                   padding: bulletinFormatDisplay === "온라인" ? 40 : 0,
-                  border: "1px solid #c7d0e8",
+                  border: "1px solid #e2e5ef",
                   borderRadius: 4,
                   flexShrink: 0,
                   transformOrigin: "top left",
@@ -4224,7 +4244,7 @@ export function BulletinPage() {
         [data-bview="outside"] .bp-tri-in { display:none !important; }
         [data-bview="inside"] .bp-tri-out { display:none !important; }
 
-        .bulletin-page-content .bp-cell { padding:16px; overflow:auto; box-sizing:border-box; border-right:1px dashed #c7d0e8; }
+        .bulletin-page-content .bp-cell { padding:16px; overflow:auto; box-sizing:border-box; border-right:1px dashed #e2e5ef; }
         .bulletin-page-content .bp-cell:last-child { border-right:none; }
 
         /* ==================== HALF-FOLD (2면 접지) ==================== */

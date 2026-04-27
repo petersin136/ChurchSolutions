@@ -143,7 +143,7 @@ export default function RegisterForm() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8f7f4", padding: "0 16px" }}>
         <div style={{ width: "100%", maxWidth: 384, textAlign: "center" }}>
-          <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #c7d0e8", padding: 32 }}>
+          <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #e2e5ef", padding: 32 }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: "#2563eb", marginBottom: 8 }}>회원가입 완료</div>
             <div style={{ fontSize: 14, color: "#6b7b9e", marginBottom: 24 }}>
@@ -171,7 +171,7 @@ export default function RegisterForm() {
           <div style={{ fontSize: 14, color: "#6b7b9e", marginTop: 4 }}>교회와 관리자 계정을 생성합니다</div>
         </div>
 
-        <form onSubmit={handleRegister} style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #c7d0e8", padding: 24 }}>
+        <form onSubmit={handleRegister} style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #e2e5ef", padding: 24 }}>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#6b7b9e", marginBottom: 6 }}>교회 이름</label>
             <input
@@ -180,7 +180,7 @@ export default function RegisterForm() {
               onChange={(e) => setChurchName(e.target.value)}
               placeholder="예: 사랑의교회"
               required
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #c7d0e8", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
           </div>
           <div style={{ marginBottom: 16 }}>
@@ -192,7 +192,7 @@ export default function RegisterForm() {
               placeholder="example@church.com"
               required
               autoComplete="email"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #c7d0e8", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
           </div>
           <div style={{ marginBottom: 16 }}>
@@ -204,7 +204,7 @@ export default function RegisterForm() {
               placeholder="6자 이상"
               required
               autoComplete="new-password"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #c7d0e8", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
           </div>
           <div style={{ marginBottom: 16 }}>
@@ -216,7 +216,7 @@ export default function RegisterForm() {
               placeholder="비밀번호를 다시 입력"
               required
               autoComplete="new-password"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #c7d0e8", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
           </div>
 

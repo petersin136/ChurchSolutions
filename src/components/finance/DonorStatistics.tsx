@@ -157,7 +157,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
           style={{
             background: "#fff",
             borderRadius: mob ? 8 : 16,
-            border: "1px solid #c7d0e8",
+            border: "1px solid #e2e5ef",
             padding: mob ? "8px 10px" : "16px 20px",
             minHeight: mob ? 56 : 90,
             boxSizing: "border-box",
@@ -170,7 +170,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
           style={{
             background: "#fff",
             borderRadius: mob ? 8 : 16,
-            border: "1px solid #c7d0e8",
+            border: "1px solid #e2e5ef",
             padding: mob ? "8px 10px" : "16px 20px",
             minHeight: mob ? 56 : 90,
             boxSizing: "border-box",
@@ -197,7 +197,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
           style={{
             background: "#fff",
             borderRadius: mob ? 8 : 16,
-            border: "1px solid #c7d0e8",
+            border: "1px solid #e2e5ef",
             padding: mob ? "6px 8px" : "16px 20px",
             minHeight: mob ? 48 : 90,
             boxSizing: "border-box",
@@ -211,7 +211,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
           style={{
             background: "#fff",
             borderRadius: mob ? 8 : 16,
-            border: "1px solid #c7d0e8",
+            border: "1px solid #e2e5ef",
             padding: mob ? "6px 8px" : "16px 20px",
             minHeight: mob ? 48 : 90,
             boxSizing: "border-box",

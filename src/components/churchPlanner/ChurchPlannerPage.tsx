@@ -8,9 +8,9 @@ import {
   ChevronRight,
   Pencil,
   Trash2,
-  X,
 } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
+import { PcModalShell } from "@/components/common/PcModalShell";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAuth } from "@/contexts/AuthContext";
@@ -833,7 +833,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(7, 1fr)",
-                    borderBottom: mob ? "1.5px solid #e9ecf0" : "2px solid #c7d0e8",
+                    borderBottom: mob ? "1.5px solid #e9ecf0" : "2px solid #e2e5ef",
                     marginBottom: 0,
                   }}
                 >
@@ -1123,7 +1123,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
       todayY,
       todayM,
       todayD,
-    ]
+    ],
   );
 
   return (
@@ -1385,7 +1385,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         style={{
                           background: "#fff",
                           color: "#64748b",
-                          border: "1.5px solid #c7d0e8",
+                          border: "1.5px solid #e2e5ef",
                           borderRadius: 8,
                           padding: "6px 12px",
                           fontSize: 12,
@@ -1433,7 +1433,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
                 <div
                   style={{
-                    border: "1px solid #c7d0e8",
+                    border: "1px solid #e2e5ef",
                     borderRadius: 12,
                     overflow: "hidden",
                   }}
@@ -1633,7 +1633,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         style={{
                           background: "#fff",
                           color: "#64748b",
-                          border: "1.5px solid #c7d0e8",
+                          border: "1.5px solid #e2e5ef",
                           borderRadius: 8,
                           padding: "6px 12px",
                           fontSize: 12,
@@ -1681,7 +1681,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
                 <div
                   style={{
-                    border: "1px solid #c7d0e8",
+                    border: "1px solid #e2e5ef",
                     borderRadius: 12,
                     overflow: "hidden",
                   }}
@@ -2090,7 +2090,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     ? "2px solid #4A90D9"
                     : isHovered
                       ? "1.5px solid #4A90D9"
-                      : "1.5px solid #c7d0e8";
+                      : "1.5px solid #e2e5ef";
                 return (
                   <button
                     key={monthNum}
@@ -2465,50 +2465,57 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
       {/* 이벤트 브리핑 모달 */}
       {briefingEvent && (
-        <div
-          role="presentation"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setBriefingEvent(null);
-          }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.3)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-          }}
+        <PcModalShell
+          open
+          overlayStyle={{ zIndex: 9999 }}
+          title={briefingEvent.title}
+          onClose={() => setBriefingEvent(null)}
+          maxWidth={460}
+          footer={
+            <div style={{ display: "flex", gap: 8, width: "100%", alignItems: "center" }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  const ev = briefingEvent;
+                  setBriefingEvent(null);
+                  openEditEvent(ev);
+                }}
+                style={{ flex: 1 }}
+              >
+                수정
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={async () => {
+                  if (!confirm("이 일정을 삭제하시겠습니까?")) return;
+                  if (!supabase) {
+                    alert("삭제 실패: 연결을 확인하세요.");
+                    return;
+                  }
+                  const { error } = await supabase.from(TB_EVENTS).delete().eq("id", briefingEvent.id);
+                  if (error) {
+                    alert("삭제 실패: " + error.message);
+                    return;
+                  }
+                  setBriefingEvent(null);
+                  await loadEvents();
+                }}
+                style={{ color: "#EF4444", borderColor: "#fecaca" }}
+                aria-label="삭제"
+              >
+                삭제
+              </button>
+            </div>
+          }
         >
-          <div
-            role="dialog"
-            aria-modal="true"
-            style={{
-              background: "#fff",
-              borderRadius: 20,
-              width: mob ? "90%" : "100%",
-              maxWidth: mob ? 380 : 460,
-              padding: 0,
-              boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
-              maxHeight: "85vh",
-              overflowY: "auto",
-              wordBreak: "break-word",
-              overflowWrap: "break-word",
-              boxSizing: "border-box",
-              minWidth: 0,
-            }}
-          >
             <div
               style={{
                 background: briefingEvent.departments?.color || "#94a3b8",
-                padding: mob ? "20px 18px 16px" : "24px 24px 20px",
-                borderRadius: "20px 20px 0 0",
+                padding: mob ? "16px 14px 14px" : "18px 18px 16px",
+                borderRadius: 12,
+                marginBottom: 16,
               }}
             >
               <div
@@ -2555,21 +2562,6 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   </span>
                 )}
               </div>
-
-              <h2
-                style={{
-                  fontSize: mob ? 18 : 22,
-                  fontWeight: 700,
-                  color: "#fff",
-                  margin: 0,
-                  lineHeight: 1.3,
-                  wordBreak: "break-word",
-                  overflowWrap: "break-word",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {briefingEvent.title}
-              </h2>
             </div>
 
             <div
@@ -2835,120 +2827,20 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 </div>
               )}
             </div>
-
-            <div
-              style={{
-                padding: mob ? "8px 18px 20px" : "8px 24px 24px",
-                display: "flex",
-                gap: 8,
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  const ev = briefingEvent;
-                  setBriefingEvent(null);
-                  openEditEvent(ev);
-                }}
-                style={{
-                  flex: 1,
-                  height: mob ? 44 : 48,
-                  background: "#2563eb",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 12,
-                  fontSize: mob ? 13 : 14,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                수정
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!confirm("이 일정을 삭제하시겠습니까?")) return;
-                  if (!supabase) {
-                    alert("삭제 실패: 연결을 확인하세요.");
-                    return;
-                  }
-                  const { error } = await supabase.from(TB_EVENTS).delete().eq("id", briefingEvent.id);
-                  if (error) {
-                    alert("삭제 실패: " + error.message);
-                    return;
-                  }
-                  setBriefingEvent(null);
-                  await loadEvents();
-                }}
-                style={{
-                  width: mob ? 44 : 48,
-                  height: mob ? 44 : 48,
-                  background: "#fff",
-                  color: "#EF4444",
-                  border: "1.5px solid #f0f0f0",
-                  borderRadius: 12,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-                aria-label="삭제"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                  <path d="M3 5h12" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" />
-                  <path d="M7 5V3.5A1.5 1.5 0 0 1 8.5 2h1A1.5 1.5 0 0 1 11 3.5V5" stroke="#EF4444" strokeWidth="1.5" />
-                  <path
-                    d="M4.5 5l.7 9.1a1.5 1.5 0 0 0 1.5 1.4h4.6a1.5 1.5 0 0 0 1.5-1.4L13.5 5"
-                    stroke="#EF4444"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                  <line x1="7.5" y1="8" x2="7.5" y2="13" stroke="#EF4444" strokeWidth="1.3" strokeLinecap="round" />
-                  <line x1="10.5" y1="8" x2="10.5" y2="13" stroke="#EF4444" strokeWidth="1.3" strokeLinecap="round" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={() => setBriefingEvent(null)}
-                style={{
-                  width: mob ? 44 : 48,
-                  height: mob ? 44 : 48,
-                  background: "#f1f5f9",
-                  color: "#64748b",
-                  border: "none",
-                  borderRadius: 12,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-                aria-label="닫기"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-                  <line x1="4" y1="4" x2="12" y2="12" stroke="#64748b" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="12" y1="4" x2="4" y2="12" stroke="#64748b" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
+        </PcModalShell>
       )}
 
       {eventModalOpen && (
-        <EventModalOverlay
-          mob={mob}
-          cardSize="event"
+        <PcModalShell
+          open
+          overlayStyle={{ zIndex: 9999 }}
           title={editingEventId ? "일정 수정" : "일정 추가"}
           onClose={() => {
             setEventModalOpen(false);
             resetEventForm();
           }}
+          maxWidth={520}
         >
-          <h2 style={{ fontSize: mob ? 16 : 20, fontWeight: 700, color: NAVY, margin: "0 0 24px" }}>
-            {editingEventId ? "일정 수정" : "일정 추가"}
-          </h2>
           <label style={plannerFieldLabel(mob)}>제목 *</label>
           <FieldInput
             mob={mob}
@@ -3231,19 +3123,20 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
           >
             취소
           </button>
-        </EventModalOverlay>
+        </PcModalShell>
       )}
 
       {deptModalOpen && (
-        <EventModalOverlay
-          mob={mob}
+        <PcModalShell
+          open
+          overlayStyle={{ zIndex: 9999 }}
           title={editingDeptId ? "부서 수정" : "부서 추가"}
           onClose={() => {
             setDeptModalOpen(false);
             setEditingDeptId(null);
           }}
+          maxWidth={480}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: NAVY, margin: "0 0 24px" }}>{editingDeptId ? "부서 수정" : "부서 추가"}</h2>
           <label style={lbl}>부서명 *</label>
           <FieldInput value={deptForm.name} onChange={(v) => setDeptForm((f) => ({ ...f, name: v }))} placeholder="부서명" />
           <label style={lbl}>색상</label>
@@ -3258,7 +3151,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   height: 32,
                   borderRadius: "50%",
                   background: c,
-                  border: deptForm.color === c ? `3px solid ${NAVY}` : "2px solid #c7d0e8",
+                  border: deptForm.color === c ? `3px solid ${NAVY}` : "2px solid #e2e5ef",
                   cursor: "pointer",
                   padding: 0,
                 }}
@@ -3284,19 +3177,20 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
           >
             취소
           </button>
-        </EventModalOverlay>
+        </PcModalShell>
       )}
 
       {placeModalOpen && (
-        <EventModalOverlay
-          mob={mob}
+        <PcModalShell
+          open
+          overlayStyle={{ zIndex: 9999 }}
           title={editingPlaceId ? "장소 수정" : "장소 추가"}
           onClose={() => {
             setPlaceModalOpen(false);
             setEditingPlaceId(null);
           }}
+          maxWidth={480}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: NAVY, margin: "0 0 24px" }}>{editingPlaceId ? "장소 수정" : "장소 추가"}</h2>
           <label style={lbl}>장소명 *</label>
           <FieldInput value={placeForm.name} onChange={(v) => setPlaceForm((f) => ({ ...f, name: v }))} placeholder="장소명" />
           <label style={lbl}>수용 인원</label>
@@ -3338,14 +3232,14 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
           >
             취소
           </button>
-        </EventModalOverlay>
+        </PcModalShell>
       )}
 
       {moreModal && (
-        <EventModalOverlay mob={mob} title="일정 목록" onClose={() => setMoreModal(null)}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: NAVY, margin: "0 0 16px" }}>
+        <PcModalShell open overlayStyle={{ zIndex: 9999 }} title="일정 목록" onClose={() => setMoreModal(null)} maxWidth={480}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: NAVY, margin: "0 0 16px" }}>
             {moreModal.y}년 {moreModal.m}월 {moreModal.d}일
-          </h2>
+          </p>
           {moreModal.list.map((ev) => (
             <button
               key={ev.id}
@@ -3361,7 +3255,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 padding: "12px 14px",
                 marginBottom: 8,
                 borderRadius: 12,
-                border: "1px solid #c7d0e8",
+                border: "1px solid #e2e5ef",
                 background: "#fafafa",
                 cursor: "pointer",
                 fontWeight: 600,
@@ -3370,92 +3264,45 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               {ev.title}
             </button>
           ))}
-        </EventModalOverlay>
+        </PcModalShell>
       )}
 
       {showLegendModal && mob && (
-        <div
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setShowLegendModal(false);
-          }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.3)",
-            backdropFilter: "blur(6px)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+        <PcModalShell
+          open
+          overlayStyle={{ zIndex: 9999 }}
+          title="부서 색상"
+          onClose={() => setShowLegendModal(false)}
+          maxWidth={320}
         >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 20,
-              width: "85%",
-              maxWidth: 320,
-              padding: "24px 20px",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 20,
-              }}
-            >
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#2563eb" }}>부서 색상</span>
-              <button
-                type="button"
-                onClick={() => setShowLegendModal(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 18,
-                  color: "#94a3b8",
-                  cursor: "pointer",
-                  padding: 0,
-                  lineHeight: 1,
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {departments
-                .filter((d) => d.is_active !== false)
-                .map((dept) => (
-                  <div
-                    key={dept.id}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {departments
+              .filter((d) => d.is_active !== false)
+              .map((dept) => (
+                <div
+                  key={dept.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "7px 0",
+                    borderBottom: "1px solid #f5f5f5",
+                  }}
+                >
+                  <span
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "7px 0",
-                      borderBottom: "1px solid #f5f5f5",
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: dept.color || "#94a3b8",
+                      flexShrink: 0,
                     }}
-                  >
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: dept.color || "#94a3b8",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span style={{ fontSize: 13, color: "#334155", fontWeight: 500 }}>{dept.name}</span>
-                  </div>
-                ))}
-            </div>
+                  />
+                  <span style={{ fontSize: 13, color: "#334155", fontWeight: 500 }}>{dept.name}</span>
+                </div>
+              ))}
           </div>
-        </div>
+        </PcModalShell>
       )}
     </UnifiedPageLayout>
   );
@@ -3571,71 +3418,5 @@ function FieldInput({
         borderColor: focus ? ACCENT : "#e0e3ea",
       }}
     />
-  );
-}
-
-function EventModalOverlay({
-  mob,
-  title,
-  onClose,
-  children,
-  cardSize = "standard",
-}: {
-  mob: boolean;
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-  cardSize?: "event" | "standard";
-}) {
-  const isEvent = cardSize === "event";
-  const maxWidth = mob ? 400 : isEvent ? 520 : 480;
-  const padding = mob ? "20px 18px" : isEvent ? "32px 28px" : "28px 24px";
-  const width = mob ? "90%" : "100%";
-  return (
-    <div
-      role="presentation"
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 9999,
-        background: "rgba(0,0,0,0.4)",
-        backdropFilter: "blur(4px)",
-        WebkitBackdropFilter: "blur(4px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-      }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      aria-modal="true"
-      aria-label={title}
-    >
-      <div
-        role="dialog"
-        style={{
-          background: "#fff",
-          borderRadius: 20,
-          width,
-          maxWidth,
-          padding,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-          maxHeight: "85vh",
-          overflowY: "auto",
-          boxSizing: "border-box",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-          <button type="button" onClick={onClose} aria-label="닫기" style={{ border: "none", background: "none", cursor: "pointer", padding: 4 }}>
-            <X size={22} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
   );
 }

@@ -49,7 +49,7 @@ export default function SegmentedControl({
     borderRadius: 8,
     fontSize: sm ? 10 : 13,
     fontWeight: 600,
-    border: active ? "1px solid #2563eb" : "1px solid #c7d0e8",
+    border: active ? "1px solid #2563eb" : "1px solid #e2e5ef",
     background: active ? "#2563eb" : "#fff",
     color: active ? "#fff" : "#555",
     cursor: "pointer",

@@ -19,6 +19,7 @@ import {
 import { DonorStatistics } from "@/components/finance/DonorStatistics";
 import { SpecialAccounts } from "@/components/finance/SpecialAccounts";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
+import { PcModalShell } from "@/components/common/PcModalShell";
 import LazyChart from "@/components/common/LazyChart";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import type { DB, Member, Income as DBIncome, Expense as DBExpense } from "@/types/db";
@@ -215,9 +216,9 @@ const C = {
   primaryLighter: "#f3f6fb",
 
   // 텍스트
-  text1: "#1a2138",
-  text2: "#5a6578",
-  text3: "#8d95a3",
+  text1: "#1a1d26",
+  text2: "#4a5068",
+  text3: "#8b90a0",
 
   // 배경·표면
   bg: "#f5f7fb",
@@ -225,8 +226,8 @@ const C = {
   surfaceHover: "#f8f9fc",
 
   // 테두리 — 아주 연한 회청색
-  border: "#dde3ee",
-  borderLight: "#eaeff6",
+  border: "#e2e5ef",
+  borderLight: "#eef0f6",
 
   // 수입·지출 — 채도 낮춘 톤
   income: "#2e7d6f",
@@ -257,11 +258,11 @@ const C = {
   warningLight: "#fdf8ee",
 
   // 호환 별칭
-  navy: "#4466e0",
+  navy: "#1a1d26",
   accent: "#4466e0",
   card: "#ffffff",
-  text: "#5a6578",
-  textMuted: "#8d95a3",
+  text: "#4a5068",
+  textMuted: "#8b90a0",
   success: "#2e7d6f",
   purple: "#8b6caf",
   purpleLight: "#f0ecf5",
@@ -299,7 +300,7 @@ function financeCategoryGridBtnStyle(selected: boolean, mob = true): CSSProperti
     fontSize: mob ? 12 : 14,
     background: C.surface,
     color: C.text2,
-    border: "1px solid #c7d0e8",
+    border: "1px solid #e2e5ef",
     cursor: "pointer",
     boxShadow: "none",
     transition: "all 0.15s ease",
@@ -399,7 +400,7 @@ function financeTableHeaderTh(align: "left" | "right" | "center" = "left", mob =
     fontSize: mob ? 10 : 13,
     color: C.text3,
     textAlign: align,
-    borderBottom: "2px solid #c7d0e8",
+    borderBottom: "2px solid #e2e5ef",
     background: C.surfaceHover,
     letterSpacing: "0.02em",
     textTransform: "uppercase",
@@ -413,7 +414,7 @@ function financeTableCellTd(_isEven: boolean, align: "left" | "right" | "center"
     fontSize: mob ? 11 : 14,
     color: C.text1,
     textAlign: align,
-    borderBottom: "1px solid #dce4f5",
+    borderBottom: "1px solid #eef0f6",
     fontVariantNumeric: "tabular-nums",
     background: C.surface,
   };
@@ -426,7 +427,7 @@ function financeTableTotalRowTd(align: "left" | "right" | "center" = "left", mob
     fontSize: mob ? 12 : 15,
     color: C.primary,
     textAlign: align,
-    borderTop: "2px solid #c7d0e8",
+    borderTop: "2px solid #e2e5ef",
     background: C.primaryLighter,
   };
 }
@@ -649,38 +650,6 @@ function Select({ label, options, ...props }: {
   );
 }
 
-function Modal({ open, onClose, title, children, width = 520 }: {
-  open: boolean; onClose: () => void; title: string; children: ReactNode; width?: number;
-}) {
-  const mob = useIsMobile();
-  const modalHeight = mob ? "92vh" : "85vh";
-  if (!open) return null;
-  return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 1000,
-      display: "flex", alignItems: mob ? "flex-end" : "center", justifyContent: "center",
-      background: "rgba(68, 102, 224,0.4)", backdropFilter: "blur(4px)", padding: mob ? 0 : 20,
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: "#fff", borderRadius: mob ? "20px 20px 0 0" : 20, padding: mob ? 20 : 32,
-        width: mob ? "100%" : "90%", maxWidth: mob ? "100%" : width,
-        height: modalHeight, maxHeight: modalHeight,
-        display: "flex", flexDirection: "column", overflow: "hidden",
-        boxShadow: "0 20px 60px rgba(68, 102, 224,0.15)",
-      }}>
-        {mob && <div style={{ width: 36, height: 4, background: C.border, borderRadius: 4, margin: "0 auto 12px", flexShrink: 0 }} />}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
-          <h3 style={{ margin: 0, fontSize: mob ? 17 : 20, color: C.navy }}>{title}</h3>
-          <button onClick={onClose} style={{
-            background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 8, display: "flex",
-          }}><Icons.X /></button>
-        </div>
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>{children}</div>
-      </div>
-    </div>
-  );
-}
-
 function StatCard({ label, value, icon, color, sub }: {
   label: string;
   value: string;
@@ -701,7 +670,7 @@ function StatCard({ label, value, icon, color, sub }: {
       style={{
         background: C.surface,
         borderRadius: 12,
-        border: "1px solid #c7d0e8",
+        border: "1px solid #e2e5ef",
         padding: "16px 20px",
         display: "flex",
         alignItems: "center",
@@ -768,7 +737,7 @@ function Table({ columns, data, emptyMsg = "데이터가 없습니다" }: {
       style={{
         background: C.surface,
         borderRadius: 12,
-        border: "1px solid #c7d0e8",
+        border: "1px solid #e2e5ef",
         overflow: "hidden",
         boxShadow: C.shadow,
       }}
@@ -779,7 +748,7 @@ function Table({ columns, data, emptyMsg = "데이터가 없습니다" }: {
             {columns.map((col, i) => (
               <th key={i} style={{
                 padding: mob ? "6px 8px" : "10px 14px", textAlign: (col.align || "left") as "left"|"right"|"center",
-                fontWeight: 700, color: C.text3, fontSize: mob ? 10 : 13, borderBottom: "2px solid #c7d0e8", whiteSpace: "nowrap",
+                fontWeight: 700, color: C.text3, fontSize: mob ? 10 : 13, borderBottom: "2px solid #e2e5ef", whiteSpace: "nowrap",
                 background: C.surfaceHover, letterSpacing: "0.02em", textTransform: "uppercase",
               }}>{col.label}</th>
             ))}
@@ -1065,7 +1034,7 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 20px", borderRadius: mob ? 6 : 10, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 20px", borderRadius: mob ? 6 : 10, background: C.primary, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
         >
           헌금 등록
         </button>
@@ -1085,7 +1054,7 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
       />
       <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
       </div>
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="헌금 등록">
+      <PcModalShell open={showAdd} onClose={() => setShowAdd(false)} title="헌금 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>헌금자</label>
@@ -1116,9 +1085,9 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
                   style={{
                     padding: "10px 18px",
                     borderRadius: 12,
-                    border: `2px solid ${form.method === m ? C.navy : C.border}`,
+                    border: `2px solid ${form.method === m ? C.primary : C.border}`,
                     background: form.method === m ? "#f0f2f5" : "#fff",
-                    color: form.method === m ? C.navy : C.text,
+                    color: form.method === m ? C.primary : C.text,
                     fontSize: 14,
                     fontWeight: 600,
                     fontFamily: "inherit",
@@ -1137,7 +1106,7 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
             <Button onClick={handleAdd}>등록</Button>
           </div>
         </div>
-      </Modal>
+      </PcModalShell>
     </div>
   );
 }
@@ -1190,7 +1159,7 @@ function DonorTab({ donors, setDonors, offerings }: {
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 20px", borderRadius: mob ? 6 : 10, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 20px", borderRadius: mob ? 6 : 10, background: C.primary, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
         >
           헌금자 등록
         </button>
@@ -1212,7 +1181,7 @@ function DonorTab({ donors, setDonors, offerings }: {
       />
       <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
       </div>
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="헌금자 등록">
+      <PcModalShell open={showAdd} onClose={() => setShowAdd(false)} title="헌금자 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Input label="이름" value={form.name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="홍길동" />
           <Input label="연락처" value={form.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="010-0000-0000" />
@@ -1224,7 +1193,7 @@ function DonorTab({ donors, setDonors, offerings }: {
             <Button onClick={handleAdd}>등록</Button>
           </div>
         </div>
-      </Modal>
+      </PcModalShell>
     </div>
   );
 }
@@ -1306,7 +1275,7 @@ function GivingStatusTab({ donors, offerings, categories }: {
   };
 
   const Th = ({ label, keyName, align = "left" }: { label: string; keyName: typeof sortKey; align?: "left" | "right" | "center" }) => (
-    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: align, fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}`, whiteSpace: "nowrap", cursor: "pointer" }} onClick={() => toggleSort(keyName)}>
+    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: align, fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}`, whiteSpace: "nowrap", cursor: "pointer" }} onClick={() => toggleSort(keyName)}>
       {label} {sortKey === keyName ? (sortDir === "asc" ? "↑" : "↓") : ""}
     </th>
   );
@@ -1438,7 +1407,7 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 20px", borderRadius: mob ? 6 : 10, background: C.navy, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 20px", borderRadius: mob ? 6 : 10, background: C.primary, color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
         >
           지출 등록
         </button>
@@ -1457,7 +1426,7 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
       />
       <Pagination totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
       </div>
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="지출 등록">
+      <PcModalShell open={showAdd} onClose={() => setShowAdd(false)} title="지출 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Select label="부서" value={form.departmentId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, departmentId: e.target.value }))}
             options={departments.map(d => ({ value: d.id, label: d.name }))} />
@@ -1476,7 +1445,7 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
             <Button onClick={handleAdd}>등록</Button>
           </div>
         </div>
-      </Modal>
+      </PcModalShell>
     </div>
   );
 }
@@ -1535,9 +1504,8 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
     } else if (navigator.clipboard) navigator.clipboard.writeText(text);
   };
 
-  if (!open) return null;
   return (
-    <Modal open={open} onClose={onClose} title="월별 결산 보고서" width={560}>
+    <PcModalShell open={open} onClose={onClose} title="월별 결산 보고서" maxWidth={560}>
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <Select label="년" options={[{ value: year.toString(), label: `${year}년` }, { value: (year - 1).toString(), label: `${year - 1}년` }, { value: (year - 2).toString(), label: `${year - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setYear(Number(e.target.value)); setPageIncome(1); setPageExpense(1); }} />
@@ -1576,7 +1544,7 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
           <Button variant="ghost" onClick={onClose}>닫기</Button>
         </div>
       </div>
-    </Modal>
+    </PcModalShell>
   );
 }
 
@@ -1643,7 +1611,7 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
           type="button"
           className="finance-nav-btn"
           onClick={() => setShowSettlement(true)}
-          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, background: C.navy, color: "#fff", border: "none", cursor: "pointer", boxShadow: "none", outline: "none" }}
+          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, background: C.primary, color: "#fff", border: "none", cursor: "pointer", boxShadow: "none", outline: "none" }}
         >
           결산 보고서
         </button>
@@ -4380,7 +4348,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 setReceiptHistoryEmptyAfterFetch(rows.length === 0);
                 setReceiptHistory(rows);
               }}
-              style={{ height: mob ? 32 : 40, padding: mob ? "0 14px" : "0 20px", borderRadius: mob ? 6 : 10, border: "none", background: C.navy, color: "#fff", fontWeight: 600, fontSize: mob ? 11 : 14, cursor: "pointer" }}
+              style={{ height: mob ? 32 : 40, padding: mob ? "0 14px" : "0 20px", borderRadius: mob ? 6 : 10, border: "none", background: C.primary, color: "#fff", fontWeight: 600, fontSize: mob ? 11 : 14, cursor: "pointer" }}
             >
               조회
             </button>
@@ -4436,46 +4404,17 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             <p style={{ margin: "12px 0 0", fontSize: mob ? 11 : 14, color: "#999", lineHeight: mob ? 1.4 : 1.6 }}>귀속 연도를 선택한 뒤 [조회]를 눌러 발급 이력을 불러오세요.</p>
           )}
           {reprintModal && (
-            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setReprintModal(null)}>
-              <div style={{ background: C.card, borderRadius: 16, padding: 24, maxWidth: 400, width: "100%" }} onClick={e => e.stopPropagation()}>
-                <h4 style={{ margin: "0 0 16px", fontSize: 16, color: C.navy }}>재출력 · 주민등록번호 입력</h4>
-                <p style={{ margin: "0 0 12px", fontSize: 13, color: C.textMuted }}>{reprintModal.receipt.member_name} / {reprintModal.receipt.receipt_number}</p>
-                <p style={{ margin: "0 0 12px", fontSize: 11, color: "#999" }}>주민등록번호는 서버에 저장되지 않으며, PDF 생성 후 즉시 폐기됩니다.</p>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    autoComplete="off"
-                    value={reprintModal.ssnFirst}
-                    onChange={e => {
-                      const val = e.target.value.replace(/\D/g, "").slice(0, 6);
-                      setReprintModal(m => (m ? { ...m, ssnFirst: val } : null));
-                      if (val.length === 6) queueMicrotask(() => reprintSsnLastInputRef.current?.focus());
-                    }}
-                    placeholder="앞 6자리"
-                    style={{ width: 80, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}` }}
-                  />
-                  <span>-</span>
-                  <input
-                    ref={reprintSsnLastInputRef}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={7}
-                    autoComplete="off"
-                    value={residentLastPartDisplay(reprintModal.ssnLast)}
-                    onChange={e => {
-                      const v = e.target.value;
-                      setReprintModal(m => (m ? { ...m, ssnLast: applyResidentLastPartInput(m.ssnLast, v) } : null));
-                    }}
-                    placeholder="뒷 7자리"
-                    style={{ width: 90, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}` }}
-                  />
-                </div>
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                  <button type="button" onClick={() => setReprintModal(null)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer" }}>닫기</button>
+            <PcModalShell
+              open
+              onClose={() => setReprintModal(null)}
+              title="재출력 · 주민등록번호 입력"
+              maxWidth={400}
+              footer={
+                <>
+                  <button type="button" className="btn btn-secondary" onClick={() => setReprintModal(null)}>닫기</button>
                   <button
                     type="button"
+                    className="btn btn-primary"
                     disabled={
                       reprintModal.ssnFirst.length !== 6 ||
                       reprintModal.ssnLast.length !== 7 ||
@@ -4483,27 +4422,75 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                       !/^\d+$/.test(reprintModal.ssnLast)
                     }
                     onClick={handleReprintPdf}
-                    style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.accent, color: "#fff", fontWeight: 600, cursor: "pointer" }}
                   >
                     PDF 다운로드
                   </button>
-                </div>
+                </>
+              }
+            >
+              <p style={{ margin: "0 0 12px", fontSize: 13, color: C.textMuted }}>{reprintModal.receipt.member_name} / {reprintModal.receipt.receipt_number}</p>
+              <p style={{ margin: "0 0 12px", fontSize: 11, color: "#999" }}>주민등록번호는 서버에 저장되지 않으며, PDF 생성 후 즉시 폐기됩니다.</p>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  autoComplete="off"
+                  value={reprintModal.ssnFirst}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    setReprintModal(m => (m ? { ...m, ssnFirst: val } : null));
+                    if (val.length === 6) queueMicrotask(() => reprintSsnLastInputRef.current?.focus());
+                  }}
+                  placeholder="앞 6자리"
+                  style={{ width: 80, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}` }}
+                />
+                <span>-</span>
+                <input
+                  ref={reprintSsnLastInputRef}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={7}
+                  autoComplete="off"
+                  value={residentLastPartDisplay(reprintModal.ssnLast)}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setReprintModal(m => (m ? { ...m, ssnLast: applyResidentLastPartInput(m.ssnLast, v) } : null));
+                  }}
+                  placeholder="뒷 7자리"
+                  style={{ width: 90, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}` }}
+                />
               </div>
-            </div>
+            </PcModalShell>
           )}
           {cancelModal && (
-            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setCancelModal(null)}>
-              <div style={{ background: C.card, borderRadius: 16, padding: 24, maxWidth: 400, width: "100%" }} onClick={e => e.stopPropagation()}>
-                <h4 style={{ margin: "0 0 16px", fontSize: 16, color: C.navy }}>영수증 취소</h4>
-                <p style={{ margin: "0 0 12px", fontSize: 13, color: C.textMuted }}>{cancelModal.receipt.member_name} / {cancelModal.receipt.receipt_number}</p>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>취소 사유</label>
-                <input type="text" value={cancelModal.reason} onChange={e => setCancelModal(m => m ? { ...m, reason: e.target.value } : null)} placeholder="선택 입력" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 16 }} />
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                  <button type="button" onClick={() => setCancelModal(null)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer" }}>닫기</button>
-                  <button type="button" onClick={async () => { if (!cancelModal || !supabase || !churchId) return; await supabase.from("donation_receipts").update({ status: "취소", cancelled_at: new Date().toISOString(), cancel_reason: cancelModal.reason || null }).eq("church_id", churchId).eq("id", cancelModal.receipt.id); setReceiptHistory(prev => prev.map(r => r.id === cancelModal.receipt.id ? { ...r, status: "취소" } : r)); setCancelModal(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.navy, color: "#fff", fontWeight: 600, cursor: "pointer" }}>취소 처리</button>
-                </div>
-              </div>
-            </div>
+            <PcModalShell
+              open
+              onClose={() => setCancelModal(null)}
+              title="영수증 취소"
+              maxWidth={400}
+              footer={
+                <>
+                  <button type="button" className="btn btn-secondary" onClick={() => setCancelModal(null)}>닫기</button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={async () => {
+                      if (!cancelModal || !supabase || !churchId) return;
+                      await supabase.from("donation_receipts").update({ status: "취소", cancelled_at: new Date().toISOString(), cancel_reason: cancelModal.reason || null }).eq("church_id", churchId).eq("id", cancelModal.receipt.id);
+                      setReceiptHistory(prev => prev.map(r => r.id === cancelModal.receipt.id ? { ...r, status: "취소" } : r));
+                      setCancelModal(null);
+                    }}
+                  >
+                    취소 처리
+                  </button>
+                </>
+              }
+            >
+              <p style={{ margin: "0 0 12px", fontSize: 13, color: C.textMuted }}>{cancelModal.receipt.member_name} / {cancelModal.receipt.receipt_number}</p>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>취소 사유</label>
+              <input type="text" value={cancelModal.reason} onChange={e => setCancelModal(m => m ? { ...m, reason: e.target.value } : null)} placeholder="선택 입력" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.border}`, boxSizing: "border-box" }} />
+            </PcModalShell>
           )}
         </Card>
       )}
@@ -4556,7 +4543,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   <option key={y} value={y}>{y}년</option>
                 ))}
               </select>
-              <button type="button" className="finance-nav-btn" onClick={() => void fetchReceiptLogRows()} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: C.navy, color: "#fff", fontWeight: 600, cursor: "pointer" }}>조회</button>
+              <button type="button" className="finance-nav-btn" onClick={() => void fetchReceiptLogRows()} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: C.primary, color: "#fff", fontWeight: 600, cursor: "pointer" }}>조회</button>
               <button type="button" className="finance-nav-btn" onClick={exportReceiptLogXlsx} disabled={receiptLogRows.length === 0} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: receiptLogRows.length === 0 ? "#ddd" : C.accent, color: receiptLogRows.length === 0 ? "#777" : "#fff", fontWeight: 600, cursor: receiptLogRows.length === 0 ? "not-allowed" : "pointer" }}>엑셀 다운로드</button>
               <button type="button" onClick={() => setReceiptLogOpen(false)} style={{ marginLeft: "auto", padding: "8px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, cursor: "pointer" }}>닫기</button>
             </div>

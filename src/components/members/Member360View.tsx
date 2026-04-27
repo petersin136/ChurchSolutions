@@ -302,7 +302,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
                   <YAxis hide />
                   <Tooltip />
                   <Bar dataKey="present" fill="#1e40af" name="출석" stackId="a" />
-                  <Bar dataKey="absent" fill="#c7d0e8" name="결석" stackId="a" />
+                  <Bar dataKey="absent" fill="#e2e5ef" name="결석" stackId="a" />
                 </BarChart>
               </ResponsiveContainer>
             </LazyChart>

@@ -65,7 +65,7 @@ export default function LoginForm() {
           <div style={{ fontSize: 14, color: "#6b7b9e", marginTop: 4 }}>교회 관리의 시작</div>
         </div>
 
-        <form onSubmit={handleLogin} style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #c7d0e8", padding: 24 }}>
+        <form onSubmit={handleLogin} style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #e2e5ef", padding: 24 }}>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#6b7b9e", marginBottom: 6 }}>이메일</label>
             <input
@@ -75,7 +75,7 @@ export default function LoginForm() {
               placeholder="example@church.com"
               required
               autoComplete="email"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #c7d0e8", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
           </div>
           <div style={{ marginBottom: 16 }}>
@@ -87,7 +87,7 @@ export default function LoginForm() {
               placeholder="••••••••"
               required
               autoComplete="current-password"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #c7d0e8", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
             />
           </div>
 

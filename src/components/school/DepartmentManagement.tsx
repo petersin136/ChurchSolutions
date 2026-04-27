@@ -6,7 +6,7 @@ import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 const NAVY = "#2563eb";
-const BORDER = "#c7d0e8";
+const BORDER = "#e2e5ef";
 const ROW_LINE = "#f0f2f5";
 const MUTED = "#999";
 const TEXT = "#555";

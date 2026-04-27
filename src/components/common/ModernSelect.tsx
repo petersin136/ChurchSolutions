@@ -56,7 +56,7 @@ export function ModernSelect({
   const u32 = compact && uniform32 && !uniform30 && !uniform28;
   const u30 = compact && uniform30 && !u32;
   const u28 = compact && uniform28 && !u30 && !u32;
-  const FILTER_BORDER = "#c7d0e8";
+  const FILTER_BORDER = "#e2e5ef";
   const pad = u32 || u30 ? "0 26px 0 8px" : u28 ? "0 22px 0 6px" : compact ? "4px 28px 4px 8px" : "10px 40px 10px 14px";
   const fs = u32 ? 11 : u30 ? 12 : compact ? 11 : 14;
   const br = u32 || u30 || u28 ? 6 : compact ? 4 : RADIUS;

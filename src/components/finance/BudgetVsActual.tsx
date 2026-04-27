@@ -16,7 +16,7 @@ import {
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 const NAVY = "#2563eb";
-const BORDER = "#c7d0e8";
+const BORDER = "#e2e5ef";
 const ROW_LINE = "#f0f2f5";
 
 function useIsMobile(bp = 768) {

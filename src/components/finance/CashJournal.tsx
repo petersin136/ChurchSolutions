@@ -7,7 +7,7 @@ import type { Income } from "@/types/db";
 import type { Expense } from "@/types/db";
 
 const NAVY = "#2563eb";
-const BORDER = "#c7d0e8";
+const BORDER = "#e2e5ef";
 const ROW = "#f0f2f5";
 const TEXT = "#555";
 const MUTED = "#999";

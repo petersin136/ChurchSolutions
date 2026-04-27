@@ -368,7 +368,7 @@ export function AttendanceCheck({
                 boxSizing: "border-box",
                 background: active ? "#2563eb" : "#fff",
                 color: active ? "#fff" : "#555",
-                border: active ? "1px solid #2563eb" : "1px solid #c7d0e8",
+                border: active ? "1px solid #2563eb" : "1px solid #e2e5ef",
               }}
             >
               {dept}

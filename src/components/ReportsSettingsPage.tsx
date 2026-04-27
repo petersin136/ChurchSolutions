@@ -22,7 +22,7 @@ const MUTED = "#6b7b9e";
 const SUB = "#999";
 const TEXT = "#555";
 const WHITE = "#fff";
-const BORDER = "#c7d0e8";
+const BORDER = "#e2e5ef";
 const BG_SUMMARY = "#f8f9fb";
 const BAR_TRACK = "#f0f2f5";
 const ROW_ALT = "#fafbfc";
@@ -787,7 +787,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
       font-weight: 700;
     }
     td {
-      border-bottom: 1px solid #c7d0e8;
+      border-bottom: 1px solid #e2e5ef;
     }
     tr:nth-child(even) {
       background: #fafbfc;

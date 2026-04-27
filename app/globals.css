@@ -4,11 +4,11 @@
 
 @layer base {
   :root {
-    --bg: #f0f4ff;
+    --bg: #f5f7fb;
     --surface: #FFFFFF;
-    --surface2: #f5f8ff;
+    --surface2: #f6f7fd;
     --blue: #4466e0;
-    --blue-light: #dbeafe;
+    --blue-light: #eef1fb;
     --blue-dark: #3355cc;
     --green: #22c55e;
     --green-light: #dcfce7;
@@ -24,11 +24,11 @@
     --indigo-light: #e0e7ff;
     --pink: #ec4899;
     --pink-light: #fce7f3;
-    --text1: #1e293b;
-    --text2: #64748b;
-    --text3: #94a3b8;
-    --border: #c7d0e8;
-    --border-light: #dce4f5;
+    --text1: #1a1d26;
+    --text2: #4a5068;
+    --text3: #8b90a0;
+    --border: #e2e5ef;
+    --border-light: #eef0f6;
     --border2: #b8c4e0;
     --sep: #e8edf5;
     --font: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -46,12 +46,12 @@
     --tab-h: 0px;
     --pc-nav-h: 52px;
     --pc-nav-bg: #ffffff;
-    --pc-nav-border: #c7d0e8;
+    --pc-nav-border: #e2e5ef;
     --pc-nav-text: #64748b;
     --pc-nav-text-active: #1e3a5f;
-    --pc-nav-hover-bg: #f5f8ff;
+    --pc-nav-hover-bg: #f6f7fd;
     --pc-accent: #4466e0;
-    --pc-surface: #f0f4ff;
+    --pc-surface: #f5f7fb;
   }
   *, *::before, *::after {
     box-sizing: border-box;
@@ -988,7 +988,7 @@
   display: block;
   width: 1px;
   height: 28px;
-  background: #c7d0e8;
+  background: #e2e5ef;
   margin-left: 20px;
 }
 
@@ -1130,7 +1130,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #c7d0e8;
+  background: #e2e5ef;
   color: #475569;
 }
 
@@ -1266,7 +1266,7 @@
 
 .pc-card {
   background: #ffffff;
-  border: 1px solid #c7d0e8;
+  border: 1px solid #e2e5ef;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
@@ -1274,20 +1274,20 @@
 
 .card {
   background: #ffffff !important;
-  border: 1px solid #c7d0e8 !important;
+  border: 1px solid #e2e5ef !important;
   border-radius: 12px !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
 }
 
 table.tbl {
-  border: 1px solid #c7d0e8;
+  border: 1px solid #e2e5ef;
   border-radius: 8px;
   overflow: hidden;
 }
 
 table.tbl thead th {
-  background: #f5f8ff;
-  border-bottom: 1px solid #c7d0e8;
+  background: #f6f7fd;
+  border-bottom: 1px solid #e2e5ef;
   color: #4b5563;
   font-weight: 600;
   font-size: 13px;
@@ -1302,7 +1302,7 @@ table.tbl tbody tr {
   border-bottom: 1px solid #e8ecf4;
 }
 table.tbl tbody tr:hover {
-  background: #f5f8ff;
+  background: #f6f7fd;
 }
 
 /* 버튼 — 전역 primary */
@@ -1323,7 +1323,7 @@ table.tbl tbody tr:hover {
 }
 .finance-sub-pills button {
   border-radius: 20px;
-  border: 1px solid #c7d0e8;
+  border: 1px solid #e2e5ef;
   transition: all 0.15s ease;
 }
 

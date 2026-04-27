@@ -12,7 +12,7 @@ import { AttendanceStatistics } from "@/components/attendance/AttendanceStatisti
 import { SchoolAttendanceCheck } from "./SchoolAttendanceCheck";
 
 const NAVY = "#2563eb";
-const BORDER = "#c7d0e8";
+const BORDER = "#e2e5ef";
 const UNSEL_BG = "#f5f8ff";
 const UNSEL_TEXT = "#555";
 

@@ -452,7 +452,7 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
                   justifyContent: "center",
                   flexDirection: "column",
                   cursor: "pointer",
-                  border: "2px solid #c7d0e8",
+                  border: "2px solid #e2e5ef",
                 }}
               >
                 {photoPreview ? null : (

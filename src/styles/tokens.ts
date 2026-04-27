@@ -4,53 +4,53 @@
  */
 export const tokens = {
   color: {
-    // Surfaces & text (Pastoral / 목양)
-    bg: "#f8f7f4",
+    // Surfaces & text (app-wide, low-chroma SaaS tone)
+    bg: "#f5f7fb",
     card: "#ffffff",
     navy: "#4466e0",
-    navyLight: "#2d4373",
-    /** Headers, 출석 대시보드 강조, UnifiedPageLayout accent — slightly brighter than `navy` */
-    navyEmphasis: "#1e3a5f",
-    text: "#4466e0",
+    navyLight: "#3355cc",
+    /** Headers, 출석 대시보드 강조 */
+    navyEmphasis: "#1a1d26",
+    text: "#1a1d26",
     /** 세그먼트·보조 텍스트 (비강조 라벨) */
-    sub: "#6b7b9e",
-    textMuted: "#6b7b9e",
-    textFaint: "#a0aec0",
+    sub: "#4a5068",
+    textMuted: "#4a5068",
+    textFaint: "#8b90a0",
     /** 작은 메트릭 라벨 (출석 카드 등) */
-    labelMuted: "#888888",
-    border: "#e8e6e1",
-    borderLight: "#f0eeeb",
+    labelMuted: "#8b90a0",
+    border: "#e2e5ef",
+    borderLight: "#eef0f6",
 
-    blue: "#4361ee",
-    blueBg: "#eef0ff",
-    accent: "#4361ee",
-    accentLight: "#eef0ff",
-    accentBg: "#eef0ff",
+    blue: "#4466e0",
+    blueBg: "#eef1fb",
+    accent: "#4466e0",
+    accentLight: "#eef1fb",
+    accentBg: "#eef1fb",
 
-    success: "#06d6a0",
-    successBg: "#e6faf3",
+    success: "#16a34a",
+    successBg: "#f0fdf4",
     /** 차트·UI에서 쓰이는 보조 성공색 */
-    successStrong: "#10B981",
+    successStrong: "#15803d",
 
-    danger: "#ef476f",
-    dangerBg: "#fde8ed",
+    danger: "#dc2626",
+    dangerBg: "#fef2f2",
 
-    warning: "#ffd166",
-    warningBg: "#fff8e6",
+    warning: "#e59500",
+    warningBg: "#fffbeb",
     warningText: "#946b00",
 
-    purple: "#7209b7",
-    purpleBg: "#f3e8ff",
-    teal: "#118ab2",
-    tealBg: "#e4f4fb",
-    pink: "#f72585",
-    pinkBg: "#fde4f0",
-    orange: "#ff9500",
+    purple: "#7c5ce0",
+    purpleBg: "#f3f0ff",
+    teal: "#0d9488",
+    tealBg: "#ecfdf5",
+    pink: "#db2777",
+    pinkBg: "#fce7f3",
+    orange: "#ea580c",
 
     // Attendance / charts / heatmap
     gold: "#d4a853",
     grayUi: "#6b7280",
-    trendPositive: "#2563eb",
+    trendPositive: "#4466e0",
     trendNegative: "#dc2626",
     chartGrid: "#eeeeee",
     heatMid: "#4a6fa5",

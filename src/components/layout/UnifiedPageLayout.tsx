@@ -39,7 +39,7 @@ const LAYOUT = {
   headerDescFontSize: 14,
   headerTitleColor: "#1F2937",
   headerDescColor: "#9CA3AF",
-  border: "#c7d0e8",
+  border: "#e2e5ef",
   textMuted: "#6b7280",
 } as const;
 
