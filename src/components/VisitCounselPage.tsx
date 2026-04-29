@@ -232,7 +232,7 @@ const STATUS_LABELS: Record<VisitStatus, string> = {
 };
 const STATUS_COLORS: Record<VisitStatus, { color: string; bg: string }> = {
   scheduled: { color: "#555", bg: "#f6f7fd" },
-  completed: { color: "#4466e0", bg: "#f0f2f5" },
+  completed: { color: C.primary, bg: "#f0f2f5" },
   pending: { color: "#555", bg: "#f6f7fd" },
   cancelled: { color: "#999", bg: "#f6f7fd" },
 };
@@ -385,7 +385,7 @@ function Modal({ open, onClose, title, children, footer }: { open: boolean; onCl
 }
 
 function FormField({ label, children }: { label: React.ReactNode; children: ReactNode }) {
-  return <div style={{ marginBottom: 16 }}><label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>{label}</label>{children}</div>;
+  return <div style={{ marginBottom: 16 }}><label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.textSub, marginBottom: 6 }}>{label}</label>{children}</div>;
 }
 
 function FInput({ value, onChange, placeholder, type = "text", style }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string; style?: CSSProperties }) {
@@ -485,7 +485,7 @@ function StatCard({
       }}
     >
       <p style={{ fontSize: compact ? 9 : mob ? 10 : 13, color: "#6b7b9e", margin: "0 0 4px" }}>{label}</p>
-      <p style={{ fontSize: compact ? 16 : mob ? 20 : 26, fontWeight: mob ? 800 : 700, color: "#4466e0", lineHeight: 1.1, margin: 0 }}>{value}</p>
+      <p style={{ fontSize: compact ? 16 : mob ? 20 : 26, fontWeight: mob ? 800 : 700, color: C.text, lineHeight: 1.1, margin: 0 }}>{value}</p>
       {sub && <p style={{ fontSize: compact ? 8 : mob ? 9 : 12, color: "#999", margin: "6px 0 0" }}>{sub}</p>}
     </div>
   );
@@ -671,7 +671,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
               justifyContent: "space-between",
             }}
           >
-            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#4466e0" }}>후속 조치 필요</span>
+            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text }}>후속 조치 필요</span>
             <button
               type="button"
               onClick={() => goPage("followup")}
@@ -712,7 +712,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: "#4466e0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div>
+                      <div style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div>
                       <div style={{ fontSize: mob ? 11 : 13, color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.note || f.originType}</div>
                     </div>
                     <div style={{ fontSize: mob ? 11 : 13, fontWeight: 600, color: "#6b7b9e", flexShrink: 0 }}>{subText}</div>
@@ -726,7 +726,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
         {/* Chart */}
         <Card>
           <div style={{ padding: mob ? "10px 12px" : "18px 22px", borderBottom: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#4466e0" }}>이번 달 유형별</span>
+            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text }}>이번 달 유형별</span>
           </div>
           <div style={{ padding: mob ? 12 : 22 }}>
             {Object.keys(typeCounts).length === 0 ? (
@@ -771,7 +771,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
         {/* Recent visits */}
         <Card>
           <div style={{ padding: mob ? "10px 12px" : "18px 22px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#4466e0" }}>최근 심방</span>
+            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text }}>최근 심방</span>
             <button
               type="button"
               onClick={() => goPage("visits")}
@@ -809,7 +809,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                         height: 36,
                         borderRadius: "50%",
                         background: "#f0f2f5",
-                        color: "#4466e0",
+                        color: C.text,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -822,8 +822,8 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: "#4466e0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: "#4466e0", flexShrink: 0 }}>{vt.label}</span>
+                        <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{vt.label}</span>
                       </div>
                       <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>
                         {fmtDate(v.date)} {v.time || ""} · {v.location || ""}
@@ -846,7 +846,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
         {/* Recent counsels */}
         <Card>
           <div style={{ padding: mob ? "10px 12px" : "18px 22px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#4466e0" }}>최근 상담</span>
+            <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text }}>최근 상담</span>
             <button
               type="button"
               onClick={() => goPage("counsels")}
@@ -884,7 +884,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                         height: 36,
                         borderRadius: "50%",
                         background: "#f0f2f5",
-                        color: "#4466e0",
+                        color: C.text,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -897,8 +897,8 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: "#4466e0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: "#4466e0", flexShrink: 0 }}>{ct.label}</span>
+                        <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{ct.label}</span>
                         {c.confidential && (
                           <span style={{ fontSize: mob ? 10 : 12, color: "#555", fontWeight: 600, flexShrink: 0 }}>비공개</span>
                         )}
@@ -922,14 +922,14 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
       {/* 최근 기도제목 요약 */}
       <Card style={{ padding: mob ? 12 : 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <p style={{ fontWeight: 700, fontSize: mob ? 13 : 16, margin: 0, color: "#4466e0" }}>최근 기도제목</p>
+          <p style={{ fontWeight: 700, fontSize: mob ? 13 : 16, margin: 0, color: C.text }}>최근 기도제목</p>
           <span style={{ fontSize: mob ? 11 : 13, color: "#6b7b9e" }}>목양 탭에서 관리</span>
         </div>
         {(mergedPrayers || []).filter(p => p.status === "active").slice(0, 5).map((p, i) => {
           const memberName = (db.members || []).find(m => m.id === p.memberId)?.name || "?";
           return (
             <div key={p.id || i} style={{ padding: "8px 0", borderTop: i > 0 ? `1px solid ${C.border}` : "none" }}>
-              <span style={{ fontSize: mob ? 12 : 15, fontWeight: 600, color: "#4466e0" }}>{memberName}</span>
+              <span style={{ fontSize: mob ? 12 : 15, fontWeight: 600, color: C.text }}>{memberName}</span>
               <p style={{ fontSize: mob ? 11 : 13, color: "#555", margin: "4px 0 0" }}>{p.text?.slice(0, 60)}{(p.text?.length || 0) > 60 ? "..." : ""}</p>
             </div>
           );
@@ -1058,7 +1058,7 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                       height: mob ? 36 : 44,
                       borderRadius: "50%",
                       background: "#f0f2f5",
-                      color: "#4466e0",
+                      color: C.text,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -1071,8 +1071,8 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#4466e0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: "#4466e0", flexShrink: 0 }}>{vt.label}</span>
+                      <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{vt.label}</span>
                     </div>
                     <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>
                       {fmtDateFull(v.date)} {v.time || ""} · {v.location || ""}
@@ -1189,7 +1189,7 @@ function MainDBVisitList({
             height: 36,
             borderRadius: "50%",
             background: "#f0f2f5",
-            color: "#4466e0",
+            color: C.text,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1202,8 +1202,8 @@ function MainDBVisitList({
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#4466e0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-            <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "#f0f2f5", color: "#4466e0", flexShrink: 0 }}>{v.type}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+            <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{v.type}</span>
           </div>
           <div style={{ fontSize: 11, color: "#999" }}>{fmtDateFull(v.date)}</div>
           {v.content && (
@@ -1284,7 +1284,7 @@ function MainDBVisitList({
                 .sort(([a], [b]) => a.localeCompare(b))
                 .map(([groupName, list]) => (
                   <div key={groupName} style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#4466e0", marginBottom: 8, paddingBottom: 4, borderBottom: "2px solid #4466e0" }}>{groupName}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 8, paddingBottom: 4, borderBottom: `2px solid ${C.border}` }}>{groupName}</div>
                     {list.map((v) => renderRow(v))}
                   </div>
                 ))
@@ -1440,7 +1440,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                       height: mob ? 36 : 44,
                       borderRadius: "50%",
                       background: "#f0f2f5",
-                      color: "#4466e0",
+                      color: C.text,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -1453,8 +1453,8 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "#4466e0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: "#4466e0", flexShrink: 0 }}>{ct.label}</span>
+                      <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{ct.label}</span>
                       {c.confidential && <span style={{ fontSize: mob ? 10 : 13, color: "#555", fontWeight: 600, flexShrink: 0 }}>비공개</span>}
                     </div>
                     <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>{fmtDateFull(c.date)}</div>
@@ -1472,7 +1472,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                           padding: mob ? "2px 8px" : "3px 10px",
                           borderRadius: mob ? 6 : 8,
                           background: "#f6f7fd",
-                          color: daysFromNow(c.followUpDate) < 0 ? "#4466e0" : "#555",
+                          color: daysFromNow(c.followUpDate) < 0 ? C.danger : "#555",
                           marginTop: 4,
                           display: "inline-block",
                           border: "1px solid #e2e5ef",
@@ -1586,14 +1586,14 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#4466e0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {m.name} <span style={{ fontSize: 11, color: "#999", fontWeight: 400 }}>· {f.originType}</span>
                     </div>
                     <div style={{ fontSize: 11, color: "#555" }}>{f.note || "후속 조치 필요"}</div>
                     <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>원래 기록: {fmtDate(f.originDate)}</div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: diff < 0 ? "#4466e0" : "#555", textAlign: "right" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: diff < 0 ? C.danger : "#555", textAlign: "right" }}>
                       {fmtDate(f.date)}
                       <br />
                       <span style={{ fontSize: 10, color: "#999" }}>{relDate(f.date)}</span>
@@ -1690,7 +1690,7 @@ function PrayersSub({
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: isActive ? C.purpleBg : C.greenBg, color: isActive ? C.purple : C.green }}>{PRAYER_STATUS_LABELS[p.status]}</span>
                     </div>
                     <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{p.text}</div>
-                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6 }}>{fmtDate(p.date)}</div>
+                    <div style={{ fontSize: 12, color: C.textFaint, marginTop: 6 }}>{fmtDate(p.date)}</div>
                   </div>
                   <Btn size="sm" variant="secondary" onClick={e => { e?.stopPropagation(); togglePrayerStatus(p.id); }}>{isActive ? "응답됨" : "되돌리기"}</Btn>
                 </div>
@@ -1729,7 +1729,7 @@ function MembersSub({ db, openMemberDetail }: { db: VCDB; openMemberDetail: (id:
           <Card key={m.id} onClick={() => openMemberDetail(m.id)} style={{ cursor: "pointer" }}>
             <div style={{ padding: mob ? 14 : 22 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ width: mob ? 48 : 56, height: mob ? 48 : 56, borderRadius: "50%", background: C.accentLight, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 20 : 24, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
+                <div style={{ width: mob ? 48 : 56, height: mob ? 48 : 56, borderRadius: "50%", background: C.accentLight, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 20 : 24, fontWeight: 700, flexShrink: 0 }}>{m.name[0]}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: mob ? 15 : 17, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} <span style={{ fontSize: 13, fontWeight: 400, color: C.textMuted }}>{m.role} · {m.group}</span></div>
                   <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}><Icons.Phone /> {m.phone}{m.note ? ` · ${m.note}` : ""}</div>
@@ -1876,7 +1876,7 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
             <div style={{ fontSize: mob ? 16 : 20, fontWeight: 800 }}>{db.settings.church} · {db.settings.name} {db.settings.role}</div>
             <div style={{ fontSize: 14, color: C.textMuted }}>{now.getFullYear()}년 {now.getMonth() + 1}월 심방/상담 보고서</div>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: "#4466e0" }}>월간 요약</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: C.text }}>월간 요약</div>
           <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(4, 1fr)", gap: mob ? 10 : 16, marginBottom: 24 }}>
             <StatCard label="심방 건수" value={`${mv.length}건`} />
             <StatCard label="완료" value={`${completed.length}건`} />
@@ -1884,7 +1884,7 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
             <StatCard label="후속 조치 대기" value={`${allFU.length}건`} />
           </div>
 
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: "#4466e0" }}>심방 유형별 현황</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: C.text }}>심방 유형별 현황</div>
           <div style={{ marginBottom: 24 }}>
             {Object.entries(vTypes).map(([k, v]) => (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -1897,7 +1897,7 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
             ))}
           </div>
 
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: "#4466e0" }}>상담 유형별 현황</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: C.text }}>상담 유형별 현황</div>
           <div style={{ marginBottom: 24 }}>
             {Object.entries(cTypes).map(([k, v]) => (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -1910,19 +1910,19 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
             ))}
           </div>
 
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: "#4466e0" }}>심방 상세 내역</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: C.text }}>심방 상세 내역</div>
           <div style={{ marginBottom: 24 }}>
             {completed.length ? completed.map(v => {
               const m = getMember(v.memberId);
-              return <div key={v.id} style={{ padding: 12, background: "#f6f7fd", borderRadius: 8, marginBottom: 8, border: "1px solid #e2e5ef" }}><div style={{ fontWeight: 600, color: "#4466e0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 12, color: "#6b7b9e", marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>기도: {v.prayerNote}</div>}</div>;
+              return <div key={v.id} style={{ padding: 12, background: "#f6f7fd", borderRadius: 8, marginBottom: 8, border: "1px solid #e2e5ef" }}><div style={{ fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 12, color: "#6b7b9e", marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>기도: {v.prayerNote}</div>}</div>;
             }) : <div style={{ color: "#999" }}>완료된 심방 없음</div>}
           </div>
 
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: "#4466e0" }}>미완료 후속 조치</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12, color: C.text }}>미완료 후속 조치</div>
           <div>
             {allFU.length ? allFU.map(f => {
               const m = getMember(f.memberId);
-              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: "#fff", borderRadius: 8, border: "1px solid #e2e5ef" }}><span style={{ fontSize: 13, fontWeight: 600, color: "#4466e0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span><span style={{ fontSize: 11, color: "#555", flex: 1, minWidth: 0 }}>{f.note || f.originType}</span><span style={{ fontSize: 11, fontWeight: 600, color: daysFromNow(f.date) < 0 ? "#4466e0" : "#555" }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
+              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: "#fff", borderRadius: 8, border: "1px solid #e2e5ef" }}><span style={{ fontSize: 13, fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span><span style={{ fontSize: 11, color: "#555", flex: 1, minWidth: 0 }}>{f.note || f.originType}</span><span style={{ fontSize: 11, fontWeight: 600, color: daysFromNow(f.date) < 0 ? C.danger : "#555" }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
             }) : <div style={{ color: "#999" }}>모든 후속 조치 완료</div>}
           </div>
         </div>

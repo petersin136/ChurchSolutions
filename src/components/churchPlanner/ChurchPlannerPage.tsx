@@ -97,6 +97,15 @@ const RECURRENCE: { value: string; label: string }[] = [
 
 const EQUIPMENT_OPTS = ["빔프로젝터", "음향", "영상", "모니터"] as const;
 
+/** Typography & accent (다른 탭과 동일 규칙) */
+const C = {
+  primary: "#4466e0",
+  text: "#1a1d26",
+  textSub: "#4a5068",
+  textFaint: "#8b90a0",
+  border: "#e2e5ef",
+} as const;
+
 function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
@@ -873,7 +882,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         ? "#EF4444"
                         : saturday
                           ? "#3B82F6"
-                          : "#2563eb"
+                          : C.text
                     : !cell.inMonth
                       ? "#d1d5db"
                       : sunday
@@ -929,7 +938,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           height: isTodayCell ? 28 : undefined,
                           minWidth: isTodayCell ? 28 : undefined,
                           borderRadius: isTodayCell ? "50%" : undefined,
-                          background: isTodayCell ? (mob ? "#2563eb" : ACCENT) : "transparent",
+                          background: isTodayCell ? (mob ? C.primary : ACCENT) : "transparent",
                           boxSizing: "border-box",
                         }}
                       >
@@ -986,7 +995,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                       marginRight: 4,
                                       cursor: "pointer",
                                       flexShrink: 0,
-                                      accentColor: "#2563eb",
+                                      accentColor: C.primary,
                                     }}
                                   />
                                 )}
@@ -1100,7 +1109,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                 setMoreModal({ y: cell.y, m: cell.m, d: cell.d, list });
                               }
                             }}
-                            style={{ fontSize: 10, color: "#94a3b8", cursor: "pointer" }}
+                            style={{ fontSize: 10, color: C.textFaint, cursor: "pointer" }}
                           >
                             +{more} 더보기
                           </span>
@@ -1140,10 +1149,10 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
       accentColor={ACCENT}
     >
       {loading && (
-        <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>불러오는 중…</div>
+        <div style={{ padding: 40, textAlign: "center", color: C.textSub }}>불러오는 중…</div>
       )}
       {!loading && !churchId && (
-        <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>로그인 후 교회를 선택하면 플래너를 사용할 수 있습니다.</div>
+        <div style={{ padding: 40, textAlign: "center", color: C.textSub }}>로그인 후 교회를 선택하면 플래너를 사용할 수 있습니다.</div>
       )}
 
       {!loading && churchId && sidebarTab === "calendar" && (
@@ -1188,7 +1197,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         alignItems: "center",
                         justifyContent: "center",
                         fontSize: 12,
-                        color: "#64748b",
+                        color: C.textSub,
                       }}
                     >
                       <ChevronLeft size={14} />
@@ -1197,7 +1206,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       style={{
                         fontSize: 15,
                         fontWeight: 700,
-                        color: "#2563eb",
+                        color: C.text,
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -1218,7 +1227,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         alignItems: "center",
                         justifyContent: "center",
                         fontSize: 12,
-                        color: "#64748b",
+                        color: C.textSub,
                       }}
                     >
                       <ChevronRight size={14} />
@@ -1308,7 +1317,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       type="button"
                       onClick={() => openAddEvent(cursorY, cursorM, addEventDayForHeader)}
                       style={{
-                        background: "#2563eb",
+                        background: C.primary,
                         color: "#fff",
                         border: "none",
                         fontSize: 11,
@@ -1330,7 +1339,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       onClick={() => setShowLegendModal(true)}
                       style={{
                         background: "#fff",
-                        color: "#64748b",
+                        color: C.textSub,
                         border: "1.5px solid #e9ecf0",
                         fontSize: 11,
                         fontWeight: 600,
@@ -1384,7 +1393,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         }}
                         style={{
                           background: "#fff",
-                          color: "#64748b",
+                          color: C.textSub,
                           border: "1.5px solid #e2e5ef",
                           borderRadius: 8,
                           padding: "6px 12px",
@@ -1481,7 +1490,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         alignItems: "center",
                         justifyContent: "center",
                         fontSize: 16,
-                        color: "#64748b",
+                        color: C.textSub,
                       }}
                     >
                       <ChevronLeft size={18} />
@@ -1490,7 +1499,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       style={{
                         fontSize: 20,
                         fontWeight: 700,
-                        color: "#2563eb",
+                        color: C.text,
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -1511,7 +1520,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         alignItems: "center",
                         justifyContent: "center",
                         fontSize: 16,
-                        color: "#64748b",
+                        color: C.textSub,
                       }}
                     >
                       <ChevronRight size={18} />
@@ -1632,7 +1641,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         }}
                         style={{
                           background: "#fff",
-                          color: "#64748b",
+                          color: C.textSub,
                           border: "1.5px solid #e2e5ef",
                           borderRadius: 8,
                           padding: "6px 12px",
@@ -1706,7 +1715,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   style={{
                     fontSize: 11,
                     fontWeight: 600,
-                    color: "#94a3b8",
+                    color: C.textFaint,
                     marginBottom: 8,
                     letterSpacing: "0.5px",
                   }}
@@ -1766,7 +1775,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               style={{
                 fontSize: mob ? 15 : 17,
                 fontWeight: 700,
-                color: "#2563eb",
+                color: C.text,
                 margin: mob ? "0 0 10px" : "0 0 16px",
               }}
             >
@@ -1791,7 +1800,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       style={{
                         background: isToday ? "#f8f9fc" : "#fff",
                         borderRadius: 16,
-                        border: isToday ? "1.5px solid #2563eb" : "1.5px solid #e9ecf0",
+                        border: isToday ? `1.5px solid ${C.primary}` : "1.5px solid #e9ecf0",
                         padding: "10px 12px",
                         boxShadow: "none",
                       }}
@@ -1808,18 +1817,18 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           style={{
                             fontSize: 13,
                             fontWeight: 700,
-                            color: isSunday ? "#EF4444" : isSaturday ? "#3B82F6" : "#2563eb",
+                            color: isSunday ? "#EF4444" : isSaturday ? "#3B82F6" : C.text,
                           }}
                         >
                           {m + 1}/{day}
                         </span>
-                        <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>({dayNames[dow]})</span>
+                        <span style={{ fontSize: 12, color: C.textFaint, fontWeight: 500 }}>({dayNames[dow]})</span>
                         {isToday && (
                           <span
                             style={{
                               fontSize: 9,
                               fontWeight: 700,
-                              background: "#2563eb",
+                              background: C.primary,
                               color: "#fff",
                               borderRadius: 6,
                               padding: "2px 6px",
@@ -1882,7 +1891,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                     style={{
                                       width: 14,
                                       height: 14,
-                                      accentColor: "#2563eb",
+                                      accentColor: C.primary,
                                       flexShrink: 0,
                                       cursor: "pointer",
                                     }}
@@ -1955,7 +1964,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         {m + 1}/{day}
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {dayEvents.length === 0 && <span style={{ fontSize: 12, color: "#94a3b8" }}>일정 없음</span>}
+                        {dayEvents.length === 0 && <span style={{ fontSize: 12, color: C.textFaint }}>일정 없음</span>}
                         {dayEvents.map((ev) => {
                           const hex = eventDisplayColor(ev, departments);
                           const toggleSelect = () => {
@@ -2060,7 +2069,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               style={{
                 fontSize: mob ? 15 : 17,
                 fontWeight: 700,
-                color: "#2563eb",
+                color: C.text,
                 margin: mob ? "0 0 10px" : "0 0 16px",
               }}
             >
@@ -2082,7 +2091,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 const todayStr = dateKey(todayY, todayM, todayD);
                 const cardBorder = mob
                   ? isActiveMonth
-                    ? "1.5px solid #2563eb"
+                    ? `1.5px solid ${C.primary}`
                     : isHovered
                       ? "1.5px solid #cbd5e1"
                       : "1.5px solid #e9ecf0"
@@ -2141,7 +2150,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         style={{
                           fontSize: mob ? 9 : 14,
                           fontWeight: mob ? 600 : 700,
-                          color: "#2563eb",
+                          color: C.text,
                         }}
                       >
                         {monthNum}월
@@ -2169,7 +2178,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         gridTemplateColumns: "repeat(7, 1fr)",
                         textAlign: "center",
                         fontSize: mob ? 5.5 : 9,
-                        color: "#94a3b8",
+                        color: C.textFaint,
                         fontWeight: 600,
                         marginBottom: mob ? 1 : 4,
                       }}
@@ -2341,7 +2350,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   <span style={{ width: 24, height: 24, borderRadius: "50%", background: d.color, marginRight: 12, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>{d.name}</div>
-                    <div style={{ fontSize: 12, color: "#94a3b8" }}>{d.leader_name || "담당자 미지정"}</div>
+                    <div style={{ fontSize: 12, color: C.textFaint }}>{d.leader_name || "담당자 미지정"}</div>
                   </div>
                   <button
                     type="button"
@@ -2351,7 +2360,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       setDeptForm({ name: d.name, color: d.color, leader_name: d.leader_name ?? "" });
                       setDeptModalOpen(true);
                     }}
-                    style={{ border: "none", background: "none", cursor: "pointer", padding: 8, color: "#64748b" }}
+                    style={{ border: "none", background: "none", cursor: "pointer", padding: 8, color: C.textSub }}
                   >
                     <Pencil size={18} />
                   </button>
@@ -2443,7 +2452,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         });
                         setPlaceModalOpen(true);
                       }}
-                      style={{ border: "none", background: "none", cursor: "pointer", padding: 8, color: "#64748b" }}
+                      style={{ border: "none", background: "none", cursor: "pointer", padding: 8, color: C.textSub }}
                     >
                       <Pencil size={18} />
                     </button>
@@ -2603,11 +2612,11 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   </svg>
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 1 }}>날짜</div>
+                  <div style={{ fontSize: mob ? 10 : 11, color: C.textFaint, fontWeight: 600, marginBottom: 1 }}>날짜</div>
                   <div
                     style={{
                       fontSize: mob ? 13 : 14,
-                      color: "#2563eb",
+                      color: C.text,
                       fontWeight: 600,
                       wordBreak: "break-word",
                       overflowWrap: "break-word",
@@ -2620,10 +2629,10 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         <span style={{ fontWeight: 400 }}> ~ {briefingEvent.end_date.substring(0, 10)}</span>
                       )}
                     {briefingEvent.is_all_day ? (
-                      <span style={{ color: "#94a3b8", fontSize: mob ? 11 : 12, fontWeight: 400, marginLeft: 6 }}>종일</span>
+                      <span style={{ color: C.textFaint, fontSize: mob ? 11 : 12, fontWeight: 400, marginLeft: 6 }}>종일</span>
                     ) : (
                       briefingEvent.start_time && (
-                        <span style={{ color: "#64748b", fontSize: mob ? 11 : 12, fontWeight: 400, marginLeft: 6 }}>
+                        <span style={{ color: C.textSub, fontSize: mob ? 11 : 12, fontWeight: 400, marginLeft: 6 }}>
                           {String(briefingEvent.start_time).slice(0, 5)}
                           {briefingEvent.end_time && ` ~ ${String(briefingEvent.end_time).slice(0, 5)}`}
                         </span>
@@ -2667,11 +2676,11 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     </svg>
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 1 }}>장소</div>
+                    <div style={{ fontSize: mob ? 10 : 11, color: C.textFaint, fontWeight: 600, marginBottom: 1 }}>장소</div>
                     <div
                       style={{
                         fontSize: mob ? 13 : 14,
-                        color: "#2563eb",
+                        color: C.text,
                         fontWeight: 500,
                         wordBreak: "break-word",
                         overflowWrap: "break-word",
@@ -2720,11 +2729,11 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     </svg>
                   </div>
                   <div>
-                    <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 1 }}>예상 인원</div>
+                    <div style={{ fontSize: mob ? 10 : 11, color: C.textFaint, fontWeight: 600, marginBottom: 1 }}>예상 인원</div>
                     <div
                       style={{
                         fontSize: mob ? 13 : 14,
-                        color: "#2563eb",
+                        color: C.text,
                         fontWeight: 500,
                         wordBreak: "break-word",
                         overflowWrap: "break-word",
@@ -2786,11 +2795,11 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       </svg>
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 1 }}>반복</div>
+                      <div style={{ fontSize: mob ? 10 : 11, color: C.textFaint, fontWeight: 600, marginBottom: 1 }}>반복</div>
                       <div
                         style={{
                           fontSize: mob ? 13 : 14,
-                          color: "#2563eb",
+                          color: C.text,
                           fontWeight: 500,
                           wordBreak: "break-word",
                           overflowWrap: "break-word",
@@ -2806,7 +2815,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
               {(briefingEvent.memo || briefingEvent.description) && (
                 <div style={{ padding: "12px 0", minWidth: 0 }}>
-                  <div style={{ fontSize: mob ? 10 : 11, color: "#94a3b8", fontWeight: 600, marginBottom: 6 }}>메모</div>
+                  <div style={{ fontSize: mob ? 10 : 11, color: C.textFaint, fontWeight: 600, marginBottom: 6 }}>메모</div>
                   <div
                     style={{
                       fontSize: mob ? 13 : 14,
@@ -2913,7 +2922,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     borderRadius: mob ? 8 : 10,
                     padding: "0 10px",
                     fontSize: mob ? 11 : 12,
-                    color: "#64748b",
+                    color: C.textSub,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                     height: mob ? 38 : 44,
@@ -3031,7 +3040,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     borderRadius: mob ? 8 : 10,
                     padding: "0 10px",
                     fontSize: mob ? 11 : 12,
-                    color: "#64748b",
+                    color: C.textSub,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                     height: mob ? 38 : 44,
@@ -3330,7 +3339,7 @@ function plannerFieldControl(mob: boolean): CSSProperties {
     outline: "none",
     marginBottom: 18,
     background: "#fff",
-    color: "#2563eb",
+    color: C.text,
   };
 }
 
@@ -3386,7 +3395,7 @@ const btnGhost: CSSProperties = {
   width: "100%",
   height: 44,
   background: "transparent",
-  color: "#64748b",
+  color: C.textSub,
   border: "1.5px solid #e0e3ea",
   borderRadius: 14,
   fontSize: 14,

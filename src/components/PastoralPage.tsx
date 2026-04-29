@@ -512,9 +512,9 @@ function StatCard({ label, value, sub, color = C.accent, compact, dense }: { lab
           background: `${color}15`,
         }}
       />
-      <div style={{ fontSize: labelSz, color: C.textMuted, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: labelSz, color: C.textSub, fontWeight: 500 }}>{label}</div>
       <div style={{ fontSize: valueSz, fontWeight: 700, color: C.text, letterSpacing: "-0.5px", lineHeight: 1.1 }}>{value}</div>
-      {sub && <div style={{ fontSize: subSz, color: C.textMuted }}>{sub}</div>}
+      {sub && <div style={{ fontSize: subSz, color: C.textFaint }}>{sub}</div>}
     </Card>
   );
 }
@@ -945,9 +945,9 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                   minWidth: 0,
                 }}
               >
-                <span style={{ fontSize: 10, color: tokens.color.sub, fontWeight: 500 }}>{card.label}</span>
+                <span style={{ fontSize: 10, color: C.textSub, fontWeight: 500 }}>{card.label}</span>
                 <span style={{ fontSize: 20, fontWeight: 800, color: C.text, lineHeight: 1.1 }}>{card.value}</span>
-                <span style={{ fontSize: 9, color: tokens.color.textFaint }}>{card.sub}</span>
+                <span style={{ fontSize: 9, color: C.textFaint }}>{card.sub}</span>
               </div>
             ))}
           </div>
@@ -980,9 +980,9 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                   minWidth: 0,
                 }}
               >
-                <span style={{ fontSize: 9, color: tokens.color.sub, fontWeight: 500 }}>{card.label}</span>
+                <span style={{ fontSize: 9, color: C.textSub, fontWeight: 500 }}>{card.label}</span>
                 <span style={{ fontSize: 16, fontWeight: 800, color: C.text, lineHeight: 1.1 }}>{card.value}</span>
-                <span style={{ fontSize: 8, color: tokens.color.textFaint }}>{card.sub}</span>
+                <span style={{ fontSize: 8, color: C.textFaint }}>{card.sub}</span>
               </div>
             ))}
           </div>
@@ -1016,9 +1016,9 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                 minWidth: 0,
               }}
             >
-              <span style={{ fontSize: 12, color: tokens.color.sub, fontWeight: 500 }}>{card.label}</span>
+              <span style={{ fontSize: 12, color: C.textSub, fontWeight: 500 }}>{card.label}</span>
               <span style={{ fontSize: 28, fontWeight: 800, color: C.text, lineHeight: 1.1 }}>{card.value}</span>
-              <span style={{ fontSize: 11, color: tokens.color.textFaint }}>{card.sub}</span>
+              <span style={{ fontSize: 11, color: C.textFaint }}>{card.sub}</span>
             </div>
           ))}
         </div>
@@ -1106,15 +1106,15 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", justifyContent: "center" }}>
                 <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
                   <div style={{ background: `linear-gradient(135deg, ${C.accentBg} 0%, rgba(255,255,255,0.9) 100%)`, borderRadius: 14, padding: "16px 20px", border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 72 }}>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: C.accent, letterSpacing: "-0.02em" }}>{annualSummary.totalPresent}</div>
-                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4, fontWeight: 500 }}>총 출석 인원·주</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: C.text, letterSpacing: "-0.02em" }}>{annualSummary.totalPresent}</div>
+                    <div style={{ fontSize: 12, color: C.textSub, marginTop: 4, fontWeight: 500 }}>총 출석 인원·주</div>
                   </div>
                   <div style={{ background: `linear-gradient(135deg, ${C.successBg} 0%, rgba(255,255,255,0.9) 100%)`, borderRadius: 14, padding: "16px 20px", border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 72 }}>
                     <div style={{ fontSize: 24, fontWeight: 800, color: C.success, letterSpacing: "-0.02em" }}>{annualSummary.avgRate}%</div>
-                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4, fontWeight: 500 }}>평균 출석률 (기록된 주)</div>
+                    <div style={{ fontSize: 12, color: C.textSub, marginTop: 4, fontWeight: 500 }}>평균 출석률 (기록된 주)</div>
                   </div>
                 </div>
-                <div style={{ fontSize: 12, color: C.textMuted, padding: "8px 12px", background: C.bg, borderRadius: 10, border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 12, color: C.textSub, padding: "8px 12px", background: C.bg, borderRadius: 10, border: `1px solid ${C.border}` }}>
                   기록된 주 <strong style={{ color: C.text }}>{annualSummary.weeksWithData}주</strong> · 주당 평균 출석 <strong style={{ color: C.text }}>{annualSummary.avgPerWeek}명</strong>
                 </div>
               </div>
@@ -1537,7 +1537,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
                             <td style={{ padding: "10px 14px", minWidth: 0 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                                <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: isLeader ? `linear-gradient(135deg, ${C.accent}, ${C.purple})` : `linear-gradient(135deg, ${C.accentBg}, ${C.tealBg})`, color: isLeader ? "#fff" : C.accent, overflow: "hidden", flexShrink: 0 }}>
+                                <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: isLeader ? `linear-gradient(135deg, ${C.accent}, ${C.purple})` : `linear-gradient(135deg, ${C.accentBg}, ${C.tealBg})`, color: isLeader ? "#fff" : C.text, overflow: "hidden", flexShrink: 0 }}>
                                   {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
                                 </div>
                                 <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ fontWeight: 700, fontSize: listMobName, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{m.name}</span>{isLeader && <span style={{ fontSize: mob ? 9 : 10, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>목자</span>}</div><div style={{ fontSize: listMobRole, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
@@ -1607,7 +1607,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                         </td>
                         <td style={{ padding: "12px 16px", minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                            <div className="member-avatar" style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
+                            <div className="member-avatar" style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.text, overflow: "hidden", flexShrink: 0 }}>
                               {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
                             </div>
                             <div style={{ minWidth: 0 }}><div style={{ fontWeight: 600, fontSize: listMobName, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div><div style={{ fontSize: listMobRole, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
@@ -1873,7 +1873,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
                         width: 32, height: 32, borderRadius: 8, fontSize: 13, fontWeight: 600, flexShrink: 0,
                         display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
                         background: isActive ? C.accent : hasData ? C.accentBg : C.bg,
-                        color: isActive ? "#fff" : hasData ? C.accent : C.textFaint,
+                        color: isActive ? "#fff" : hasData ? C.text : C.textFaint,
                         border: isActive ? `1.5px solid ${C.accent}30` : "1.5px solid transparent", transition: "all 0.15s",
                       }}>{idx + 1}</div>
                     );
@@ -2007,7 +2007,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
                         <tr key={s.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
                           <td style={{ padding: "12px 16px", minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                              <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
+                              <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.text, overflow: "hidden", flexShrink: 0 }}>
                                 {s.photo ? <img src={s.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (s.name || "?")[0]}
                               </div>
                               <strong style={{ color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", minWidth: 0 }}>{s.name}</strong>
@@ -2046,7 +2046,7 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
                     <tr key={s.id} style={{ borderBottom: `1px solid ${C.borderLight}` }}>
                       <td style={{ padding: "12px 16px", minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                          <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, overflow: "hidden", flexShrink: 0 }}>
+                          <div style={{ width: 38, height: 38, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.text, overflow: "hidden", flexShrink: 0 }}>
                             {s.photo ? <img src={s.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (s.name || "?")[0]}
                           </div>
                           <strong style={{ color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", minWidth: 0 }}>{s.name}</strong>
@@ -2877,7 +2877,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
     <Modal open onClose={onClose} title="정착 프로그램 상세" width={mob ? undefined : 520}>
       <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 20, overflow: "hidden", flexShrink: 0 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 20, overflow: "hidden", flexShrink: 0 }}>
             {member.photo ? <img src={member.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (member.name || "?")[0]}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>

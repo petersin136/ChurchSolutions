@@ -235,8 +235,8 @@ const C = {
   expense: "#c0392b",
   expenseLight: "#fdf0ee",
 
-  // 잔액
-  balance: "#4466e0",
+  // 잔액 (숫자는 본문색)
+  balance: "#1a1d26",
   balanceLight: "#f3f6fb",
 
   // 차트 — 파스텔 톤 통일
@@ -257,11 +257,13 @@ const C = {
   warning: "#d4a24c",
   warningLight: "#fdf8ee",
 
-  // 호환 별칭
+  // 호환 별칭 (다른 탭과 동일 토큰명)
   navy: "#1a1d26",
   accent: "#4466e0",
   card: "#ffffff",
-  text: "#4a5068",
+  text: "#1a1d26",
+  textSub: "#4a5068",
+  textFaint: "#8b90a0",
   textMuted: "#8b90a0",
   success: "#2e7d6f",
   purple: "#8b6caf",
@@ -622,10 +624,10 @@ function Button({ children, onClick, variant = "primary", size = "md", icon, dis
 function Input({ label, className, style, ...props }: { label?: string; className?: string; style?: CSSProperties; [key: string]: unknown }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {label && <label style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>{label}</label>}
+      {label && <label style={{ fontSize: 13, fontWeight: 600, color: C.textSub }}>{label}</label>}
       <input className={className} {...(props as React.InputHTMLAttributes<HTMLInputElement>)} style={{
         padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`,
-        fontSize: 14, fontFamily: "inherit", color: C.navy, background: "#fff",
+        fontSize: 14, fontFamily: "inherit", color: C.text, background: "#fff",
         outline: "none", transition: "border 0.15s", ...(style as CSSProperties || {}),
       }} />
     </div>
@@ -638,10 +640,10 @@ function Select({ label, options, ...props }: {
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {label && <label style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>{label}</label>}
+      {label && <label style={{ fontSize: 13, fontWeight: 600, color: C.textSub }}>{label}</label>}
       <select {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)} style={{
         padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`,
-        fontSize: 14, fontFamily: "inherit", color: C.navy, background: "#fff",
+        fontSize: 14, fontFamily: "inherit", color: C.text, background: "#fff",
         outline: "none", cursor: "pointer", ...(props.style as CSSProperties || {}),
       }}>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -940,7 +942,7 @@ function DashboardTab({ offerings, expenses, categories, departments }: {
             }},
             { label: "방법", render: (r) => <Badge color={C.textMuted}>{r.method as string}</Badge> },
             { label: "금액", align: "right", render: (r) => (
-              <span style={{ fontWeight: 700, color: C.accent }}>₩{fmt(r.amount as number)}</span>
+              <span style={{ fontWeight: 700, color: C.success }}>₩{fmt(r.amount as number)}</span>
             )},
           ]}
           data={[...offerings].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10) as unknown as Record<string, unknown>[]}
@@ -1057,7 +1059,7 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
       <PcModalShell open={showAdd} onClose={() => setShowAdd(false)} title="헌금 등록">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>헌금자</label>
+            <label style={{ fontSize: 13, fontWeight: 600, color: C.textSub }}>헌금자</label>
             <input
               type="text"
               value={form.donorName}
@@ -1075,7 +1077,7 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
           <Input label="금액 (원)" type="number" value={form.amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="100000" />
           <CalendarDropdown label="날짜" value={form.date} onChange={(v) => setForm(f => ({ ...f, date: v }))} />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <label style={{ fontSize: 13, fontWeight: 600, color: C.navy }}>헌금 방법</label>
+            <label style={{ fontSize: 13, fontWeight: 600, color: C.textSub }}>헌금 방법</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {(["현금", "계좌이체", "온라인"] as const).map(m => (
                 <button
@@ -1438,7 +1440,7 @@ function ExpenseTab({ expenses, setExpenses, departments, expenseCategories, onA
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input type="checkbox" checked={form.receipt} onChange={e => setForm(f => ({ ...f, receipt: e.target.checked }))}
               style={{ width: 18, height: 18, accentColor: C.accent }} />
-            <label style={{ fontSize: 14, color: C.navy }}>영수증 있음</label>
+            <label style={{ fontSize: 14, color: C.textSub }}>영수증 있음</label>
           </div>
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
             <Button variant="ghost" onClick={() => setShowAdd(false)}>취소</Button>
@@ -1524,13 +1526,13 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
                 <tr key={c.name}><td style={{ padding: "4px 0 4px 16px" }}>{c.icon} {c.name}</td><td style={{ padding: "4px 0", textAlign: "right" }}>₩{fmt(c.amount)}</td></tr>
               ))}
               {data.incomeByCat.length > 10 && <tr><td colSpan={2} style={{ padding: 8 }}><Pagination totalItems={data.incomeByCat.length} itemsPerPage={10} currentPage={pageIncome} onPageChange={setPageIncome} /></td></tr>}
-              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>수입 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.navy }}>₩{fmt(data.incomeTotal)}</td></tr>
+              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>수입 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.success }}>₩{fmt(data.incomeTotal)}</td></tr>
               <tr><td colSpan={2} style={{ padding: "4px 0", borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textMuted }}>지출 항목별</td></tr>
               {paginatedExpense.map(c => (
                 <tr key={c.name}><td style={{ padding: "4px 0 4px 16px" }}>{c.icon} {c.name}</td><td style={{ padding: "4px 0", textAlign: "right" }}>₩{fmt(c.amount)}</td></tr>
               ))}
               {data.expenseByCat.length > 10 && <tr><td colSpan={2} style={{ padding: 8 }}><Pagination totalItems={data.expenseByCat.length} itemsPerPage={10} currentPage={pageExpense} onPageChange={setPageExpense} /></td></tr>}
-              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>지출 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: "#555" }}>₩{fmt(data.expenseTotal)}</td></tr>
+              <tr><td style={{ padding: "8px 0", fontWeight: 600, color: C.navy }}>지출 소계</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: C.danger }}>₩{fmt(data.expenseTotal)}</td></tr>
               <tr><td colSpan={2} style={{ padding: "8px 0", borderTop: `2px solid ${C.border}` }}></td></tr>
               <tr><td style={{ padding: "8px 0", fontWeight: 700, color: C.navy }}>잔액</td><td style={{ padding: "8px 0", textAlign: "right", fontWeight: 800, color: C.navy }}>₩{fmt(data.balance)}</td></tr>
               <tr><td style={{ padding: "4px 0", fontSize: 12, color: C.textMuted }}>차월 이월금</td><td style={{ padding: "4px 0", textAlign: "right", fontWeight: 600 }}>₩{fmt(data.balance)}</td></tr>
@@ -3400,7 +3402,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
         <div style={{ padding: mob ? "10px 12px" : "16px 20px", borderRadius: mob ? 8 : 16, border: `1px solid ${C.border}`, background: "#f5f8ff", color: "#555" }}>
           <p style={{ margin: 0, fontSize: mob ? 12 : 15, fontWeight: 700, color: C.navy }}>기부금영수증 설정이 완료되지 않았습니다.</p>
           <p style={{ margin: "6px 0 8px", fontSize: mob ? 11 : 14, color: "#555", lineHeight: mob ? 1.4 : 1.6 }}>교회 고유번호, 대표자, 소재지를 먼저 등록해주세요. 미등록 시 PDF에 해당 정보가 빈칸으로 나옵니다.</p>
-          <button type="button" onClick={() => setSealSettingsOpen(true)} style={{ padding: 0, background: "none", border: "none", color: C.navy, fontWeight: 600, fontSize: mob ? 11 : 14, cursor: "pointer" }}>설정하러 가기 →</button>
+          <button type="button" onClick={() => setSealSettingsOpen(true)} style={{ padding: 0, background: "none", border: "none", color: C.primary, fontWeight: 600, fontSize: mob ? 11 : 14, cursor: "pointer" }}>설정하러 가기 →</button>
         </div>
       )}
 
@@ -4079,10 +4081,10 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}></th>
-                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>교인 이름</th>
-                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>연간 헌금 총액</th>
-                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>주민등록번호</th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}></th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>교인 이름</th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>연간 헌금 총액</th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>주민등록번호</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4275,9 +4277,9 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr>
-                        <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>이름</th>
-                        <th style={{ padding: "6px 8px", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>주민등록번호</th>
-                        <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.navy}` }}>주소</th>
+                        <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.primary}` }}>이름</th>
+                        <th style={{ padding: "6px 8px", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.primary}` }}>주민등록번호</th>
+                        <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.primary}` }}>주소</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -4357,15 +4359,15 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>발급번호</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>교인명</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>주민번호(마스킹)</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>귀속연도</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>총액</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>발급일</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>비고</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>상태</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.navy}` }}>액션</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>발급번호</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>교인명</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>주민번호(마스킹)</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>귀속연도</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>총액</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>발급일</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>비고</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>상태</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>액션</th>
                 </tr>
               </thead>
               <tbody>

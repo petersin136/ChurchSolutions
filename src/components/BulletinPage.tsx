@@ -479,7 +479,7 @@ function FormField({ label, children, labelStyle }: { label: string; children: R
   const mob = useIsMobile();
   return (
     <div style={{ marginBottom: mob ? 14 : 16 }}>
-      <label style={{ display: "block", fontSize: mob ? 12 : 13, fontWeight: 600, color: C.text, marginBottom: mob ? 4 : 6, ...labelStyle }}>{label}</label>
+      <label style={{ display: "block", fontSize: mob ? 12 : 13, fontWeight: 600, color: C.textSub, marginBottom: mob ? 4 : 6, ...labelStyle }}>{label}</label>
       {children}
     </div>
   );
