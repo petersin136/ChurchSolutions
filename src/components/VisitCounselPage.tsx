@@ -78,9 +78,9 @@ const C = {
   textSub: "#4a5068",
   textFaint: "#8b90a0",
   textMuted: "#4a5068",
-  bg: "#f5f7fb",
+  bg: "#f0f1fa",
   card: "#ffffff",
-  border: "#e2e5ef",
+  border: "#e8e9f0",
   borderLight: "#eef0f6",
   track: "#eef0f6",
   success: "#16a34a",
@@ -344,8 +344,9 @@ function Card({ children, style, onClick }: { children: ReactNode; style?: CSSPr
       onClick={onClick}
       style={{
         background: C.card,
-        borderRadius: mob ? 8 : 16,
+        borderRadius: mob ? 8 : 12,
         border: `1px solid ${C.border}`,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         overflow: "hidden",
         transition: "all 0.2s",
         ...style,
@@ -479,7 +480,7 @@ function StatCard({
         minHeight: compact ? 48 : mob ? 56 : 90,
         backgroundColor: "#fff",
         borderRadius: 8,
-        border: "1px solid #e2e5ef",
+        border: "1px solid #e8e9f0",
         boxSizing: "border-box",
         transition: "all 0.2s",
       }}
@@ -504,7 +505,7 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
         fontSize: mob ? 10 : 13,
         fontWeight: 600,
         cursor: "pointer",
-        border: `1px solid ${active ? "#4466e0" : "#e2e5ef"}`,
+        border: `1px solid ${active ? "#4466e0" : "#e8e9f0"}`,
         background: active ? "#4466e0" : "#f6f7fd",
         color: active ? "#fff" : "#555",
         transition: "all 0.2s",
@@ -539,7 +540,7 @@ function ListViewToggle({
         display: "flex",
         borderRadius: 6,
         overflow: "hidden",
-        border: "1px solid #e2e5ef",
+        border: "1px solid #e8e9f0",
         flexShrink: 0,
       }}
     >
@@ -569,7 +570,7 @@ function ListViewToggle({
           fontSize: mob ? 11 : 13,
           fontWeight: 600,
           border: "none",
-          borderLeft: "1px solid #e2e5ef",
+          borderLeft: "1px solid #e8e9f0",
           background: mode === "byGroup" ? "#4466e0" : "#f6f7fd",
           color: mode === "byGroup" ? "#fff" : "#555",
           cursor: "pointer",
@@ -1475,7 +1476,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                           color: daysFromNow(c.followUpDate) < 0 ? C.danger : "#555",
                           marginTop: 4,
                           display: "inline-block",
-                          border: "1px solid #e2e5ef",
+                          border: "1px solid #e8e9f0",
                         }}
                       >
                         재상담 {fmtShort(c.followUpDate)}
@@ -1550,7 +1551,7 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
               fontWeight: 600,
               color: tab === t.id ? "#fff" : "#555",
               background: tab === t.id ? "#4466e0" : "#f6f7fd",
-              border: "1px solid #e2e5ef",
+              border: "1px solid #e8e9f0",
               borderRadius: 6,
               cursor: "pointer",
               fontFamily: "inherit",
@@ -1914,7 +1915,7 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
           <div style={{ marginBottom: 24 }}>
             {completed.length ? completed.map(v => {
               const m = getMember(v.memberId);
-              return <div key={v.id} style={{ padding: 12, background: "#f6f7fd", borderRadius: 8, marginBottom: 8, border: "1px solid #e2e5ef" }}><div style={{ fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 12, color: "#6b7b9e", marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>기도: {v.prayerNote}</div>}</div>;
+              return <div key={v.id} style={{ padding: 12, background: "#f6f7fd", borderRadius: 8, marginBottom: 8, border: "1px solid #e8e9f0" }}><div style={{ fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 12, color: "#6b7b9e", marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>기도: {v.prayerNote}</div>}</div>;
             }) : <div style={{ color: "#999" }}>완료된 심방 없음</div>}
           </div>
 
@@ -1922,7 +1923,7 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
           <div>
             {allFU.length ? allFU.map(f => {
               const m = getMember(f.memberId);
-              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: "#fff", borderRadius: 8, border: "1px solid #e2e5ef" }}><span style={{ fontSize: 13, fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span><span style={{ fontSize: 11, color: "#555", flex: 1, minWidth: 0 }}>{f.note || f.originType}</span><span style={{ fontSize: 11, fontWeight: 600, color: daysFromNow(f.date) < 0 ? C.danger : "#555" }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
+              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: "#fff", borderRadius: 8, border: "1px solid #e8e9f0" }}><span style={{ fontSize: 13, fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span><span style={{ fontSize: 11, color: "#555", flex: 1, minWidth: 0 }}>{f.note || f.originType}</span><span style={{ fontSize: 11, fontWeight: 600, color: daysFromNow(f.date) < 0 ? C.danger : "#555" }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
             }) : <div style={{ color: "#999" }}>모든 후속 조치 완료</div>}
           </div>
         </div>

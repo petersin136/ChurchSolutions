@@ -221,19 +221,19 @@ const C = {
   text3: "#8b90a0",
 
   // 배경·표면
-  bg: "#f5f7fb",
+  bg: "#f0f1fa",
   surface: "#ffffff",
   surfaceHover: "#f8f9fc",
 
   // 테두리 — 아주 연한 회청색
-  border: "#e2e5ef",
+  border: "#e8e9f0",
   borderLight: "#eef0f6",
 
-  // 수입·지출 — 채도 낮춘 톤
-  income: "#2e7d6f",
-  incomeLight: "#eef7f5",
-  expense: "#c0392b",
-  expenseLight: "#fdf0ee",
+  // 수입·지출
+  income: "#16a34a",
+  incomeLight: "#f0fdf4",
+  expense: "#dc2626",
+  expenseLight: "#fef2f2",
 
   // 잔액 (숫자는 본문색)
   balance: "#1a1d26",
@@ -247,7 +247,7 @@ const C = {
   chart5: "#c7729a",
 
   // 그림자 — 아주 연하게
-  shadow: "0 1px 3px rgba(0,0,0,0.03)",
+  shadow: "0 1px 3px rgba(0,0,0,0.04)",
   shadowMd: "0 4px 12px rgba(0,0,0,0.04)",
 
   // 기본
@@ -302,7 +302,7 @@ function financeCategoryGridBtnStyle(selected: boolean, mob = true): CSSProperti
     fontSize: mob ? 12 : 14,
     background: C.surface,
     color: C.text2,
-    border: "1px solid #e2e5ef",
+    border: "1px solid #e8e9f0",
     cursor: "pointer",
     boxShadow: "none",
     transition: "all 0.15s ease",
@@ -402,7 +402,7 @@ function financeTableHeaderTh(align: "left" | "right" | "center" = "left", mob =
     fontSize: mob ? 10 : 13,
     color: C.text3,
     textAlign: align,
-    borderBottom: "2px solid #e2e5ef",
+    borderBottom: "2px solid #e8e9f0",
     background: C.surfaceHover,
     letterSpacing: "0.02em",
     textTransform: "uppercase",
@@ -427,9 +427,9 @@ function financeTableTotalRowTd(align: "left" | "right" | "center" = "left", mob
     padding: mob ? "10px 10px" : "14px 16px",
     fontWeight: 700,
     fontSize: mob ? 12 : 15,
-    color: C.primary,
+    color: C.text1,
     textAlign: align,
-    borderTop: "2px solid #e2e5ef",
+    borderTop: "2px solid #e8e9f0",
     background: C.primaryLighter,
   };
 }
@@ -672,7 +672,7 @@ function StatCard({ label, value, icon, color, sub }: {
       style={{
         background: C.surface,
         borderRadius: 12,
-        border: "1px solid #e2e5ef",
+        border: "1px solid #e8e9f0",
         padding: "16px 20px",
         display: "flex",
         alignItems: "center",
@@ -739,7 +739,7 @@ function Table({ columns, data, emptyMsg = "데이터가 없습니다" }: {
       style={{
         background: C.surface,
         borderRadius: 12,
-        border: "1px solid #e2e5ef",
+        border: "1px solid #e8e9f0",
         overflow: "hidden",
         boxShadow: C.shadow,
       }}
@@ -750,7 +750,7 @@ function Table({ columns, data, emptyMsg = "데이터가 없습니다" }: {
             {columns.map((col, i) => (
               <th key={i} style={{
                 padding: mob ? "6px 8px" : "10px 14px", textAlign: (col.align || "left") as "left"|"right"|"center",
-                fontWeight: 700, color: C.text3, fontSize: mob ? 10 : 13, borderBottom: "2px solid #e2e5ef", whiteSpace: "nowrap",
+                fontWeight: 700, color: C.text3, fontSize: mob ? 10 : 13, borderBottom: "2px solid #e8e9f0", whiteSpace: "nowrap",
                 background: C.surfaceHover, letterSpacing: "0.02em", textTransform: "uppercase",
               }}>{col.label}</th>
             ))}
@@ -2228,7 +2228,7 @@ function ExportTab({ offerings, expenses, categories, departments, expenseCatego
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 11 : 14, fontWeight: 700, flexShrink: 0,
               }}>{item.initial}</div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 700, color: C.primary, fontSize: mob ? 12 : 15, marginBottom: 2 }}>{item.title}</div>
+                <div style={{ fontWeight: 700, color: C.text1, fontSize: mob ? 12 : 15, marginBottom: 2 }}>{item.title}</div>
                 <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", lineHeight: 1.35 }}>{item.desc}</div>
               </div>
               <div style={{ marginLeft: "auto", color: "#6b7b9e", display: "flex", alignItems: "center", flexShrink: 0, fontSize: mob ? 14 : 18 }}><Icons.Export /></div>
@@ -3580,7 +3580,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             <h4 style={{ margin: "0 0 12px", fontSize: mob ? 13 : 16, fontWeight: 700, color: C.navy }}>교인 선택</h4>
             <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 16 }}>
               <div>
-                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: C.primary, marginBottom: mob ? 6 : 8 }}>이름으로 검색</label>
+                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: C.text2, marginBottom: mob ? 6 : 8 }}>이름으로 검색</label>
                 <input
                   type="text"
                   className="receipt-form-input finance-nav-btn"
@@ -3591,7 +3591,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                 />
               </div>
               <div ref={donorDropdownRef} data-testid="donor-dropdown" style={{ position: "relative" }}>
-                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: C.primary, marginBottom: mob ? 6 : 8 }}>교인 선택</label>
+                <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: C.text2, marginBottom: mob ? 6 : 8 }}>교인 선택</label>
                 <button
                   type="button"
                   className="finance-nav-btn"
@@ -3681,7 +3681,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                     <p style={{ margin: 0, fontSize: mob ? 12 : 15, fontWeight: 700, color: C.navy }}>개인정보 보호</p>
                     <p style={{ margin: "4px 0 0", fontSize: mob ? 11 : 14, color: "#555", lineHeight: mob ? 1.4 : 1.6 }}>주민등록번호는 서버에 저장되지 않으며, 영수증 PDF 생성 후 즉시 폐기됩니다.</p>
                   </div>
-                  <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: C.primary, marginBottom: mob ? 2 : 6 }}>주민등록번호 (13자리, - 제외)</label>
+                  <label style={{ display: "block", fontSize: mob ? 11 : 13, fontWeight: 600, color: C.text2, marginBottom: mob ? 2 : 6 }}>주민등록번호 (13자리, - 제외)</label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <input
                       type="text"

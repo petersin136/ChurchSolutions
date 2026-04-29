@@ -9,7 +9,7 @@ const NAVY = "#2563eb";
 const SUB = "#6b7b9e";
 const MUTED = "#999";
 const TEXT = "#555";
-const BORDER = "#e2e5ef";
+const BORDER = "#e8e9f0";
 const BG = "#fff";
 
 function useIsMobile(bp = 768) {

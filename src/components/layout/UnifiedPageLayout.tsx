@@ -33,13 +33,13 @@ const LAYOUT = {
   mainContentPadding: 24,
   mainContentPaddingMob: 10,
   mainBg: "transparent",
-  contentAreaBg: "#f4f5fb",
+  contentAreaBg: "#f0f1fa",
   headerTitleFontSize: 24,
   headerTitleFontSizeMob: 18,
   headerDescFontSize: 14,
   headerTitleColor: "#1F2937",
   headerDescColor: "#9CA3AF",
-  border: "#e2e5ef",
+  border: "#e8e9f0",
   textMuted: "#6b7280",
 } as const;
 

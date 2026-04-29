@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --bg: #f5f7fb;
+    --bg: #f0f1fa;
     --surface: #FFFFFF;
     --surface2: #f6f7fd;
     --blue: #4466e0;
@@ -27,7 +27,7 @@
     --text1: #1a1d26;
     --text2: #4a5068;
     --text3: #8b90a0;
-    --border: #e2e5ef;
+    --border: #e8e9f0;
     --border-light: #eef0f6;
     --border2: #b8c4e0;
     --sep: #e8edf5;
@@ -51,7 +51,7 @@
     --pc-nav-text-active: #1e3a5f;
     --pc-nav-hover-bg: #f6f7fd;
     --pc-accent: #4466e0;
-    --pc-surface: #f5f7fb;
+    --pc-surface: #f0f1fa;
   }
   *, *::before, *::after {
     box-sizing: border-box;
@@ -66,7 +66,7 @@
     font-size: 15px;
     line-height: 1.5;
     color: var(--text1);
-    background: #ffffff !important;
+    background: #f0f1fa !important;
     min-height: 100vh;
     min-height: 100dvh;
     overflow-x: hidden;
@@ -183,9 +183,9 @@
   /* 목양 탭과 통일된 카드 스타일 (PastoralPage 기준) */
   .card-unified {
     background: #ffffff;
-    border-radius: 16px;
+    border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    border: 1px solid #e8e6e1;
+    border: 1px solid #e8e9f0;
     padding: 24px;
   }
   .card-header {
@@ -917,7 +917,7 @@
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  background: #ffffff !important;
+  background: #f0f1fa !important;
 }
 
 /* ── Planning Center 상단 네비게이션 (파일철 탭 스타일) ── */
@@ -931,7 +931,7 @@
   bottom: 8px;
   border-radius: 18px;
   border: 1px solid #c4cbe4;
-  background: #f0f2fa;
+  background: #f0f1fa;
   box-shadow: 0 1px 8px rgba(140, 150, 190, 0.08);
   display: flex;
   flex-direction: column;
@@ -1274,20 +1274,20 @@
 
 .card {
   background: #ffffff !important;
-  border: 1px solid #e2e5ef !important;
+  border: 1px solid #e8e9f0 !important;
   border-radius: 12px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
 }
 
 table.tbl {
-  border: 1px solid #e2e5ef;
+  border: 1px solid #e8e9f0;
   border-radius: 8px;
   overflow: hidden;
 }
 
 table.tbl thead th {
   background: #f6f7fd;
-  border-bottom: 1px solid #e2e5ef;
+  border-bottom: 1px solid #e8e9f0;
   color: #4b5563;
   font-weight: 600;
   font-size: 13px;
@@ -1302,7 +1302,7 @@ table.tbl tbody tr {
   border-bottom: 1px solid #e8ecf4;
 }
 table.tbl tbody tr:hover {
-  background: #f6f7fd;
+  background: #f8f9ff;
 }
 
 /* 버튼 — 전역 primary */
