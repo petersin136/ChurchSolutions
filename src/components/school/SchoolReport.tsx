@@ -5,7 +5,7 @@ import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { useAppData } from "@/contexts/AppDataContext";
 
-const NAVY = "#2563eb";
+const NAVY = "#1a1d26";
 const BORDER = "#e8e9f0";
 
 export interface SchoolReportProps {

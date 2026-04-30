@@ -316,35 +316,31 @@ function financeCategoryGridBtnStyle(selected: boolean, mob = true): CSSProperti
 
 /** 하위 pill — 한 줄 균등(flex:1) / 그리드 셀 */
 function financeSubTabStyle(isSelected: boolean, layout: "rowEqual" | "gridCell" = "rowEqual", mob = true): CSSProperties {
-  const h = mob ? 28 : 36;
   const fs = mob ? 11 : 14;
-  const padX = mob ? "6px 10px" : "8px 18px";
   const base: CSSProperties = {
     boxSizing: "border-box",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    height: h,
-    minHeight: h,
-    maxHeight: h,
     fontSize: fs,
     fontWeight: isSelected ? 600 : 500,
-    padding: padX,
-    borderRadius: 8,
-    border: isSelected ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
-    background: isSelected ? C.primaryLighter : C.surface,
-    color: isSelected ? C.primary : C.text2,
+    padding: mob ? "8px 10px" : "10px 18px",
+    border: "none",
+    borderBottom: isSelected ? `2.5px solid ${C.primary}` : "2.5px solid transparent",
+    background: "none",
+    color: isSelected ? C.primary : C.text3,
     whiteSpace: "nowrap",
     lineHeight: 1.2,
     cursor: "pointer",
     outline: "none",
     boxShadow: "none",
-    transition: "all 0.15s ease",
+    transition: "color 0.15s ease, border-color 0.15s ease",
     WebkitTapHighlightColor: "transparent",
     fontFamily: "inherit",
     textAlign: "center",
     overflow: "hidden",
     textOverflow: "ellipsis",
+    marginBottom: -1,
   };
   if (layout === "gridCell") {
     return { ...base, width: "100%", boxSizing: "border-box" };
@@ -354,10 +350,11 @@ function financeSubTabStyle(isSelected: boolean, layout: "rowEqual" | "gridCell"
 
 const financeSubTabRowStyle: CSSProperties = {
   display: "flex",
-  gap: 4,
+  gap: 0,
   marginBottom: 10,
   width: "100%",
   alignItems: "stretch",
+  borderBottom: "1px solid #e8e9f0",
 };
 
 /** 보고서 유형·예결산 등 2~5개 토글 — 동일 규격 */
@@ -367,31 +364,27 @@ function financeTogglePillStyle(isSelected: boolean, mob = true): CSSProperties 
 
 /** 주간 등 많은 항목: 가로 스크롤 + 최소 너비(약 4칸 노출) */
 function financeScrollRowPillStyle(isSelected: boolean, mob = true): CSSProperties {
-  const h = mob ? 28 : 36;
   const fs = mob ? 10 : 13;
-  const padX = mob ? "0 10px" : "0 14px";
   return {
-    height: h,
-    minHeight: h,
-    maxHeight: h,
     fontSize: fs,
     fontWeight: isSelected ? 600 : 500,
-    padding: padX,
-    borderRadius: 8,
-    border: isSelected ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
-    background: isSelected ? C.primaryLighter : C.surface,
-    color: isSelected ? C.primary : C.text2,
+    padding: mob ? "8px 10px" : "10px 14px",
+    border: "none",
+    borderBottom: isSelected ? `2.5px solid ${C.primary}` : "2.5px solid transparent",
+    background: "none",
+    color: isSelected ? C.primary : C.text3,
     whiteSpace: "nowrap",
-    lineHeight: `${h}px`,
+    lineHeight: 1.2,
     cursor: "pointer",
     outline: "none",
     boxShadow: "none",
-    transition: "all 0.15s ease",
+    transition: "color 0.15s ease, border-color 0.15s ease",
     fontFamily: "inherit",
     textAlign: "center",
     flex: "0 0 auto",
     minWidth: "calc((100% - 16px) / 4)",
     boxSizing: "border-box",
+    marginBottom: -1,
   };
 }
 
@@ -665,7 +658,7 @@ function StatCard({ label, value, icon, color, sub }: {
     [C.primary]: { bg: C.balanceLight, text: C.balance, iconBg: "#f0f1f5", iconColor: "#6b7280" },
     [C.chart2]: { bg: C.purpleLight, text: C.chart2, iconBg: "#f0f1f5", iconColor: "#6b7280" },
   };
-  const cm = colorMap[color] ?? { bg: C.primaryLighter, text: C.primary, iconBg: "#f0f1f5", iconColor: "#6b7280" };
+  const cm = colorMap[color] ?? { bg: C.primaryLighter, text: C.text1, iconBg: "#f0f1f5", iconColor: "#6b7280" };
 
   return (
     <div
@@ -1277,7 +1270,7 @@ function GivingStatusTab({ donors, offerings, categories }: {
   };
 
   const Th = ({ label, keyName, align = "left" }: { label: string; keyName: typeof sortKey; align?: "left" | "right" | "center" }) => (
-    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: align, fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}`, whiteSpace: "nowrap", cursor: "pointer" }} onClick={() => toggleSort(keyName)}>
+    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: align, fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, background: C.surfaceHover, whiteSpace: "nowrap", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.5px" }} onClick={() => toggleSort(keyName)}>
       {label} {sortKey === keyName ? (sortDir === "asc" ? "↑" : "↓") : ""}
     </th>
   );
@@ -2224,7 +2217,7 @@ function ExportTab({ offerings, expenses, categories, departments, expenseCatego
           <Card key={i} onClick={item.action} style={{ cursor: "pointer", transition: "all 0.2s ease", padding: mob ? "10px 12px" : "20px 24px", marginBottom: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: mob ? 10 : 16 }}>
               <div style={{
-                width: mob ? 32 : 44, height: mob ? 32 : 44, borderRadius: "50%", background: "#f0f2f5", color: C.primary,
+                width: mob ? 32 : 44, height: mob ? 32 : 44, borderRadius: "50%", background: "#f0f2f5", color: C.text2,
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: mob ? 11 : 14, fontWeight: 700, flexShrink: 0,
               }}>{item.initial}</div>
               <div style={{ minWidth: 0 }}>
@@ -4081,10 +4074,10 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}></th>
-                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>교인 이름</th>
-                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>연간 헌금 총액</th>
-                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>주민등록번호</th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}></th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>교인 이름</th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>연간 헌금 총액</th>
+                    <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>주민등록번호</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4277,9 +4270,9 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr>
-                        <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.primary}` }}>이름</th>
-                        <th style={{ padding: "6px 8px", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.primary}` }}>주민등록번호</th>
-                        <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: 10, borderBottom: `2px solid ${C.primary}` }}>주소</th>
+                        <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 600, color: C.text3, fontSize: 10, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>이름</th>
+                        <th style={{ padding: "6px 8px", fontWeight: 600, color: C.text3, fontSize: 10, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>주민등록번호</th>
+                        <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 600, color: C.text3, fontSize: 10, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>주소</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -4359,15 +4352,15 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>발급번호</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>교인명</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>주민번호(마스킹)</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>귀속연도</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>총액</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>발급일</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>비고</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>상태</th>
-                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 700, color: C.navy, fontSize: mob ? 10 : 13, borderBottom: `2px solid ${C.primary}` }}>액션</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>발급번호</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>교인명</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>주민번호(마스킹)</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>귀속연도</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "right", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>총액</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>발급일</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", textAlign: "left", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>비고</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>상태</th>
+                  <th style={{ padding: mob ? "6px 8px" : "10px 14px", fontWeight: 600, color: C.text3, fontSize: mob ? 10 : 11, borderBottom: `2px solid ${C.border}`, textTransform: "uppercase", letterSpacing: "0.5px", background: C.surfaceHover }}>액션</th>
                 </tr>
               </thead>
               <tbody>

@@ -465,29 +465,33 @@ function StatCard({
   value,
   sub,
   size = "hero",
+  color = C.primary,
 }: {
   label: string;
   value: string;
   sub?: string;
   size?: "hero" | "compact";
+  color?: string;
 }) {
   const mob = useIsMobile();
   const compact = size === "compact";
   return (
     <div
       style={{
-        padding: compact ? "6px 8px" : mob ? "8px 10px" : "16px 20px",
-        minHeight: compact ? 48 : mob ? 56 : 90,
+        padding: compact ? "8px 12px" : mob ? "10px 14px" : "16px 20px",
+        minHeight: compact ? 52 : mob ? 60 : 84,
         backgroundColor: "#fff",
-        borderRadius: 8,
+        borderRadius: 12,
         border: "1px solid #e8e9f0",
+        borderLeft: `4px solid ${color}`,
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
         boxSizing: "border-box",
         transition: "all 0.2s",
       }}
     >
-      <p style={{ fontSize: compact ? 9 : mob ? 10 : 13, color: "#6b7b9e", margin: "0 0 4px" }}>{label}</p>
-      <p style={{ fontSize: compact ? 16 : mob ? 20 : 26, fontWeight: mob ? 800 : 700, color: C.text, lineHeight: 1.1, margin: 0 }}>{value}</p>
-      {sub && <p style={{ fontSize: compact ? 8 : mob ? 9 : 12, color: "#999", margin: "6px 0 0" }}>{sub}</p>}
+      <p style={{ fontSize: compact ? 9 : mob ? 10 : 11, color: C.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 4px" }}>{label}</p>
+      <p style={{ fontSize: compact ? 18 : mob ? 22 : 28, fontWeight: 800, color: C.text, lineHeight: 1.1, margin: 0 }}>{value}</p>
+      {sub && <p style={{ fontSize: compact ? 8 : mob ? 9 : 12, color: C.textFaint, margin: "4px 0 0" }}>{sub}</p>}
     </div>
   );
 }
@@ -824,7 +828,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                         <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{vt.label}</span>
+                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{vt.label}</span>
                       </div>
                       <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>
                         {fmtDate(v.date)} {v.time || ""} · {v.location || ""}
@@ -899,7 +903,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                         <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{ct.label}</span>
+                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{ct.label}</span>
                         {c.confidential && (
                           <span style={{ fontSize: mob ? 10 : 12, color: "#555", fontWeight: 600, flexShrink: 0 }}>비공개</span>
                         )}
@@ -1073,7 +1077,7 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                       <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{vt.label}</span>
+                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{vt.label}</span>
                     </div>
                     <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>
                       {fmtDateFull(v.date)} {v.time || ""} · {v.location || ""}
@@ -1204,7 +1208,7 @@ function MainDBVisitList({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-            <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{v.type}</span>
+            <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{v.type}</span>
           </div>
           <div style={{ fontSize: 11, color: "#999" }}>{fmtDateFull(v.date)}</div>
           {v.content && (
@@ -1455,7 +1459,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                       <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 4, background: "#f0f2f5", color: C.primary, flexShrink: 0 }}>{ct.label}</span>
+                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{ct.label}</span>
                       {c.confidential && <span style={{ fontSize: mob ? 10 : 13, color: "#555", fontWeight: 600, flexShrink: 0 }}>비공개</span>}
                     </div>
                     <div style={{ fontSize: mob ? 11 : 13, color: "#999" }}>{fmtDateFull(c.date)}</div>

@@ -5,10 +5,10 @@ import type { SchoolDepartment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 
-const NAVY = "#2563eb";
-const SUB = "#6b7b9e";
-const MUTED = "#999";
-const TEXT = "#555";
+const NAVY = "#1a1d26";
+const SUB = "#4a5068";
+const MUTED = "#8b90a0";
+const TEXT = "#4a5068";
 const BORDER = "#e8e9f0";
 const BG = "#fff";
 
@@ -122,23 +122,25 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
     })();
   }, [toast]);
 
-  function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  function StatCard({ label, value, sub, color = "#4466e0" }: { label: string; value: string; sub?: string; color?: string }) {
     return (
       <div
         style={{
           background: BG,
-          borderRadius: mob ? 8 : 8,
+          borderRadius: 12,
           border: `1px solid ${BORDER}`,
-          padding: mob ? "8px 10px" : "16px 20px",
-          minHeight: mob ? 56 : 90,
+          borderLeft: `4px solid ${color}`,
+          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          padding: mob ? "10px 14px" : "16px 20px",
+          minHeight: mob ? 60 : 84,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
         }}
       >
-        <div style={{ fontSize: mob ? 10 : 13, color: SUB, fontWeight: 500 }}>{label}</div>
-        <div style={{ fontSize: mob ? 20 : 26, fontWeight: mob ? 800 : 700, color: NAVY, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{value}</div>
-        {sub != null && sub !== "" && <div style={{ fontSize: mob ? 9 : 12, color: MUTED, marginTop: 2 }}>{sub}</div>}
+        <div style={{ fontSize: mob ? 10 : 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: mob ? 22 : 28, fontWeight: 800, color: NAVY, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{value}</div>
+        {sub != null && sub !== "" && <div style={{ fontSize: mob ? 9 : 12, color: MUTED, marginTop: 4 }}>{sub}</div>}
       </div>
     );
   }
@@ -156,10 +158,10 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
           gap: mob ? 8 : 16,
         }}
       >
-        <StatCard label="전체 등록 학생" value={`${totalStudents}명`} sub="교회학교 등록" />
-        <StatCard label="이번 주 출석률" value={weekRate != null ? `${weekRate}%` : "-"} sub="금주 출석 기준" />
-        <StatCard label="전체 교사" value={`${totalTeachers}명`} sub="교사·부교사" />
-        <StatCard label="이번 달 신규 등록" value={`${newThisMonth}명`} sub="신규 등록" />
+        <StatCard label="전체 등록 학생" value={`${totalStudents}명`} sub="교회학교 등록" color="#4466e0" />
+        <StatCard label="이번 주 출석률" value={weekRate != null ? `${weekRate}%` : "-"} sub="금주 출석 기준" color="#16a34a" />
+        <StatCard label="전체 교사" value={`${totalTeachers}명`} sub="교사·부교사" color="#7c3aed" />
+        <StatCard label="이번 달 신규 등록" value={`${newThisMonth}명`} sub="신규 등록" color="#f59e0b" />
       </div>
 
       <div style={{ background: BG, borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>

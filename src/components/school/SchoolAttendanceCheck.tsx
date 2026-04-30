@@ -522,12 +522,12 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
           <table className="w-full min-w-[320px]" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>교인</th>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>역할</th>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>반</th>
-                <th className="text-center py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>출석 상태</th>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>사유</th>
-                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#2563eb", borderBottom: "2px solid #2563eb" }}>연속출석</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#8b90a0", borderBottom: "1px solid #e8e9f0", textTransform: "uppercase", letterSpacing: "0.5px" }}>교인</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#8b90a0", borderBottom: "1px solid #e8e9f0", textTransform: "uppercase", letterSpacing: "0.5px" }}>역할</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#8b90a0", borderBottom: "1px solid #e8e9f0", textTransform: "uppercase", letterSpacing: "0.5px" }}>반</th>
+                <th className="text-center py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#8b90a0", borderBottom: "1px solid #e8e9f0", textTransform: "uppercase", letterSpacing: "0.5px" }}>출석 상태</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#8b90a0", borderBottom: "1px solid #e8e9f0", textTransform: "uppercase", letterSpacing: "0.5px" }}>사유</th>
+                <th className="text-left py-2 px-3 md:px-4 text-[10px] md:text-xs font-bold" style={{ color: "#8b90a0", borderBottom: "1px solid #e8e9f0", textTransform: "uppercase", letterSpacing: "0.5px" }}>연속출석</th>
               </tr>
             </thead>
             <tbody>
@@ -561,7 +561,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                               fontSize: 11,
                               fontWeight: 600,
                               border: status === "출석" ? "none" : "1px solid #e8e9f0",
-                              background: status === "출석" ? "#2563eb" : "#f5f8ff",
+                              background: status === "출석" ? "#16a34a" : "#f5f8ff",
                               color: status === "출석" ? "#fff" : "#555",
                             }}
                           >
@@ -576,7 +576,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                               fontSize: 11,
                               fontWeight: 600,
                               border: status === "결석" ? "none" : "1px solid #e8e9f0",
-                              background: status === "결석" ? "#2563eb" : "#f5f8ff",
+                              background: status === "결석" ? "#dc2626" : "#f5f8ff",
                               color: status === "결석" ? "#fff" : "#555",
                             }}
                           >
@@ -620,8 +620,8 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
 
       <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 flex flex-wrap items-center justify-between gap-4 rounded-t-lg" style={{ borderColor: "#e8e9f0" }}>
         <div className="flex gap-4 text-sm" style={{ color: "#555" }}>
-          <span>출석 <strong style={{ color: "#2563eb" }}>{count출석}명</strong></span>
-          <span>결석 <strong style={{ color: "#2563eb" }}>{count결석}명</strong></span>
+          <span>출석 <strong style={{ color: "#16a34a" }}>{count출석}명</strong></span>
+          <span>결석 <strong style={{ color: "#dc2626" }}>{count결석}명</strong></span>
           <span style={{ color: "#999" }}>/ 전체 {filteredEnrollments.length}명</span>
         </div>
         <div className="text-sm">
@@ -631,7 +631,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
               저장 중...
             </span>
           ) : saved ? (
-            <span style={{ color: "#2563eb", fontWeight: 600 }}>자동 저장됨</span>
+            <span style={{ color: "#16a34a", fontWeight: 600 }}>자동 저장됨</span>
           ) : saveError ? (
             <span style={{ color: "#555" }}>저장 실패 - 다시 시도해주세요</span>
           ) : null}

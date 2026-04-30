@@ -11,7 +11,7 @@ import { AbsenteeManagement } from "@/components/attendance/AbsenteeManagement";
 import { AttendanceStatistics } from "@/components/attendance/AttendanceStatistics";
 import { SchoolAttendanceCheck } from "./SchoolAttendanceCheck";
 
-const NAVY = "#2563eb";
+const NAVY = "#1a1d26";
 const BORDER = "#e8e9f0";
 const UNSEL_BG = "#f5f8ff";
 const UNSEL_TEXT = "#555";
