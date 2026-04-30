@@ -3,7 +3,7 @@
 import type { DB } from "@/types/db";
 import { ReportsSettingsPage } from "./ReportsSettingsPage";
 
-interface SettingsPageProps {
+interface ReportsPageProps {
   db: DB;
   setDb: React.Dispatch<React.SetStateAction<DB>>;
   save: () => void;
@@ -11,6 +11,6 @@ interface SettingsPageProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-export function SettingsPage(props: SettingsPageProps) {
-  return <ReportsSettingsPage {...props} mode="settings" />;
+export function ReportsPage(props: ReportsPageProps) {
+  return <ReportsSettingsPage {...props} mode="reports" />;
 }

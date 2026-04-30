@@ -8,10 +8,11 @@ import { VisitCounselPage } from "./VisitCounselPage";
 import { BulletinPage } from "./BulletinPage";
 import { Toast } from "./Toast";
 import { Modals } from "./Modals";
-import { Users, Wallet, Heart, GraduationCap, FileBarChart, Newspaper, CalendarDays } from "lucide-react";
+import { Users, Wallet, Heart, GraduationCap, FileBarChart, Newspaper, CalendarDays, Settings } from "lucide-react";
 import { PlannerPage } from "./PlannerPage";
 import { SchoolPage } from "./school/SchoolPage";
-import { ReportsSettingsPage } from "./ReportsSettingsPage";
+import { ReportsPage } from "./ReportsPage";
+import { SettingsPage } from "./SettingsPage";
 import { useAuth } from "@/contexts/AuthContext";
 
 const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[] = [
@@ -21,7 +22,8 @@ const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[
   { id: "finance", label: "재정", Icon: Wallet },
   { id: "planner", label: "플래너", Icon: CalendarDays },
   { id: "bulletin", label: "주보", Icon: Newspaper },
-  { id: "reports", label: "보고서·설정", Icon: FileBarChart },
+  { id: "reports", label: "보고서", Icon: FileBarChart },
+  { id: "settings", label: "설정", Icon: Settings },
 ];
 
 export interface SuperPlannerUIProps {
@@ -125,7 +127,10 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
           <BulletinPage />
         </div>
         <div className={`page ${currentPage === "reports" ? "active" : ""}`} id="page-reports">
-          <ReportsSettingsPage db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
+          <ReportsPage db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
+        </div>
+        <div className={`page ${currentPage === "settings" ? "active" : ""}`} id="page-settings">
+          <SettingsPage db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
         </div>
       </main>
 

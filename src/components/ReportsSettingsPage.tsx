@@ -14,11 +14,13 @@ import { VisitPlanReport } from "@/components/reports/VisitPlanReport";
 import { UpcomingEvents } from "@/components/reports/UpcomingEvents";
 import { AttendanceStatistics } from "@/components/attendance/AttendanceStatistics";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { PcButton, PcCard, PcInput, PcSegmented } from "@/components/ui";
+import { BarChart3, Banknote, Bell, Building2, CalendarDays, CalendarRange, ChevronRight, ClipboardList, Database, FileBarChart, FileText, Home, LayoutDashboard, MessageCircle, Receipt, Sprout, UserCheck, UserX, Users, Wallet } from "lucide-react";
+import { PcButton, PcCard, PcInput, PcSegmented, PcTabs } from "@/components/ui";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { getSundayForWeekNum, saveSettingsToSupabase } from "@/lib/store";
-import styles from "./ReportsSettingsPage.module.css";
+import settingsStyles from "./ReportsSettingsPage.module.css";
+import reportItemStyles from "./ReportItemCard.module.css";
 
 const NAVY = "#2563eb";
 const MUTED = "#6b7b9e";
@@ -136,6 +138,7 @@ interface ReportsSettingsPageProps {
   save: () => void;
   saveDb?: (d: DB) => Promise<void>;
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
+  mode?: "both" | "reports" | "settings";
 }
 
 function DataBackupPanel({
@@ -222,11 +225,21 @@ function DataBackupPanel({
   }, [setDb, save, saveDb, toast]);
 
   return (
-    <PcCard title="데이터" padding={mob ? "sm" : "md"} elevation="sm">
-      <div className={styles.settingsHint}>
+    <PcCard padding="lg" elevation="sm" className={settingsStyles.settingCard}>
+      <div className={settingsStyles.settingsCardHead}>
+        <div className={settingsStyles.settingsIconBox}>
+          <Database size={24} aria-hidden />
+        </div>
+        <div className={settingsStyles.settingsHeadText}>
+          <h3 className={settingsStyles.settingsHeadTitle}>데이터</h3>
+          <p className={settingsStyles.settingsHeadDesc}>백업·복원·초기화를 관리합니다.</p>
+        </div>
+      </div>
+      <hr className={settingsStyles.settingsDivider} />
+      <div className={settingsStyles.settingsHint}>
         백업·복원·초기화는 전체 교회 데이터에 적용됩니다. 초기화 전 반드시 백업하세요.
       </div>
-      <div className={styles.backupButtons}>
+      <div className={settingsStyles.backupButtons}>
         <PcButton type="button" variant="secondary" fullWidth onClick={exportBackup}>
           데이터 백업
         </PcButton>
@@ -258,25 +271,39 @@ function ChurchInfoSettingsCard({ db, setDb, save, toast }: Pick<ReportsSettings
     }
   };
   return (
-    <PcCard title="교회 정보" padding="md" elevation="sm">
-      <div className={styles.settingsStack}>
-        <PcInput label="교회명" value={s.churchName ?? ""} onChange={(e) => patch({ churchName: e.target.value })} />
-        <PcInput label="담임목사명" value={s.pastor ?? ""} onChange={(e) => patch({ pastor: e.target.value })} />
-        <PcInput label="소재지" value={s.address ?? ""} onChange={(e) => patch({ address: e.target.value })} />
+    <PcCard padding="lg" elevation="sm" className={settingsStyles.settingCard}>
+      <div className={settingsStyles.settingsCardHead}>
+        <div className={settingsStyles.settingsIconBox}>
+          <Building2 size={24} aria-hidden />
+        </div>
+        <div className={settingsStyles.settingsHeadText}>
+          <h3 className={settingsStyles.settingsHeadTitle}>교회 정보</h3>
+          <p className={settingsStyles.settingsHeadDesc}>기본 교회 메타데이터를 입력하고 저장합니다.</p>
+        </div>
+      </div>
+      <hr className={settingsStyles.settingsDivider} />
+      <div className={settingsStyles.settingsStack}>
+        <PcInput size="lg" label="교회명" value={s.churchName ?? ""} onChange={(e) => patch({ churchName: e.target.value })} />
+        <PcInput size="lg" label="담임목사명" value={s.pastor ?? ""} onChange={(e) => patch({ pastor: e.target.value })} />
+        <PcInput size="lg" label="소재지" value={s.address ?? ""} onChange={(e) => patch({ address: e.target.value })} />
         <PcInput
+          size="lg"
           label="사업자등록번호(고유번호)"
           value={s.businessNumber ?? ""}
           onChange={(e) => patch({ businessNumber: e.target.value })}
         />
         <PcInput
+          size="lg"
           label="교단"
           value={s.denomination ?? ""}
           placeholder="예: 장로교, 침례교"
           onChange={(e) => patch({ denomination: e.target.value })}
         />
-        <PcButton type="button" variant="primary" fullWidth onClick={handleSave}>
-          저장
-        </PcButton>
+        <div className={settingsStyles.settingsActionsRow}>
+          <PcButton type="button" variant="primary" onClick={handleSave}>
+            저장
+          </PcButton>
+        </div>
       </div>
     </PcCard>
   );
@@ -292,9 +319,20 @@ function NotificationSettingsCard({ db, setDb, save }: Pick<ReportsSettingsPageP
   };
   const weeksValue = Number.isFinite(weeks) ? weeks : 3;
   return (
-    <PcCard title="알림 설정" padding="md" elevation="sm">
-      <div className={styles.settingsStack}>
+    <PcCard padding="lg" elevation="sm" className={settingsStyles.settingCard}>
+      <div className={settingsStyles.settingsCardHead}>
+        <div className={settingsStyles.settingsIconBox}>
+          <Bell size={24} aria-hidden />
+        </div>
+        <div className={settingsStyles.settingsHeadText}>
+          <h3 className={settingsStyles.settingsHeadTitle}>알림 설정</h3>
+          <p className={settingsStyles.settingsHeadDesc}>결석 기준과 새가족 정착 알림 토글을 설정합니다.</p>
+        </div>
+      </div>
+      <hr className={settingsStyles.settingsDivider} />
+      <div className={settingsStyles.settingsStack}>
         <PcInput
+          size="lg"
           type="number"
           min={2}
           max={8}
@@ -309,8 +347,8 @@ function NotificationSettingsCard({ db, setDb, save }: Pick<ReportsSettingsPageP
             patch({ absenteeAlertConsecutiveWeeks: clamped });
           }}
         />
-        <div className={styles.toggleRow}>
-          <span className={styles.toggleLabel}>새가족 정착 미완료 알림</span>
+        <div className={settingsStyles.toggleRow}>
+          <span className={settingsStyles.toggleLabel}>새가족 정착 미완료 알림</span>
           <PcSegmented
             value={newFamilyOn ? "on" : "off"}
             onChange={(v) => patch({ alertNewFamilyIncomplete: v === "on" })}
@@ -505,20 +543,36 @@ function MemberListPrintBody({
 }
 
 export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
-  const { db, setDb, save, saveDb, toast } = props;
+  const { db, setDb, save, saveDb, toast, mode = "both" } = props;
   const mob = useIsMobile();
   const { rawAttendance } = useAppData();
-  const navSections = useMemo(
-    () => [
+  const navSections = useMemo(() => {
+    if (mode === "reports") {
+      return [
+        {
+          sectionLabel: "보고서",
+          items: [{ id: "reports", label: "보고서", Icon: () => null }],
+        },
+      ];
+    }
+    if (mode === "settings") {
+      return [
+        {
+          sectionLabel: "설정",
+          items: [{ id: "settings", label: "설정", Icon: () => null }],
+        },
+      ];
+    }
+    return [
       {
         sectionLabel: "보고서 · 설정",
         items: [{ id: "reports-settings", label: "보고서 · 설정", Icon: () => null }],
       },
-    ],
-    [],
-  );
+    ];
+  }, [mode]);
 
   const [selectedReport, setSelectedReport] = useState<ReportCardDef | null>(null);
+  const [activeReportCategory, setActiveReportCategory] = useState("목양");
   const endD = useMemo(() => new Date(), []);
   const startD = useMemo(() => {
     const s = new Date();
@@ -703,6 +757,38 @@ ${printArea.innerHTML}
       main: "var(--pc-warning, #e59500)",
       soft: "var(--pc-warning-soft, #fff7e6)",
     };
+  };
+  const categoryTabs = useMemo(
+    () => [
+      { value: "목양", icon: Users },
+      { value: "심방·상담", icon: MessageCircle },
+      { value: "재정", icon: Wallet },
+      { value: "통계·서식", icon: BarChart3 },
+    ],
+    [],
+  );
+  const activeCategory =
+    REPORT_GROUPS.find((g) => g.category === activeReportCategory) ?? REPORT_GROUPS[0];
+  const reportItemIcon = (id: ReportId) => {
+    const map: Record<ReportId, React.ComponentType<any>> = {
+      p_member_list: Users,
+      p_attendance: UserCheck,
+      p_absentee: UserX,
+      p_new_family: Sprout,
+      p_mokjang: Home,
+      v_visit: MessageCircle,
+      v_counsel: ClipboardList,
+      f_offering: Banknote,
+      f_expense: Receipt,
+      x_dashboard: LayoutDashboard,
+      x_weekly: CalendarDays,
+      x_monthly: CalendarRange,
+      x_senior: FileBarChart,
+      x_dept: Building2,
+      x_visit_plan: FileText,
+      x_upcoming: CalendarDays,
+    };
+    return map[id] ?? FileText;
   };
 
   const renderPreview = () => {
@@ -937,19 +1023,31 @@ ${printArea.innerHTML}
   const detailTitle = selectedReport?.title ?? "보고서 · 설정";
   const selectedReportId = selectedReport?.id;
   const churchName = db.settings.churchName ?? "";
+  const showReportsSection = mode !== "settings";
+  const showSettingsSection = mode !== "reports";
 
   return (
     <UnifiedPageLayout
-      pageTitle="보고서 · 설정"
+      pageTitle={mode === "reports" ? "보고서" : mode === "settings" ? "설정" : "보고서 · 설정"}
       churchName={churchName.trim() || "교회 이름"}
       navSections={navSections}
-      activeId="reports-settings"
+      activeId={mode === "reports" ? "reports" : mode === "settings" ? "settings" : "reports-settings"}
       onNav={() => {}}
-      versionText="보고서/설정 v1.0"
-      headerTitle="보고서 · 설정"
-      headerDesc={selectedReport ? detailTitle : "리포트를 선택하고 필터를 적용하세요"}
+      versionText={mode === "reports" ? "보고서 v1.0" : mode === "settings" ? "설정 v1.0" : "보고서/설정 v1.0"}
+      headerTitle={mode === "reports" ? "보고서" : mode === "settings" ? "설정" : "보고서 · 설정"}
+      headerDesc={
+        mode === "reports"
+          ? selectedReport
+            ? detailTitle
+            : "리포트를 선택하고 필터를 적용하세요"
+          : mode === "settings"
+            ? "교회 정보, 알림, 데이터를 설정합니다"
+            : selectedReport
+              ? detailTitle
+              : "리포트를 선택하고 필터를 적용하세요"
+      }
       hideMobileSubTabs
-      headerActions={
+      headerActions={showReportsSection ? (
         <div
           style={{
             display: "flex",
@@ -1019,60 +1117,55 @@ ${printArea.innerHTML}
             </div>
           )}
         </div>
-      }
+      ) : null}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: mob ? "1fr" : "1fr 1fr",
-          gap: 24,
-          maxWidth: 1400,
-          margin: "0 auto",
-          width: "100%",
-          boxSizing: "border-box",
-          alignItems: "start",
-        }}
-      >
-          {/* 왼쪽(모바일: 위): 보고서 */}
-          <div style={{ minWidth: 0, width: "100%" }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: NAVY, margin: "0 0 12px" }}>보고서</h2>
+      <div className={settingsStyles.layoutStack}>
+          {showReportsSection ? (
+          <section style={{ minWidth: 0, width: "100%" }} aria-label="보고서">
             {!selectedReport && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {REPORT_GROUPS.map((g) => (
-                  <PcCard
-                    key={g.category}
-                    title={g.category}
-                    padding="lg"
-                    elevation="sm"
-                  >
-                    <div className={styles.reportItems}>
-                      {g.items.map((item) => {
-                        const tone = categoryTone(g.category);
-                        const selected = selectedReportId === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            className={`${styles.reportItemButton}${selected ? ` ${styles.reportItemSelected}` : ""}`}
-                            onClick={() => setSelectedReport(item)}
-                          >
-                            <span
-                              className={styles.reportItemBadge}
-                              style={{ background: tone.soft, color: tone.main }}
-                            >
-                              {item.initial}
-                            </span>
-                            <div className={styles.reportItemBody}>
-                              <div className={styles.reportItemTitle}>{item.title}</div>
-                              <div className={styles.reportItemDesc}>{item.desc}</div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </PcCard>
+              <PcTabs value={activeReportCategory} onValueChange={setActiveReportCategory} variant="underline" size="lg">
+                <PcTabs.List ariaLabel="보고서 카테고리">
+                  {categoryTabs.map((tab) => {
+                    const TabIcon = tab.icon;
+                    return (
+                      <PcTabs.Trigger key={tab.value} value={tab.value} icon={<TabIcon size={16} />}>
+                        {tab.value}
+                      </PcTabs.Trigger>
+                    );
+                  })}
+                </PcTabs.List>
+                {categoryTabs.map((tab) => (
+                  <PcTabs.Content key={tab.value} value={tab.value}>
+                    {activeCategory.category === tab.value ? (
+                      <div className={reportItemStyles.list}>
+                        {activeCategory.items.map((item) => {
+                          const tone = categoryTone(activeCategory.category);
+                          const selected = selectedReportId === item.id;
+                          const ItemIcon = reportItemIcon(item.id);
+                          return (
+                            <PcCard key={item.id} padding="md" elevation="sm">
+                              <button
+                                type="button"
+                                className={`${reportItemStyles.button}${selected ? ` ${reportItemStyles.buttonSelected}` : ""}`}
+                                onClick={() => setSelectedReport(item)}
+                              >
+                                <span className={reportItemStyles.iconBox} style={{ background: tone.soft, color: tone.main }}>
+                                  <ItemIcon size={24} />
+                                </span>
+                                <span className={reportItemStyles.textBox}>
+                                  <span className={reportItemStyles.title}>{item.title}</span>
+                                  <span className={reportItemStyles.desc}>{item.desc}</span>
+                                </span>
+                                <ChevronRight className={reportItemStyles.arrow} />
+                              </button>
+                            </PcCard>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </PcTabs.Content>
                 ))}
-              </div>
+              </PcTabs>
             )}
             {selectedReport && (
               <div>
@@ -1151,30 +1244,21 @@ ${printArea.innerHTML}
                 </div>
               </div>
             )}
-          </div>
+          </section>
+          ) : null}
 
-          {/* 오른쪽(모바일: 아래): 설정 */}
-          <div style={{ minWidth: 0, width: "100%" }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: NAVY, margin: "0 0 12px" }}>설정</h2>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: mob ? "1fr" : "1fr 1fr",
-                gap: 24,
-                alignItems: "start",
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, width: "100%" }}>
-                <ChurchInfoSettingsCard db={db} setDb={setDb} save={save} toast={toast} />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, width: "100%" }}>
-                <NotificationSettingsCard db={db} setDb={setDb} save={save} />
-                <DataBackupPanel db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
-              </div>
-            </div>
-          </div>
+          {showReportsSection && showSettingsSection ? (
+            <div className={settingsStyles.sectionDivider} />
+          ) : null}
+
+          {showSettingsSection ? (
+          <section className={settingsStyles.settingsSection} aria-label="설정">
+            <h2 className={settingsStyles.settingsHeading}>설정</h2>
+            <ChurchInfoSettingsCard db={db} setDb={setDb} save={save} toast={toast} />
+            <NotificationSettingsCard db={db} setDb={setDb} save={save} />
+            <DataBackupPanel db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
+          </section>
+          ) : null}
       </div>
     </UnifiedPageLayout>
   );

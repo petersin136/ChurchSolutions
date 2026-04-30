@@ -48,13 +48,13 @@
 
 .reportItemTitle {
   color: var(--pc-text);
-  font-weight: var(--pc-weight-semibold);
-  font-size: var(--pc-text-sm);
+  font-weight: 600;
+  font-size: 16px;
 }
 
 .reportItemDesc {
   color: var(--pc-text-sub);
-  font-size: var(--pc-text-xs);
+  font-size: 14px;
   margin-top: 2px;
   line-height: 1.4;
 }
@@ -62,7 +62,7 @@
 .settingsStack {
   display: flex;
   flex-direction: column;
-  gap: var(--pc-space-3);
+  gap: var(--pc-space-4);
 }
 
 .settingsHint {
@@ -84,6 +84,115 @@
 }
 
 .toggleLabel {
-  font-size: var(--pc-text-sm);
+  font-size: 14px;
+  font-weight: 500;
   color: var(--pc-text);
+}
+
+.layoutStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-8);
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.settingsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-5);
+  --pc-text-sm: 14px;
+}
+
+.sectionDivider {
+  height: 1px;
+  background: var(--pc-border);
+  margin: var(--pc-space-8) 0;
+}
+
+.settingsHeading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--pc-text);
+  margin: 0 0 var(--pc-space-5) 0;
+}
+
+.settingCard {
+  position: relative;
+  border-left: 4px solid var(--pc-primary);
+  border-radius: var(--pc-radius-lg);
+  background: var(--pc-bg);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.06);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.settingCard:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.06),
+    0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.settingCard:nth-child(1) {
+  border-left-color: var(--pc-primary);
+}
+
+.settingCard:nth-child(2) {
+  border-left-color: var(--pc-warning);
+}
+
+.settingCard:nth-child(3) {
+  border-left-color: var(--pc-success);
+}
+
+.settingsCardHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pc-space-3);
+}
+
+.settingsIconBox {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--pc-radius);
+  background: var(--pc-primary-soft, #eef2ff);
+  color: var(--pc-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settingsHeadText {
+  min-width: 0;
+  flex: 1;
+}
+
+.settingsHeadTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--pc-text-strong);
+}
+
+.settingsHeadDesc {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--pc-text-sub);
+}
+
+
+.settingsDivider {
+  border: 0;
+  border-top: 1px solid var(--pc-border);
+  margin: var(--pc-space-4) 0;
+}
+
+.settingsActionsRow {
+  display: flex;
+  justify-content: flex-end;
 }

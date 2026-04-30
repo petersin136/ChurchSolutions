@@ -1,5 +1,3 @@
-const path = require("path");
-const os = require("os");
 const withPWA = require("@ducanh2912/next-pwa").default;
 
 /** @type {import('next').NextConfig} */
@@ -29,17 +27,11 @@ const nextConfig = {
     ];
   },
 
-  // 경로 공백("Church Solutions")로 인한 webpack filesystem cache 손상 회피
-  // 캐시를 OS 임시 디렉토리로 이동
+  // dev 런타임에서 파일시스템 캐시(.pack) 손상/경합으로
+  // _next 정적 자산 404/500이 반복되어 메모리 캐시로 고정
   webpack: (config, { dev }) => {
     if (dev) {
-      config.cache = {
-        type: "filesystem",
-        cacheDirectory: path.join(os.tmpdir(), "churchsolutions-webpack-cache"),
-        buildDependencies: {
-          config: [__filename],
-        },
-      };
+      config.cache = { type: "memory" };
     }
     return config;
   },
