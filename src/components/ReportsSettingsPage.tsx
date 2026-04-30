@@ -13,9 +13,12 @@ import { DepartmentReport } from "@/components/reports/DepartmentReport";
 import { VisitPlanReport } from "@/components/reports/VisitPlanReport";
 import { UpcomingEvents } from "@/components/reports/UpcomingEvents";
 import { AttendanceStatistics } from "@/components/attendance/AttendanceStatistics";
+import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
+import { PcButton, PcCard, PcInput, PcSegmented } from "@/components/ui";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { getSundayForWeekNum, saveSettingsToSupabase } from "@/lib/store";
+import styles from "./ReportsSettingsPage.module.css";
 
 const NAVY = "#2563eb";
 const MUTED = "#6b7b9e";
@@ -218,75 +221,26 @@ function DataBackupPanel({
     }
   }, [setDb, save, saveDb, toast]);
 
-  const btn: React.CSSProperties = {
-    padding: mob ? "6px 12px" : "8px 14px",
-    borderRadius: 8,
-    fontSize: mob ? 11 : 12,
-    fontWeight: 600,
-    fontFamily: "inherit",
-    cursor: "pointer",
-    border: `1px solid ${BORDER}`,
-    background: WHITE,
-    color: TEXT,
-    boxSizing: "border-box",
-  };
-
   return (
-    <div style={{ ...sectionCard, padding: mob ? 12 : 16 }}>
-      <div style={sectionTitle}>데이터</div>
-      <div style={{ fontSize: 11, color: SUB, marginBottom: 12, lineHeight: 1.45 }}>
+    <PcCard title="데이터" padding={mob ? "sm" : "md"} elevation="sm">
+      <div className={styles.settingsHint}>
         백업·복원·초기화는 전체 교회 데이터에 적용됩니다. 초기화 전 반드시 백업하세요.
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, width: "100%", justifyContent: "center" }}>
-        <button type="button" style={{ ...btn, flex: 1, minWidth: 100, justifyContent: "center" }} onClick={exportBackup}>
+      <div className={styles.backupButtons}>
+        <PcButton type="button" variant="secondary" fullWidth onClick={exportBackup}>
           데이터 백업
-        </button>
-        <button type="button" style={{ ...btn, flex: 1, minWidth: 100 }} onClick={() => importRef.current?.click()}>
+        </PcButton>
+        <PcButton type="button" variant="secondary" fullWidth onClick={() => importRef.current?.click()}>
           데이터 복원
-        </button>
+        </PcButton>
         <input ref={importRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={importBackup} />
-        <button
-          type="button"
-          style={{ ...btn, flex: 1, minWidth: 100, border: `1px solid ${BORDER}`, color: SUB, background: BG_SUMMARY }}
-          onClick={clearAllData}
-          disabled={resetLoading}
-        >
+        <PcButton type="button" variant="danger" fullWidth onClick={clearAllData} disabled={resetLoading}>
           {resetLoading ? "처리 중…" : "전체 초기화"}
-        </button>
+        </PcButton>
       </div>
-    </div>
+    </PcCard>
   );
 }
-
-const sectionCard: React.CSSProperties = {
-  background: WHITE,
-  borderRadius: 8,
-  border: `1px solid ${BORDER}`,
-  padding: 12,
-  maxWidth: "100%",
-  boxSizing: "border-box",
-};
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 700,
-  color: NAVY,
-  marginBottom: 8,
-};
-
-const fieldInput: React.CSSProperties = {
-  height: 32,
-  fontSize: 12,
-  borderRadius: 6,
-  border: `1px solid ${BORDER}`,
-  padding: "0 10px",
-  width: "100%",
-  maxWidth: "100%",
-  boxSizing: "border-box",
-  fontFamily: "inherit",
-  color: TEXT,
-  background: WHITE,
-};
 
 function ChurchInfoSettingsCard({ db, setDb, save, toast }: Pick<ReportsSettingsPageProps, "db" | "setDb" | "save" | "toast">) {
   const s = db.settings;
@@ -304,78 +258,27 @@ function ChurchInfoSettingsCard({ db, setDb, save, toast }: Pick<ReportsSettings
     }
   };
   return (
-    <div style={sectionCard}>
-      <div style={sectionTitle}>교회 정보</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: SUB }}>
-          교회명
-          <input
-            type="text"
-            value={s.churchName ?? ""}
-            onChange={(e) => patch({ churchName: e.target.value })}
-            style={fieldInput}
-          />
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: SUB }}>
-          담임목사명
-          <input
-            type="text"
-            value={s.pastor ?? ""}
-            onChange={(e) => patch({ pastor: e.target.value })}
-            style={fieldInput}
-          />
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: SUB }}>
-          소재지
-          <input
-            type="text"
-            value={s.address ?? ""}
-            onChange={(e) => patch({ address: e.target.value })}
-            style={fieldInput}
-          />
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: SUB }}>
-          사업자등록번호(고유번호)
-          <input
-            type="text"
-            value={s.businessNumber ?? ""}
-            onChange={(e) => patch({ businessNumber: e.target.value })}
-            style={fieldInput}
-          />
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: SUB }}>
-          교단
-          <input
-            type="text"
-            value={s.denomination ?? ""}
-            onChange={(e) => patch({ denomination: e.target.value })}
-            placeholder="예: 장로교, 침례교"
-            style={fieldInput}
-          />
-        </label>
-        <button
-          type="button"
-          onClick={handleSave}
-          style={{
-            marginTop: 4,
-            width: "100%",
-            height: 36,
-            padding: "0 14px",
-            fontSize: 12,
-            fontWeight: 600,
-            borderRadius: 6,
-            border: "none",
-            background: NAVY,
-            color: WHITE,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            textAlign: "center",
-          }}
-        >
+    <PcCard title="교회 정보" padding="md" elevation="sm">
+      <div className={styles.settingsStack}>
+        <PcInput label="교회명" value={s.churchName ?? ""} onChange={(e) => patch({ churchName: e.target.value })} />
+        <PcInput label="담임목사명" value={s.pastor ?? ""} onChange={(e) => patch({ pastor: e.target.value })} />
+        <PcInput label="소재지" value={s.address ?? ""} onChange={(e) => patch({ address: e.target.value })} />
+        <PcInput
+          label="사업자등록번호(고유번호)"
+          value={s.businessNumber ?? ""}
+          onChange={(e) => patch({ businessNumber: e.target.value })}
+        />
+        <PcInput
+          label="교단"
+          value={s.denomination ?? ""}
+          placeholder="예: 장로교, 침례교"
+          onChange={(e) => patch({ denomination: e.target.value })}
+        />
+        <PcButton type="button" variant="primary" fullWidth onClick={handleSave}>
           저장
-        </button>
+        </PcButton>
       </div>
-    </div>
+    </PcCard>
   );
 }
 
@@ -387,83 +290,40 @@ function NotificationSettingsCard({ db, setDb, save }: Pick<ReportsSettingsPageP
     setDb((prev) => ({ ...prev, settings: { ...prev.settings, ...partial } }));
     save();
   };
-  const toggleRow = (label: string, active: boolean, onOn: () => void, onOff: () => void) => (
-    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-      <span style={{ fontSize: 12, color: TEXT }}>{label}</span>
-      <div
-        style={{
-          width: "100%",
-          display: "flex",
-          borderRadius: 8,
-          overflow: "hidden",
-          border: `1px solid ${BORDER}`,
-          margin: "0 0 12px 0",
-        }}
-      >
-        <button
-          type="button"
-          onClick={onOn}
-          style={{
-            flex: 1,
-            height: 36,
-            fontSize: 13,
-            fontWeight: 600,
-            border: "none",
-            fontFamily: "inherit",
-            cursor: "pointer",
-            background: active ? NAVY : WHITE,
-            color: active ? WHITE : TEXT,
-          }}
-        >
-          켜기
-        </button>
-        <button
-          type="button"
-          onClick={onOff}
-          style={{
-            flex: 1,
-            height: 36,
-            fontSize: 13,
-            fontWeight: 600,
-            border: "none",
-            fontFamily: "inherit",
-            cursor: "pointer",
-            background: !active ? NAVY : WHITE,
-            color: !active ? WHITE : TEXT,
-          }}
-        >
-          끄기
-        </button>
-      </div>
-    </div>
-  );
+  const weeksValue = Number.isFinite(weeks) ? weeks : 3;
   return (
-    <div style={sectionCard}>
-      <div style={sectionTitle}>알림 설정</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 11, color: SUB }}>
-          결석 알림 기준 (연속 주)
-          <select
-            value={weeks}
-            onChange={(e) => patch({ absenteeAlertConsecutiveWeeks: Number(e.target.value) })}
-            style={{ ...fieldInput, height: 36, cursor: "pointer" }}
-          >
-            {[2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <option key={n} value={n}>
-                {n}주
-              </option>
-            ))}
-          </select>
-          <span style={{ fontSize: 10, color: SUB, lineHeight: 1.4 }}>연속 결석이 이 주 수에 도달하면 알림(향후 연동) 기준으로 사용됩니다.</span>
-        </label>
-        {toggleRow(
-          "새가족 정착 미완료 알림",
-          newFamilyOn,
-          () => patch({ alertNewFamilyIncomplete: true }),
-          () => patch({ alertNewFamilyIncomplete: false })
-        )}
+    <PcCard title="알림 설정" padding="md" elevation="sm">
+      <div className={styles.settingsStack}>
+        <PcInput
+          type="number"
+          min={2}
+          max={8}
+          step={1}
+          label="결석 알림 기준 (연속 주)"
+          helperText="연속 결석이 이 주 수에 도달하면 알림(향후 연동) 기준으로 사용됩니다."
+          value={String(weeksValue)}
+          onChange={(e) => {
+            const raw = Number(e.target.value);
+            if (!Number.isFinite(raw)) return;
+            const clamped = Math.min(8, Math.max(2, Math.round(raw)));
+            patch({ absenteeAlertConsecutiveWeeks: clamped });
+          }}
+        />
+        <div className={styles.toggleRow}>
+          <span className={styles.toggleLabel}>새가족 정착 미완료 알림</span>
+          <PcSegmented
+            value={newFamilyOn ? "on" : "off"}
+            onChange={(v) => patch({ alertNewFamilyIncomplete: v === "on" })}
+            options={[
+              { value: "on", label: "켜기" },
+              { value: "off", label: "끄기" },
+            ]}
+            fullWidth
+            ariaLabel="새가족 정착 미완료 알림"
+          />
+        </div>
       </div>
-    </div>
+    </PcCard>
   );
 }
 
@@ -648,6 +508,15 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
   const { db, setDb, save, saveDb, toast } = props;
   const mob = useIsMobile();
   const { rawAttendance } = useAppData();
+  const navSections = useMemo(
+    () => [
+      {
+        sectionLabel: "보고서 · 설정",
+        items: [{ id: "reports-settings", label: "보고서 · 설정", Icon: () => null }],
+      },
+    ],
+    [],
+  );
 
   const [selectedReport, setSelectedReport] = useState<ReportCardDef | null>(null);
   const endD = useMemo(() => new Date(), []);
@@ -811,20 +680,29 @@ ${printArea.innerHTML}
     }, 500);
   }, [selectedReport?.title, toast]);
 
-  const cardStyle: React.CSSProperties = {
-    padding: 12,
-    borderRadius: 8,
-    border: `1px solid ${BORDER}`,
-    background: WHITE,
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    cursor: "pointer",
-    textAlign: "left",
-    fontFamily: "inherit",
-    width: "100%",
-    boxSizing: "border-box",
+  const categoryTone = (category: string) => {
+    if (category === "목양") {
+      return {
+        main: "var(--pc-primary, #4466e0)",
+        soft: "var(--pc-primary-soft, #eef2ff)",
+      };
+    }
+    if (category === "심방·상담") {
+      return {
+        main: "var(--pc-purple, #7c5ce0)",
+        soft: "var(--pc-purple-soft, #f3efff)",
+      };
+    }
+    if (category === "재정") {
+      return {
+        main: "var(--pc-success, #16a34a)",
+        soft: "var(--pc-success-soft, #ecfdf3)",
+      };
+    }
+    return {
+      main: "var(--pc-warning, #e59500)",
+      soft: "var(--pc-warning-soft, #fff7e6)",
+    };
   };
 
   const renderPreview = () => {
@@ -1057,80 +935,142 @@ ${printArea.innerHTML}
     ["p_member_list", "p_attendance", "p_absentee", "p_mokjang"].includes(selectedReport.id);
 
   const detailTitle = selectedReport?.title ?? "보고서 · 설정";
+  const selectedReportId = selectedReport?.id;
   const churchName = db.settings.churchName ?? "";
 
   return (
-    <div
-      style={{
-        fontFamily: "'Inter','Noto Sans KR',-apple-system,sans-serif",
-        background: "#f9fafb",
-        minHeight: "calc(100vh - 56px)",
-        color: TEXT,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
-      <header
-        style={{
-          padding: mob ? "10px 12px" : "12px 20px",
-          background: WHITE,
-          borderBottom: `1px solid ${BORDER}`,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ fontSize: mob ? 16 : 18, fontWeight: 700, color: NAVY }}>보고서 · 설정</div>
-      </header>
-
-      <div style={{ flex: 1, overflowY: "auto", padding: 16, boxSizing: "border-box" }}>
+    <UnifiedPageLayout
+      pageTitle="보고서 · 설정"
+      churchName={churchName.trim() || "교회 이름"}
+      navSections={navSections}
+      activeId="reports-settings"
+      onNav={() => {}}
+      versionText="보고서/설정 v1.0"
+      headerTitle="보고서 · 설정"
+      headerDesc={selectedReport ? detailTitle : "리포트를 선택하고 필터를 적용하세요"}
+      hideMobileSubTabs
+      headerActions={
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: mob ? "1fr" : "1fr 1fr",
-            gap: 24,
-            maxWidth: 1400,
-            margin: "0 auto",
-            width: "100%",
-            boxSizing: "border-box",
-            alignItems: "start",
+            display: "flex",
+            flexDirection: mob ? "column" : "row",
+            alignItems: mob ? "stretch" : "center",
+            gap: 6,
+            width: mob ? "100%" : "auto",
+            minWidth: 0,
           }}
         >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              minWidth: mob ? 0 : 150,
+            }}
+          >
+            <span style={{ fontSize: 10, color: SUB, flexShrink: 0, lineHeight: 1 }} title="시작일">
+              시작
+            </span>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+              <CalendarDropdown
+                id="report-filter-start"
+                value={startDate}
+                onChange={setStartDate}
+                compact
+                style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
+                triggerStyle={reportFilterDateTrigger}
+              />
+            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              minWidth: mob ? 0 : 150,
+            }}
+          >
+            <span style={{ fontSize: 10, color: SUB, flexShrink: 0, lineHeight: 1 }} title="종료일">
+              종료
+            </span>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
+              <CalendarDropdown
+                id="report-filter-end"
+                value={endDate}
+                onChange={setEndDate}
+                compact
+                style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
+                triggerStyle={reportFilterDateTrigger}
+              />
+            </div>
+          </div>
+          {showDeptFilter && (
+            <div style={{ minWidth: mob ? 0 : 160, display: "flex", alignItems: "center" }}>
+              <ModernSelect
+                id="report-filter-dept"
+                value={deptFilter}
+                onChange={setDeptFilter}
+                options={[{ value: "", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))]}
+                compact
+                uniform32
+                placeholder="전체"
+                style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
+              />
+            </div>
+          )}
+        </div>
+      }
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: mob ? "1fr" : "1fr 1fr",
+          gap: 24,
+          maxWidth: 1400,
+          margin: "0 auto",
+          width: "100%",
+          boxSizing: "border-box",
+          alignItems: "start",
+        }}
+      >
           {/* 왼쪽(모바일: 위): 보고서 */}
           <div style={{ minWidth: 0, width: "100%" }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: NAVY, margin: "0 0 12px" }}>보고서</h2>
             {!selectedReport && (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {REPORT_GROUPS.map((g) => (
-                  <div key={g.category}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: MUTED, marginBottom: 8 }}>{g.category}</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {g.items.map((item) => (
-                        <button key={item.id} type="button" style={cardStyle} onClick={() => setSelectedReport(item)}>
-                          <div
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: "50%",
-                              background: "#f0f2f5",
-                              color: NAVY,
-                              fontSize: 14,
-                              fontWeight: 700,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                            }}
+                  <PcCard
+                    key={g.category}
+                    title={g.category}
+                    padding="lg"
+                    elevation="sm"
+                  >
+                    <div className={styles.reportItems}>
+                      {g.items.map((item) => {
+                        const tone = categoryTone(g.category);
+                        const selected = selectedReportId === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className={`${styles.reportItemButton}${selected ? ` ${styles.reportItemSelected}` : ""}`}
+                            onClick={() => setSelectedReport(item)}
                           >
-                            {item.initial}
-                          </div>
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginBottom: 4 }}>{item.title}</div>
-                            <div style={{ fontSize: 11, color: SUB, lineHeight: 1.4 }}>{item.desc}</div>
-                          </div>
-                        </button>
-                      ))}
+                            <span
+                              className={styles.reportItemBadge}
+                              style={{ background: tone.soft, color: tone.main }}
+                            >
+                              {item.initial}
+                            </span>
+                            <div className={styles.reportItemBody}>
+                              <div className={styles.reportItemTitle}>{item.title}</div>
+                              <div className={styles.reportItemDesc}>{item.desc}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
-                  </div>
+                  </PcCard>
                 ))}
               </div>
             )}
@@ -1156,81 +1096,6 @@ ${printArea.innerHTML}
                     ← 뒤로
                   </button>
                   <div style={{ fontSize: 15, fontWeight: 700, color: NAVY, minWidth: 0 }}>{detailTitle}</div>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "stretch",
-                    gap: 6,
-                    marginBottom: 8,
-                    flexWrap: "nowrap",
-                    width: "100%",
-                    boxSizing: "border-box",
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <span style={{ fontSize: 10, color: SUB, flexShrink: 0, lineHeight: 1 }} title="시작일">
-                      시작
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
-                      <CalendarDropdown
-                        id="report-filter-start"
-                        value={startDate}
-                        onChange={setStartDate}
-                        compact
-                        style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
-                        triggerStyle={reportFilterDateTrigger}
-                      />
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <span style={{ fontSize: 10, color: SUB, flexShrink: 0, lineHeight: 1 }} title="종료일">
-                      종료
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
-                      <CalendarDropdown
-                        id="report-filter-end"
-                        value={endDate}
-                        onChange={setEndDate}
-                        compact
-                        style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
-                        triggerStyle={reportFilterDateTrigger}
-                      />
-                    </div>
-                  </div>
-                  {showDeptFilter && (
-                    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center" }}>
-                      <ModernSelect
-                        id="report-filter-dept"
-                        value={deptFilter}
-                        onChange={setDeptFilter}
-                        options={[{ value: "", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))]}
-                        compact
-                        uniform32
-                        placeholder="전체"
-                        style={{ marginBottom: 0, width: "100%", minWidth: 0 }}
-                      />
-                    </div>
-                  )}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
@@ -1310,8 +1175,7 @@ ${printArea.innerHTML}
               </div>
             </div>
           </div>
-        </div>
       </div>
-    </div>
+    </UnifiedPageLayout>
   );
 }

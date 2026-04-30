@@ -1,7 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+
+const pretendard = localFont({
+  src: "../public/fonts/PretendardVariable.woff2",
+  variable: "--pc-font-loaded",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "교역자 슈퍼플래너",
@@ -35,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" className={pretendard.variable}>
       <head>
         {process.env.NODE_ENV === "development" && (
           <script

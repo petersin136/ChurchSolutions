@@ -1,0 +1,79 @@
+.root {
+  display: inline-flex;
+  align-items: stretch;
+  padding: var(--pc-segmented-container-pad);
+  background: var(--pc-bg-alt);
+  border-radius: var(--pc-radius);
+  border: 1px solid var(--pc-border);
+  box-sizing: border-box;
+  font-family: var(--pc-font);
+}
+
+.rootFullWidth {
+  width: 100%;
+}
+
+.option {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pc-space-1-5);
+  margin: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--pc-radius-sm);
+  color: var(--pc-text-sub);
+  font-family: inherit;
+  font-weight: var(--pc-weight-medium);
+  cursor: pointer;
+  transition:
+    color var(--pc-transition-fast),
+    background-color var(--pc-transition-fast),
+    box-shadow var(--pc-transition-fast);
+}
+
+.optionSm {
+  padding: var(--pc-segmented-pad-y-sm) var(--pc-segmented-pad-x-sm);
+  font-size: var(--pc-text-xs);
+}
+
+.optionMd {
+  padding: var(--pc-segmented-pad-y-md) var(--pc-segmented-pad-x-md);
+  font-size: var(--pc-text-sm);
+}
+
+.optionLg {
+  padding: var(--pc-segmented-pad-y-lg) var(--pc-segmented-pad-x-lg);
+  font-size: var(--pc-text-base);
+}
+
+.optionFullWidth {
+  flex: 1;
+  min-width: 0;
+}
+
+.optionActive {
+  background: var(--pc-surface);
+  color: var(--pc-text-strong);
+  font-weight: var(--pc-weight-semibold);
+  box-shadow: var(--pc-shadow-sm);
+}
+
+.option:hover:not(:disabled):not(.optionActive) {
+  color: var(--pc-text-strong);
+}
+
+.option:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.icon {
+  width: var(--pc-space-3-5);
+  height: var(--pc-space-3-5);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

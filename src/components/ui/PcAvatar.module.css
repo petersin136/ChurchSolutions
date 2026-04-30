@@ -1,0 +1,57 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  font-family: var(--pc-font);
+  font-weight: var(--pc-weight-semibold);
+  color: var(--pc-on-accent);
+  box-sizing: border-box;
+  cursor: default;
+}
+
+.button {
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  font: inherit;
+}
+
+.sizeSm {
+  width: var(--pc-avatar-size-sm);
+  height: var(--pc-avatar-size-sm);
+  font-size: var(--pc-text-xs);
+}
+
+.sizeMd {
+  width: var(--pc-avatar-size-md);
+  height: var(--pc-avatar-size-md);
+  font-size: var(--pc-text-sm);
+}
+
+.sizeLg {
+  width: var(--pc-avatar-size-lg);
+  height: var(--pc-avatar-size-lg);
+  font-size: var(--pc-text-base);
+}
+
+.sizeXl {
+  width: var(--pc-avatar-size-xl);
+  height: var(--pc-avatar-size-xl);
+  font-size: var(--pc-text-xl);
+}
+
+.rounded {
+  border-radius: var(--pc-radius-avatar);
+}
+
+.circle {
+  border-radius: var(--pc-radius-full);
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

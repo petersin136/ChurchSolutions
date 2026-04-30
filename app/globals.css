@@ -2,56 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "../src/styles/tokens.css";
+
 @layer base {
   :root {
-    --bg: #f0f1fa;
-    --surface: #FFFFFF;
-    --surface2: #f6f7fd;
-    --blue: #4466e0;
-    --blue-light: #eef1fb;
-    --blue-dark: #3355cc;
-    --green: #22c55e;
-    --green-light: #dcfce7;
-    --orange: #f59e0b;
-    --orange-light: #fef3c7;
-    --red: #ef4444;
-    --red-light: #fee2e2;
-    --purple: #8b5cf6;
-    --purple-light: #ede9fe;
-    --teal: #06b6d4;
-    --teal-light: #cffafe;
-    --indigo: #6366f1;
-    --indigo-light: #e0e7ff;
-    --pink: #ec4899;
-    --pink-light: #fce7f3;
-    --text1: #1a1d26;
-    --text2: #4a5068;
-    --text3: #8b90a0;
-    --border: #e8e9f0;
-    --border-light: #eef0f6;
-    --border2: #b8c4e0;
-    --sep: #e8edf5;
-    --font: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.03);
-    --shadow-md: 0 2px 8px rgba(0,0,0,0.04);
-    --shadow-lg: 0 8px 24px rgba(0,0,0,0.06);
-    --shadow-xl: 0 16px 48px rgba(0,0,0,0.08);
-    --shadow-card: 0 1px 3px rgba(0,0,0,0.03);
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
-    --radius-full: 9999px;
+    /* Legacy names → HANDOFF v3 tokens (Phase 4: remove aliases, use --pc-* only) */
+    --text1: var(--pc-text-strong);
+    --text2: var(--pc-text-sub);
+    --text3: var(--pc-text-faint);
+    --bg: var(--pc-bg);
+    --surface: var(--pc-surface);
+    --surface2: var(--pc-bg-alt);
+    --blue: var(--pc-primary);
+    --blue-light: var(--pc-primary-soft);
+    --blue-dark: var(--pc-primary-hover);
+    --green: var(--pc-success);
+    --green-light: var(--pc-success-soft);
+    --orange: var(--pc-orange);
+    --orange-light: var(--pc-warning-soft);
+    --red: var(--pc-danger);
+    --red-light: var(--pc-danger-soft);
+    --purple: var(--pc-purple);
+    --purple-light: var(--pc-purple-light);
+    --teal: var(--pc-teal);
+    --teal-light: var(--pc-teal-light);
+    --indigo: var(--pc-indigo);
+    --indigo-light: var(--pc-indigo-light);
+    --pink: var(--pc-pink);
+    --pink-light: var(--pc-pink-light);
+    --border: var(--pc-border);
+    --border-light: var(--pc-divider);
+    --border2: var(--pc-border-strong);
+    --sep: var(--pc-divider);
+    --font: var(--pc-font);
+    --shadow-sm: var(--pc-shadow-sm);
+    --shadow-md: var(--pc-shadow);
+    --shadow-lg: var(--pc-shadow-md);
+    --shadow-xl: var(--pc-shadow-lg);
+    --shadow-card: var(--pc-shadow-sm);
+    --radius-sm: var(--pc-radius-sm);
+    --radius-md: var(--pc-radius-md);
+    --radius-lg: var(--pc-radius-lg);
+    --radius-xl: var(--pc-radius-xl);
+    --radius-full: var(--pc-radius-full);
     --header-h: 52px;
     --tab-h: 0px;
     --pc-nav-h: 52px;
-    --pc-nav-bg: #ffffff;
-    --pc-nav-border: #e2e5ef;
-    --pc-nav-text: #64748b;
-    --pc-nav-text-active: #1e3a5f;
-    --pc-nav-hover-bg: #f6f7fd;
-    --pc-accent: #4466e0;
-    --pc-surface: #f0f1fa;
+    --pc-nav-bg: var(--pc-surface);
+    --pc-nav-border: var(--pc-border);
+    --pc-nav-text: var(--pc-text-faint);
+    --pc-nav-text-active: var(--pc-text-strong);
+    --pc-nav-hover-bg: var(--pc-surface-hover);
+    /* 상단 네비: primary와 동일 (별도 --pc-accent 토큰은 tokens.css에 없음) */
+    --pc-accent: var(--pc-primary);
+    /* Planning Center 스타일 보조 변수 → 표준 토큰 별칭 (클래스는 Phase 1에서 Pc* 로 대체 예정) */
+    --pco-text: var(--pc-text-strong);
+    --pco-text-sub: var(--pc-text-sub);
+    --pco-text-faint: var(--pc-text-faint);
+    --pco-bg: var(--pc-bg);
+    --pco-card: var(--pc-surface);
+    --pco-border: var(--pc-border);
+    --pco-primary: var(--pc-primary);
+    --pco-success: var(--pc-success);
+    --pco-danger: var(--pc-danger);
+    --pco-purple: var(--pc-purple);
   }
   *, *::before, *::after {
     box-sizing: border-box;
@@ -66,7 +80,7 @@
     font-size: 15px;
     line-height: 1.5;
     color: var(--text1);
-    background: #f0f1fa !important;
+    background: var(--bg) !important;
     min-height: 100vh;
     min-height: 100dvh;
     overflow-x: hidden;
@@ -917,7 +931,7 @@
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  background: #f0f1fa !important;
+  background: var(--bg) !important;
 }
 
 /* ── Planning Center 상단 네비게이션 (파일철 탭 스타일) ── */
@@ -931,7 +945,7 @@
   bottom: 8px;
   border-radius: 18px;
   border: 1px solid #c4cbe4;
-  background: #f0f1fa;
+  background: var(--bg);
   box-shadow: 0 1px 8px rgba(140, 150, 190, 0.08);
   display: flex;
   flex-direction: column;
@@ -1348,3 +1362,33 @@ div[style*="height"] canvas {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Planning Center 스타일 공통 클래스 (pco-*) */
+.pco-table { border-radius: 12px; overflow: hidden; background: var(--pco-card); border: 1px solid var(--pco-border); width: 100%; border-collapse: collapse; }
+.pco-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--pco-text-faint); font-weight: 600; padding: 12px 16px; border-bottom: 2px solid var(--pco-border); background: none; text-align: left; }
+.pco-table td { padding: 12px 16px; border-bottom: 1px solid var(--pco-border); color: var(--pco-text); }
+.pco-table tr:last-child td { border-bottom: none; }
+.pco-table tr:hover td { background: #f8f9ff; }
+
+.pco-btn-primary { background: var(--pco-primary); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.pco-btn-primary:hover { opacity: 0.9; }
+.pco-btn-secondary { background: var(--pco-card); border: 1px solid var(--pco-border); color: var(--pco-text); border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.pco-btn-secondary:hover { background: #f8f9ff; }
+.pco-btn-danger { background: var(--pco-danger); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.pco-btn-danger:hover { opacity: 0.9; }
+
+.pco-badge { border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 500; display: inline-block; }
+.pco-badge-blue { background: #e8f0fe; color: #2952b3; }
+.pco-badge-green { background: #dcfce7; color: #15803d; }
+.pco-badge-yellow { background: #fef3c7; color: #a16207; }
+.pco-badge-red { background: #fde8e8; color: #b91c1c; }
+
+.pco-modal { border-radius: 16px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); background: var(--pco-card); }
+.pco-modal-overlay { background: rgba(0,0,0,0.3); }
+
+.pco-tab { padding: 8px 16px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; color: var(--pco-text-faint); background: none; border-top: none; border-left: none; border-right: none; transition: color 0.15s; }
+.pco-tab:hover { color: var(--pco-text-sub); }
+.pco-tab-active { color: var(--pco-primary); border-bottom-color: var(--pco-primary); }
+
+.pco-card { background: var(--pco-card); border: 1px solid var(--pco-border); border-radius: 12px; padding: 24px; }
+.pco-card-title { font-size: 16px; font-weight: 700; color: var(--pco-text); margin: 0 0 16px 0; }

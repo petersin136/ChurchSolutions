@@ -1,0 +1,228 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-1-5);
+  font-family: var(--pc-font);
+  position: relative;
+}
+
+.wrapFullWidth {
+  width: 100%;
+}
+
+.label {
+  font-size: var(--pc-text-sm);
+  font-weight: var(--pc-weight-semibold);
+  color: var(--pc-text-sub);
+}
+
+.field {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--pc-border);
+  border-radius: var(--pc-radius);
+  background: var(--pc-surface);
+  box-sizing: border-box;
+  transition:
+    border-color var(--pc-transition),
+    box-shadow var(--pc-transition);
+}
+
+.field:focus-within:not(.fieldError) {
+  border-color: var(--pc-primary);
+  box-shadow: var(--pc-shadow-focus);
+}
+
+.fieldOpen:not(.fieldError) {
+  border-color: var(--pc-primary);
+  box-shadow: var(--pc-shadow-focus);
+}
+
+.field.fieldError.fieldOpen {
+  border-color: var(--pc-danger);
+  box-shadow: var(--pc-shadow-focus-danger);
+}
+
+.fieldError {
+  border-color: var(--pc-danger);
+}
+
+.fieldError.fieldOpen,
+.fieldError:focus-within {
+  border-color: var(--pc-danger);
+  box-shadow: var(--pc-shadow-focus-danger);
+}
+
+.trigger {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pc-space-2);
+  padding: 0 var(--pc-space-3);
+  border: none;
+  background: transparent;
+  font-family: var(--pc-font);
+  color: var(--pc-text-strong);
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.triggerText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder {
+  color: var(--pc-text-faint);
+}
+
+.chevronWrap {
+  display: flex;
+  flex: 0 0 var(--pc-space-6);
+  width: var(--pc-space-6);
+  align-items: center;
+  justify-content: center;
+  color: var(--pc-text-faint);
+  pointer-events: none;
+}
+
+.chevron {
+  width: var(--pc-space-4);
+  height: var(--pc-space-4);
+  transition: transform var(--pc-select-chevron-duration) ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.sizeSm .trigger {
+  height: var(--pc-input-height-sm);
+  font-size: var(--pc-text-sm);
+}
+
+.sizeMd .trigger {
+  height: var(--pc-input-height-md);
+  font-size: var(--pc-text-base);
+}
+
+.sizeLg .trigger {
+  height: var(--pc-input-height-lg);
+  font-size: var(--pc-text-md);
+}
+
+.dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + var(--pc-space-1));
+  z-index: var(--pc-z-dropdown);
+  max-height: var(--pc-select-menu-max-h);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--pc-border);
+  border-radius: var(--pc-radius);
+  background: var(--pc-surface);
+  box-shadow: var(--pc-shadow-md);
+  box-sizing: border-box;
+}
+
+.searchWrap {
+  flex-shrink: 0;
+  padding: var(--pc-space-2);
+  border-bottom: 1px solid var(--pc-divider);
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  height: var(--pc-input-height-sm);
+  padding: 0 var(--pc-space-3);
+  border: 1px solid var(--pc-border);
+  border-radius: var(--pc-radius);
+  background: var(--pc-surface);
+  font-family: var(--pc-font);
+  font-size: var(--pc-text-sm);
+  color: var(--pc-text-strong);
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: var(--pc-primary);
+  box-shadow: var(--pc-shadow-focus);
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--pc-space-1) 0;
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pc-space-2);
+  padding: var(--pc-space-2) var(--pc-space-3);
+  font-size: var(--pc-text-base);
+  color: var(--pc-text-strong);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.option:hover:not(.optionDisabled) {
+  background: var(--pc-bg-alt);
+}
+
+.optionActive:not(.optionDisabled) {
+  background: var(--pc-bg-alt);
+}
+
+.optionSelected {
+  background: var(--pc-primary-soft);
+}
+
+.optionDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.check {
+  flex-shrink: 0;
+  width: var(--pc-space-4);
+  height: var(--pc-space-4);
+  color: var(--pc-primary);
+}
+
+.helper {
+  font-size: var(--pc-text-xs);
+  color: var(--pc-text-faint);
+  line-height: var(--pc-leading-normal);
+}
+
+.error {
+  font-size: var(--pc-text-xs);
+  color: var(--pc-danger);
+  line-height: var(--pc-leading-normal);
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.disabled .trigger {
+  cursor: not-allowed;
+  pointer-events: none;
+}

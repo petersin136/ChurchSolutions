@@ -1,0 +1,125 @@
+.page {
+  min-height: 100vh;
+  background: var(--pc-bg);
+  font-family: var(--pc-font);
+}
+
+.container {
+  max-width: var(--pc-container-catalog);
+  margin: 0 auto;
+  padding: var(--pc-space-8);
+  box-sizing: border-box;
+}
+
+.section {
+  margin-bottom: var(--pc-space-12);
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.h2 {
+  margin: 0 0 var(--pc-space-6);
+  font-size: var(--pc-text-2xl);
+  font-weight: var(--pc-weight-bold);
+  color: var(--pc-text-strong);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pc-space-4);
+  align-items: flex-start;
+}
+
+.rowGapTop {
+  margin-top: var(--pc-space-4);
+}
+
+.muted {
+  margin: 0;
+  color: var(--pc-text-sub);
+}
+
+.rowTight {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pc-space-2);
+  align-items: center;
+}
+
+.note {
+  margin: 0 0 var(--pc-space-4);
+  font-size: var(--pc-text-sm);
+  color: var(--pc-text-sub);
+}
+
+.grid {
+  display: grid;
+  gap: var(--pc-space-4);
+  align-items: start;
+}
+
+.gridBtn {
+  grid-template-columns: repeat(auto-fill, minmax(var(--pc-catalog-btn-grid-min), 1fr));
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-4);
+  width: 100%;
+  max-width: min(100%, var(--pc-max-width-copy));
+}
+
+.full {
+  width: 100%;
+  max-width: min(100%, calc(var(--pc-max-width-copy) + var(--pc-space-12)));
+}
+
+.avatarGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--pc-catalog-grid-min), 1fr));
+  gap: var(--pc-space-4);
+  align-items: end;
+}
+
+.avatarCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pc-space-2);
+  font-size: var(--pc-text-xs);
+  color: var(--pc-text-sub);
+}
+
+.cardNest {
+  max-width: min(100%, calc(var(--pc-max-width-copy) + var(--pc-space-12)));
+}
+
+.modalDemoPara {
+  margin: 0 0 var(--pc-space-3);
+}
+
+.modalDemoPara:last-child {
+  margin-bottom: 0;
+}
+
+.demoSelectSm {
+  width: min(100%, var(--pc-modal-max-w-sm));
+}
+
+.demoSelectMd {
+  width: min(100%, var(--pc-modal-max-w-md));
+}
+
+.confirmMsg p {
+  margin: 0 0 var(--pc-space-2);
+  color: var(--pc-text-sub);
+  font-size: var(--pc-text-sm);
+}
+
+.confirmMsg p:last-child {
+  margin-bottom: 0;
+}

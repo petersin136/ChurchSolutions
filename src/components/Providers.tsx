@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect } from "react";
+import { PcToastProvider } from "@/components/ui/PcToastProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppDataProvider } from "@/contexts/AppDataContext";
 
@@ -24,8 +25,10 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <AppDataProvider>
-        <DevUnregisterServiceWorkers />
-        {children}
+        <PcToastProvider>
+          <DevUnregisterServiceWorkers />
+          {children}
+        </PcToastProvider>
       </AppDataProvider>
     </AuthProvider>
   );

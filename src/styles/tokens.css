@@ -1,0 +1,201 @@
+/**
+ * 목양노트 — HANDOFF v3 design tokens (single source for --pc-*).
+ * Legacy globals aliases live in app/globals.css (:root inside @layer base).
+ */
+
+:root {
+  /* ── 텍스트 ── */
+  --pc-text-strong: #1a1d26;
+  --pc-text: #2d3142;
+  --pc-text-sub: #4a5068;
+  --pc-text-faint: #8b90a0;
+  --pc-text-disabled: #c4c8d4;
+
+  /* ── 배경 / 표면 ── */
+  --pc-bg: #f5f6fb;
+  --pc-bg-alt: #eef0f8;
+  --pc-surface: #ffffff;
+  --pc-surface-hover: #f8f9ff;
+  --pc-overlay: rgba(20, 24, 40, 0.45);
+
+  /* ── 보더 ── */
+  --pc-border: #e8e9f0;
+  --pc-border-strong: #d4d7e3;
+  --pc-divider: #eef0f6;
+
+  /* ── 액센트 ── */
+  --pc-primary: #4466e0;
+  --pc-primary-hover: #3855c4;
+  --pc-primary-soft: #e8edff;
+
+  /* ── 보조 액센트 ── */
+  --pc-purple: #7c5ce0;
+  --pc-teal: #14b8a6;
+  --pc-orange: #f59e0b;
+  --pc-pink: #ec4899;
+  --pc-indigo: #6366f1;
+
+  /* ── 상태 ── */
+  --pc-success: #16a34a;
+  --pc-success-soft: #dcfce7;
+  --pc-warning: #d97706;
+  --pc-warning-soft: #fef3c7;
+  --pc-danger: #dc2626;
+  --pc-danger-soft: #fde8e8;
+  --pc-info: #2563eb;
+  --pc-info-soft: #dbeafe;
+
+  /* ── 차트 (파스텔) ── */
+  --pc-chart-1: #6b8aff;
+  --pc-chart-2: #9b7cf2;
+  --pc-chart-3: #4ade80;
+  --pc-chart-4: #fbbf24;
+  --pc-chart-5: #fb7185;
+  --pc-chart-6: #38bdf8;
+  --pc-chart-7: #a78bfa;
+  --pc-chart-8: #34d399;
+
+  /* ── 레거시 globals 별칭용 보조 (HANDOFF 외, 기존 --*-light 대응) ── */
+  --pc-purple-light: #ede9fe;
+  --pc-teal-light: #cffafe;
+  --pc-indigo-light: #e0e7ff;
+  --pc-pink-light: #fce7f3;
+
+  /* ── 타이포 (--pc-font-loaded 는 app/layout.tsx next/font/local) ── */
+  --pc-font: var(--pc-font-loaded, "Inter"), "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
+  --pc-font-mono: "JetBrains Mono", "D2Coding", ui-monospace, monospace;
+  --pc-text-xs: 11px;
+  --pc-text-sm: 12px;
+  --pc-text-base: 14px;
+  --pc-text-md: 15px;
+  --pc-text-lg: 16px;
+  --pc-text-xl: 20px;
+  --pc-text-2xl: 24px;
+  --pc-text-3xl: 28px;
+  --pc-text-4xl: 36px;
+  --pc-weight-regular: 400;
+  --pc-weight-medium: 500;
+  --pc-weight-semibold: 600;
+  --pc-weight-bold: 700;
+  --pc-weight-extrabold: 800;
+  --pc-leading-tight: 1.2;
+  --pc-leading-normal: 1.5;
+  --pc-leading-relaxed: 1.7;
+
+  /* ── 간격 (4px 그리드) ── */
+  --pc-space-1: 4px;
+  --pc-space-1-5: 6px;
+  --pc-space-2: 8px;
+  --pc-space-3: 12px;
+  --pc-space-4: 16px;
+  --pc-space-5: 20px;
+  --pc-space-6: 24px;
+  --pc-space-8: 32px;
+  --pc-space-10: 40px;
+  --pc-space-12: 48px;
+  --pc-space-16: 64px;
+  --pc-max-width-copy: 360px;
+  --pc-container-catalog: 1200px;
+  --pc-catalog-grid-min: 7.5rem;
+  --pc-catalog-btn-grid-min: 8.75rem;
+
+  /* ── 라운드 ── */
+  --pc-radius-sm: 6px;
+  --pc-radius: 8px;
+  --pc-radius-md: 12px;
+  --pc-radius-lg: 16px;
+  --pc-radius-xl: 20px;
+  --pc-radius-avatar: 10px;
+  --pc-radius-full: 9999px;
+
+  /* ── 그림자 ── */
+  --pc-shadow-sm: 0 1px 2px rgba(20, 24, 40, 0.04);
+  --pc-shadow: 0 2px 8px rgba(20, 24, 40, 0.06), 0 1px 2px rgba(20, 24, 40, 0.04);
+  --pc-shadow-md: 0 8px 24px rgba(20, 24, 40, 0.08);
+  --pc-shadow-lg: 0 20px 60px rgba(20, 24, 40, 0.15);
+  --pc-shadow-focus: 0 0 0 3px rgba(68, 102, 224, 0.25);
+  --pc-shadow-focus-danger: 0 0 0 3px rgba(220, 38, 38, 0.22);
+
+  /* ── 트랜지션 ── */
+  --pc-transition-fast: 0.12s ease;
+  --pc-transition: 0.18s ease;
+  --pc-transition-slow: 0.3s ease;
+
+  /* ── 컨트롤 높이 (Wave 1 UI — 숫자 리터럴 대신 토큰) ── */
+  --pc-control-height-sm: 28px;
+  --pc-control-height-md: 36px;
+  --pc-control-height-lg: 44px;
+  --pc-input-height-sm: 32px;
+  --pc-input-height-md: 38px;
+  --pc-input-height-lg: 44px;
+  --pc-avatar-size-sm: 28px;
+  --pc-avatar-size-md: 36px;
+  --pc-avatar-size-lg: 48px;
+  --pc-avatar-size-xl: 72px;
+  --pc-on-accent: #ffffff;
+
+  /* ── PcModal (Wave 2-A) ── */
+  --pc-modal-max-w-sm: 400px;
+  --pc-modal-max-w-md: 560px;
+  --pc-modal-max-w-lg: 800px;
+  --pc-modal-max-w-xl: 1100px;
+  --pc-modal-max-w-full: 95vw;
+  --pc-modal-max-height: 90vh;
+  --pc-modal-overlay-duration: 180ms;
+  --pc-modal-panel-duration: 200ms;
+  --pc-modal-panel-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --pc-modal-description-font-size: 13px;
+  --pc-modal-scale-from: 0.96;
+  --pc-z-modal: 10000;
+  --pc-z-dropdown: 1100;
+
+  /* ── PcTextarea / PcSelect (Wave 3) ── */
+  --pc-textarea-min-h-sm: 72px;
+  --pc-textarea-min-h-md: 96px;
+  --pc-textarea-min-h-lg: 128px;
+  --pc-textarea-auto-max-height: min(50vh, 20rem);
+  --pc-select-menu-max-h: 280px;
+  --pc-select-chevron-duration: 150ms;
+
+  /* ── PcToast / PcDatePicker (Wave 4) ── */
+  --pc-z-toast: 11000;
+  --pc-toast-width: 360px;
+  --pc-toast-min-height: 56px;
+  --pc-toast-enter-duration: 200ms;
+  --pc-toast-exit-duration: 180ms;
+  --pc-toast-default-duration: 4000ms;
+  --pc-datepicker-panel-width: 320px;
+  --pc-datepicker-day-size: var(--pc-space-8);
+
+  /* ── PcTable / PcTabs / PcSegmented (Wave 5) ── */
+  --pc-bg-alt-hover: #ebecf3;
+  --pc-table-stripe-bg: color-mix(in srgb, var(--pc-bg-alt) 50%, var(--pc-surface));
+  --pc-table-demo-department-width: calc(14 * var(--pc-space-5));
+  --pc-table-sort-icon-size: 0.875rem;
+  --pc-z-table-sticky-header: 2;
+  --pc-z-table-sticky-cell: 1;
+  --pc-table-header-py-sm: var(--pc-space-2);
+  --pc-table-header-px-sm: var(--pc-space-3);
+  --pc-table-header-py-md: var(--pc-space-3);
+  --pc-table-header-px-md: var(--pc-space-4);
+  --pc-table-header-py-lg: var(--pc-space-3-5);
+  --pc-table-header-px-lg: var(--pc-space-5);
+  --pc-table-body-py-sm: var(--pc-space-2);
+  --pc-table-body-px-sm: var(--pc-space-3);
+  --pc-table-body-py-md: var(--pc-space-3);
+  --pc-table-body-px-md: var(--pc-space-4);
+  --pc-table-body-py-lg: var(--pc-space-4);
+  --pc-table-body-px-lg: var(--pc-space-5);
+  --pc-space-3-5: 14px;
+  --pc-segmented-container-pad: 3px;
+  --pc-segmented-pad-y-sm: var(--pc-space-1);
+  --pc-segmented-pad-x-sm: var(--pc-space-2);
+  --pc-segmented-pad-y-md: var(--pc-space-1-5);
+  --pc-segmented-pad-x-md: var(--pc-space-3);
+  --pc-segmented-pad-y-lg: var(--pc-space-2);
+  --pc-segmented-pad-x-lg: var(--pc-space-4);
+  --pc-tabs-pill-gap: var(--pc-space-1);
+  --pc-tabs-pill-padding: var(--pc-space-1);
+  --pc-tabs-trigger-pill-py: var(--pc-space-1-5);
+  --pc-tabs-trigger-pill-px: var(--pc-space-3);
+}

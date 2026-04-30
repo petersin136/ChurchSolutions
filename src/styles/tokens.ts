@@ -1,6 +1,8 @@
 /**
- * App-wide design tokens.
- * Merges PastoralPage palette (historical `C`) with AttendanceDashboard accents and chart colors.
+ * App-wide design tokens (legacy hex object).
+ *
+ * @deprecated For new UI use {@link pcTokens} (CSS `var(--pc-*)` references). Kept for
+ *   PastoralPage spacing math and existing imports until Phase 4. See `src/styles/MIGRATION_NOTES.md`.
  */
 export const tokens = {
   color: {
@@ -171,3 +173,88 @@ export const tokens = {
 } as const;
 
 export type Tokens = typeof tokens;
+
+/** HANDOFF v3 — CSS custom properties (`src/styles/tokens.css`). Safe for new components. */
+export const pcTokens = {
+  color: {
+    textStrong: "var(--pc-text-strong)",
+    text: "var(--pc-text)",
+    textSub: "var(--pc-text-sub)",
+    textFaint: "var(--pc-text-faint)",
+    bg: "var(--pc-bg)",
+    surface: "var(--pc-surface)",
+    border: "var(--pc-border)",
+    primary: "var(--pc-primary)",
+    primaryHover: "var(--pc-primary-hover)",
+    primarySoft: "var(--pc-primary-soft)",
+    success: "var(--pc-success)",
+    danger: "var(--pc-danger)",
+    warning: "var(--pc-warning)",
+    purple: "var(--pc-purple)",
+    teal: "var(--pc-teal)",
+    orange: "var(--pc-orange)",
+    pink: "var(--pc-pink)",
+    indigo: "var(--pc-indigo)",
+    chart: [
+      "var(--pc-chart-1)",
+      "var(--pc-chart-2)",
+      "var(--pc-chart-3)",
+      "var(--pc-chart-4)",
+      "var(--pc-chart-5)",
+      "var(--pc-chart-6)",
+      "var(--pc-chart-7)",
+      "var(--pc-chart-8)",
+    ] as const,
+  },
+  radius: {
+    sm: "var(--pc-radius-sm)",
+    base: "var(--pc-radius)",
+    md: "var(--pc-radius-md)",
+    lg: "var(--pc-radius-lg)",
+    xl: "var(--pc-radius-xl)",
+    avatar: "var(--pc-radius-avatar)",
+    full: "var(--pc-radius-full)",
+  },
+  shadow: {
+    sm: "var(--pc-shadow-sm)",
+    base: "var(--pc-shadow)",
+    md: "var(--pc-shadow-md)",
+    lg: "var(--pc-shadow-lg)",
+    focus: "var(--pc-shadow-focus)",
+  },
+  space: {
+    1: "4px",
+    2: "8px",
+    3: "12px",
+    4: "16px",
+    5: "20px",
+    6: "24px",
+    8: "32px",
+    10: "40px",
+    12: "48px",
+    16: "64px",
+  },
+  font: {
+    family: "var(--pc-font)",
+    sizes: {
+      xs: "11px",
+      sm: "12px",
+      base: "14px",
+      md: "15px",
+      lg: "16px",
+      xl: "20px",
+      "2xl": "24px",
+      "3xl": "28px",
+      "4xl": "36px",
+    },
+    weights: {
+      regular: 400,
+      medium: 500,
+      semibold: 600,
+      bold: 700,
+      extrabold: 800,
+    },
+  },
+} as const;
+
+export type PcTokens = typeof pcTokens;

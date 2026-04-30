@@ -1,0 +1,60 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--pc-space-12);
+  font-family: var(--pc-font);
+  box-sizing: border-box;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pc-space-16);
+  height: var(--pc-space-16);
+  border-radius: var(--pc-radius-md);
+  background: var(--pc-bg-alt);
+  color: var(--pc-text-sub);
+  margin-bottom: var(--pc-space-4);
+}
+
+.iconWrap svg {
+  width: var(--pc-space-8);
+  height: var(--pc-space-8);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--pc-text-lg);
+  font-weight: var(--pc-weight-bold);
+  color: var(--pc-text-strong);
+}
+
+.title + .description {
+  margin-top: var(--pc-space-4);
+}
+
+.title + .action {
+  margin-top: var(--pc-space-6);
+}
+
+.description {
+  margin: 0;
+  max-width: var(--pc-max-width-copy);
+  font-size: var(--pc-text-base);
+  color: var(--pc-text-sub);
+  line-height: var(--pc-leading-relaxed);
+}
+
+.description + .action {
+  margin-top: var(--pc-space-6);
+}
+
+.action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--pc-space-2);
+}

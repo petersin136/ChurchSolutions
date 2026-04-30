@@ -1,0 +1,120 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-1-5);
+  font-family: var(--pc-font);
+}
+
+.wrapFullWidth {
+  width: 100%;
+}
+
+.label {
+  font-size: var(--pc-text-sm);
+  font-weight: var(--pc-weight-semibold);
+  color: var(--pc-text-sub);
+}
+
+.field {
+  position: relative;
+  border: 1px solid var(--pc-border);
+  border-radius: var(--pc-radius);
+  background: var(--pc-surface);
+  box-sizing: border-box;
+  transition:
+    border-color var(--pc-transition),
+    box-shadow var(--pc-transition);
+}
+
+.field:focus-within {
+  border-color: var(--pc-primary);
+  box-shadow: var(--pc-shadow-focus);
+}
+
+.fieldError {
+  border-color: var(--pc-danger);
+}
+
+.fieldError:focus-within {
+  border-color: var(--pc-danger);
+  box-shadow: var(--pc-shadow-focus-danger);
+}
+
+.textarea {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: var(--pc-space-3);
+  border: none;
+  border-radius: var(--pc-radius);
+  background: transparent;
+  font-family: var(--pc-font);
+  font-size: var(--pc-text-base);
+  line-height: var(--pc-leading-relaxed);
+  color: var(--pc-text-strong);
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.textareaAuto {
+  resize: none;
+  overflow-y: hidden;
+  max-height: var(--pc-textarea-auto-max-height);
+}
+
+.fieldWithCount .textarea {
+  padding-bottom: calc(var(--pc-space-3) + var(--pc-space-6));
+}
+
+.sizeSm .textarea {
+  min-height: var(--pc-textarea-min-h-sm);
+  font-size: var(--pc-text-sm);
+}
+
+.sizeMd .textarea {
+  min-height: var(--pc-textarea-min-h-md);
+  font-size: var(--pc-text-base);
+}
+
+.sizeLg .textarea {
+  min-height: var(--pc-textarea-min-h-lg);
+  font-size: var(--pc-text-md);
+}
+
+.helper {
+  font-size: var(--pc-text-xs);
+  color: var(--pc-text-faint);
+  line-height: var(--pc-leading-normal);
+}
+
+.error {
+  font-size: var(--pc-text-xs);
+  color: var(--pc-danger);
+  line-height: var(--pc-leading-normal);
+}
+
+.count {
+  font-size: var(--pc-text-xs);
+  color: var(--pc-text-faint);
+}
+
+.countAbs {
+  position: absolute;
+  right: var(--pc-space-3);
+  bottom: var(--pc-space-3);
+  pointer-events: none;
+}
+
+.countWarn {
+  color: var(--pc-warning);
+}
+
+.countDanger {
+  color: var(--pc-danger);
+}
+
+.disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}

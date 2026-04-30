@@ -1,0 +1,55 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--pc-font);
+  font-weight: var(--pc-weight-medium);
+  border-radius: var(--pc-radius-xl);
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.sizeSm {
+  padding: var(--pc-space-1) var(--pc-space-3);
+  font-size: var(--pc-text-xs);
+}
+
+.sizeMd {
+  padding: var(--pc-space-2) var(--pc-space-4);
+  font-size: var(--pc-text-sm);
+}
+
+.blue {
+  background: var(--pc-primary-soft);
+  color: var(--pc-primary);
+}
+
+.green {
+  background: var(--pc-success-soft);
+  color: var(--pc-success);
+}
+
+.yellow {
+  background: var(--pc-warning-soft);
+  color: var(--pc-warning);
+}
+
+.red {
+  background: var(--pc-danger-soft);
+  color: var(--pc-danger);
+}
+
+.purple {
+  background: var(--pc-purple-light);
+  color: var(--pc-purple);
+}
+
+.teal {
+  background: var(--pc-teal-light);
+  color: var(--pc-teal);
+}
+
+.gray {
+  background: var(--pc-bg-alt);
+  color: var(--pc-text-sub);
+}

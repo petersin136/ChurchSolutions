@@ -1,0 +1,119 @@
+.root {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pc-space-3);
+  width: var(--pc-toast-width);
+  min-height: var(--pc-toast-min-height);
+  padding: var(--pc-space-4);
+  box-sizing: border-box;
+  border: 1px solid var(--pc-border);
+  border-radius: var(--pc-radius);
+  background: var(--pc-surface);
+  box-shadow: var(--pc-shadow-md);
+  font-family: var(--pc-font);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateX(var(--pc-space-8));
+  animation: pcToastIn var(--pc-toast-enter-duration) ease forwards;
+}
+
+.rootExiting {
+  animation: pcToastOut var(--pc-toast-exit-duration) ease forwards;
+}
+
+@keyframes pcToastIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pcToastOut {
+  to {
+    opacity: 0;
+    transform: translateX(var(--pc-space-8));
+  }
+}
+
+.borderSuccess {
+  border-left-width: var(--pc-space-1);
+  border-left-style: solid;
+  border-left-color: var(--pc-success);
+}
+
+.borderError {
+  border-left-width: var(--pc-space-1);
+  border-left-style: solid;
+  border-left-color: var(--pc-danger);
+}
+
+.borderInfo {
+  border-left-width: var(--pc-space-1);
+  border-left-style: solid;
+  border-left-color: var(--pc-primary);
+}
+
+.borderWarning {
+  border-left-width: var(--pc-space-1);
+  border-left-style: solid;
+  border-left-color: var(--pc-warning);
+}
+
+.icon {
+  flex-shrink: 0;
+  width: var(--pc-space-5);
+  height: var(--pc-space-5);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--pc-text-base);
+  font-weight: var(--pc-weight-semibold);
+  color: var(--pc-text-strong);
+  line-height: var(--pc-leading-tight);
+}
+
+.desc {
+  margin: var(--pc-space-1) 0 0;
+  font-size: var(--pc-text-sm);
+  color: var(--pc-text-sub);
+  line-height: var(--pc-leading-normal);
+}
+
+.close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pc-space-6);
+  height: var(--pc-space-6);
+  padding: 0;
+  border: none;
+  border-radius: var(--pc-radius);
+  background: transparent;
+  color: var(--pc-text-faint);
+  cursor: pointer;
+  transition:
+    background-color var(--pc-transition),
+    color var(--pc-transition);
+}
+
+.close:hover {
+  background: var(--pc-bg-alt);
+  color: var(--pc-text-strong);
+}
+
+.close:focus-visible {
+  outline: none;
+  box-shadow: var(--pc-shadow-focus);
+}
+
+.closeIcon {
+  width: var(--pc-space-4);
+  height: var(--pc-space-4);
+}

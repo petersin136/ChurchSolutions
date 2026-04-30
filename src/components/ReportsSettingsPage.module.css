@@ -1,0 +1,89 @@
+.reportItems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-1);
+}
+
+.reportItemButton {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pc-space-3);
+  padding: var(--pc-space-3) var(--pc-space-4);
+  border-radius: var(--pc-radius);
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color var(--pc-transition-fast), border-color var(--pc-transition-fast), box-shadow var(--pc-transition-fast);
+}
+
+.reportItemButton:hover {
+  background: var(--pc-bg-alt);
+}
+
+.reportItemSelected {
+  background: var(--pc-primary-soft, #eef2ff);
+  border-color: var(--pc-primary);
+  box-shadow: inset 3px 0 0 0 var(--pc-primary);
+}
+
+.reportItemBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--pc-radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--pc-text-sm);
+  font-weight: var(--pc-weight-bold);
+  flex-shrink: 0;
+}
+
+.reportItemBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.reportItemTitle {
+  color: var(--pc-text);
+  font-weight: var(--pc-weight-semibold);
+  font-size: var(--pc-text-sm);
+}
+
+.reportItemDesc {
+  color: var(--pc-text-sub);
+  font-size: var(--pc-text-xs);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.settingsStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-3);
+}
+
+.settingsHint {
+  font-size: var(--pc-text-xs);
+  color: var(--pc-text-sub);
+  line-height: 1.45;
+}
+
+.backupButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-2);
+}
+
+.toggleRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-space-2);
+}
+
+.toggleLabel {
+  font-size: var(--pc-text-sm);
+  color: var(--pc-text);
+}
