@@ -198,4 +198,23 @@
   --pc-tabs-pill-padding: var(--pc-space-1);
   --pc-tabs-trigger-pill-py: var(--pc-space-1-5);
   --pc-tabs-trigger-pill-px: var(--pc-space-3);
+
+  /* PcStatCard tones (Wave 6) */
+  --pc-stat-tone-orange-bg: #FCE8D5;
+  --pc-stat-tone-orange-fg: #E76F51;
+  --pc-stat-tone-green-bg: #EAF4EC;
+  --pc-stat-tone-green-fg: #5B8B6A;
+  --pc-stat-tone-pink-bg: #F5E8F0;
+  --pc-stat-tone-pink-fg: #A26B8E;
+  --pc-stat-tone-yellow-bg: #FDF6E3;
+  --pc-stat-tone-yellow-fg: #C9A227;
+  --pc-stat-tone-blue-bg: #E8EEF7;
+  --pc-stat-tone-blue-fg: #4466E0;
+  --pc-stat-tone-gray-bg: #F1EFEC;
+  --pc-stat-tone-gray-fg: #6B6B6B;
+
+  /* PcStatCard structure */
+  --pc-stat-card-border: #E8E2D8;
+  --pc-stat-card-shadow: 0 1px 2px rgba(60, 40, 20, 0.04), 0 4px 12px rgba(60, 40, 20, 0.06);
+  --pc-stat-card-shadow-hover: 0 2px 4px rgba(60, 40, 20, 0.06), 0 8px 20px rgba(60, 40, 20, 0.08);
 }

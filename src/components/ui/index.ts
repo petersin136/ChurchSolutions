@@ -29,3 +29,5 @@ export { PcTabs } from "./PcTabs";
 export type { PcTabsProps } from "./PcTabs";
 export { PcSegmented } from "./PcSegmented";
 export type { PcSegmentedProps } from "./PcSegmented";
+export { PcStatCard } from "./PcStatCard";
+export type { PcStatCardProps, PcStatCardTone, PcStatCardSize } from "./PcStatCard";

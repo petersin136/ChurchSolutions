@@ -38,7 +38,7 @@ const LAYOUT = {
   headerTitleFontSizeMob: 18,
   headerDescFontSize: 14,
   headerTitleColor: "#1F2937",
-  headerDescColor: "#9CA3AF",
+  headerDescColor: "#6B6B6B",
   border: "#e8e9f0",
   textMuted: "#6b7280",
 } as const;
@@ -361,7 +361,6 @@ export function UnifiedPageLayout({
                   transition: SIDEBAR_MENU_ITEM.transition,
                   borderRadius: 8,
                   border: "none",
-                  borderLeft: isActive ? "2.5px solid #4466e0" : "2.5px solid transparent",
                   backgroundColor: isActive ? "rgba(68,102,224,0.04)" : "transparent",
                   color: isActive ? "#3355cc" : "#7a839e",
                   cursor: "pointer" as const,
@@ -520,7 +519,7 @@ export function UnifiedPageLayout({
             >
               <div
                 style={{
-                  fontSize: mob ? 16 : 20,
+                  fontSize: mob ? 16 : LAYOUT.headerTitleFontSize,
                   fontWeight: 700,
                   letterSpacing: mob ? -0.3 : -0.5,
                   color: mob ? "#1f2937" : LAYOUT.headerTitleColor,
@@ -535,8 +534,8 @@ export function UnifiedPageLayout({
               {(mob || headerDesc) && (
                 <div
                   style={{
-                    fontSize: mob ? 11 : 14,
-                    color: mob ? "#999" : "#6b7280",
+                    fontSize: mob ? 11 : LAYOUT.headerDescFontSize,
+                    color: mob ? "#999" : LAYOUT.headerDescColor,
                     marginTop: mob ? 2 : 2,
                     overflow: "hidden",
                     textOverflow: "ellipsis",

@@ -1,0 +1,230 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: #FFFFFF;
+  border: 1px solid var(--pc-stat-card-border);
+  border-radius: 12px;
+  box-shadow: var(--pc-stat-card-shadow);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.card.clickable { cursor: pointer; }
+.card.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--pc-stat-card-shadow-hover);
+}
+
+.size-compact { padding: 16px; gap: 8px; }
+.size-dense   { padding: 12px; gap: 6px; }
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconBox {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.size-compact .iconBox { width: 32px; height: 32px; border-radius: 9px; }
+.size-dense .iconBox   { width: 28px; height: 28px; border-radius: 8px; }
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B6B6B;
+  letter-spacing: -0.01em;
+}
+
+.value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1A1A1A;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.size-compact .value { font-size: 24px; }
+.size-dense .value   { font-size: 20px; }
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sub {
+  font-size: 12px;
+  color: #6B6B6B;
+}
+
+.trend {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.trend-up   { color: #2D7A4A; background: #EAF4EC; }
+.trend-down { color: #C44545; background: #FBEAEA; }
+.trend-flat { color: #6B6B6B; background: #F1EFEC; }
+
+/* Tone variants */
+.tone-orange { background: var(--pc-stat-tone-orange-bg); color: var(--pc-stat-tone-orange-fg); }
+.tone-green  { background: var(--pc-stat-tone-green-bg);  color: var(--pc-stat-tone-green-fg); }
+.tone-pink   { background: var(--pc-stat-tone-pink-bg);   color: var(--pc-stat-tone-pink-fg); }
+.tone-yellow { background: var(--pc-stat-tone-yellow-bg); color: var(--pc-stat-tone-yellow-fg); }
+.tone-blue   { background: var(--pc-stat-tone-blue-bg);   color: var(--pc-stat-tone-blue-fg); }
+.tone-gray   { background: var(--pc-stat-tone-gray-bg);   color: var(--pc-stat-tone-gray-fg); }
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid var(--pc-stat-card-border);
+  border-radius: 14px;
+  box-shadow: var(--pc-stat-card-shadow);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  min-height: 88px;
+  box-sizing: border-box;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--pc-stat-card-shadow-hover);
+}
+
+.compact {
+  padding: 12px 14px;
+  min-height: 64px;
+  gap: 10px;
+}
+
+.dense {
+  padding: 8px 12px;
+  min-height: 52px;
+  gap: 8px;
+}
+
+.default {}
+
+.iconBox {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compact .iconBox {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.dense .iconBox {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pc-text-sub, #6b6660);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.compact .label {
+  font-size: 11px;
+}
+
+.dense .label {
+  font-size: 10px;
+}
+
+.value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--pc-text, #1f1b16);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.compact .value {
+  font-size: 22px;
+}
+
+.dense .value {
+  font-size: 18px;
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--pc-text-sub, #8b857c);
+  line-height: 1.3;
+}
+
+.compact .sub {
+  font-size: 11px;
+}
+
+.dense .sub {
+  font-size: 10px;
+}
+
+.tone-orange {
+  background: var(--pc-stat-orange-bg);
+  color: var(--pc-stat-orange-fg);
+}
+
+.tone-green {
+  background: var(--pc-stat-green-bg);
+  color: var(--pc-stat-green-fg);
+}
+
+.tone-pink {
+  background: var(--pc-stat-pink-bg);
+  color: var(--pc-stat-pink-fg);
+}
+
+.tone-yellow {
+  background: var(--pc-stat-yellow-bg);
+  color: var(--pc-stat-yellow-fg);
+}
+
+.tone-blue {
+  background: var(--pc-stat-blue-bg);
+  color: var(--pc-stat-blue-fg);
+}
+
+.tone-gray {
+  background: var(--pc-stat-gray-bg);
+  color: var(--pc-stat-gray-fg);
+}

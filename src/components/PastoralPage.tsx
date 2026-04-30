@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAppData } from "@/contexts/AppDataContext";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
-import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, FileText, Settings, Church, Heart, Home, Gift } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -925,7 +925,6 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                 background: "#fff",
                 borderRadius: 10,
                 border: `1px solid ${C.border}`,
-                borderLeft: `4px solid ${card.color}`,
                 padding: "10px 12px",
                 minHeight: 60,
                 display: "flex",
@@ -943,40 +942,158 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
           ))}
         </div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: 14,
-            width: "100%",
-            alignItems: "stretch",
-          }}
-        >
-          {summaryCards.map((card) => (
+        (() => {
+          const visitCount = recentNotes.filter((n) => n.type === "visit").length;
+          const noteTotal = recentNotes.length;
+
+          const cardBase: CSSProperties = {
+            background: "#FFFFFF",
+            border: "1px solid #E8E2D8",
+            borderRadius: 16,
+            padding: 20,
+            boxShadow: "0 1px 2px rgba(60,40,20,0.04), 0 4px 12px rgba(60,40,20,0.06)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          };
+          const labelStyle: CSSProperties = {
+            fontSize: 13, fontWeight: 500, color: "#6B6B6B", letterSpacing: "-0.01em",
+          };
+          const subStyle: CSSProperties = { fontSize: 12, color: "#6B6B6B" };
+          const iconBox = (bg: string, fg: string, big = false): CSSProperties => ({
+            width: big ? 36 : 32,
+            height: big ? 36 : 32,
+            borderRadius: big ? 10 : 9,
+            background: bg,
+            color: fg,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          });
+
+          return (
             <div
-              key={card.label}
               style={{
-                background: "#fff",
-                borderRadius: 12,
-                border: `1px solid ${C.border}`,
-                borderLeft: `4px solid ${card.color}`,
-                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                padding: "16px 20px",
-                minHeight: 88,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: 4,
-                boxSizing: "border-box",
-                minWidth: 0,
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gridAutoRows: "minmax(120px, auto)",
+                gap: 16,
+                marginTop: 8,
               }}
             >
-              <span style={{ fontSize: 11, color: C.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{card.label}</span>
-              <span style={{ fontSize: 28, fontWeight: 800, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{card.value}</span>
-              {card.sub && <span style={{ fontSize: 12, color: C.textFaint }}>{card.sub}</span>}
+              {/* 1. 금주 출석률 (2x2 메인) */}
+              <div style={{ ...cardBase, gridColumn: "span 2", gridRow: "span 2", padding: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={iconBox("#EAF4EC", "#5B8B6A", true)}>
+                    <Users size={18} />
+                  </div>
+                  <span style={labelStyle}>{summaryCards[1].label}</span>
+                </div>
+                <div style={{ fontSize: 44, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.02em", lineHeight: 1.05, marginTop: 4 }}>
+                  {summaryCards[1].value}
+                </div>
+                {summaryCards[1].sub && (
+                  <div style={{ fontSize: 13, color: "#6B6B6B", marginTop: 4 }}>
+                    {summaryCards[1].sub}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. 전체 성도 (2x1) */}
+              <div style={{ ...cardBase, gridColumn: "span 2" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={iconBox("#E8EEF7", "#4466E0", true)}>
+                    <Users size={18} />
+                  </div>
+                  <span style={labelStyle}>{summaryCards[0].label}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                    {summaryCards[0].value}
+                  </div>
+                  {summaryCards[0].sub && (
+                    <span style={{ ...subStyle, marginLeft: "auto" }}>{summaryCards[0].sub}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. 새가족 (1x1) */}
+              <div style={cardBase}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={iconBox("#FDF6E3", "#C9A227")}>
+                    <Sparkles size={16} />
+                  </div>
+                  <span style={labelStyle}>{summaryCards[2].label}</span>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                  {summaryCards[2].value}
+                </div>
+                {summaryCards[2].sub && <span style={subStyle}>{summaryCards[2].sub}</span>}
+              </div>
+
+              {/* 4. 최근 기록 (1x1) */}
+              <div style={cardBase}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={iconBox("#F1EFEC", "#6B6B6B")}>
+                    <FileText size={16} />
+                  </div>
+                  <span style={labelStyle}>최근 기록</span>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                  {noteTotal}건
+                </div>
+                <span style={subStyle}>전체 메모/기도/심방</span>
+              </div>
+
+              {/* 5. 심방 (1x1) */}
+              <div style={cardBase}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={iconBox("#F5E8F0", "#A26B8E")}>
+                    <Heart size={16} />
+                  </div>
+                  <span style={labelStyle}>심방</span>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                  {visitCount}건
+                </div>
+                <span style={subStyle}>최근 기록</span>
+              </div>
+
+              {/* 6. 기도제목 (1x1) */}
+              <div style={cardBase}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={iconBox("#E8EEF7", "#4466E0")}>
+                    <TrendingUp size={16} />
+                  </div>
+                  <span style={labelStyle}>{summaryCards[4].label}</span>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                  {summaryCards[4].value}
+                </div>
+                {summaryCards[4].sub && <span style={subStyle}>{summaryCards[4].sub}</span>}
+              </div>
+
+              {/* 7. 위험/휴면 (2x1) */}
+              <div style={{ ...cardBase, gridColumn: "span 2" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={iconBox("#FBEAEA", "#C44545", true)}>
+                    <Users size={18} />
+                  </div>
+                  <span style={labelStyle}>{summaryCards[3].label}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: "#1A1A1A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                    {summaryCards[3].value}
+                  </div>
+                  {summaryCards[3].sub && (
+                    <span style={{ ...subStyle, marginLeft: "auto" }}>{summaryCards[3].sub}</span>
+                  )}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })()
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: mob ? 12 : 16 }}>

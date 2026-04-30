@@ -12,6 +12,8 @@ import { DevPcModalDemos } from "./DevPcModalDemos";
 import { DevWave3Demos } from "./DevWave3Demos";
 import { DevWave4Demos } from "./DevWave4Demos";
 import { DevWave5Demos } from "./DevWave5Demos";
+import { DevWave6Demos } from "./DevWave6Demos";
+import { DevWave6BentoDemo } from "./DevWave6BentoDemo";
 
 const BTN_VARIANTS = [
   "primary",
@@ -252,6 +254,8 @@ export default function DevComponentsPage() {
         <DevWave3Demos />
         <DevWave4Demos />
         <DevWave5Demos />
+        <DevWave6Demos />
+        <DevWave6BentoDemo />
       </div>
     </main>
   );
