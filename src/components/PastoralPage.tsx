@@ -891,15 +891,16 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
 
   const summaryCards = useMemo(
     () => [
-      { label: "전체 성도", value: `${total}명`, sub: "활성 등록" },
+      { label: "전체 성도", value: `${total}명`, sub: "활성 등록", color: C.primary },
       {
         label: "금주 출석률",
         value: `${rate}%`,
         sub: attOnline > 0 ? `${attInPerson}명 출석 · ${attOnline}명 온라인 / 총 ${total}명` : `${attTotal}/${total}명 출석`,
+        color: C.purple,
       },
-      { label: "새가족", value: `${newF}명`, sub: "정착 진행중" },
-      { label: "위험/휴면", value: `${risk}명`, sub: "관심 필요" },
-      { label: "기도제목", value: `${prayers}건`, sub: "함께 기도합니다" },
+      { label: "새가족", value: `${newF}명`, sub: "정착 진행중", color: C.success },
+      { label: "위험/휴면", value: `${risk}명`, sub: "관심 필요", color: C.danger },
+      { label: "기도제목", value: `${prayers}건`, sub: "함께 기도합니다", color: C.warning },
     ],
     [total, rate, attOnline, attInPerson, attTotal, newF, risk, prayers],
   );
@@ -907,85 +908,46 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 24 }}>
       {mob ? (
-        <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 6,
-              marginBottom: 6,
-              width: "100%",
-              alignItems: "stretch",
-              minWidth: 0,
-            }}
-          >
-            {summaryCards.slice(0, 2).map((card) => (
-              <div
-                key={card.label}
-                style={{
-                  background: "#fff",
-                  borderRadius: 8,
-                  border: `1px solid ${C.border}`,
-                  padding: "8px 10px",
-                  minHeight: 56,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  cursor: "default",
-                  boxSizing: "border-box",
-                  position: "relative",
-                  overflow: "hidden",
-                  minWidth: 0,
-                }}
-              >
-                <span style={{ fontSize: 10, color: C.textSub, fontWeight: 500 }}>{card.label}</span>
-                <span style={{ fontSize: 20, fontWeight: 800, color: C.text, lineHeight: 1.1 }}>{card.value}</span>
-                <span style={{ fontSize: 9, color: C.textFaint }}>{card.sub}</span>
-              </div>
-            ))}
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 6,
-              width: "100%",
-              alignItems: "stretch",
-              minWidth: 0,
-            }}
-          >
-            {summaryCards.slice(2, 5).map((card) => (
-              <div
-                key={card.label}
-                style={{
-                  background: "#fff",
-                  borderRadius: 8,
-                  border: `1px solid ${C.border}`,
-                  padding: "6px 8px",
-                  minHeight: 48,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  cursor: "default",
-                  boxSizing: "border-box",
-                  position: "relative",
-                  overflow: "hidden",
-                  minWidth: 0,
-                }}
-              >
-                <span style={{ fontSize: 9, color: C.textSub, fontWeight: 500 }}>{card.label}</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: C.text, lineHeight: 1.1 }}>{card.value}</span>
-                <span style={{ fontSize: 8, color: C.textFaint }}>{card.sub}</span>
-              </div>
-            ))}
-          </div>
-        </>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 8,
+            width: "100%",
+            alignItems: "stretch",
+            minWidth: 0,
+          }}
+        >
+          {summaryCards.map((card) => (
+            <div
+              key={card.label}
+              style={{
+                background: "#fff",
+                borderRadius: 10,
+                border: `1px solid ${C.border}`,
+                borderLeft: `4px solid ${card.color}`,
+                padding: "10px 12px",
+                minHeight: 60,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 3,
+                boxSizing: "border-box",
+                minWidth: 0,
+              }}
+            >
+              <span style={{ fontSize: 10, color: C.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{card.label}</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: C.text, lineHeight: 1.1 }}>{card.value}</span>
+              {card.sub && <span style={{ fontSize: 9, color: C.textFaint }}>{card.sub}</span>}
+            </div>
+          ))}
+        </div>
       ) : (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: 12,
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: 14,
             width: "100%",
             alignItems: "stretch",
           }}
@@ -995,23 +957,23 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
               key={card.label}
               style={{
                 background: "#fff",
-                borderRadius: tokens.radius.lg,
+                borderRadius: 12,
                 border: `1px solid ${C.border}`,
-                padding: "14px 18px",
-                minHeight: 90,
+                borderLeft: `4px solid ${card.color}`,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                padding: "16px 20px",
+                minHeight: 88,
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between",
-                cursor: "default",
+                justifyContent: "center",
+                gap: 4,
                 boxSizing: "border-box",
-                position: "relative",
-                overflow: "hidden",
                 minWidth: 0,
               }}
             >
-              <span style={{ fontSize: 12, color: C.textSub, fontWeight: 500 }}>{card.label}</span>
-              <span style={{ fontSize: 28, fontWeight: 800, color: C.text, lineHeight: 1.1 }}>{card.value}</span>
-              <span style={{ fontSize: 11, color: C.textFaint }}>{card.sub}</span>
+              <span style={{ fontSize: 11, color: C.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{card.label}</span>
+              <span style={{ fontSize: 28, fontWeight: 800, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{card.value}</span>
+              {card.sub && <span style={{ fontSize: 12, color: C.textFaint }}>{card.sub}</span>}
             </div>
           ))}
         </div>
