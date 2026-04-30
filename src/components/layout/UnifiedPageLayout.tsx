@@ -43,8 +43,6 @@ const LAYOUT = {
   textMuted: "#6b7280",
 } as const;
 
-const DEFAULT_SIDEBAR_ACCENT = "#2563eb";
-
 /** 모바일: 상단 헤더 + 탭 바 높이 고정(탭 전환 시 콘텐츠 점프 방지) */
 const MOB_TOP_HEADER_H = 48;
 const MOB_TOP_TABS_H = 40;
@@ -141,13 +139,12 @@ export function UnifiedPageLayout({
   headerActions,
   children,
   SidebarIcon,
-  accentColor,
+  accentColor: _accentColor,
   hideMobileSubTabs = false,
   contentTopGap,
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
   const [sideOpen, setSideOpen] = useState(false);
-  const accent = accentColor?.trim() || DEFAULT_SIDEBAR_ACCENT;
 
   const flatTabs = useMemo(() => navSections.flatMap((sec) => sec.items), [navSections]);
   const touchStartX = useRef(0);
@@ -361,8 +358,8 @@ export function UnifiedPageLayout({
                   transition: SIDEBAR_MENU_ITEM.transition,
                   borderRadius: 8,
                   border: "none",
-                  backgroundColor: isActive ? "rgba(68,102,224,0.04)" : "transparent",
-                  color: isActive ? "#3355cc" : "#7a839e",
+                  backgroundColor: isActive ? "#FDF1E8" : "transparent",
+                  color: isActive ? "#E76F51" : "#7a839e",
                   cursor: "pointer" as const,
                   fontFamily: "inherit",
                   textAlign: "left" as const,
@@ -379,7 +376,7 @@ export function UnifiedPageLayout({
                     style={navBtnStyle}
                     onMouseEnter={(e) => {
                       if (mob || isActive) return;
-                      e.currentTarget.style.backgroundColor = "rgba(68,102,224,0.03)";
+                      e.currentTarget.style.backgroundColor = "#FBE9DA";
                     }}
                     onMouseLeave={(e) => {
                       if (mob || isActive) return;
@@ -389,7 +386,7 @@ export function UnifiedPageLayout({
                     <Icon
                       size={SIDEBAR_MENU_ITEM.iconSize}
                       strokeWidth={1.5}
-                      color={isActive ? "#4466e0" : "#9ba3b8"}
+                      color={isActive ? "#E76F51" : "#9ba3b8"}
                       style={{
                         width: SIDEBAR_MENU_ITEM.iconSize,
                         height: SIDEBAR_MENU_ITEM.iconSize,
@@ -593,10 +590,10 @@ export function UnifiedPageLayout({
                       padding: "0 12px",
                       fontSize: 12,
                       fontWeight: isActive ? 700 : 500,
-                      color: isActive ? accent : "#6b7280",
+                      color: isActive ? "#E76F51" : "#6b7280",
                       background: "none",
                       border: "none",
-                      borderBottom: isActive ? `2px solid ${accent}` : "2px solid transparent",
+                      borderBottom: isActive ? "2px solid #E76F51" : "2px solid transparent",
                       boxSizing: "border-box",
                       cursor: "pointer",
                       whiteSpace: "nowrap",
