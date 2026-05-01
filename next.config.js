@@ -1,8 +1,11 @@
+const { PHASE_DEVELOPMENT_SERVER } = require("next/constants");
 const withPWA = require("@ducanh2912/next-pwa").default;
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const createNextConfig = (phase) => ({
   reactStrictMode: false,
+  // next dev와 next build가 같은 .next를 공유하면 검증 빌드가 dev 청크를 덮어써 404가 난다.
+  distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
 
   // dev에서 페이지 버퍼 안정화
   onDemandEntries: {
@@ -25,9 +28,9 @@ const nextConfig = {
       },
     ];
   },
-};
+});
 
-module.exports = withPWA({
+module.exports = (phase) => withPWA({
   dest: "public",
-  disable: process.env.NODE_ENV === "development",
-})(nextConfig);
+  disable: phase === PHASE_DEVELOPMENT_SERVER,
+})(createNextConfig(phase));

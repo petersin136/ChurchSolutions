@@ -12,7 +12,7 @@ export const tokens = {
     navy: "#4466e0",
     navyLight: "#3355cc",
     /** Headers, 출석 대시보드 강조 */
-    navyEmphasis: "#1a1d26",
+    navyEmphasis: "#E76F51", // 사이드바 주황 톤과 통일 (이전: #1a1d26)
     text: "#1a1d26",
     /** 세그먼트·보조 텍스트 (비강조 라벨) */
     sub: "#4a5068",
