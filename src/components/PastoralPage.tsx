@@ -74,8 +74,8 @@ const NOTE_TARGET_CHURCH = "__church__";
 
 /* ---------- Colors (unified app palette) ---------- */
 const C = {
-  primary: "#4466e0",
-  primaryHover: "#3355cc",
+  primary: "#E76F51",
+  primaryHover: "#D85C3F",
   primaryLight: "#eef1fb",
   primaryLighter: "#f6f7fd",
   text: "#1a1d26",
@@ -94,10 +94,10 @@ const C = {
   warningText: "#946b00",
   purple: "#7c5ce0",
   purpleLight: "#f3f0ff",
-  accent: "#4466e0",
+  accent: "#E76F51",
   accentLight: "#eef1fb",
   navy: "#1a1d26",
-  navyLight: "#3355cc",
+  navyLight: "#D85C3F",
   white: "#ffffff",
   shadow: "0 1px 4px rgba(0,0,0,0.06)",
   shadowHover: "0 4px 12px rgba(0,0,0,0.08)",
@@ -107,7 +107,7 @@ const C = {
   badgeRedBg: "#fef2f2",
   badgePurpleBg: "#f3f0ff",
   textMuted: "#4a5068",
-  blue: "#4466e0",
+  blue: "#E76F51",
   blueBg: "#eef1fb",
   accentBg: "#eef1fb",
   successBg: "#f0fdf4",
@@ -732,6 +732,16 @@ function compressPhoto(src: string, cb: (r: string) => void) {
 /* ====== Dashboard ====== */
 type AttChartView = "year" | "month" | "week";
 
+type PastoralFeedItem = {
+  id: string;
+  kind: "note" | "newcomer" | "prayer";
+  icon: "memo" | "prayer" | "visit" | "event" | "newcomer";
+  title: string;
+  body: string;
+  timestamp: string;
+  memberName?: string;
+};
+
 function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
   const mob = useIsMobile();
   const periodSegmentItems = useMemo(
@@ -745,6 +755,8 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
   const currentYear = new Date().getFullYear();
   const [attChartView, setAttChartView] = useState<AttChartView>("month");
   const [attChartYear, setAttChartYear] = useState(currentYear);
+  const leftColumnRef = useRef<HTMLDivElement>(null);
+  const [leftColumnHeight, setLeftColumnHeight] = useState<number | null>(null);
 
   const m = db.members.filter(x => x.status !== "졸업/전출");
   const total = m.length;
@@ -798,6 +810,34 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
     return Object.entries(r).sort((a, b) => b[1] - a[1]);
   }, [m]);
 
+  useEffect(() => {
+    if (mob) {
+      setLeftColumnHeight(null);
+      return;
+    }
+    const el = leftColumnRef.current;
+    if (!el) return;
+
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        setLeftColumnHeight(Math.ceil(el.getBoundingClientRect().height));
+      });
+    };
+
+    update();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
+    ro?.observe(el);
+    window.addEventListener("resize", update);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      ro?.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [mob, attChartView, attChartYear]);
+
   const recentNotes = useMemo(() => {
     const all: (Note & { mbrName: string; mbrId: string; mbrDept: string })[] = [];
     Object.keys(db.notes).forEach(mid => {
@@ -807,6 +847,74 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
     });
     return all.sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 6);
   }, [db]);
+
+  const pastoralFeed = useMemo(() => {
+    const items: PastoralFeedItem[] = [];
+
+    recentNotes.forEach((n, i) => {
+      items.push({
+        id: `note-${i}`,
+        kind: "note",
+        icon: (n.type as "memo" | "prayer" | "visit" | "event") || "memo",
+        title: n.mbrName || "이름 없음",
+        body: (n as { text?: string }).text || n.content || "",
+        timestamp: n.date || n.createdAt || new Date().toISOString(),
+        memberName: n.mbrName,
+      });
+    });
+
+    const newcomers = db.members
+      .filter((m) => {
+        const status = (m as { status?: string; role?: string }).status || (m as { status?: string; role?: string }).role || "";
+        return status === "새가족" || status === "정착중";
+      })
+      .sort((a, b) => {
+        const da = (a as { firstVisitDate?: string; first_visit_date?: string; createdAt?: string; created_at?: string }).firstVisitDate || (a as { first_visit_date?: string }).first_visit_date || (a as { createdAt?: string; created_at?: string }).createdAt || (a as { created_at?: string }).created_at || "";
+        const dbb = (b as { firstVisitDate?: string; first_visit_date?: string; createdAt?: string; created_at?: string }).firstVisitDate || (b as { first_visit_date?: string }).first_visit_date || (b as { createdAt?: string; created_at?: string }).createdAt || (b as { created_at?: string }).created_at || "";
+        return dbb.localeCompare(da);
+      })
+      .slice(0, 5);
+
+    newcomers.forEach((m) => {
+      const mm = m as { group?: string; mokjang?: string; firstVisitDate?: string; first_visit_date?: string; createdAt?: string; created_at?: string };
+      items.push({
+        id: `newcomer-${m.id}`,
+        kind: "newcomer",
+        icon: "newcomer",
+        title: `${m.name || "이름 없음"} 새가족 등록`,
+        body: mm.group || mm.mokjang || "부서 미지정",
+        timestamp: mm.firstVisitDate || mm.first_visit_date || mm.createdAt || mm.created_at || new Date().toISOString(),
+        memberName: m.name,
+      });
+    });
+
+    const withPrayer = db.members
+      .filter((m) => (m as { prayer?: string }).prayer && String((m as { prayer?: string }).prayer).trim())
+      .sort((a, b) => {
+        const da = (a as { updatedAt?: string; updated_at?: string; createdAt?: string; created_at?: string }).updatedAt || (a as { updated_at?: string }).updated_at || (a as { createdAt?: string; created_at?: string }).createdAt || (a as { created_at?: string }).created_at || "";
+        const dbb = (b as { updatedAt?: string; updated_at?: string; createdAt?: string; created_at?: string }).updatedAt || (b as { updated_at?: string }).updated_at || (b as { createdAt?: string; created_at?: string }).createdAt || (b as { created_at?: string }).created_at || "";
+        return dbb.localeCompare(da);
+      })
+      .slice(0, 5);
+
+    withPrayer.forEach((m) => {
+      const mm = m as { prayer?: string; updatedAt?: string; updated_at?: string; createdAt?: string; created_at?: string };
+      const pr = mm.prayer || "";
+      items.push({
+        id: `prayer-${m.id}`,
+        kind: "prayer",
+        icon: "prayer",
+        title: `${m.name || "이름 없음"}님 기도제목`,
+        body: pr.substring(0, 60) + (pr.length > 60 ? "…" : ""),
+        timestamp: mm.updatedAt || mm.updated_at || mm.createdAt || mm.created_at || new Date().toISOString(),
+        memberName: m.name,
+      });
+    });
+
+    return items
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+      .slice(0, 15);
+  }, [recentNotes, db.members]);
 
   const deptColors = [C.accent, C.pink, C.purple, C.success, C.teal, C.orange, C.danger, C.warning];
 
@@ -1017,7 +1125,16 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
         })()
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: mob ? 12 : 16 }}>
+      <div
+        style={{
+          display: mob ? "flex" : "grid",
+          flexDirection: mob ? "column" : undefined,
+          gridTemplateColumns: mob ? undefined : "1fr 1.2fr",
+          gap: mob ? 12 : 16,
+          ...(!mob ? { marginTop: 16, alignItems: "stretch" } : {}),
+        }}
+      >
+        <div ref={leftColumnRef} style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 16, minWidth: 0, ...(!mob ? { alignSelf: "start" } : {}) }}>
         {/* minWidth: 0으로 그리드 셀이 주별 차트 너비에 의해 늘어나 옆 칸(상태별 현황)을 침범하지 않도록 함 */}
         <div style={{ minWidth: 0 }}>
         {/* overflow: visible so 연도 선택 드롭다운이 카드에 잘리지 않음 */}
@@ -1040,7 +1157,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                   {[currentYear, currentYear - 1, currentYear - 2].map((y, i, arr) => {
                     const active = attChartYear === y;
                     return (
-                      <button key={y} type="button" onClick={() => setAttChartYear(y)} style={{ height: 28, padding: "0 8px", fontSize: 11, fontWeight: 600, border: "none", borderRight: i < arr.length - 1 ? "1px solid #e8e9f0" : undefined, fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box", background: active ? "#4466e0" : "#fff", color: active ? "#fff" : "#555", whiteSpace: "nowrap" }}>
+                      <button key={y} type="button" onClick={() => setAttChartYear(y)} style={{ height: 28, padding: "0 8px", fontSize: 11, fontWeight: 600, border: "none", borderRight: i < arr.length - 1 ? "1px solid #e8e9f0" : undefined, fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box", background: active ? "#E76F51" : "#fff", color: active ? "#fff" : "#555", whiteSpace: "nowrap" }}>
                         {y}년
                       </button>
                     );
@@ -1065,7 +1182,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                           fontFamily: "inherit",
                           cursor: "pointer",
                           boxSizing: "border-box",
-                          background: active ? "#4466e0" : "#fff",
+                          background: active ? "#E76F51" : "#fff",
                           color: active ? "#fff" : "#555",
                           whiteSpace: "nowrap",
                         }}
@@ -1170,9 +1287,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
             })}
           </div>
         </Card>
-      </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16 }}>
         <Card style={{ padding: 0, overflow: "hidden" }}>
           <div style={{ padding: mob ? "12px 16px" : "16px 24px", borderBottom: `1px solid ${C.border}` }}>
             <h4 style={{ margin: 0, fontSize: mob ? 14 : 16, fontWeight: 700, color: C.text }}>부서별 인원</h4>
@@ -1192,15 +1307,100 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
             })}
           </div>
         </Card>
+        </div>
 
-        <Card style={{ padding: 0, overflow: "hidden" }}>
-          <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
-            <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>최근 기록</h4>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #F0EBE3",
+            borderRadius: 16,
+            padding: 24,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            display: "flex",
+            flexDirection: "column",
+            ...(mob ? { minHeight: 320 } : { height: leftColumnHeight ? leftColumnHeight : "100%", maxHeight: leftColumnHeight || undefined, minHeight: 0, overflow: "hidden" }),
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>
+              현황 보고
+            </h4>
+            <span style={{ fontSize: 12, color: C.textMuted }}>
+              총 {pastoralFeed.length}건
+            </span>
           </div>
-          <div style={{ padding: "16px 24px", maxHeight: 300, overflowY: "auto" }}>
-            {recentNotes.length ? recentNotes.map((n, i) => <NoteCard key={i} n={n} mbrName={n.mbrName} />) : <div style={{ textAlign: "center", color: C.textMuted, padding: 20 }}>기록이 없습니다</div>}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 0, overflowY: "auto", overflowX: "hidden", flex: 1, minHeight: 0 }}>
+            {pastoralFeed.length === 0 ? (
+              <div style={{ textAlign: "center", color: C.textMuted, padding: 40 }}>
+                최근 기록이 없습니다
+              </div>
+            ) : (
+              pastoralFeed.map((item, idx) => (
+                <div
+                  key={item.id}
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    padding: "14px 0",
+                    borderBottom: idx < pastoralFeed.length - 1 ? "1px solid #F5F1EA" : "none",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background:
+                        item.kind === "newcomer" ? "#FDF1E8" :
+                        item.kind === "prayer" || item.icon === "prayer" ? "#FDF4E9" :
+                        item.icon === "visit" ? "#EAF6EE" :
+                        item.icon === "event" ? "#FCEBED" :
+                        "#F4F4F6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      color:
+                        item.kind === "newcomer" ? "#E76F51" :
+                        item.kind === "prayer" || item.icon === "prayer" ? "#D4A24C" :
+                        item.icon === "visit" ? "#5BAA70" :
+                        item.icon === "event" ? "#D45B6E" :
+                        "#7a839e",
+                    }}
+                  >
+                    {item.kind === "newcomer" ? <Sparkles size={16} strokeWidth={1.8} /> :
+                     item.icon === "prayer" ? <Heart size={16} strokeWidth={1.8} /> :
+                     item.icon === "visit" ? <Users size={16} strokeWidth={1.8} /> :
+                     <FileText size={16} strokeWidth={1.8} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 2 }}>
+                      {item.title}
+                    </div>
+                    {item.body && (
+                      <div style={{ fontSize: 13, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {item.body}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.textMuted, flexShrink: 0, paddingTop: 2 }}>
+                    {(() => {
+                      const d = new Date(item.timestamp);
+                      const now = new Date();
+                      const diff = (now.getTime() - d.getTime()) / 1000 / 60;
+                      if (diff < 60) return `${Math.floor(diff)}분 전`;
+                      if (diff < 60 * 24) return `${Math.floor(diff / 60)}시간 전`;
+                      if (diff < 60 * 24 * 7) return `${Math.floor(diff / 60 / 24)}일 전`;
+                      return d.toISOString().slice(5, 10).replace("-", ".");
+                    })()}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
@@ -1811,9 +2011,9 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
                     <div key={w} onClick={() => setCurrentWeek(w)} style={{
                       minWidth: 36, height: 28, padding: "0 6px", borderRadius: 8, fontSize: 11, fontWeight: 600, flexShrink: 0,
                       display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxSizing: "border-box",
-                      background: isActive ? "#4466e0" : "#fff",
+                      background: isActive ? "#E76F51" : "#fff",
                       color: isActive ? "#fff" : "#555",
-                      border: isActive ? "1px solid #4466e0" : "1px solid #e8e9f0",
+                      border: isActive ? "1px solid #E76F51" : "1px solid #e8e9f0",
                       transition: "background 0.15s, color 0.15s, border-color 0.15s",
                       whiteSpace: "nowrap",
                     }}>{idx + 1}주</div>
@@ -1822,8 +2022,8 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
               </div>
             </div>
             <div style={{ display: "flex", gap: 6, width: "100%", minWidth: 0 }}>
-              <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ flex: 1, minWidth: 0, height: 34, fontSize: 12, fontWeight: 600, borderRadius: 8, border: viewModeAtt === "list" ? "1px solid #4466e0" : "1px solid #e8e9f0", fontFamily: "inherit", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, boxSizing: "border-box", background: viewModeAtt === "list" ? "#4466e0" : "#fff", color: viewModeAtt === "list" ? "#fff" : "#555" }}><span style={{ display: "flex" }}><Icons.Table /></span> 전체 목록</button>
-              <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ flex: 1, minWidth: 0, height: 34, fontSize: 12, fontWeight: 600, borderRadius: 8, border: viewModeAtt === "group" ? "1px solid #4466e0" : "1px solid #e8e9f0", fontFamily: "inherit", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, boxSizing: "border-box", background: viewModeAtt === "group" ? "#4466e0" : "#fff", color: viewModeAtt === "group" ? "#fff" : "#555" }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
+              <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ flex: 1, minWidth: 0, height: 34, fontSize: 12, fontWeight: 600, borderRadius: 8, border: viewModeAtt === "list" ? "1px solid #E76F51" : "1px solid #e8e9f0", fontFamily: "inherit", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, boxSizing: "border-box", background: viewModeAtt === "list" ? "#E76F51" : "#fff", color: viewModeAtt === "list" ? "#fff" : "#555" }}><span style={{ display: "flex" }}><Icons.Table /></span> 전체 목록</button>
+              <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ flex: 1, minWidth: 0, height: 34, fontSize: 12, fontWeight: 600, borderRadius: 8, border: viewModeAtt === "group" ? "1px solid #E76F51" : "1px solid #e8e9f0", fontFamily: "inherit", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, boxSizing: "border-box", background: viewModeAtt === "group" ? "#E76F51" : "#fff", color: viewModeAtt === "group" ? "#fff" : "#555" }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
             </div>
           </div>
         ) : (
@@ -1879,8 +2079,8 @@ function AttendanceSub({ db, setDb, persist, toast, currentWeek, setCurrentWeek 
 
       {!mob && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-          <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: viewModeAtt === "list" ? "1px solid #4466e0" : "1px solid #e8e9f0", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "list" ? "#4466e0" : "#fff", color: viewModeAtt === "list" ? "#fff" : "#555", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, boxSizing: "border-box" }}><span style={{ display: "flex" }}><Icons.Table /></span> 전체 목록</button>
-          <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: viewModeAtt === "group" ? "1px solid #4466e0" : "1px solid #e8e9f0", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "group" ? "#4466e0" : "#fff", color: viewModeAtt === "group" ? "#fff" : "#555", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, boxSizing: "border-box" }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
+          <button type="button" onClick={() => { setViewModeAtt("list"); setSelectedMokjangAtt(null); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: viewModeAtt === "list" ? "1px solid #E76F51" : "1px solid #e8e9f0", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "list" ? "#E76F51" : "#fff", color: viewModeAtt === "list" ? "#fff" : "#555", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, boxSizing: "border-box" }}><span style={{ display: "flex" }}><Icons.Table /></span> 전체 목록</button>
+          <button type="button" onClick={() => { setViewModeAtt("group"); setSelectedMokjangAtt(null); }} style={{ height: 36, padding: "0 14px", borderRadius: 8, border: viewModeAtt === "group" ? "1px solid #E76F51" : "1px solid #e8e9f0", fontSize: 13, fontWeight: 600, fontFamily: "inherit", background: viewModeAtt === "group" ? "#E76F51" : "#fff", color: viewModeAtt === "group" ? "#fff" : "#555", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, boxSizing: "border-box" }}><span style={{ display: "flex" }}><Icons.Mokjang /></span> 목장별</button>
         </div>
       )}
 
@@ -2652,9 +2852,9 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
             onClick={() => setNfSubTab(tab.id)}
             style={{
               padding: mob ? "5px 10px" : "8px 16px", borderRadius: 8, fontSize: mob ? 11 : 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              background: nfSubTab === tab.id ? "#4466e0" : "#fff",
+              background: nfSubTab === tab.id ? "#E76F51" : "#fff",
               color: nfSubTab === tab.id ? "#fff" : "#555",
-              border: nfSubTab === tab.id ? "1px solid #4466e0" : "1px solid #e8e9f0",
+              border: nfSubTab === tab.id ? "1px solid #E76F51" : "1px solid #e8e9f0",
               boxSizing: "border-box",
             }}
           >
@@ -2697,9 +2897,9 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
           {(["all", "진행중", "수료", "중단", "no_mentor"] as const).map(f => (
             <button key={f} type="button" onClick={() => { setFilter(f); setCurrentPage(1); }} style={{
               padding: mob ? "4px 10px" : "8px 14px", borderRadius: 8, fontSize: mob ? 10 : 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box",
-              background: filter === f ? "#4466e0" : "#fff",
+              background: filter === f ? "#E76F51" : "#fff",
               color: filter === f ? "#fff" : "#555",
-              border: filter === f ? "1px solid #4466e0" : "1px solid #e8e9f0",
+              border: filter === f ? "1px solid #E76F51" : "1px solid #e8e9f0",
             }}>{f === "all" ? "전체" : f === "no_mentor" ? "섬김이 미배정" : f}</button>
           ))}
         </div>
@@ -2721,10 +2921,10 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
                 nfBadgeColor = "#999";
               } else if (program.status === "수료") {
                 nfBadgeLabel = "수료";
-                nfBadgeColor = "#4466e0";
+                nfBadgeColor = "#E76F51";
               } else {
                 nfBadgeLabel = "진행중";
-                nfBadgeColor = "#4466e0";
+                nfBadgeColor = "#E76F51";
               }
               return (
                 <Card key={member.id} onClick={() => openProgramDetail(member.id)} style={{ cursor: "pointer", padding: mob ? "10px 12px" : 16 }}>
@@ -3115,7 +3315,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
   const formInMob: CSSProperties | undefined = mob
     ? { height: 32, fontSize: 12, padding: "6px 10px", borderRadius: 8, boxSizing: "border-box" }
     : undefined;
-  const mokRowBtnPrimary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "#4466e0", color: "#fff", boxSizing: "border-box" };
+  const mokRowBtnPrimary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "#E76F51", color: "#fff", boxSizing: "border-box" };
   const mokRowBtnSecondary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "1px solid #e8e9f0", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "#f5f8ff", color: "#555", boxSizing: "border-box" };
   const mokRowBtnMuted: CSSProperties = { ...mokRowBtnSecondary, color: "#999" };
 
@@ -3180,7 +3380,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
             fontSize: mob ? 12 : 13,
             padding: mob ? "0 12px" : "0 14px",
             borderRadius: mob ? 6 : 8,
-            background: "#4466e0",
+            background: "#E76F51",
             color: "#fff",
             border: "none",
             fontWeight: 600,
@@ -3875,11 +4075,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                                 fontSize: 11,
                                 fontWeight: 600,
                                 borderRadius: 8,
-                                border: active ? "1px solid #4466e0" : `1px solid ${C.border}`,
+                                border: active ? "1px solid #E76F51" : `1px solid ${C.border}`,
                                 fontFamily: "inherit",
                                 cursor: "pointer",
                                 boxSizing: "border-box",
-                                background: active ? "#4466e0" : "#fff",
+                                background: active ? "#E76F51" : "#fff",
                                 color: active ? "#fff" : "#555",
                               }}
                             >

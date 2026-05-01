@@ -220,7 +220,7 @@ export function AttendanceDashboard({
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 주 출석</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: ts.gap.xs }}>
-            <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: tc.navyEmphasis }}>{thisWeekPresent}</span>
+            <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "#2D2D2D" }}>{thisWeekPresent}</span>
             <span style={{ fontSize: mSub, color: tc.labelMuted }}>/ {totalActive}명</span>
           </div>
           <div
@@ -238,14 +238,14 @@ export function AttendanceDashboard({
           style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 주 출석률</div>
-          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: tc.navyEmphasis }}>{attendanceRate}%</span>
+          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "#2D2D2D" }}>{attendanceRate}%</span>
         </div>
         <div
           className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
           style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 달 평균 출석률</div>
-          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: tc.navyEmphasis }}>{monthlyRate}%</span>
+          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "#2D2D2D" }}>{monthlyRate}%</span>
         </div>
         <button
           type="button"
@@ -258,7 +258,7 @@ export function AttendanceDashboard({
           style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>3주 연속 결석</div>
-          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: tc.navyEmphasis }}>{consecutiveAbsent.length}명</span>
+          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "#2D2D2D" }}>{consecutiveAbsent.length}명</span>
           <div style={{ fontSize: mSub, color: tc.labelMuted, marginTop: ts.gap.xxs }}>클릭 시 명단</div>
         </button>
       </div>
@@ -268,7 +268,7 @@ export function AttendanceDashboard({
           className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}
           style={{ maxHeight: chartH + (mob ? 56 : 80) }}
         >
-          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: tc.navyEmphasis }}>
+          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "#2D2D2D" }}>
             주간 출석 추이 (최근 12주)
           </h4>
           <LazyChart height={chartH}>
@@ -278,7 +278,7 @@ export function AttendanceDashboard({
                 <XAxis dataKey="week" tick={{ fontSize: mob ? 8 : tf.scale.xs }} />
                 <YAxis tick={{ fontSize: mob ? 8 : tf.scale.xs }} width={mob ? 28 : undefined} />
                 <Tooltip formatter={(v: any) => [`${v ?? 0}명`, ""]} />
-                <Line type="monotone" dataKey="주일예배" stroke={tc.navyEmphasis} strokeWidth={2} name="주일예배" dot={{ r: mob ? 2 : 3 }} />
+                <Line type="monotone" dataKey="주일예배" stroke={tc.navyEmphasis} strokeWidth={2} name="주일예배" dot={{ r: mob ? 2 : 3, fill: tc.navyEmphasis }} activeDot={{ r: mob ? 4 : 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </LazyChart>
@@ -287,7 +287,7 @@ export function AttendanceDashboard({
           className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}
           style={{ maxHeight: chartH + (mob ? 56 : 80) }}
         >
-          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: tc.navyEmphasis }}>
+          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "#2D2D2D" }}>
             부서별 출석률
           </h4>
           <LazyChart height={chartH}>
@@ -297,7 +297,7 @@ export function AttendanceDashboard({
                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: mob ? 8 : tf.scale.xs }} />
                 <YAxis type="category" dataKey="dept" width={mob ? 44 : 60} tick={{ fontSize: mob ? 8 : tf.scale.xs }} />
                 <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
-                <Bar dataKey="rate" name="출석률" fill={tc.navyEmphasis} radius={[0, tr.xs, tr.xs, 0]} />
+                <Bar dataKey="rate" name="출석률" fill={tc.navyEmphasis} radius={[0, tr.xs, tr.xs, 0]} maxBarSize={28} />
               </BarChart>
             </ResponsiveContainer>
           </LazyChart>
@@ -305,7 +305,7 @@ export function AttendanceDashboard({
       </div>
 
       <div className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}>
-        <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: tc.navyEmphasis }}>
+        <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "#2D2D2D" }}>
           월별 출석 히트맵 (최근 8주)
         </h4>
         <div style={mob ? { padding: "12px", width: "100%", boxSizing: "border-box" } : undefined}>
