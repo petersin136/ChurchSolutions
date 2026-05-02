@@ -609,6 +609,8 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
   const mob = useIsMobile();
   const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
+  console.log("[VisitDash]", { visitsLen: (db.visits ?? []).length, counselsLen: (db.counsels ?? []).length, firstVisit: (db.visits ?? [])[0], firstCounsel: (db.counsels ?? [])[0] });
+
   const mv = (db.visits ?? []).filter(v => thisMonth(v.date));
   const mc = (db.counsels ?? []).filter(c => thisMonth(c.date));
   const pv = (db.visits ?? []).filter(v => prevMonth(v.date));
