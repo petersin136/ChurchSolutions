@@ -7,7 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadDBFromSupabase, saveDBToSupabase, toMember, toVisit, toIncome, toExpense, toNewFamilyProgram, toPlan, toSermon } from "@/lib/supabase-db";
 
-const REFRESH_TIMEOUT_MS = 10000;
+/** attendance 등 대량 테이블은 여러 페이지 fetch로 10초를 넘길 수 있음 */
+const REFRESH_TIMEOUT_MS = 120000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -102,24 +103,46 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           setDb(prev => ({ ...prev, members: data.map((r: Record<string, unknown>) => toMember(r)) }));
         }
       } else if (table === "attendance") {
-        const { data } = await supabase.from("attendance").select("*").eq("church_id", cid);
-        if (data) {
-          setRawAttendance(data as RawAttendanceRow[]);
-          const attendance: DB["attendance"] = {};
-          const attendanceReasons: NonNullable<DB["attendanceReasons"]> = {};
-          data.forEach((r: any) => {
-            const mid = r.member_id as string;
-            const week = r.week_num as number;
-            if (!attendance[mid]) attendance[mid] = {};
-            const status = r.status as string;
-            attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as any;
-            if (r.reason?.trim()) {
-              if (!attendanceReasons[mid]) attendanceReasons[mid] = {};
-              attendanceReasons[mid][week] = r.reason;
-            }
-          });
-          setDb(prev => ({ ...prev, attendance, attendanceReasons }));
+        const PAGE_SIZE = 1000;
+        const allRows: RawAttendanceRow[] = [];
+        let from = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from("attendance")
+            .select("*")
+            .eq("church_id", cid)
+            .range(from, from + PAGE_SIZE - 1);
+          if (error) {
+            console.warn("[AppData] attendance fetch error:", error.message);
+            break;
+          }
+          if (!data || data.length === 0) break;
+          allRows.push(...(data as RawAttendanceRow[]));
+          if (data.length < PAGE_SIZE) break;
+          from += PAGE_SIZE;
+          if (from > 200000) break;
         }
+        setRawAttendance(allRows);
+        console.log(
+          "[AppData] attendance loaded total:",
+          allRows.length,
+          "years:",
+          Array.from(new Set(allRows.map((r) => (r as { year?: number }).year))).sort((a, b) => (a ?? 0) - (b ?? 0)),
+        );
+        const attendance: DB["attendance"] = {};
+        const attendanceReasons: NonNullable<DB["attendanceReasons"]> = {};
+        allRows.forEach((r: any) => {
+          const mid = r.member_id as string;
+          const week = r.week_num as number;
+          if (!attendance[mid]) attendance[mid] = {};
+          const status = r.status as string;
+          attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as any;
+          if (r.reason?.trim()) {
+            if (!attendanceReasons[mid]) attendanceReasons[mid] = {};
+            attendanceReasons[mid][week] = r.reason;
+          }
+        });
+        setDb(prev => ({ ...prev, attendance, attendanceReasons }));
       } else if (table === "notes") {
         const { data } = await supabase.from("notes").select("*").eq("church_id", cid);
         if (data) {

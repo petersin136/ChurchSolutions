@@ -6,7 +6,7 @@ import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAppData } from "@/contexts/AppDataContext";
+import { useAppData, type RawAttendanceRow } from "@/contexts/AppDataContext";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp } from "lucide-react";
@@ -743,7 +743,7 @@ type PastoralFeedItem = {
   memberName?: string;
 };
 
-function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
+function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek: number; rawAttendance: RawAttendanceRow[] }) {
   const mob = useIsMobile();
   const periodSegmentItems = useMemo(
     () => [
@@ -754,6 +754,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
     [],
   );
   const currentYear = new Date().getFullYear();
+  const attChartYearOptions = useMemo(() => Array.from({ length: 6 }, (_, i) => currentYear - i), [currentYear]);
   const [attChartView, setAttChartView] = useState<AttChartView>("month");
   const [attChartYear, setAttChartYear] = useState(currentYear);
   const leftColumnRef = useRef<HTMLDivElement>(null);
@@ -770,26 +771,30 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
   const prayers = m.filter(s => s.prayer && s.prayer.trim()).length;
   const rate = total > 0 ? Math.round(attTotal / total * 100) : 0;
 
+  console.log("[DEBUG] rawAttendance length:", rawAttendance.length, "years:", Array.from(new Set(rawAttendance.map(r => r.year))).sort(), "selectedYear:", attChartYear);
+
   const weeklyAtt = useMemo(() => {
-    return Array.from({ length: 52 }, (_, i) => {
-      const w = i + 1;
-      return m.filter(s => { const st = (db.attendance[s.id] || {})[w]; return st === "p" || st === "o"; }).length;
+    const data = new Array(52).fill(0);
+    rawAttendance.filter(r => r.year === attChartYear).forEach(r => {
+      const wn = r.week_num ?? 0;
+      if ((r.status === "p" || r.status === "o") && wn >= 1 && wn <= 52) {
+        data[wn - 1]++;
+      }
     });
-  }, [db, m]);
+    return data;
+  }, [rawAttendance, attChartYear]);
 
   const monthlyAtt = useMemo(() => {
     const data = new Array(12).fill(0);
-    m.forEach(s => {
-      const a = db.attendance[s.id] || {};
-      Object.keys(a).forEach(w => {
-        const wn = parseInt(w);
-        const mn = Math.min(11, Math.floor((wn - 1) / 4.33));
-        const st = a[parseInt(w)];
-        if (st === "p" || st === "o") data[mn]++;
-      });
+    rawAttendance.filter(r => r.year === attChartYear).forEach(r => {
+      if (r.status !== "p" && r.status !== "o") return;
+      const mn = r.date
+        ? new Date(r.date).getMonth()
+        : Math.min(11, Math.floor(((r.week_num ?? 1) - 1) / 4.33));
+      if (mn >= 0 && mn <= 11) data[mn]++;
     });
     return data;
-  }, [db, m]);
+  }, [rawAttendance, attChartYear]);
 
   const annualSummary = useMemo(() => {
     const totalPresent = weeklyAtt.reduce((s, v) => s + v, 0);
@@ -1155,7 +1160,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
                 }}
               >
                 <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", border: "1px solid #e8e9f0", flexShrink: 0 }}>
-                  {[currentYear, currentYear - 1, currentYear - 2].map((y, i, arr) => {
+                  {attChartYearOptions.map((y, i, arr) => {
                     const active = attChartYear === y;
                     return (
                       <button key={y} type="button" onClick={() => setAttChartYear(y)} style={{ height: 28, padding: "0 8px", fontSize: 11, fontWeight: 600, border: "none", borderRight: i < arr.length - 1 ? "1px solid #e8e9f0" : undefined, fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box", background: active ? "#E76F51" : "#fff", color: active ? "#fff" : "#555", whiteSpace: "nowrap" }}>
@@ -1200,7 +1205,7 @@ function DashboardSub({ db, currentWeek }: { db: DB; currentWeek: number }) {
               <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>출석 추이</h4>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
                 <select value={attChartYear} onChange={e => setAttChartYear(Number(e.target.value))} className="select-modern" style={{ height: 36, minHeight: 36, padding: "8px 36px 8px 12px", width: "auto", minWidth: 80, fontSize: 14, lineHeight: 1.35, boxSizing: "border-box" }}>
-                  {[currentYear, currentYear - 1, currentYear - 2].map(y => <option key={y} value={y}>{y}년</option>)}
+                  {attChartYearOptions.map(y => <option key={y} value={y}>{y}년</option>)}
                 </select>
                 <SegmentedControl
                   items={periodSegmentItems}
@@ -3462,7 +3467,7 @@ const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", 
 
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const { churchId } = useAuth();
-  const { refreshMembers, refreshNotes, refreshAttendance, refreshVisits, refreshNewFamilyPrograms, schoolDepartments, schoolEnrollments } = useAppData();
+  const { rawAttendance, refreshMembers, refreshNotes, refreshAttendance, refreshVisits, refreshNewFamilyPrograms, schoolDepartments, schoolEnrollments } = useAppData();
   const mob = useIsMobile();
   const [activeSub, setActiveSubState] = useState<SubPage>(() => {
     if (typeof window === "undefined") return "dashboard";
@@ -4024,7 +4029,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
     >
-          {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} />}
+          {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} rawAttendance={rawAttendance} />}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} deleteMembers={deleteMembers} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>
