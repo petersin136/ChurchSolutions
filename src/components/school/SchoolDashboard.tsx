@@ -5,12 +5,10 @@ import type { SchoolDepartment } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 
-const NAVY = "#1a1d26";
-const SUB = "#4a5068";
-const MUTED = "#8b90a0";
-const TEXT = "#4a5068";
-const BORDER = "#e8e9f0";
-const BG = "#fff";
+const NAVY = "var(--color-text)";
+const MUTED = "var(--color-text-muted)";
+const BORDER = "var(--color-border)";
+const BG = "var(--color-surface)";
 
 function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
@@ -122,7 +120,7 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
     })();
   }, [toast]);
 
-  function StatCard({ label, value, sub, color = "#4466e0" }: { label: string; value: string; sub?: string; color?: string }) {
+  function StatCard({ label, value, sub, color = "var(--color-primary)" }: { label: string; value: string; sub?: string; color?: string }) {
     return (
       <div
         style={{
@@ -130,7 +128,7 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
           borderRadius: 12,
           border: `1px solid ${BORDER}`,
           borderLeft: `4px solid ${color}`,
-          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          boxShadow: "0 1px 4px color-mix(in srgb, var(--color-text) 6%, transparent)",
           padding: mob ? "10px 14px" : "16px 20px",
           minHeight: mob ? 60 : 84,
           display: "flex",
@@ -158,10 +156,10 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
           gap: mob ? 8 : 16,
         }}
       >
-        <StatCard label="전체 등록 학생" value={`${totalStudents}명`} sub="교회학교 등록" color="#4466e0" />
-        <StatCard label="이번 주 출석률" value={weekRate != null ? `${weekRate}%` : "-"} sub="금주 출석 기준" color="#16a34a" />
+        <StatCard label="전체 등록 학생" value={`${totalStudents}명`} sub="교회학교 등록" color="var(--color-primary)" />
+        <StatCard label="이번 주 출석률" value={weekRate != null ? `${weekRate}%` : "-"} sub="금주 출석 기준" color="var(--color-success)" />
         <StatCard label="전체 교사" value={`${totalTeachers}명`} sub="교사·부교사" color="#7c3aed" />
-        <StatCard label="이번 달 신규 등록" value={`${newThisMonth}명`} sub="신규 등록" color="#f59e0b" />
+        <StatCard label="이번 달 신규 등록" value={`${newThisMonth}명`} sub="신규 등록" color="var(--color-warning)" />
       </div>
 
       <div style={{ background: BG, borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
@@ -188,7 +186,7 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
                   background: BG,
                   borderRadius: mob ? 8 : 16,
                   border: `1px solid ${BORDER}`,
-                  borderLeft: `3px solid ${NAVY}`,
+                  borderLeft: `3px solid var(--color-primary)`,
                   padding: mob ? "10px 12px" : "16px 20px",
                 }}
               >

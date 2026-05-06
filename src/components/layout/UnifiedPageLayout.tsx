@@ -10,7 +10,8 @@ export type NavItemIcon = ComponentType<any>;
 const LAYOUT = {
   sidebarWidth: 260,
   sidebarWidthCollapsed: 64,
-  sidebarBg: "#f0f2fa",
+  sidebarBg: "var(--color-surface-sidebar)",
+  sidebarBorder: "var(--color-border)",
   sidebarHeaderPadding: "24px 20px",
   sidebarHeaderBorder: "1px solid #dde2f0",
   sidebarHeaderIconSize: 36,
@@ -33,14 +34,14 @@ const LAYOUT = {
   mainContentPadding: 24,
   mainContentPaddingMob: 10,
   mainBg: "transparent",
-  contentAreaBg: "#f0f1fa",
+  contentAreaBg: "var(--color-surface-muted)",
   headerTitleFontSize: 24,
   headerTitleFontSizeMob: 18,
   headerDescFontSize: 14,
-  headerTitleColor: "#1F2937",
-  headerDescColor: "#6B6B6B",
-  border: "#e8e9f0",
-  textMuted: "#6b7280",
+  headerTitleColor: "var(--color-text)",
+  headerDescColor: "var(--color-text-muted)",
+  border: "var(--color-border)",
+  textMuted: "var(--color-text-muted)",
 } as const;
 
 /** 모바일: 상단 헤더 + 탭 바 높이 고정(탭 전환 시 콘텐츠 점프 방지) */
@@ -50,7 +51,7 @@ const MOB_TOP_TABS_H = 40;
 /** 사이드바 상단(교회명/날짜) — 모바일·데스크톱 동일 */
 const SIDEBAR_HEADER_FIXED = {
   padding: "24px 20px 16px 20px",
-  borderBottom: "1px solid #dde2f0",
+  borderBottom: "1px solid var(--color-border)",
   titleFontSize: 18,
   titleFontWeight: 700,
   titleLetterSpacing: -0.5,
@@ -117,7 +118,7 @@ export interface UnifiedPageLayoutProps {
   children: ReactNode;
   /** 사이드바 상단 아이콘 (기본 Home) */
   SidebarIcon?: LucideIcon;
-  /** 페이지 강조색 — 모바일 서브탭 등에 사용. 미전달 시 #2563eb */
+  /** 페이지 강조색 — 모바일 서브탭 등에 사용. 미전달 시 var(--color-primary) */
   accentColor?: string;
   /** true면 모바일 상단 가로 서브탭 바를 숨김(재정 등 본문에서 자체 네비 사용) */
   hideMobileSubTabs?: boolean;
@@ -214,7 +215,7 @@ export function UnifiedPageLayout({
         border: "none",
         boxShadow: "none",
         display: "flex",
-        color: "#1f2937",
+        color: "var(--color-text)",
         overflow: "hidden",
       }}
     >
@@ -231,8 +232,8 @@ export function UnifiedPageLayout({
         style={{
           width: mob ? LAYOUT.sidebarWidth : sideOpen ? LAYOUT.sidebarWidth : LAYOUT.sidebarWidthCollapsed,
           background: LAYOUT.sidebarBg,
-          borderRight: "1px solid #dde2f0",
-          color: "#1f2937",
+          borderRight: `1px solid ${LAYOUT.sidebarBorder}`,
+          color: "var(--color-text)",
           display: "flex",
           flexDirection: "column",
           transition: mob ? "transform 0.3s ease" : "width 0.25s ease",
@@ -257,7 +258,7 @@ export function UnifiedPageLayout({
               style={{
                 fontSize: 20,
                 fontWeight: 800,
-                color: "#3a4670",
+                color: "var(--color-text)",
                 letterSpacing: "-0.3px",
                 lineHeight: 1.3,
                 marginBottom: 4,
@@ -272,7 +273,7 @@ export function UnifiedPageLayout({
               style={{
                 fontSize: 15,
                 fontWeight: 600,
-                color: "#475569",
+                color: "var(--color-text-muted)",
                 marginBottom: 6,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
@@ -285,7 +286,7 @@ export function UnifiedPageLayout({
               style={{
                 fontSize: 12,
                 fontWeight: 400,
-                color: "#6b7280",
+                color: "var(--color-text-faint)",
               }}
             >
               {sidebarDateLine}
@@ -307,14 +308,14 @@ export function UnifiedPageLayout({
                 width: LAYOUT.sidebarHeaderIconSize,
                 height: LAYOUT.sidebarHeaderIconSize,
                 borderRadius: LAYOUT.sidebarHeaderIconRadius,
-                background: "#e8edff",
+                background: "var(--color-primary-soft)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              <IconComp size={20} strokeWidth={1.5} color="#6b7280" />
+              <IconComp size={20} strokeWidth={1.5} color="var(--color-text-muted)" />
             </div>
           </div>
         )}
@@ -335,7 +336,7 @@ export function UnifiedPageLayout({
                 style={{
                   fontSize: LAYOUT.sidebarSectionFontSize,
                   textTransform: "uppercase",
-                  color: "#a0a8be",
+                  color: "var(--color-text-faint)",
                   padding: LAYOUT.sidebarSectionPadding,
                   letterSpacing: "0.05em",
                   fontWeight: 600,
@@ -358,8 +359,8 @@ export function UnifiedPageLayout({
                   transition: SIDEBAR_MENU_ITEM.transition,
                   borderRadius: 8,
                   border: "none",
-                  backgroundColor: isActive ? "#FDF1E8" : "transparent",
-                  color: isActive ? "#E76F51" : "#7a839e",
+                  backgroundColor: isActive ? "var(--color-primary-soft)" : "transparent",
+                  color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
                   cursor: "pointer" as const,
                   fontFamily: "inherit",
                   textAlign: "left" as const,
@@ -376,7 +377,7 @@ export function UnifiedPageLayout({
                     style={navBtnStyle}
                     onMouseEnter={(e) => {
                       if (mob || isActive) return;
-                      e.currentTarget.style.backgroundColor = "#FBE9DA";
+                      e.currentTarget.style.backgroundColor = "var(--color-primary-soft)";
                     }}
                     onMouseLeave={(e) => {
                       if (mob || isActive) return;
@@ -386,7 +387,7 @@ export function UnifiedPageLayout({
                     <Icon
                       size={SIDEBAR_MENU_ITEM.iconSize}
                       strokeWidth={1.5}
-                      color={isActive ? "#E76F51" : "#9ba3b8"}
+                      color={isActive ? "var(--color-primary)" : "var(--color-text-faint)"}
                       style={{
                         width: SIDEBAR_MENU_ITEM.iconSize,
                         height: SIDEBAR_MENU_ITEM.iconSize,
@@ -398,7 +399,7 @@ export function UnifiedPageLayout({
                       <span
                         style={{
                           marginLeft: "auto",
-                          background: "#ef4444",
+                          background: "var(--color-danger)",
                           color: "#fff",
                           fontSize: 11,
                           padding: "1px 7px",
@@ -421,7 +422,7 @@ export function UnifiedPageLayout({
             padding: LAYOUT.sidebarFooterPadding,
             borderTop: LAYOUT.sidebarHeaderBorder,
             fontSize: LAYOUT.sidebarFooterFontSize,
-            color: "#9ca3af",
+            color: "var(--color-text-faint)",
             textAlign: "center",
           }}
         >
@@ -465,7 +466,7 @@ export function UnifiedPageLayout({
                       marginBottom: compactMainChrome ? 0 : undefined,
                       boxSizing: "border-box",
                       overflow: "hidden",
-                      background: "#fff",
+                      background: "var(--color-surface)",
                       borderBottom: `1px solid ${LAYOUT.border}`,
                       display: "flex",
                       alignItems: "center",
@@ -477,7 +478,7 @@ export function UnifiedPageLayout({
                       padding: compactMainChrome ? "10px 28px 0" : LAYOUT.mainHeaderPadding,
                       marginBottom: compactMainChrome ? 0 : undefined,
                       paddingBottom: compactMainChrome ? 0 : undefined,
-                      background: "#ffffff",
+                      background: "var(--color-surface)",
                       borderBottom: `1px solid ${LAYOUT.border}`,
                       display: "flex",
                       alignItems: "center",
@@ -494,7 +495,7 @@ export function UnifiedPageLayout({
                 onClick={() => setSideOpen(true)}
                 className="min-w-[36px] min-h-[36px] w-9 h-9 flex items-center justify-center flex-shrink-0 border-0 rounded-lg cursor-pointer"
                 style={{
-                  background: "#eaedf7",
+                  background: "var(--color-primary-soft)",
                   lineHeight: 1,
                   alignSelf: "center",
                 }}
@@ -519,7 +520,7 @@ export function UnifiedPageLayout({
                   fontSize: mob ? 16 : LAYOUT.headerTitleFontSize,
                   fontWeight: 700,
                   letterSpacing: mob ? -0.3 : -0.5,
-                  color: mob ? "#1f2937" : LAYOUT.headerTitleColor,
+                  color: mob ? "var(--color-text)" : LAYOUT.headerTitleColor,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -532,7 +533,7 @@ export function UnifiedPageLayout({
                 <div
                   style={{
                     fontSize: mob ? 11 : LAYOUT.headerDescFontSize,
-                    color: mob ? "#999" : LAYOUT.headerDescColor,
+                    color: mob ? "var(--color-text-muted)" : LAYOUT.headerDescColor,
                     marginTop: mob ? 2 : 2,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -561,7 +562,7 @@ export function UnifiedPageLayout({
               minHeight: MOB_TOP_TABS_H,
               maxHeight: MOB_TOP_TABS_H,
               borderBottom: "2px solid #f0f2f5",
-              background: "#ffffff",
+              background: "var(--color-surface)",
               padding: 0,
               gap: 0,
               flexShrink: 0,
@@ -590,10 +591,10 @@ export function UnifiedPageLayout({
                       padding: "0 12px",
                       fontSize: 12,
                       fontWeight: isActive ? 700 : 500,
-                      color: isActive ? "#E76F51" : "#6b7280",
+                      color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
                       background: "none",
                       border: "none",
-                      borderBottom: isActive ? "2px solid #E76F51" : "2px solid transparent",
+                      borderBottom: isActive ? "2px solid var(--color-primary)" : "2px solid transparent",
                       boxSizing: "border-box",
                       cursor: "pointer",
                       whiteSpace: "nowrap",

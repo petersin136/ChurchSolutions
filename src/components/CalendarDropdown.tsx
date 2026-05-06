@@ -8,7 +8,7 @@ const DAY_KR = ["일", "월", "화", "수", "목", "금", "토"];
 const YEAR_MIN = 1940;
 const YEAR_MAX = 2030;
 /** 앱 테마와 통일 (남색) */
-const ACCENT = "#2563eb";
+const ACCENT = "var(--color-primary)";
 const ITEM_H = 40;
 const VISIBLE = 5;
 
@@ -333,7 +333,7 @@ export function CalendarDropdown({
           gap: 8,
           padding: compact ? "6px 12px" : "12px 14px",
           borderRadius: 12,
-          border: "1px solid #e2e5ef",
+          border: "1px solid var(--color-border)",
           background: disabled ? "#f9fafb" : "#fff",
           fontSize: compact ? 14 : 15,
           color: value ? "#1a1f36" : "#9ca3af",
@@ -375,9 +375,9 @@ export function CalendarDropdown({
             minWidth: POPUP_WIDTH,
             width: compact ? POPUP_WIDTH : "100%",
             maxWidth: "min(100vw - 24px, 360px)",
-            background: "#fff",
+            background: "var(--color-surface)",
             borderRadius: 20,
-            border: "1px solid #e2e5ef",
+            border: "1px solid var(--color-border)",
             boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
             zIndex: 100000,
             overflow: "hidden",

@@ -232,20 +232,20 @@ export function SchoolAttendanceSub({ db, toast }: SchoolAttendanceSubProps) {
             padding: mob ? 24 : 28,
             textAlign: "center",
             color: UNSEL_TEXT,
-            background: "#fff",
+            background: "var(--color-surface)",
             borderRadius: mob ? 8 : 16,
             border: `1px solid ${BORDER}`,
           }}
         >
           <p style={{ margin: 0, fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>52주 출석 현황</p>
-          <p style={{ margin: "8px 0 0", fontSize: mob ? 11 : 14, color: "#999", lineHeight: mob ? 1.4 : 1.6 }}>
+          <p style={{ margin: "8px 0 0", fontSize: mob ? 11 : 14, color: "var(--color-text-faint)", lineHeight: mob ? 1.4 : 1.6 }}>
             등록된 학생·교사의 52주 출석 기록을 확인할 수 있습니다. (준비 중)
           </p>
         </div>
       )}
 
       {loading && attendanceSubTab === "dashboard" && (
-        <div style={{ padding: 24, textAlign: "center", fontSize: mob ? 11 : 14, color: "#999" }}>출석 데이터 로딩 중...</div>
+        <div style={{ padding: 24, textAlign: "center", fontSize: mob ? 11 : 14, color: "var(--color-text-faint)" }}>출석 데이터 로딩 중...</div>
       )}
     </>
   );

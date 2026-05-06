@@ -86,9 +86,9 @@ export function Pagination({
   const btnBase: React.CSSProperties = {
     padding: tight ? "4px 8px" : desktopLoose ? "10px 14px" : "8px 12px",
     borderRadius: tight ? 6 : desktopLoose ? 10 : 6,
-    border: "1px solid #e2e5ef",
-    background: "#f5f8ff",
-    color: "#555",
+    border: "1px solid var(--color-border)",
+    background: "var(--color-primary-soft)",
+    color: "var(--color-text-muted)",
     fontSize: tight ? (pinBottom ? 10 : 11) : desktopLoose ? 14 : 13,
     fontWeight: 500,
     cursor: "pointer",
@@ -127,7 +127,7 @@ export function Pagination({
   return (
     <div ref={wrapRef} style={wrapStyle}>
       {!hideSummary && (
-        <div style={{ fontSize: summaryFs, color: "#999", marginBottom: tight ? 6 : 8, textAlign: "center" }}>
+        <div style={{ fontSize: summaryFs, color: "var(--color-text-faint)", marginBottom: tight ? 6 : 8, textAlign: "center" }}>
           총 {totalItems}건 중 {totalItems === 0 ? 0 : start}-{end} 표시
         </div>
       )}
@@ -161,7 +161,7 @@ export function Pagination({
         {showLeadingEllipsis && (
           <>
             <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(1)}>1</button>
-            <span style={{ padding: "0 4px", color: "#999", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
+            <span style={{ padding: "0 4px", color: "var(--color-text-faint)", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
           </>
         )}
         {visiblePages.map((p) => (
@@ -172,7 +172,7 @@ export function Pagination({
             style={{
               ...btnBase,
               flexShrink: 0,
-              ...(p === safePage ? { background: "#2563eb", color: "#fff", borderColor: "#2563eb" } : {}),
+              ...(p === safePage ? { background: "var(--color-primary)", color: "#fff", borderColor: "var(--color-primary)" } : {}),
             }}
           >
             {p}
@@ -180,7 +180,7 @@ export function Pagination({
         ))}
         {showTrailingEllipsis && (
           <>
-            <span style={{ padding: "0 4px", color: "#999", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
+            <span style={{ padding: "0 4px", color: "var(--color-text-faint)", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
             <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
           </>
         )}

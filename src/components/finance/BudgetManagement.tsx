@@ -36,7 +36,7 @@ const BUDGET_TABLE_COLGROUP = (
   </colgroup>
 );
 
-const NAVY = "#2563eb";
+const NAVY = "var(--color-primary)";
 const BORDER = "#e2e5ef";
 const ROW_LINE = "#f0f2f5";
 
@@ -57,14 +57,14 @@ const bmTh = (align: "left" | "right" | "center", mob = true): CSSProperties => 
   color: NAVY,
   padding: mob ? "6px 8px" : "10px 14px",
   borderBottom: `2px solid ${NAVY}`,
-  background: "#fff",
+  background: "var(--color-surface)",
   textAlign: align,
   whiteSpace: "nowrap",
 });
 
 const bmTd = (isEven: boolean, align: "left" | "right" | "center", mob = true): CSSProperties => ({
   fontSize: mob ? 11 : 14,
-  color: "#555",
+  color: "var(--color-text-muted)",
   padding: mob ? "8px" : "12px 14px",
   borderBottom: `1px solid ${ROW_LINE}`,
   background: isEven ? "#fafbfc" : "#fff",
@@ -76,7 +76,7 @@ const bmTotalTd = (align: "left" | "right" | "center", mob = true): CSSPropertie
   fontWeight: 700,
   color: NAVY,
   padding: mob ? "8px" : "12px 14px",
-  background: "#f0f2f5",
+  background: "var(--color-border-soft)",
   borderBottom: `1px solid ${ROW_LINE}`,
   textAlign: align,
 });
@@ -175,8 +175,8 @@ const inputCompactStyle = (mob: boolean): CSSProperties => ({
   border: `1px solid ${BORDER}`,
   outline: "none",
   boxShadow: "none",
-  background: "#fff",
-  color: "#555",
+  background: "var(--color-surface)",
+  color: "var(--color-text-muted)",
   overflow: "hidden",
   textOverflow: "ellipsis",
 });
@@ -375,7 +375,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
 
   if (loading) {
     const loadingBody = (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", color: "#555", fontSize: 13 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", color: "var(--color-text-muted)", fontSize: 13 }}>
         <span
           style={{
             display: "inline-block",
@@ -434,8 +434,8 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
           fontSize: btnFs,
           padding: mob ? "0 10px" : "0 14px",
           borderRadius: btnBr,
-          background: "#f5f8ff",
-          color: "#555",
+          background: "var(--color-primary-soft)",
+          color: "var(--color-text-muted)",
           border: "1.5px solid #e0e3ea",
           cursor: "pointer",
           outline: "none",
@@ -461,7 +461,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
           fontSize: 14,
           padding: "0 20px",
           borderRadius: 10,
-          background: "#2563eb",
+          background: "var(--color-primary)",
           color: "#fff",
           border: "none",
           cursor: saving ? "not-allowed" : "pointer",
@@ -486,7 +486,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
 
   const bodyBlocks = (
     <>
-      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
         <h3
           style={{
             margin: 0,
@@ -549,7 +549,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
         <h3
           style={{
             margin: 0,
@@ -612,7 +612,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? "12px 14px" : "18px 24px" }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? "12px 14px" : "18px 24px" }}>
         <div style={{ fontSize: mob ? 14 : 18, fontWeight: 700, color: NAVY }}>
           수지 차액 (수입 - 지출): <span style={{ color: NAVY }}>{fmt(balance)}</span>
         </div>

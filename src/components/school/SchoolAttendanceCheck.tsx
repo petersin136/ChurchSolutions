@@ -80,8 +80,8 @@ function PortalSelect({
         top: position.top,
         minWidth: position.width,
         zIndex: 9999,
-        background: "#fff",
-        border: "1px solid #e8e9f0",
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
         borderRadius: 8,
         boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         maxHeight: 280,
@@ -436,7 +436,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3 bg-white rounded-lg border p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4" style={{ borderColor: "#e8e9f0" }}>
+      <div className="space-y-3 bg-white rounded-lg border p-3 md:p-4 -mx-3 md:mx-0 px-3 md:px-4" style={{ borderColor: "var(--color-border)" }}>
         <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-4">
           <label className="flex items-center gap-2 shrink-0">
             <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">날짜</span>
@@ -451,7 +451,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
           </label>
           <span
             className="text-xs md:text-sm font-semibold px-3 py-2 rounded-md"
-            style={{ color: "#2563eb", background: "#f0f2f5" }}
+            style={{ color: "var(--color-primary)", background: "var(--color-border-soft)" }}
           >
             주일예배
           </span>
@@ -497,7 +497,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                   whiteSpace: "nowrap",
                   flexShrink: 0,
                   border: on ? "none" : "1px solid #e8e9f0",
-                  background: on ? "#2563eb" : "#f5f8ff",
+                  background: on ? "var(--color-primary)" : "#f5f8ff",
                   color: on ? "#fff" : "#555",
                   cursor: "pointer",
                 }}
@@ -510,15 +510,15 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12 bg-white rounded-lg border" style={{ borderColor: "#e8e9f0" }}>
+        <div className="flex items-center justify-center py-12 bg-white rounded-lg border" style={{ borderColor: "var(--color-border)" }}>
           <span
             className="inline-block w-6 h-6 rounded-full animate-spin"
-            style={{ border: "2px solid #e8e9f0", borderTopColor: "#2563eb" }}
+            style={{ border: "2px solid #e8e9f0", borderTopColor: "var(--color-primary)" }}
           />
-          <span className="ml-2" style={{ fontSize: 12, color: "#999" }}>출석 데이터 로딩 중...</span>
+          <span className="ml-2" style={{ fontSize: 12, color: "var(--color-text-faint)" }}>출석 데이터 로딩 중...</span>
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 bg-white rounded-lg border" style={{ borderColor: "#e8e9f0" }}>
+        <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 bg-white rounded-lg border" style={{ borderColor: "var(--color-border)" }}>
           <table className="w-full min-w-[320px]" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -593,7 +593,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                           disabled={!isAbsent}
                           className="px-3 py-1.5 text-sm rounded-md w-40"
                           style={{
-                            border: "1px solid #e8e9f0",
+                            border: "1px solid var(--color-border)",
                             background: isAbsent ? "#fff" : "#f5f8ff",
                             color: isAbsent ? "#555" : "#999",
                           }}
@@ -603,7 +603,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                         {streak > 0 ? (
                           <span
                             className="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold"
-                            style={{ background: "#f0f2f5", color: "#2563eb" }}
+                            style={{ background: "var(--color-border-soft)", color: "var(--color-primary)" }}
                           >
                             {streak}주 연속
                           </span>
@@ -618,22 +618,22 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
         </div>
       )}
 
-      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 flex flex-wrap items-center justify-between gap-4 rounded-t-lg" style={{ borderColor: "#e8e9f0" }}>
-        <div className="flex gap-4 text-sm" style={{ color: "#555" }}>
+      <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 flex flex-wrap items-center justify-between gap-4 rounded-t-lg" style={{ borderColor: "var(--color-border)" }}>
+        <div className="flex gap-4 text-sm" style={{ color: "var(--color-text-muted)" }}>
           <span>출석 <strong style={{ color: "#16a34a" }}>{count출석}명</strong></span>
           <span>결석 <strong style={{ color: "#dc2626" }}>{count결석}명</strong></span>
-          <span style={{ color: "#999" }}>/ 전체 {filteredEnrollments.length}명</span>
+          <span style={{ color: "var(--color-text-faint)" }}>/ 전체 {filteredEnrollments.length}명</span>
         </div>
         <div className="text-sm">
           {saving ? (
-            <span className="flex items-center gap-1" style={{ color: "#999" }}>
+            <span className="flex items-center gap-1" style={{ color: "var(--color-text-faint)" }}>
               <span className="inline-block w-3 h-3 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "#6b7b9e", borderTopColor: "transparent" }} />
               저장 중...
             </span>
           ) : saved ? (
             <span style={{ color: "#16a34a", fontWeight: 600 }}>자동 저장됨</span>
           ) : saveError ? (
-            <span style={{ color: "#555" }}>저장 실패 - 다시 시도해주세요</span>
+            <span style={{ color: "var(--color-text-muted)" }}>저장 실패 - 다시 시도해주세요</span>
           ) : null}
         </div>
       </div>

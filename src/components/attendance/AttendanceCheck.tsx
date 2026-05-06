@@ -366,9 +366,9 @@ export function AttendanceCheck({
                 cursor: "pointer",
                 fontFamily: "inherit",
                 boxSizing: "border-box",
-                background: active ? "#2563eb" : "#fff",
+                background: active ? "var(--color-primary)" : "#fff",
                 color: active ? "#fff" : "#555",
-                border: active ? "1px solid #2563eb" : "1px solid #e2e5ef",
+                border: active ? "1px solid var(--color-primary)" : "1px solid var(--color-border)",
               }}
             >
               {dept}

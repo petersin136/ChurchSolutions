@@ -42,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={pretendard.variable}>
+    <html lang="ko" className={pretendard.variable} data-theme="orange" data-mode="light">
       <head>
         {process.env.NODE_ENV === "development" && (
           <script

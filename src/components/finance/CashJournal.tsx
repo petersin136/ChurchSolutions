@@ -6,7 +6,7 @@ import type { CashJournalEntry } from "@/types/db";
 import type { Income } from "@/types/db";
 import type { Expense } from "@/types/db";
 
-const NAVY = "#2563eb";
+const NAVY = "var(--color-primary)";
 const BORDER = "#e2e5ef";
 const ROW = "#f0f2f5";
 const TEXT = "#555";
@@ -90,7 +90,7 @@ const selStyle = (mob: boolean): CSSProperties => ({
   borderRadius: mob ? 6 : 10,
   border: `1px solid ${BORDER}`,
   padding: mob ? "0 8px" : "0 14px",
-  background: "#fff",
+  background: "var(--color-surface)",
   color: TEXT,
 });
 
@@ -216,7 +216,7 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20 }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20 }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ ...selStyle(mob), flex: "0 0 auto" }} />
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ ...selStyle(mob), flex: "0 0 auto" }} />
@@ -249,13 +249,13 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
           </div>
         )}
         {onExportPdf && (
-          <button type="button" onClick={() => onExportPdf(filtered)} style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, border: `1px solid ${BORDER}`, background: "#f5f8ff", color: TEXT, cursor: "pointer" }}>
+          <button type="button" onClick={() => onExportPdf(filtered)} style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, border: `1px solid ${BORDER}`, background: "var(--color-primary-soft)", color: TEXT, cursor: "pointer" }}>
             PDF
           </button>
         )}
       </div>
 
-      <div style={{ overflowX: "auto", background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}` }}>
+      <div style={{ overflowX: "auto", background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}` }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -295,7 +295,7 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
             )}
           </tbody>
           <tfoot>
-            <tr style={{ background: "#f0f2f5", fontWeight: 700 }}>
+            <tr style={{ background: "var(--color-border-soft)", fontWeight: 700 }}>
               <td colSpan={4} style={{ padding: tdPad, fontSize: tdFs, color: TEXT }}>합계</td>
               <td style={{ padding: tdPad, fontSize: tdFs, textAlign: "right", color: TEXT }}>₩{fmt(totalIncome)}</td>
               <td style={{ padding: tdPad, fontSize: tdFs, textAlign: "right", color: TEXT }}>₩{fmt(totalExpense)}</td>

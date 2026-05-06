@@ -5,13 +5,13 @@ import type { DB } from "@/types/db";
 import type { SchoolDepartment, SchoolClass } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
-const NAVY = "#1a1d26";
-const BORDER = "#e8e9f0";
-const ROW_LINE = "#f0f2f5";
-const MUTED = "#999";
-const TEXT = "#555";
-const CARD = "#fff";
-const SELECT_BG = "#f0f2f5";
+const NAVY = "var(--color-text)";
+const BORDER = "var(--color-border)";
+const ROW_LINE = "var(--color-border-soft)";
+const MUTED = "var(--color-text-faint)";
+const TEXT = "var(--color-text-muted)";
+const CARD = "var(--color-surface)";
+const SELECT_BG = "var(--color-surface-elevated)";
 
 type DeptCounts = Record<string, { teachers: number; students: number }>;
 
@@ -257,7 +257,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
             padding: "0 12px",
             borderRadius: 6,
             background: NAVY,
-            color: "#fff",
+            color: "var(--color-primary-on)",
             border: "none",
             cursor: "pointer",
           }}
@@ -290,7 +290,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                     background: selectedDeptId === d.id ? SELECT_BG : "transparent",
                     transition: "background 0.1s",
                   }}
-                  onMouseEnter={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = "#fafbfc"; }}
+                  onMouseEnter={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = "var(--color-surface-elevated)"; }}
                   onMouseLeave={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = "transparent"; }}
                 >
                   <td style={{ padding: 8, fontSize: 11, color: TEXT, fontWeight: 500 }}>{d.name}</td>
@@ -309,13 +309,14 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                         border: `1px solid ${BORDER}`,
                         borderRadius: 4,
                         padding: "2px 8px",
-                        background: "#fff",
+                        background: "var(--color-surface-elevated)",
+                        fontWeight: 600,
                         cursor: "pointer",
                       }}
                     >
                       수정
                     </button>
-                    <button type="button" onClick={() => handleDeleteDepartment(d)} style={{ fontSize: 10, color: TEXT, border: "none", background: "transparent", cursor: "pointer", textDecoration: "underline" }}>삭제</button>
+                    <button type="button" onClick={() => handleDeleteDepartment(d)} style={{ fontSize: 10, color: "var(--color-text)", border: "none", background: "transparent", cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}>삭제</button>
                   </td>
                 </tr>
               ))}
@@ -331,7 +332,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                 <button
                   type="button"
                   onClick={() => setAddClassOpen(true)}
-                  style={{ height: 30, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: NAVY, color: "#fff", border: "none", cursor: "pointer" }}
+                  style={{ height: 30, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: NAVY, color: "var(--color-primary-on)", border: "none", cursor: "pointer" }}
                 >
                   반 추가
                 </button>
@@ -348,11 +349,11 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                         <button
                           type="button"
                           onClick={() => { setEditClassOpen(c); setEditClassName(c.name); }}
-                          style={{ fontSize: 10, color: NAVY, border: `1px solid ${BORDER}`, borderRadius: 4, padding: "2px 8px", background: "#fff", cursor: "pointer" }}
+                          style={{ fontSize: 10, color: "var(--color-text)", border: `1px solid ${BORDER}`, borderRadius: 4, padding: "2px 8px", background: "var(--color-surface-elevated)", cursor: "pointer", fontWeight: 600 }}
                         >
                           수정
                         </button>
-                        <button type="button" onClick={() => handleDeleteClass(c)} style={{ fontSize: 10, color: TEXT, background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}>삭제</button>
+                        <button type="button" onClick={() => handleDeleteClass(c)} style={{ fontSize: 10, color: "var(--color-text)", background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}>삭제</button>
                       </span>
                     </li>
                   ))}

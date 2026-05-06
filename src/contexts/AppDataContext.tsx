@@ -172,12 +172,52 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           setDb(prev => ({ ...prev, visits: data.map((r: any) => toVisit(r)) }));
         }
       } else if (table === "income") {
-        const { data } = await supabase.from("income").select("*").eq("church_id", cid).order("date", { ascending: false });
+        const PAGE_SIZE = 1000;
+        let allRows: any[] = [];
+        let from = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from("income")
+            .select("*")
+            .eq("church_id", cid)
+            .order("date", { ascending: false })
+            .range(from, from + PAGE_SIZE - 1);
+          if (error) {
+            console.warn("[AppData] income fetch error:", error.message);
+            break;
+          }
+          if (!data || data.length === 0) break;
+          allRows = allRows.concat(data);
+          if (data.length < PAGE_SIZE) break;
+          from += PAGE_SIZE;
+          if (from > 200000) break;
+        }
+        const data = allRows;
         if (data) {
           setDb(prev => ({ ...prev, income: data.map((r: any) => toIncome(r)) }));
         }
       } else if (table === "expense") {
-        const { data } = await supabase.from("expense").select("*").eq("church_id", cid).order("date", { ascending: false });
+        const PAGE_SIZE = 1000;
+        let allRows: any[] = [];
+        let from = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from("expense")
+            .select("*")
+            .eq("church_id", cid)
+            .order("date", { ascending: false })
+            .range(from, from + PAGE_SIZE - 1);
+          if (error) {
+            console.warn("[AppData] expense fetch error:", error.message);
+            break;
+          }
+          if (!data || data.length === 0) break;
+          allRows = allRows.concat(data);
+          if (data.length < PAGE_SIZE) break;
+          from += PAGE_SIZE;
+          if (from > 200000) break;
+        }
+        const data = allRows;
         if (data) {
           setDb(prev => ({ ...prev, expense: data.map((r: any) => toExpense(r)) }));
         }

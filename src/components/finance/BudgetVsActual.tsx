@@ -15,7 +15,7 @@ import {
 } from "@/components/finance/budgetYearToolbarStyles";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
-const NAVY = "#2563eb";
+const NAVY = "var(--color-primary)";
 const BORDER = "#e2e5ef";
 const ROW_LINE = "#f0f2f5";
 
@@ -36,13 +36,13 @@ const bvaTh = (align: "left" | "right" | "center", mob = true): CSSProperties =>
   color: NAVY,
   padding: mob ? "6px 8px" : "10px 14px",
   borderBottom: `2px solid ${NAVY}`,
-  background: "#fff",
+  background: "var(--color-surface)",
   textAlign: align,
 });
 
 const bvaTd = (isEven: boolean, align: "left" | "right" | "center", mob = true): CSSProperties => ({
   fontSize: mob ? 11 : 14,
-  color: "#555",
+  color: "var(--color-text-muted)",
   padding: mob ? "8px" : "12px 14px",
   borderBottom: `1px solid ${ROW_LINE}`,
   background: isEven ? "#fafbfc" : "#fff",
@@ -208,7 +208,7 @@ export function BudgetVsActual({
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", color: "#555" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px", color: "var(--color-text-muted)" }}>
         <span
           style={{
             display: "inline-block",
@@ -252,7 +252,7 @@ export function BudgetVsActual({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20, maxWidth: "100%" }}>
-        <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
           <h4
             style={{
               margin: 0,
@@ -279,7 +279,7 @@ export function BudgetVsActual({
               <tbody>
                 {incomeRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: 32, textAlign: "center", color: "#999", fontSize: 12 }}>
+                    <td colSpan={5} style={{ padding: 32, textAlign: "center", color: "var(--color-text-faint)", fontSize: 12 }}>
                       수입 예산/실적 데이터가 없습니다.
                     </td>
                   </tr>
@@ -298,7 +298,7 @@ export function BudgetVsActual({
             </table>
           </div>
         </div>
-        <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
           <h4
             style={{
               margin: 0,
@@ -325,7 +325,7 @@ export function BudgetVsActual({
               <tbody>
                 {expenseRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: 32, textAlign: "center", color: "#999", fontSize: 12 }}>
+                    <td colSpan={5} style={{ padding: 32, textAlign: "center", color: "var(--color-text-faint)", fontSize: 12 }}>
                       지출 예산/실적 데이터가 없습니다.
                     </td>
                   </tr>
@@ -347,7 +347,7 @@ export function BudgetVsActual({
       </div>
 
       {chartData.length > 0 && (
-        <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 16 : 24 }}>
+        <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 16 : 24 }}>
           <h4 style={{ margin: "0 0 12px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>카테고리별 예산 vs 실적</h4>
           <LazyChart height={300}>
             <ResponsiveContainer width="100%" height="100%">

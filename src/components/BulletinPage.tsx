@@ -2058,13 +2058,13 @@ export function BulletinPage() {
             const max = isFour ? FOUR_WORSHIP_TOTAL_MAX : WORSHIP_TOTAL_MAX;
             const trimmed = v.length > max - other ? v.slice(0, max - other) : v;
             return { ...c, worship: { ...c.worship, praise: trimmed } };
-          })} placeholder="찬양곡 목록" /><div style={{ fontSize: 11, color: "#999", marginTop: 4 }}>{(w?.praise?.length ?? 0)}자</div></></FormField>
+          })} placeholder="찬양곡 목록" /><div style={{ fontSize: 11, color: "var(--color-text-faint)", marginTop: 4 }}>{(w?.praise?.length ?? 0)}자</div></></FormField>
           <FormField label="특송/특별순서"><><FInput value={w?.special || ""} onChange={v => setCurrent(c => {
             const other = (c.worship?.worshipOrder?.length ?? 0) + (c.worship?.praise?.length ?? 0) + (isFour ? (c.pastor?.column?.length ?? 0) : 0);
             const max = isFour ? FOUR_WORSHIP_TOTAL_MAX : WORSHIP_TOTAL_MAX;
             const trimmed = v.length > max - other ? v.slice(0, max - other) : v;
             return { ...c, worship: { ...c.worship, special: trimmed } };
-          })} placeholder="특송 - OOO" /><div style={{ fontSize: 11, color: "#999", marginTop: 4 }}>{(w?.special?.length ?? 0)}자</div></>                            </FormField>
+          })} placeholder="특송 - OOO" /><div style={{ fontSize: 11, color: "var(--color-text-faint)", marginTop: 4 }}>{(w?.special?.length ?? 0)}자</div></>                            </FormField>
         </>);
       })();
     case "sermon":
@@ -2123,7 +2123,7 @@ export function BulletinPage() {
             if (!dept) return null;
             return (
               <div key={dKey} style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 4 }}>—— {dept.name} ——</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-muted)", marginBottom: 4 }}>—— {dept.name} ——</div>
                 <FormField label="">
                   <><FTextarea value={deptData[dKey] ?? ""} onChange={v => setCurrent(c => {
                     const data = c.departments?.data ?? {};
@@ -2143,7 +2143,7 @@ export function BulletinPage() {
         <FormField label="헌금 계좌"><textarea className="w-full box-border border rounded-lg p-2 text-sm" rows={2} value={db.settings.account || ""} onChange={e => setDb(p => ({ ...p, settings: { ...p.settings, account: e.target.value } }))} /></FormField>
         <FormField label="교회 주소"><FInput value={db.settings.address || ""} onChange={v => setDb(p => ({ ...p, settings: { ...p.settings, address: v } }))} /></FormField>
         <FormField label="전화번호"><FInput value={db.settings.phone || ""} onChange={v => setDb(p => ({ ...p, settings: { ...p.settings, phone: v } }))} /></FormField>
-        <p style={{ fontSize: 11, color: "#999", marginTop: 8 }}>※ 설정 페이지에서도 수정할 수 있습니다</p>
+        <p style={{ fontSize: 11, color: "var(--color-text-faint)", marginTop: 8 }}>※ 설정 페이지에서도 수정할 수 있습니다</p>
       </>);
     default:
       return null;
@@ -2372,7 +2372,7 @@ export function BulletinPage() {
             flexDirection: "column",
             alignItems: "center",
             padding: "24px 16px",
-            backgroundColor: "#ffffff",
+            backgroundColor: "var(--color-surface)",
           }}
         >
           <div
@@ -2542,14 +2542,14 @@ export function BulletinPage() {
                       ...(mob
                         ? {
                             overflow: "visible" as const,
-                            backgroundColor: "#ffffff",
+                            backgroundColor: "var(--color-surface)",
                             border: "none",
                           }
                         : {
                             minHeight: ps.minHeight,
-                            backgroundColor: "#ffffff",
+                            backgroundColor: "var(--color-surface)",
                             borderRadius: 4,
-                            border: "1px solid #e8e9f0",
+                            border: "1px solid var(--color-border)",
                           }),
                       padding: ps.padding,
                       flexShrink: 0,
@@ -2649,14 +2649,14 @@ export function BulletinPage() {
                         key={c.label}
                         style={{
                           flex: 1,
-                          background: "#fff",
+                          background: "var(--color-surface)",
                           borderRadius: 10,
                           padding: "12px 16px",
-                          border: "1px solid #e8e9f0",
+                          border: "1px solid var(--color-border)",
                         }}
                       >
                         <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{c.label}</div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2937" }}>{c.value}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>{c.value}</div>
                       </div>
                     ))}
                   </div>
@@ -2669,14 +2669,14 @@ export function BulletinPage() {
                         key={c.label}
                         style={{
                           flex: 1,
-                          background: "#fff",
+                          background: "var(--color-surface)",
                           borderRadius: 10,
                           padding: "12px 16px",
-                          border: "1px solid #e8e9f0",
+                          border: "1px solid var(--color-border)",
                         }}
                       >
                         <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{c.label}</div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2937" }}>{c.value}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>{c.value}</div>
                       </div>
                     ))}
                   </div>
@@ -2792,7 +2792,7 @@ export function BulletinPage() {
                           height: 32,
                           border: "1px solid #d1d5db",
                           borderRadius: 6,
-                          background: "#fff",
+                          background: "var(--color-surface)",
                           fontSize: 16,
                           cursor: "pointer",
                           display: "flex",
@@ -2817,7 +2817,7 @@ export function BulletinPage() {
                           height: 32,
                           border: "1px solid #d1d5db",
                           borderRadius: 6,
-                          background: "#fff",
+                          background: "var(--color-surface)",
                           fontSize: 16,
                           cursor: "pointer",
                           display: "flex",
@@ -2843,7 +2843,7 @@ export function BulletinPage() {
                           padding: "4px 10px",
                           border: "1px solid #d1d5db",
                           borderRadius: 6,
-                          background: "#fff",
+                          background: "var(--color-surface)",
                           fontSize: 12,
                           fontWeight: 600,
                           cursor: "pointer",
@@ -2859,7 +2859,7 @@ export function BulletinPage() {
                           padding: "4px 10px",
                           border: "1px solid #d1d5db",
                           borderRadius: 6,
-                          background: "#fff",
+                          background: "var(--color-surface)",
                           fontSize: 12,
                           fontWeight: 600,
                           cursor: "pointer",
@@ -2875,7 +2875,7 @@ export function BulletinPage() {
                           padding: "4px 10px",
                           border: "1px solid #d1d5db",
                           borderRadius: 6,
-                          background: "#fff",
+                          background: "var(--color-surface)",
                           fontSize: 12,
                           fontWeight: 600,
                           cursor: "pointer",
@@ -3045,7 +3045,7 @@ export function BulletinPage() {
                       flexDirection: "column",
                       alignItems: "center",
                       padding: "24px 16px",
-                      backgroundColor: "#ffffff",
+                      backgroundColor: "var(--color-surface)",
                     }}
                   >
                     <div
@@ -3095,7 +3095,7 @@ export function BulletinPage() {
                   {mobileDesignOpen && (() => {
                     const currentDecor = db.current.coverDecor ?? (TEMPLATES.find(t => t.id === db.current.template) || TEMPLATES[0]).decorStyle;
                     return (
-                      <div style={{ padding: "10px 8px", background: "#fff", maxHeight: "60vh", overflowY: "auto" }}>
+                      <div style={{ padding: "10px 8px", background: "var(--color-surface)", maxHeight: "60vh", overflowY: "auto" }}>
                         <div style={{ marginBottom: 16 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>표지 이미지</div>
                           {db.current.coverImage ? (
@@ -3154,8 +3154,8 @@ export function BulletinPage() {
                               <button key={t.id} type="button"
                                 onClick={() => setDb(p => ({ ...p, current: { ...p.current, template: t.id } }))}
                                 style={{
-                                  padding: 4, border: db.current.template === t.id ? "2px solid #3b82f6" : "1px solid #e8e9f0",
-                                  borderRadius: 6, background: "#fff", cursor: "pointer",
+                                  padding: 4, border: db.current.template === t.id ? "2px solid var(--color-primary)" : "1px solid #e8e9f0",
+                                  borderRadius: 6, background: "var(--color-surface)", cursor: "pointer",
                                 }}>
                                 <div style={{ display: "flex", gap: 2, justifyContent: "center", marginBottom: 2 }}>
                                   <div style={{ width: 10, height: 10, borderRadius: "50%", background: t.accent }} />
@@ -3176,7 +3176,7 @@ export function BulletinPage() {
                               return (
                                 <button key={d.id} type="button"
                                   onClick={() => setDb(p => ({ ...p, current: { ...p.current, coverDecor: d.id } }))}
-                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #e8e9f0", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
+                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid var(--color-primary)" : "1px solid #e8e9f0", borderRadius: 6, background: "var(--color-surface)", cursor: "pointer" }}>
                                   <div style={{ width: "100%", aspectRatio: "1", borderRadius: 4, position: "relative", overflow: "hidden", marginBottom: 2, background: tpl.headerBg, border: `1px solid ${tpl.borderColor}` }}>
                                     {d.id !== "none" && previewHtml ? <div style={{ position: "absolute", inset: 0, opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: previewHtml }} /> : null}
                                   </div>
@@ -3195,7 +3195,7 @@ export function BulletinPage() {
                               return (
                                 <button key={d.id} type="button"
                                   onClick={() => setDb(p => ({ ...p, current: { ...p.current, coverDecor: d.id } }))}
-                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid #3b82f6" : "1px solid #e8e9f0", borderRadius: 6, background: "#fff", cursor: "pointer" }}>
+                                  style={{ padding: 4, border: currentDecor === d.id ? "2px solid var(--color-primary)" : "1px solid #e8e9f0", borderRadius: 6, background: "var(--color-surface)", cursor: "pointer" }}>
                                   <div style={{ width: "100%", aspectRatio: "1", borderRadius: 4, position: "relative", overflow: "hidden", marginBottom: 2, background: tpl.headerBg, border: `1px solid ${tpl.borderColor}` }}>
                                     {previewHtml ? <div style={{ position: "absolute", inset: 0, opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: previewHtml }} /> : null}
                                   </div>
@@ -3212,7 +3212,7 @@ export function BulletinPage() {
                             onChange={(e) => setCurrent(c => ({ ...c, youtubeUrl: e.target.value }))}
                             style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
                           {extractYoutubeId(db.current.youtubeUrl ?? "") && (
-                            <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #e8e9f0" }}>
+                            <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid var(--color-border)" }}>
                               <img src={`https://img.youtube.com/vi/${extractYoutubeId(db.current.youtubeUrl ?? "")}/mqdefault.jpg`} alt="YouTube 썸네일" style={{ width: "100%", display: "block" }} />
                             </div>
                           )}
@@ -3311,7 +3311,7 @@ export function BulletinPage() {
                   display: "flex",
                   overflowX: "auto",
                   borderBottom: "1px solid #e8e9f0",
-                  background: "#fff",
+                  background: "var(--color-surface)",
                   padding: "0 2px",
                   flexShrink: 0,
                   gap: 0,
@@ -3359,19 +3359,19 @@ export function BulletinPage() {
                   flexShrink: 0,
                 }}>
                   <button type="button" onClick={() => { setMobilePreviewScale(s => Math.max(0.3, +(s - 0.1).toFixed(1))); setMobilePan({ x: 0, y: 0 }); }}
-                    style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                    style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "var(--color-surface)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
                   <span style={{ fontSize: 13, color: "#374151", minWidth: 40, textAlign: "center" }}>
                     {Math.round(mobilePreviewScale * 100)}%
                   </span>
                   <button type="button" onClick={() => { setMobilePreviewScale(s => Math.min(2, +(s + 0.1).toFixed(1))); setMobilePan({ x: 0, y: 0 }); }}
-                    style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                    style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 6, background: "var(--color-surface)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
                   <button type="button" onClick={() => {
                     const cw = typeof window !== "undefined" ? window.innerWidth - 32 : 360;
                     const cellW = printFormat === "fold3" ? 378 : printFormat === "fold2" ? 378 : 595;
                     setMobilePreviewScale(+(Math.min(1.5, cw / cellW).toFixed(2)));
                     setMobilePan({ x: 0, y: 0 });
                   }}
-                    style={{ padding: "4px 12px", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", fontSize: 12, cursor: "pointer" }}>맞춤</button>
+                    style={{ padding: "4px 12px", border: "1px solid #d1d5db", borderRadius: 6, background: "var(--color-surface)", fontSize: 12, cursor: "pointer" }}>맞춤</button>
                 </div>
                 </>)}
                 {mobileKbOpen ? (
@@ -3508,7 +3508,7 @@ export function BulletinPage() {
                     <div
                       onClick={(e) => e.stopPropagation()}
                       style={{
-                        background: "#fff",
+                        background: "var(--color-surface)",
                         borderRadius: 12,
                         padding: 12,
                         maxWidth: "90vw",
@@ -3557,7 +3557,7 @@ export function BulletinPage() {
                   </div>
                 )}
                 {/* 출력 형식 — 아코디언 스타일 통일 */}
-                <div style={{ background: "#fff", borderRadius: 12, marginBottom: 8, border: "1px solid #e8e9f0", overflow: "hidden" }}>
+                <div style={{ background: "var(--color-surface)", borderRadius: 12, marginBottom: 8, border: "1px solid var(--color-border)", overflow: "hidden" }}>
                   <button
                     type="button"
                     onClick={() => setShowFormatPanel(prev => !prev)}
@@ -3565,7 +3565,7 @@ export function BulletinPage() {
                   >
                     <span>출력 형식</span>
                     <span style={{ transform: showFormatPanel ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-flex" }}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#999" }}><path d="m6 9 6 6 6-6"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--color-text-faint)" }}><path d="m6 9 6 6 6-6"/></svg>
                     </span>
                   </button>
                   {showFormatPanel && (
@@ -3767,7 +3767,7 @@ export function BulletinPage() {
                           }}
                         />
                         {extractYoutubeId(db.current.youtubeUrl ?? "") && (
-                          <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid #e8e9f0" }}>
+                          <div style={{ marginTop: 8, borderRadius: 8, overflow: "hidden", border: "1px solid var(--color-border)" }}>
                             <img src={`https://img.youtube.com/vi/${extractYoutubeId(db.current.youtubeUrl ?? "")}/mqdefault.jpg`} alt="YouTube 썸네일" style={{ width: "100%", display: "block" }} />
                           </div>
                         )}
@@ -3785,11 +3785,11 @@ export function BulletinPage() {
                     const desc = item.desc;
                     const keys = "keys" in item ? item.keys : undefined;
                     return (
-                      <div key={displayKey} style={{ background: "#fff", borderRadius: 12, marginBottom: mob ? 8 : 12, border: "1px solid #e8e9f0", overflow: "hidden" }}>
+                      <div key={displayKey} style={{ background: "var(--color-surface)", borderRadius: 12, marginBottom: mob ? 8 : 12, border: "1px solid var(--color-border)", overflow: "hidden" }}>
                         <button type="button" onClick={() => toggleSection(displayKey)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: mob ? "14px 16px" : "16px 20px", background: "none", border: "none", cursor: "pointer", fontSize: mob ? 14 : 16, fontWeight: 700, color: "#1a1a1a" }}>
                           <span>{name}</span>
                           <span style={{ transform: (openSections[displayKey] ?? false) ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-flex" }}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#999" }}><path d="m6 9 6 6 6-6"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--color-text-faint)" }}><path d="m6 9 6 6 6-6"/></svg>
                           </span>
                         </button>
                         {(openSections[displayKey] ?? false) && (
@@ -3939,7 +3939,7 @@ export function BulletinPage() {
         </div>
 
       {showFullPreview && (
-        <div className="fixed inset-0 z-[9999]" style={{ backgroundColor: "#ffffff", display: "flex", flexDirection: "column" }}>
+        <div className="fixed inset-0 z-[9999]" style={{ backgroundColor: "var(--color-surface)", display: "flex", flexDirection: "column" }}>
           <div
             style={{
               display: "flex",
@@ -3947,11 +3947,11 @@ export function BulletinPage() {
               justifyContent: "space-between",
               padding: "8px 12px",
               borderBottom: "1px solid #e8e9f0",
-              backgroundColor: "#ffffff",
+              backgroundColor: "var(--color-surface)",
               flexShrink: 0,
             }}
           >
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#1f2937" }}>주보 미리보기</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>주보 미리보기</span>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <button
                 type="button"
@@ -3965,7 +3965,7 @@ export function BulletinPage() {
                   padding: "4px 10px",
                   border: "1px solid #d1d5db",
                   borderRadius: 6,
-                  background: "#fff",
+                  background: "var(--color-surface)",
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -3999,7 +3999,7 @@ export function BulletinPage() {
                   padding: "4px 10px",
                   borderRadius: 6,
                   border: "1px solid #d1d5db",
-                  background: "#fff",
+                  background: "var(--color-surface)",
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -4029,7 +4029,7 @@ export function BulletinPage() {
                 height: 32,
                 border: "1px solid #d1d5db",
                 borderRadius: 6,
-                background: "#fff",
+                background: "var(--color-surface)",
                 fontSize: 16,
                 cursor: "pointer",
                 display: "flex",
@@ -4050,7 +4050,7 @@ export function BulletinPage() {
                 height: 32,
                 border: "1px solid #d1d5db",
                 borderRadius: 6,
-                background: "#fff",
+                background: "var(--color-surface)",
                 fontSize: 16,
                 cursor: "pointer",
                 display: "flex",
@@ -4084,9 +4084,9 @@ export function BulletinPage() {
                 className="bulletin-page-content"
                 style={{
                   width: bulletinFormatDisplay === "6면" ? 1134 : bulletinFormatDisplay === "4면" ? 756 : 595,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--color-surface)",
                   padding: bulletinFormatDisplay === "온라인" ? 40 : 0,
-                  border: "1px solid #e8e9f0",
+                  border: "1px solid var(--color-border)",
                   borderRadius: 4,
                   flexShrink: 0,
                   transformOrigin: "top left",
@@ -4203,11 +4203,11 @@ export function BulletinPage() {
         .bulletin-page-content .bp-empty { color:#aaa; text-align:center; padding:16px; font-size:9.5px; font-style:italic; }
 
         /* ==================== TRI-FOLD (3면 접지) ==================== */
-        .bulletin-page-content .bp-tri { display:flex; flex-direction:column; align-items:center; gap:20px; padding:4px; font-family:'Noto Serif KR','Batang',Georgia,serif; }
-        .bulletin-page-content .bp-tri .bp-spread { box-shadow:0 3px 20px rgba(0,0,0,.1); border-radius:2px; overflow:hidden; width:720px; }
+        .bulletin-page-content .bp-tri { display:flex; flex-direction:column; align-items:stretch; gap:28px; padding:0; width:100%; font-family:'Noto Serif KR','Batang',Georgia,serif; }
+        .bulletin-page-content .bp-tri .bp-spread { box-shadow:0 3px 20px rgba(0,0,0,.1); border-radius:2px; overflow:hidden; width:100%; background:#fff; }
         .bulletin-page-content .bp-spread { height:480px; overflow:hidden; }
         .bulletin-page-content .print-cell { height:480px; overflow:hidden; }
-        .bulletin-page-content .tp { width:100%; min-height:530px; background:#fff; border-right:1px dashed #d0d0d0; box-sizing:border-box; position:relative; overflow:hidden; }
+        .bulletin-page-content .tp { width:100%; height:100%; min-height:100%; background:#fff; border-right:none; box-sizing:border-box; position:relative; overflow:hidden; }
         .bulletin-page-content .tp:last-child { border-right:none; }
         .bulletin-page-content .tp-cover { display:flex; align-items:center; justify-content:center; }
         .bulletin-page-content .tp-bg { position:absolute; inset:0; }
@@ -4245,7 +4245,7 @@ export function BulletinPage() {
         [data-bview="outside"] .bp-tri-in { display:none !important; }
         [data-bview="inside"] .bp-tri-out { display:none !important; }
 
-        .bulletin-page-content .bp-cell { padding:16px; overflow:auto; box-sizing:border-box; border-right:1px dashed #e8e9f0; }
+        .bulletin-page-content .bp-cell { padding:0; overflow:hidden; box-sizing:border-box; border-right:1px dashed #d0d0d0; background:#fff; }
         .bulletin-page-content .bp-cell:last-child { border-right:none; }
 
         /* ==================== HALF-FOLD (2면 접지) ==================== */

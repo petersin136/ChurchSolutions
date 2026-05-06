@@ -13,11 +13,11 @@ import {
 } from "recharts";
 import LazyChart from "../common/LazyChart";
 
-const NAVY = "#2563eb";
-const MUTED_LINE = "#6b7b9e";
-const BORDER = "#e2e5ef";
-const LABEL_SUB = "#6b7b9e";
-const LABEL_SMALL = "#999";
+const NAVY = "var(--color-primary)";
+const MUTED_LINE = "var(--color-text-muted)";
+const BORDER = "var(--color-border)";
+const LABEL_SUB = "var(--color-text-muted)";
+const LABEL_SMALL = "var(--color-text-faint)";
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 function useIsMobile(bp = 768) {
@@ -95,7 +95,7 @@ export function FinanceDashboard({
   const cardBase: CSSProperties = {
     padding: mob ? "8px 10px" : "16px 20px",
     minHeight: mob ? 56 : 90,
-    background: "#fff",
+    background: "var(--color-surface)",
     border: `1px solid ${BORDER}`,
     borderRadius: mob ? 8 : 16,
     display: "flex",
@@ -133,12 +133,12 @@ export function FinanceDashboard({
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 24 }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 24 }}>
         <h4 style={{ margin: mob ? "0 0 10px" : "0 0 16px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>월별 수입/지출 추이</h4>
         <LazyChart height={260}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={monthlyTrend} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e5ef" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
               <XAxis dataKey="month" tick={{ fontSize: 9, fill: LABEL_SMALL }} />
               <YAxis tick={{ fontSize: 9, fill: LABEL_SMALL }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
               <Tooltip formatter={(value) => [`₩${fmt(Number(value))}`, ""]} />
