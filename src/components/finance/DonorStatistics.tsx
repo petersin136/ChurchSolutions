@@ -155,22 +155,22 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(4, 1fr)", gap: mob ? 8 : 16 }}>
         <div
           style={{
-            background: "#fff",
+            background: "var(--color-surface)",
             borderRadius: mob ? 8 : 16,
-            border: "1px solid #e2e5ef",
+            border: "1px solid var(--color-border)",
             padding: mob ? "8px 10px" : "16px 20px",
             minHeight: mob ? 56 : 90,
             boxSizing: "border-box",
           }}
         >
           <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", marginBottom: 4 }}>총 헌금자 수</div>
-          <div style={{ fontSize: mob ? 20 : 26, fontWeight: mob ? 800 : 700, color: "#2563eb", lineHeight: 1.2 }}>{donorList.length}명</div>
+          <div style={{ fontSize: mob ? 20 : 26, fontWeight: mob ? 800 : 700, color: "var(--color-primary)", lineHeight: 1.2 }}>{donorList.length}명</div>
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--color-surface)",
             borderRadius: mob ? 8 : 16,
-            border: "1px solid #e2e5ef",
+            border: "1px solid var(--color-border)",
             padding: mob ? "8px 10px" : "16px 20px",
             minHeight: mob ? 56 : 90,
             boxSizing: "border-box",
@@ -182,7 +182,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
             style={{
               fontSize: mob ? 20 : 26,
               fontWeight: mob ? 800 : 700,
-              color: "#2563eb",
+              color: "var(--color-primary)",
               lineHeight: 1.2,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -195,9 +195,9 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--color-surface)",
             borderRadius: mob ? 8 : 16,
-            border: "1px solid #e2e5ef",
+            border: "1px solid var(--color-border)",
             padding: mob ? "6px 8px" : "16px 20px",
             minHeight: mob ? 48 : 90,
             boxSizing: "border-box",
@@ -205,39 +205,39 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
           }}
         >
           <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", marginBottom: 2 }}>1인당 평균</div>
-          <div style={{ fontSize: mob ? 16 : 22, fontWeight: mob ? 800 : 700, color: "#2563eb", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>₩{fmt(avgPerDonor)}</div>
+          <div style={{ fontSize: mob ? 16 : 22, fontWeight: mob ? 800 : 700, color: "var(--color-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>₩{fmt(avgPerDonor)}</div>
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--color-surface)",
             borderRadius: mob ? 8 : 16,
-            border: "1px solid #e2e5ef",
+            border: "1px solid var(--color-border)",
             padding: mob ? "6px 8px" : "16px 20px",
             minHeight: mob ? 48 : 90,
             boxSizing: "border-box",
           }}
         >
           <div style={{ fontSize: mob ? 10 : 13, color: "#6b7b9e", marginBottom: 2 }}>신규 헌금자 (올해)</div>
-          <div style={{ fontSize: mob ? 16 : 22, fontWeight: mob ? 800 : 700, color: "#2563eb" }}>{newDonorsThisYear}명</div>
+          <div style={{ fontSize: mob ? 16 : 22, fontWeight: mob ? 800 : 700, color: "var(--color-primary)" }}>{newDonorsThisYear}명</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 lg:p-6">
-          <h4 className="font-semibold text-[#2563eb] mb-4 text-sm lg:text-base">월별 헌금자 수</h4>
+          <h4 className="font-semibold text-[var(--color-primary)] mb-4 text-sm lg:text-base">월별 헌금자 수</h4>
           <LazyChart height={mob ? 200 : 300}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyDonorCount}>
                 <XAxis dataKey="month" tick={{ fontSize: mob ? 10 : 12 }} />
                 <YAxis tick={{ fontSize: mob ? 10 : 12 }} />
                 <Tooltip />
-                <Bar dataKey="인원" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="인원" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </LazyChart>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 lg:p-6">
-          <h4 className="font-semibold text-[#2563eb] mb-4 text-sm lg:text-base">헌금 구간별 분포</h4>
+          <h4 className="font-semibold text-[var(--color-primary)] mb-4 text-sm lg:text-base">헌금 구간별 분포</h4>
           <LazyChart height={mob ? 200 : 300}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={bracketDist}>
@@ -253,7 +253,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-4 py-3 lg:px-5 border-b border-gray-100 flex items-center justify-between gap-4">
-          <h4 className="font-semibold text-[#2563eb] text-sm lg:text-base">헌금자 목록</h4>
+          <h4 className="font-semibold text-[var(--color-primary)] text-sm lg:text-base">헌금자 목록</h4>
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="이름/부서 검색" className="px-3 py-2 rounded-lg border border-gray-200 text-sm lg:text-base w-48 lg:w-64" />
         </div>
         <div className="overflow-x-auto">
@@ -278,7 +278,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
                     <td className="py-2 px-3 lg:py-3 lg:px-4 text-right font-semibold">₩{fmt(d.total)}</td>
                     <td className="py-2 px-3 lg:py-3 lg:px-4 text-right text-gray-600">{pct}%</td>
                     <td className="py-2 px-3 lg:py-3 lg:px-4 text-center no-print">
-                      <button type="button" onClick={() => setPrintDonor({ id: d.id, name: d.name, total: d.total, byCat: d.byCat ?? {} })} className="text-xs text-[#2563eb] hover:underline">
+                      <button type="button" onClick={() => setPrintDonor({ id: d.id, name: d.name, total: d.total, byCat: d.byCat ?? {} })} className="text-xs text-[var(--color-primary)] hover:underline">
                         영수증 발행
                       </button>
                     </td>

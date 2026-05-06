@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { DB, Attendance, Income, Expense, Settings, Member } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useTheme, type ThemeColor } from "@/contexts/ThemeContext";
 import { getChurchId } from "@/lib/tenant";
 import { StatisticsDashboard } from "@/components/statistics/StatisticsDashboard";
 import { WeeklyReport } from "@/components/reports/WeeklyReport";
@@ -14,7 +15,7 @@ import { VisitPlanReport } from "@/components/reports/VisitPlanReport";
 import { UpcomingEvents } from "@/components/reports/UpcomingEvents";
 import { AttendanceStatistics } from "@/components/attendance/AttendanceStatistics";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { BarChart3, Banknote, Bell, Building2, CalendarDays, CalendarRange, ChevronRight, ClipboardList, Database, FileBarChart, FileText, Home, LayoutDashboard, MessageCircle, Receipt, Sprout, UserCheck, UserX, Users, Wallet } from "lucide-react";
+import { BarChart3, Banknote, Bell, Building2, CalendarDays, CalendarRange, ChevronRight, ClipboardList, Database, FileBarChart, FileText, Home, LayoutDashboard, MessageCircle, Moon, Palette, Receipt, Sprout, UserCheck, UserX, Users, Wallet } from "lucide-react";
 import { PcButton, PcCard, PcInput, PcSegmented, PcTabs } from "@/components/ui";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
@@ -22,7 +23,7 @@ import { getSundayForWeekNum, saveSettingsToSupabase } from "@/lib/store";
 import settingsStyles from "./ReportsSettingsPage.module.css";
 import reportItemStyles from "./ReportItemCard.module.css";
 
-const NAVY = "#2563eb";
+const NAVY = "var(--color-primary)";
 const MUTED = "#6b7b9e";
 const SUB = "#999";
 const TEXT = "#555";
@@ -250,6 +251,115 @@ function DataBackupPanel({
         <PcButton type="button" variant="danger" fullWidth onClick={clearAllData} disabled={resetLoading}>
           {resetLoading ? "처리 중…" : "전체 초기화"}
         </PcButton>
+      </div>
+    </PcCard>
+  );
+}
+
+const THEME_OPTIONS: { id: ThemeColor; label: string; color: string }[] = [
+  { id: "orange", label: "오렌지", color: "#E76F51" },
+  { id: "blue", label: "블루", color: "#2563eb" },
+  { id: "green", label: "그린", color: "#16a34a" },
+  { id: "purple", label: "퍼플", color: "#7c5ce0" },
+];
+
+function ThemeSettingsCard() {
+  const { theme, mode, setTheme, setMode } = useTheme();
+  const dark = mode === "dark";
+
+  return (
+    <PcCard padding="lg" elevation="sm" className={settingsStyles.settingCard}>
+      <div className={settingsStyles.settingsCardHead}>
+        <div className={settingsStyles.settingsIconBox}>
+          <Palette size={24} aria-hidden />
+        </div>
+        <div className={settingsStyles.settingsHeadText}>
+          <h3 className={settingsStyles.settingsHeadTitle}>테마</h3>
+          <p className={settingsStyles.settingsHeadDesc}>앱 전체 색상과 라이트·다크 모드를 설정합니다.</p>
+        </div>
+      </div>
+      <hr className={settingsStyles.settingsDivider} />
+      <div className={settingsStyles.settingsStack}>
+        <div>
+          <div className={settingsStyles.toggleLabel} style={{ marginBottom: 10 }}>테마 색상</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(96px, 1fr))", gap: 8 }}>
+            {THEME_OPTIONS.map((option) => {
+              const selected = theme === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setTheme(option.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    height: 40,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: selected ? `2px solid ${option.color}` : "1px solid var(--color-border)",
+                    background: selected ? "var(--color-primary-soft)" : "var(--color-surface)",
+                    color: "var(--color-text)",
+                    fontSize: 13,
+                    fontWeight: selected ? 700 : 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <span style={{ width: 16, height: 16, borderRadius: "50%", background: option.color, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.08)" }} />
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMode(dark ? "light" : "dark")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            width: "100%",
+            minHeight: 44,
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: "1px solid var(--color-border)",
+            background: "var(--color-surface)",
+            color: "var(--color-text)",
+            cursor: "pointer",
+            fontFamily: "inherit",
+          }}
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700 }}>
+            <Moon size={16} aria-hidden />
+            다크 모드
+          </span>
+          <span
+            aria-hidden
+            style={{
+              width: 44,
+              height: 24,
+              padding: 2,
+              borderRadius: 999,
+              background: dark ? "var(--color-primary)" : "var(--color-border-strong)",
+              transition: "background 0.15s",
+            }}
+          >
+            <span
+              style={{
+                display: "block",
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                background: "var(--color-primary-on)",
+                transform: dark ? "translateX(20px)" : "translateX(0)",
+                transition: "transform 0.15s",
+              }}
+            />
+          </span>
+        </button>
       </div>
     </PcCard>
   );
@@ -692,7 +802,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
-      color: #2563eb;
+      color: var(--color-primary);
       padding: 0;
       margin: 0;
     }
@@ -706,7 +816,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
       font-size: 11px;
     }
     th {
-      border-bottom: 2px solid #2563eb;
+      border-bottom: 2px solid var(--color-primary);
       font-weight: 700;
     }
     td {
@@ -1149,7 +1259,7 @@ ${printArea.innerHTML}
                                 className={`${reportItemStyles.button}${selected ? ` ${reportItemStyles.buttonSelected}` : ""}`}
                                 onClick={() => setSelectedReport(item)}
                               >
-                                <span className={reportItemStyles.iconBox} style={{ background: tone.soft, color: tone.main }}>
+                                <span className={reportItemStyles.iconBox} style={{ background: tone.soft, color: tone.main, border: "1px solid var(--color-border)" }}>
                                   <ItemIcon size={24} />
                                 </span>
                                 <span className={reportItemStyles.textBox}>
@@ -1254,6 +1364,7 @@ ${printArea.innerHTML}
           {showSettingsSection ? (
           <section className={settingsStyles.settingsSection} aria-label="설정">
             <h2 className={settingsStyles.settingsHeading}>설정</h2>
+            <ThemeSettingsCard />
             <ChurchInfoSettingsCard db={db} setDb={setDb} save={save} toast={toast} />
             <NotificationSettingsCard db={db} setDb={setDb} save={save} />
             <DataBackupPanel db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />

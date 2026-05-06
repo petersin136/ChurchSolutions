@@ -63,7 +63,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
           zIndex: 10001,
           width: "min(900px, 90vw)",
           maxHeight: "80vh",
-          background: "#fff",
+          background: "var(--color-surface)",
           borderRadius: 16,
           boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
           display: "flex",
@@ -82,7 +82,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
             flexShrink: 0,
           }}
         >
-          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#1F2937" }}>{title}</h3>
+          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--color-text)" }}>{title}</h3>
           <div style={{ display: "flex", gap: 8 }}>
             <button
               type="button"
@@ -122,7 +122,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
           }}
         >
           {data.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 48, color: "#9CA3AF", fontSize: 15 }}>
+            <div style={{ textAlign: "center", padding: 48, color: "var(--color-text-faint)", fontSize: 15 }}>
               데이터가 없습니다.
             </div>
           ) : (
@@ -140,7 +140,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
                         padding: "12px 16px",
                         fontSize: 13,
                         fontWeight: 600,
-                        color: "#6B7280",
+                        color: "var(--color-text-muted)",
                         textAlign: col.align || "left",
                         borderBottom: "2px solid #e2e5ef",
                         whiteSpace: "nowrap",
@@ -204,7 +204,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
               flexShrink: 0,
             }}
           >
-            <span style={{ fontSize: 13, color: "#9CA3AF" }}>
+            <span style={{ fontSize: 13, color: "var(--color-text-faint)" }}>
               총 {data.length}건 중 {safePage} 페이지
             </span>
             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
@@ -213,7 +213,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
               </PgBtn>
               {getVisiblePages(safePage, totalPages).map((p, i) =>
                 p === "..." ? (
-                  <span key={`e${i}`} style={{ padding: "0 4px", color: "#6B7280", fontSize: 13 }}>…</span>
+                  <span key={`e${i}`} style={{ padding: "0 4px", color: "var(--color-text-muted)", fontSize: 13 }}>…</span>
                 ) : (
                   <PgBtn key={p} active={p === safePage} onClick={() => { setPage(p as number); scrollRef.current?.scrollTo(0, 0); }}>
                     {p}

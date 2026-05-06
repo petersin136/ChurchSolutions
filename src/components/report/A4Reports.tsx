@@ -62,19 +62,20 @@ function ReportPage({ children, pageNum, totalPages }: {
         minHeight: "297mm",
         height: "297mm",
         padding: "25mm 20mm 30mm 20mm",
-        backgroundColor: "white",
+        backgroundColor: "var(--color-surface)",
+        color: "var(--color-text)",
         position: "relative",
         overflow: "hidden",
         boxSizing: "border-box",
         marginBottom: 8,
-        boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.22)",
       }}
     >
       <div style={{ height: "100%", overflow: "hidden" }}>
         {children}
       </div>
       <div style={{ position: "absolute", bottom: "15mm", left: 0, right: 0, textAlign: "center" }}>
-        <span style={{ fontSize: 10, color: "#9ca3af", letterSpacing: "0.1em" }}>{pageNum} / {totalPages}</span>
+        <span style={{ fontSize: 10, color: "var(--color-text-faint)", letterSpacing: "0.1em" }}>{pageNum} / {totalPages}</span>
       </div>
     </div>
   );
@@ -87,18 +88,18 @@ function ReportPage({ children, pageNum, totalPages }: {
 function SectionTitle({ num, title }: { num: string; title: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, marginTop: 4 }}>
-      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", color: "#111" }}>{num}</span>
-      <span style={{ fontSize: 14, fontWeight: 700, color: "#111" }}>{title}</span>
-      <div style={{ flex: 1, height: 1, background: "#e2e5ef", marginLeft: 8 }} />
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", color: "var(--color-text)" }}>{num}</span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)" }}>{title}</span>
+      <div style={{ flex: 1, height: 1, background: "var(--color-border)", marginLeft: 8 }} />
     </div>
   );
 }
 
 function StatBox({ label, value, unit }: { label: string; value: string | number; unit: string }) {
   return (
-    <div style={{ padding: 14, border: "1px solid #e2e5ef", borderRadius: 6 }}>
-      <p style={{ fontSize: 10, color: "#6b7280", margin: "0 0 4px" }}>{label}</p>
-      <p style={{ fontSize: 22, fontWeight: 700, lineHeight: 1, margin: 0 }}>{value}<span style={{ fontSize: 11, fontWeight: 400, color: "#6b7280" }}>{unit}</span></p>
+    <div style={{ padding: 14, border: "1px solid var(--color-border)", borderRadius: 6 }}>
+      <p style={{ fontSize: 10, color: "var(--color-text-muted)", margin: "0 0 4px" }}>{label}</p>
+      <p style={{ fontSize: 22, fontWeight: 700, lineHeight: 1, margin: 0 }}>{value}<span style={{ fontSize: 11, fontWeight: 400, color: "var(--color-text-muted)" }}>{unit}</span></p>
     </div>
   );
 }
@@ -106,28 +107,28 @@ function StatBox({ label, value, unit }: { label: string; value: string | number
 function ReportHeader({ churchName, enTitle, krTitle, dateLabel }: { churchName: string; enTitle: string; krTitle: string; dateLabel: string }) {
   return (
     <div style={{ textAlign: "center", marginBottom: 32 }}>
-      <p style={{ fontSize: 10, letterSpacing: "0.2em", color: "#6b7280", textTransform: "uppercase" as const, margin: "0 0 8px" }}>{enTitle}</p>
+      <p style={{ fontSize: 10, letterSpacing: "0.2em", color: "var(--color-text-muted)", textTransform: "uppercase" as const, margin: "0 0 8px" }}>{enTitle}</p>
       <h1 style={{ fontSize: 26, fontWeight: 700, margin: "0 0 4px", letterSpacing: "-0.02em" }}>{churchName}</h1>
-      <div style={{ width: 40, height: 2, background: "#111", margin: "12px auto" }} />
-      <p style={{ fontSize: 13, color: "#374151", margin: "0 0 4px" }}>{krTitle}</p>
-      <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>{dateLabel}</p>
+      <div style={{ width: 40, height: 2, background: "var(--color-text)", margin: "12px auto" }} />
+      <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: "0 0 4px" }}>{krTitle}</p>
+      <p style={{ fontSize: 11, color: "var(--color-text-faint)", margin: 0 }}>{dateLabel}</p>
     </div>
   );
 }
 
 function ReportFooter({ churchName, reportTitle }: { churchName: string; reportTitle: string }) {
   return (
-    <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid #e2e5ef", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>{churchName} · {reportTitle}</p>
-      <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>생성일: {new Date().toLocaleDateString("ko-KR")}</p>
+    <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <p style={{ fontSize: 10, color: "var(--color-text-faint)", margin: 0 }}>{churchName} · {reportTitle}</p>
+      <p style={{ fontSize: 10, color: "var(--color-text-faint)", margin: 0 }}>생성일: {new Date().toLocaleDateString("ko-KR")}</p>
     </div>
   );
 }
 
 const TH: React.CSSProperties = { textAlign: "left", padding: "8px 6px", fontWeight: 600, fontSize: 11, letterSpacing: "0.05em" };
 const TH_C: React.CSSProperties = { textAlign: "center", padding: "8px 6px", fontWeight: 600, fontSize: 11 };
-const TD: React.CSSProperties = { padding: "6px", fontSize: 12, borderBottom: "1px solid #f3f4f6" };
-const TD_C: React.CSSProperties = { padding: "6px", fontSize: 12, textAlign: "center", borderBottom: "1px solid #f3f4f6" };
+const TD: React.CSSProperties = { padding: "6px", fontSize: 12, borderBottom: "1px solid var(--color-border)" };
+const TD_C: React.CSSProperties = { padding: "6px", fontSize: 12, textAlign: "center", borderBottom: "1px solid var(--color-border)" };
 const TBL: React.CSSProperties = { width: "100%", borderCollapse: "collapse", fontSize: 12 };
 
 /* ================================================================
@@ -244,7 +245,7 @@ export function WeeklyReport({ db, churchName, churchId }: { db: DB; churchName:
         ) : chunk.map((p, i) => (
           <div key={i} style={{ marginBottom: 14, paddingLeft: 12, borderLeft: "2px solid #d1d5db" }}>
             <p style={{ fontSize: 12, fontWeight: 600, margin: "0 0 2px" }}>{p.memberName}</p>
-            <p style={{ fontSize: 12, color: "#374151", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{p.content}</p>
+            <p style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{p.content}</p>
           </div>
         ))}
       </div>
@@ -350,7 +351,7 @@ export function MembersReport({ db, churchName }: { db: DB; churchName: string }
         <SectionTitle num="02" title="부서별 현황" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
           {Object.entries(deptMap).sort((a, b) => b[1] - a[1]).map(([dept, cnt]) => (
-            <div key={dept} style={{ padding: 12, border: "1px solid #e2e5ef", borderRadius: 8 }}>
+            <div key={dept} style={{ padding: 12, border: "1px solid var(--color-border)", borderRadius: 8 }}>
               <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 2px" }}>{dept}</p>
               <p style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{cnt}<span style={{ fontSize: 12, fontWeight: 400, color: "#6b7280" }}>명</span></p>
             </div>
@@ -643,7 +644,7 @@ export function PrayerReport({ db, churchName, churchId }: { db: DB; churchName:
                 <span style={{ fontSize: 10, color: "#9ca3af", whiteSpace: "nowrap", marginLeft: 8 }}>{p.dept}{p.dept && p.date ? " · " : ""}{p.date}</span>
               </div>
               <p style={{
-                fontSize: 12, color: "#374151", lineHeight: 1.8,
+                fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.8,
                 whiteSpace: "pre-wrap", wordBreak: "break-word", margin: "0 0 8px",
               }}>
                 {p.content}
@@ -704,7 +705,7 @@ export function ReportPreviewModal({
       const pageEls = reportRef.current.querySelectorAll("[data-report-page]");
 
       if (pageEls.length === 0) {
-        const canvas = await html2canvas(reportRef.current, { scale: 2, backgroundColor: "#ffffff" });
+        const canvas = await html2canvas(reportRef.current, { scale: 2, backgroundColor: "var(--color-surface)" });
         const pdf = new jsPDF("p", "mm", "a4");
         pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297);
         const date = new Date().toISOString().split("T")[0];
@@ -716,7 +717,7 @@ export function ReportPreviewModal({
       for (let i = 0; i < pageEls.length; i++) {
         if (i > 0) pdf.addPage();
         const canvas = await html2canvas(pageEls[i] as HTMLElement, {
-          scale: 2, backgroundColor: "#ffffff",
+          scale: 2, backgroundColor: "var(--color-surface)",
           width: (pageEls[i] as HTMLElement).scrollWidth,
           height: (pageEls[i] as HTMLElement).scrollHeight,
         });
@@ -735,28 +736,28 @@ export function ReportPreviewModal({
   const handlePrint = () => { window.print(); };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#e2e5ef", zIndex: 9999, display: "flex", flexDirection: "column" }}>
+    <div style={{ position: "fixed", inset: 0, background: "var(--color-surface-muted)", zIndex: 9999, display: "flex", flexDirection: "column" }}>
       {/* Toolbar */}
       <div style={{
-        background: "#fff", borderBottom: "1px solid #e2e5ef",
+        background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)",
         padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={onClose} style={{ padding: 8, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center" }}>
-            <ArrowLeft size={20} color="#4b5563" />
+          <button onClick={onClose} style={{ padding: 8, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", color: "var(--color-text-muted)" }}>
+            <ArrowLeft size={20} />
           </button>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{def.title}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>{def.title}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button onClick={handlePrint} style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, color: "#374151",
-            background: "#fff", border: "1px solid #d1d5db", borderRadius: 8, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, color: "var(--color-text)",
+            background: "var(--color-surface-elevated)", border: "1px solid var(--color-border)", borderRadius: 8, cursor: "pointer",
           }}>
             <Printer size={16} />인쇄
           </button>
           <button onClick={handleDownloadPDF} disabled={downloading} style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, color: "#fff",
-            background: downloading ? "#9ca3af" : "#111827", border: "none", borderRadius: 8, cursor: downloading ? "default" : "pointer",
+            display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, color: "var(--color-primary-on)",
+            background: downloading ? "var(--color-text-faint)" : "var(--color-primary)", border: "none", borderRadius: 8, cursor: downloading ? "default" : "pointer",
           }}>
             <Download size={16} />{downloading ? "생성중..." : "PDF 다운로드"}
           </button>

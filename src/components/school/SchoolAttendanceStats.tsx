@@ -133,16 +133,16 @@ export function SchoolAttendanceStats({ db, toast }: SchoolAttendanceStatsProps)
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as "week" | "month")}
-          style={{ height: 32, fontSize: 12, borderRadius: 6, border: `1px solid ${BORDER}`, padding: "0 8px", color: TEXT, background: "#fff" }}
+          style={{ height: 32, fontSize: 12, borderRadius: 6, border: `1px solid ${BORDER}`, padding: "0 8px", color: TEXT, background: "var(--color-surface)" }}
         >
           <option value="week">최근 7일</option>
           <option value="month">이번 달</option>
         </select>
       </div>
-      <div style={{ background: "#fff", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 16 }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: 8, border: `1px solid ${BORDER}`, padding: 16 }}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {stats.map((s) => (
-            <div key={s.department_id} style={{ padding: 10, borderRadius: 8, border: `1px solid ${BORDER}`, background: "#fff" }}>
+            <div key={s.department_id} style={{ padding: 10, borderRadius: 8, border: `1px solid ${BORDER}`, background: "var(--color-surface)" }}>
               <div style={{ fontWeight: 700, fontSize: 12, color: NAVY }}>{s.name}</div>
               <div style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>출석 {s.출석} / 총 {s.total}명 · 출석률 {s.rate}%</div>
               <div style={{ fontSize: 9, color: MUTED, marginTop: 2 }}>결석 {s.결석} · 병결 {s.병결} · 기타 {s.기타}</div>

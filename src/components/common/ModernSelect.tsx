@@ -80,7 +80,7 @@ export function ModernSelect({
   return (
     <div ref={ref} style={{ marginBottom: label ? 16 : 0, position: "relative", ...style }} className={className}>
       {label && (
-        <label htmlFor={id} style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#2563eb", marginBottom: 6 }}>
+        <label htmlFor={id} style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--color-primary)", marginBottom: 6 }}>
           {label}
         </label>
       )}

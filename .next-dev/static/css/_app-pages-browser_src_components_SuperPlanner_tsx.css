@@ -2094,7 +2094,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  background: #FFFFFF;
+  background: var(--pc-surface);
   border: 1px solid var(--pc-stat-card-border);
   border-radius: 12px;
   box-shadow: var(--pc-stat-card-shadow);
@@ -2132,14 +2132,14 @@
 .PcStatCard_label__KWeZc {
   font-size: 13px;
   font-weight: 500;
-  color: #6B6B6B;
+  color: var(--pc-text-sub);
   letter-spacing: -0.01em;
 }
 
 .PcStatCard_value__P1LBH {
   font-size: 28px;
   font-weight: 700;
-  color: #1A1A1A;
+  color: var(--pc-text-strong);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
@@ -2156,7 +2156,7 @@
 
 .PcStatCard_sub__GiFTc {
   font-size: 12px;
-  color: #6B6B6B;
+  color: var(--pc-text-sub);
 }
 
 .PcStatCard_trend__SxlFG {
@@ -2181,7 +2181,7 @@
   align-items: flex-start;
   gap: 14px;
   padding: 18px 20px;
-  background: #ffffff;
+  background: var(--pc-surface);
   border: 1px solid var(--pc-stat-card-border);
   border-radius: 14px;
   box-shadow: var(--pc-stat-card-shadow);
@@ -2446,7 +2446,11 @@
 
 .ReportsSettingsPage_settingCard__RcApw {
   position: relative;
-  border-left: 4px solid var(--pc-primary);
+  /* PcCard.root 의 `border: 1px solid …` 단축 속성이 border-left 를 덮어쓰므로, 테마 강조선이 보이도록 면별로 고정 */
+  border-top: 1px solid var(--pc-border) !important;
+  border-right: 1px solid var(--pc-border) !important;
+  border-bottom: 1px solid var(--pc-border) !important;
+  border-left: 4px solid var(--color-primary) !important;
   border-radius: var(--pc-radius-lg);
   background: var(--pc-bg);
   box-shadow:
@@ -2462,18 +2466,7 @@
     0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
-.ReportsSettingsPage_settingCard__RcApw:nth-child(1) {
-  border-left-color: var(--pc-primary);
-}
-
-.ReportsSettingsPage_settingCard__RcApw:nth-child(2) {
-  border-left-color: var(--pc-warning);
-}
-
-.ReportsSettingsPage_settingCard__RcApw:nth-child(3) {
-  border-left-color: var(--pc-success);
-}
-
+/* 섹션 제목 <h2>가 첫 자식이라 :nth-child(n)으로 카드를 구분하면 인덱스가 어긋남 → 모두 선택 테마 primary 사용 */
 .ReportsSettingsPage_settingsCardHead__wudNB {
   display: flex;
   align-items: flex-start;
@@ -2484,8 +2477,8 @@
   width: 48px;
   height: 48px;
   border-radius: var(--pc-radius);
-  background: var(--pc-primary-soft, #eef2ff);
-  color: var(--pc-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;

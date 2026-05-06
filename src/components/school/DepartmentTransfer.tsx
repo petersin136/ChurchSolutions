@@ -42,7 +42,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
       borderRadius: mob ? 6 : 10,
       border: `1px solid ${BORDER}`,
       padding: mob ? "0 8px" : "0 14px",
-      background: "#fff",
+      background: "var(--color-surface)",
       color: TEXT,
       boxSizing: "border-box",
     }),
@@ -178,7 +178,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 16 }}>
-      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20, marginBottom: 0 }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20, marginBottom: 0 }}>
         <h4 style={{ margin: "0 0 8px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>부서 이동</h4>
 
         <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: mob ? 8 : 12, alignItems: "flex-end" }}>
@@ -263,7 +263,7 @@ export function DepartmentTransfer({ toast }: DepartmentTransferProps) {
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20, overflowX: "auto" }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20, overflowX: "auto" }}>
         <h4 style={{ margin: "0 0 8px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>이동 이력</h4>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>

@@ -19,12 +19,12 @@ function useIsMobile(bp = 768) {
   return m;
 }
 
-const NAVY = "#1a1d26";
-const BORDER = "#e8e9f0";
-const ROW_LINE = "#f0f2f5";
-const MUTED = "#999";
-const TEXT = "#555";
-const UNSEL_BG = "#f5f8ff";
+const NAVY = "var(--color-text)";
+const BORDER = "var(--color-border)";
+const ROW_LINE = "var(--color-border-soft)";
+const MUTED = "var(--color-text-faint)";
+const TEXT = "var(--color-text-muted)";
+const UNSEL_BG = "var(--color-surface-elevated)";
 
 type MemberInfo = { id: string; name: string; phone?: string } | null;
 type EnrollmentRow = SchoolEnrollment & { members?: MemberInfo; member?: MemberInfo };
@@ -164,7 +164,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
           style={{
             ...pillBase,
             background: !selectedDeptId ? NAVY : UNSEL_BG,
-            color: !selectedDeptId ? "#fff" : TEXT,
+            color: !selectedDeptId ? "var(--color-primary-on)" : TEXT,
             border: !selectedDeptId ? "none" : `1px solid ${BORDER}`,
           }}
         >
@@ -180,7 +180,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
               style={{
                 ...pillBase,
                 background: on ? NAVY : UNSEL_BG,
-                color: on ? "#fff" : TEXT,
+                color: on ? "var(--color-primary-on)" : TEXT,
                 border: on ? "none" : `1px solid ${BORDER}`,
               }}
             >
@@ -201,7 +201,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
             padding: mob ? "0 12px" : "0 20px",
             borderRadius: mob ? 6 : 10,
             background: NAVY,
-            color: "#fff",
+            color: "var(--color-primary-on)",
             border: "none",
             cursor: "pointer",
           }}
@@ -210,7 +210,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
         </button>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflowX: "auto" }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflowX: "auto" }}>
         <table className="w-full" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -230,7 +230,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
                 const m = getMember(e);
                 const cls = getClass(e.class_id);
                 return (
-                  <tr key={e.id} style={{ borderBottom: `1px solid ${ROW_LINE}`, background: idx % 2 === 1 ? "#fafbfc" : "#fff" }}>
+                  <tr key={e.id} style={{ borderBottom: `1px solid ${ROW_LINE}`, background: idx % 2 === 1 ? "var(--color-surface-elevated)" : "var(--color-surface)" }}>
                     <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, color: TEXT }}>{m?.name ?? e.member_id}</td>
                     <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, color: TEXT }}>{cls?.name ?? "-"}</td>
                     <td style={{ padding: mob ? 8 : "12px 14px", fontSize: mob ? 11 : 14, color: TEXT }}>{e.role}</td>
@@ -240,11 +240,11 @@ export function StudentManagement({ toast }: StudentManagementProps) {
                       <button
                         type="button"
                         onClick={() => { setEditOpen(e); setEditClassId(e.class_id ?? ""); setEditRole(e.role); }}
-                        style={{ marginRight: 8, fontSize: mob ? 10 : 13, color: NAVY, border: `1px solid ${BORDER}`, borderRadius: mob ? 4 : 8, padding: mob ? "2px 8px" : "6px 12px", background: "#fff", cursor: "pointer" }}
+                        style={{ marginRight: 8, fontSize: mob ? 10 : 13, color: "var(--color-text)", border: `1px solid ${BORDER}`, borderRadius: mob ? 4 : 8, padding: mob ? "2px 8px" : "6px 12px", background: "var(--color-surface-elevated)", cursor: "pointer", fontWeight: 600 }}
                       >
                         수정
                       </button>
-                      <button type="button" onClick={() => handleDelete(e)} style={{ fontSize: mob ? 10 : 13, color: TEXT, background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}>해제</button>
+                      <button type="button" onClick={() => handleDelete(e)} style={{ fontSize: mob ? 10 : 13, color: "var(--color-text)", background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}>해제</button>
                     </td>
                   </tr>
                 );

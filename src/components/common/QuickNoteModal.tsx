@@ -185,7 +185,7 @@ export function QuickNoteModal({
               onClick={handleAdd}
               disabled={!newContent.trim() || adding}
               style={{
-                backgroundColor: !newContent.trim() || adding ? "#93c5fd" : "#2563eb",
+                backgroundColor: !newContent.trim() || adding ? "var(--color-primary-soft)" : "var(--color-primary)",
                 color: "white",
                 padding: "10px 24px",
                 borderRadius: "8px",

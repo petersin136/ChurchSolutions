@@ -4,6 +4,7 @@ import { type ReactNode, useEffect } from "react";
 import { PcToastProvider } from "@/components/ui/PcToastProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppDataProvider } from "@/contexts/AppDataContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 /** 프로덕션 빌드 후 등록된 SW가 dev의 다른 청크 경로를 깨뜨리는 것을 방지 */
 function DevUnregisterServiceWorkers() {
@@ -23,13 +24,15 @@ function DevUnregisterServiceWorkers() {
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <AuthProvider>
-      <AppDataProvider>
-        <PcToastProvider>
-          <DevUnregisterServiceWorkers />
-          {children}
-        </PcToastProvider>
-      </AppDataProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppDataProvider>
+          <PcToastProvider>
+            <DevUnregisterServiceWorkers />
+            {children}
+          </PcToastProvider>
+        </AppDataProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

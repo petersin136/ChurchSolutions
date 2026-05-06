@@ -220,7 +220,7 @@ export function AttendanceDashboard({
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 주 출석</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: ts.gap.xs }}>
-            <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "#2D2D2D" }}>{thisWeekPresent}</span>
+            <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{thisWeekPresent}</span>
             <span style={{ fontSize: mSub, color: tc.labelMuted }}>/ {totalActive}명</span>
           </div>
           <div
@@ -238,14 +238,14 @@ export function AttendanceDashboard({
           style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 주 출석률</div>
-          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "#2D2D2D" }}>{attendanceRate}%</span>
+          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{attendanceRate}%</span>
         </div>
         <div
           className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
           style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 달 평균 출석률</div>
-          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "#2D2D2D" }}>{monthlyRate}%</span>
+          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{monthlyRate}%</span>
         </div>
         <button
           type="button"
@@ -258,7 +258,7 @@ export function AttendanceDashboard({
           style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>3주 연속 결석</div>
-          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "#2D2D2D" }}>{consecutiveAbsent.length}명</span>
+          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{consecutiveAbsent.length}명</span>
           <div style={{ fontSize: mSub, color: tc.labelMuted, marginTop: ts.gap.xxs }}>클릭 시 명단</div>
         </button>
       </div>
@@ -268,7 +268,7 @@ export function AttendanceDashboard({
           className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}
           style={{ maxHeight: chartH + (mob ? 56 : 80) }}
         >
-          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "#2D2D2D" }}>
+          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "var(--color-text)" }}>
             주간 출석 추이 (최근 12주)
           </h4>
           <LazyChart height={chartH}>
@@ -287,7 +287,7 @@ export function AttendanceDashboard({
           className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}
           style={{ maxHeight: chartH + (mob ? 56 : 80) }}
         >
-          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "#2D2D2D" }}>
+          <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "var(--color-text)" }}>
             부서별 출석률
           </h4>
           <LazyChart height={chartH}>
@@ -305,7 +305,7 @@ export function AttendanceDashboard({
       </div>
 
       <div className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}>
-        <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "#2D2D2D" }}>
+        <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "var(--color-text)" }}>
           월별 출석 히트맵 (최근 8주)
         </h4>
         <div style={mob ? { padding: "12px", width: "100%", boxSizing: "border-box" } : undefined}>

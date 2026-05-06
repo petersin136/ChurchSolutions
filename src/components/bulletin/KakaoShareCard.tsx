@@ -54,7 +54,7 @@ const KakaoShareCard = forwardRef<HTMLDivElement, KakaoShareCardProps>(
         ref={ref}
         style={{
           width: 360,
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--color-surface)",
           borderRadius: 16,
           overflow: "hidden",
           fontFamily: "-apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif",
