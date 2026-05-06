@@ -1,1 +1,1 @@
-self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{\"/Users/seung-yongmaegbug/Documents/GitHub/ChurchSolutions/app/layout\":[\"static/media/ff840cfebfb63b0c-s.p.woff2\"]},\"appUsingSizeAdjust\":true,\"pagesUsingSizeAdjust\":false}"
+self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{\"/Users/jibmaeg/Church Solutions/app/layout\":[\"static/media/ff840cfebfb63b0c-s.p.woff2\"]},\"appUsingSizeAdjust\":true,\"pagesUsingSizeAdjust\":false}"
