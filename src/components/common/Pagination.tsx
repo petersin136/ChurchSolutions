@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useLayoutEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
@@ -23,7 +22,7 @@ export interface PaginationProps {
   hideSummary?: boolean;
   /** 목양 성도 관리 등 모바일 리스트와 맞춤: 요약·버튼 글자 축소 */
   compact?: boolean;
-  /** compact와 함께 쓰면 버튼/요약을 더 촘촘하게(하단 바 전용). 레이아웃 고정은 부모 `PAGINATION_LIST_PARENT_STYLE` + 본 컴포넌트의 marginTop:auto로 처리 */
+  /** compact와 함께 쓰면 버튼/요약을 더 촘촘하게(리스트 하단 바 전용) */
   pinBottom?: boolean;
 }
 
@@ -31,14 +30,11 @@ export interface PaginationProps {
 export const PAGINATION_LIST_PARENT_STYLE: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  minHeight: "calc(100vh - 300px)",
   width: "100%",
   boxSizing: "border-box",
 };
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
-const MAX_VISIBLE_PAGES = 5;
-
 function findScrollParent(el: HTMLElement | null): HTMLElement | null {
   let node = el?.parentElement ?? null;
   while (node) {
@@ -54,7 +50,7 @@ export function Pagination({
   itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
   currentPage,
   onPageChange,
-  hideSummary = false,
+  hideSummary = true,
   compact = false,
   pinBottom = false,
 }: PaginationProps) {
@@ -84,41 +80,28 @@ export function Pagination({
   const tight = compact || pinBottom;
   const desktopLoose = !tight && !mob;
   const btnBase: React.CSSProperties = {
-    padding: tight ? "4px 8px" : desktopLoose ? "10px 14px" : "8px 12px",
-    borderRadius: tight ? 6 : desktopLoose ? 10 : 6,
+    padding: tight ? "3px 8px" : desktopLoose ? "8px 14px" : "6px 12px",
+    borderRadius: tight ? 6 : 8,
     border: "1px solid var(--color-border)",
-    background: "var(--color-primary-soft)",
+    background: "#fff",
     color: "var(--color-text-muted)",
     fontSize: tight ? (pinBottom ? 10 : 11) : desktopLoose ? 14 : 13,
-    fontWeight: 500,
+    fontWeight: 600,
     cursor: "pointer",
     fontFamily: "inherit",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: tight ? (pinBottom ? 28 : 30) : desktopLoose ? 40 : 36,
+    minWidth: tight ? (pinBottom ? 44 : 46) : desktopLoose ? 52 : 48,
+    height: tight ? 24 : desktopLoose ? 34 : 30,
+    boxSizing: "border-box",
   };
   const summaryFs = tight ? 10 : desktopLoose ? 14 : 13;
-  const ellipsisFs = tight ? 10 : desktopLoose ? 14 : 13;
-  const chevSize = tight ? (pinBottom ? 14 : 16) : desktopLoose ? 20 : 18;
-
-  const pageStart = totalPages <= MAX_VISIBLE_PAGES
-    ? 1
-    : Math.max(1, Math.min(safePage - 2, totalPages - MAX_VISIBLE_PAGES));
-  const pageEnd = totalPages <= MAX_VISIBLE_PAGES
-    ? totalPages
-    : Math.min(totalPages, pageStart + MAX_VISIBLE_PAGES - 1);
-  const visiblePages = Array.from(
-    { length: pageEnd - pageStart + 1 },
-    (_, i) => pageStart + i
-  );
-  const showLeadingEllipsis = pageStart > 1;
-  const showTrailingEllipsis = pageEnd < totalPages;
 
   const wrapStyle: React.CSSProperties = {
-    marginTop: "auto",
-    paddingTop: 24,
-    paddingBottom: 16,
+    marginTop: 0,
+    paddingTop: tight ? 8 : 14,
+    paddingBottom: tight ? 8 : 12,
     flexShrink: 0,
     width: "100%",
     boxSizing: "border-box",
@@ -135,14 +118,10 @@ export function Pagination({
         style={{
           display: "flex",
           justifyContent: "center",
-          gap: 4,
+          gap: 6,
           flexWrap: "nowrap",
           alignItems: "center",
-          overflowX: "auto",
-          WebkitOverflowScrolling: "touch",
-          paddingBottom: 4,
-          marginLeft: -4,
-          marginRight: -4,
+          minHeight: tight ? 24 : desktopLoose ? 34 : 30,
         }}
       >
         <button
@@ -156,34 +135,20 @@ export function Pagination({
             ...(prevDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
           }}
         >
-          <ChevronLeft size={chevSize} />
+          이전
         </button>
-        {showLeadingEllipsis && (
-          <>
-            <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(1)}>1</button>
-            <span style={{ padding: "0 4px", color: "var(--color-text-faint)", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
-          </>
-        )}
-        {visiblePages.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => handlePageChange(p)}
-            style={{
-              ...btnBase,
-              flexShrink: 0,
-              ...(p === safePage ? { background: "var(--color-primary)", color: "#fff", borderColor: "var(--color-primary)" } : {}),
-            }}
-          >
-            {p}
-          </button>
-        ))}
-        {showTrailingEllipsis && (
-          <>
-            <span style={{ padding: "0 4px", color: "var(--color-text-faint)", fontSize: ellipsisFs, flexShrink: 0 }}>…</span>
-            <button type="button" style={{ ...btnBase, flexShrink: 0 }} onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
-          </>
-        )}
+        <span
+          style={{
+            fontSize: tight ? 10 : desktopLoose ? 14 : 13,
+            color: "var(--color-text-muted)",
+            fontWeight: 600,
+            fontVariantNumeric: "tabular-nums",
+            minWidth: tight ? 42 : 56,
+            textAlign: "center",
+          }}
+        >
+          {safePage} / {totalPages}
+        </span>
         <button
           type="button"
           aria-label="다음 페이지"
@@ -195,7 +160,7 @@ export function Pagination({
             ...(nextDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
           }}
         >
-          <ChevronRight size={chevSize} />
+          다음
         </button>
       </div>
     </div>

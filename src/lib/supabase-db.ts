@@ -80,7 +80,7 @@ export async function loadDBFromSupabase(optionalChurchId?: string | null): Prom
     if (!db.attendance[mid]) db.attendance[mid] = {};
     const status = r.status as string;
     db.attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as AttStatus;
-    const reason = r.reason as string | undefined;
+    const reason = (r.note ?? r.reason) as string | undefined;
     if (reason?.trim()) {
       if (!db.attendanceReasons) db.attendanceReasons = {};
       if (!db.attendanceReasons[mid]) db.attendanceReasons[mid] = {};

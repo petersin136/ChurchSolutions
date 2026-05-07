@@ -1,0 +1,19 @@
+---
+description: Standard list/table UI pattern for this project
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# List UI Standard
+
+When creating or editing user-facing list/table screens, use the attendance statistics list as the default pattern.
+
+- Show exactly 10 rows per page for pageable lists.
+- Keep the list area height stable. If the last page has fewer than 10 rows, render empty placeholder rows so the pagination stays directly below the 10-row area.
+- Put pagination immediately under the list card/table, not fixed to the browser viewport bottom.
+- Use one consistent pagination shape: `이전` / `currentPage / totalPages` / `다음`.
+- Add a numbering column at the front of each list. Numbers should continue across pages, e.g. page 2 starts at 11.
+- Use fixed table/grid columns (`table-fixed`, `colgroup`, or fixed CSS grid tracks) so text does not shift left/right between pages.
+- For member/person lists, prefer dropdown filters for `부서` and `목장` instead of long horizontal department tabs.
+- Sort 목장 dropdowns numerically when names contain numbers: `제1목장`, `제2목장`, ... `제10목장`, `제11목장`.
+- Keep row heights, typography, borders, and colors visually consistent with `AttendanceStatistics`.
