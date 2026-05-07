@@ -1480,6 +1480,9 @@ input[type="date"]::-webkit-date-and-time-value {
 .h-10 {
   height: 2.5rem;
 }
+.h-11 {
+  height: 2.75rem;
+}
 .max-h-\[300px\] {
   max-height: 300px;
 }
@@ -1671,6 +1674,24 @@ input[type="date"]::-webkit-date-and-time-value {
 }
 .w-\[8\%\] {
   width: 8%;
+}
+.w-\[4\%\] {
+  width: 4%;
+}
+.w-\[180px\] {
+  width: 180px;
+}
+.w-\[190px\] {
+  width: 190px;
+}
+.w-\[68px\] {
+  width: 68px;
+}
+.w-\[72px\] {
+  width: 72px;
+}
+.w-\[160px\] {
+  width: 160px;
 }
 .min-w-0 {
   min-width: 0px;
@@ -3974,6 +3995,10 @@ div[style*="height"] canvas {
     width: 2.25rem;
   }
 
+  .md\:w-\[220px\] {
+    width: 220px;
+  }
+
   .md\:min-w-\[180px\] {
     min-width: 180px;
   }
@@ -4044,6 +4069,10 @@ div[style*="height"] canvas {
 
   .lg\:w-64 {
     width: 16rem;
+  }
+
+  .lg\:w-\[260px\] {
+    width: 260px;
   }
 
   .lg\:max-w-lg {

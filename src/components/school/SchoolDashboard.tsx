@@ -127,7 +127,7 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
           background: BG,
           borderRadius: 12,
           border: `1px solid ${BORDER}`,
-          borderLeft: `4px solid ${color}`,
+          borderLeft: `1px solid ${BORDER}`,
           boxShadow: "0 1px 4px color-mix(in srgb, var(--color-text) 6%, transparent)",
           padding: mob ? "10px 14px" : "16px 20px",
           minHeight: mob ? 60 : 84,
@@ -186,7 +186,7 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
                   background: BG,
                   borderRadius: mob ? 8 : 16,
                   border: `1px solid ${BORDER}`,
-                  borderLeft: `3px solid var(--color-primary)`,
+                  borderLeft: `1px solid ${BORDER}`,
                   padding: mob ? "10px 12px" : "16px 20px",
                 }}
               >

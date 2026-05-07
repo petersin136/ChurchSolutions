@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 
 function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
@@ -47,6 +48,8 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
   const { db } = useAppData();
   const [search, setSearch] = useState("");
   const [printDonor, setPrintDonor] = useState<PrintDonor | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const incomeRows = useMemo(() => {
     const start = `${year}-01-01`;
@@ -110,6 +113,21 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
     const q = search.toLowerCase();
     return donorList.filter((d) => d.name.toLowerCase().includes(q) || (d.group || "").toLowerCase().includes(q));
   }, [donorList, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageItems = useMemo(
+    () => filteredList.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filteredList, safePage]
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, year]);
+
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(p, totalPages));
+  }, [totalPages]);
 
   const totalAmount = useMemo(() => donorList.reduce((s, d) => s + d.total, 0), [donorList]);
   const avgPerDonor = donorList.length > 0 ? Math.round(totalAmount / donorList.length) : 0;
@@ -251,24 +269,45 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" style={PAGINATION_LIST_PARENT_STYLE}>
         <div className="px-4 py-3 lg:px-5 border-b border-gray-100 flex items-center justify-between gap-4">
           <h4 className="font-semibold text-[var(--color-primary)] text-sm lg:text-base">헌금자 목록</h4>
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="이름/부서 검색" className="px-3 py-2 rounded-lg border border-gray-200 text-sm lg:text-base w-48 lg:w-64" />
+          <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); }} placeholder="이름/부서 검색" className="px-3 py-2 rounded-lg border border-gray-200 text-sm lg:text-base w-48 lg:w-64" />
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm lg:text-base">
+        <div className="overflow-x-auto min-h-0 flex-1">
+          <table className="w-full table-fixed text-sm lg:text-base">
+            <colgroup>
+              <col className="w-[7%]" />
+              <col className="w-[14%]" />
+              <col className="w-[12%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[12%]" />
+              <col className="w-[7%]" />
+              <col className="w-[8%]" />
+            </colgroup>
             <thead><tr className="bg-gray-50 border-b"><th className="text-left py-2 px-3 lg:py-3 lg:px-4">순위</th><th className="text-left py-2 px-3 lg:py-3 lg:px-4">이름</th><th className="text-left py-2 px-3 lg:py-3 lg:px-4">부서</th><th className="text-right py-2 px-3 lg:py-3 lg:px-4">십일조</th><th className="text-right py-2 px-3 lg:py-3 lg:px-4">감사</th><th className="text-right py-2 px-3 lg:py-3 lg:px-4">선교</th><th className="text-right py-2 px-3 lg:py-3 lg:px-4">기타</th><th className="text-right py-2 px-3 lg:py-3 lg:px-4">합계</th><th className="text-right py-2 px-3 lg:py-3 lg:px-4">비율</th><th className="text-center py-2 px-3 lg:py-3 lg:px-4 no-print">영수증</th></tr></thead>
             <tbody>
-              {filteredList.slice(0, 100).map((d, i) => {
+              {Array.from({ length: PAGE_SIZE }, (_, idx) => {
+                const d = pageItems[idx];
+                if (!d) {
+                  return (
+                    <tr key={`donor-pad-${safePage}-${idx}`} className="border-b border-gray-100 h-11" aria-hidden>
+                      <td className="py-2 px-3 lg:py-3 lg:px-4" colSpan={10} />
+                    </tr>
+                  );
+                }
                 const tithe = d.byCat?.tithe ?? 0;
                 const thanks = d.byCat?.thanks ?? 0;
                 const mission = d.byCat?.mission ?? 0;
                 const other = d.total - tithe - thanks - mission;
                 const pct = totalAmount > 0 ? Math.round((d.total / totalAmount) * 100) : 0;
+                const rank = (safePage - 1) * PAGE_SIZE + idx + 1;
                 return (
                   <tr key={d.id} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="py-2 px-3 lg:py-3 lg:px-4">{i + 1}</td>
+                    <td className="py-2 px-3 lg:py-3 lg:px-4">{rank}</td>
                     <td className="py-2 px-3 lg:py-3 lg:px-4 font-medium">{d.name}</td>
                     <td className="py-2 px-3 lg:py-3 lg:px-4">{d.group}</td>
                     <td className="py-2 px-3 lg:py-3 lg:px-4 text-right">{fmt(tithe)}</td>
@@ -288,6 +327,15 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
             </tbody>
           </table>
         </div>
+        {filteredList.length > 0 && (
+          <Pagination
+            compact={mob}
+            totalItems={filteredList.length}
+            itemsPerPage={PAGE_SIZE}
+            currentPage={safePage}
+            onPageChange={(p) => setCurrentPage(p)}
+          />
+        )}
       </div>
         </div>
       </div>

@@ -2450,7 +2450,7 @@
   border-top: 1px solid var(--pc-border) !important;
   border-right: 1px solid var(--pc-border) !important;
   border-bottom: 1px solid var(--pc-border) !important;
-  border-left: 4px solid var(--color-primary) !important;
+  border-left: 1px solid var(--pc-border) !important;
   border-radius: var(--pc-radius-lg);
   background: var(--pc-bg);
   box-shadow:

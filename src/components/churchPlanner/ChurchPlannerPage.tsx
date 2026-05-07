@@ -1872,7 +1872,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                   gap: 8,
                                   padding: "6px 8px",
                                   background: `${hex}12`,
-                                  borderLeft: `3px solid ${hex}`,
+                                  borderLeft: `1px solid var(--color-border)`,
                                   borderRadius: 10,
                                   cursor: "pointer",
                                   maxWidth: "100%",
