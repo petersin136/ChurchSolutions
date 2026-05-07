@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface ColumnDef {
   key: string;
@@ -22,7 +21,7 @@ export interface ReportModalProps {
   pageSize?: number;
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pageSize = PAGE_SIZE }: ReportModalProps) {
   const [page, setPage] = useState(1);
@@ -205,23 +204,17 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
             }}
           >
             <span style={{ fontSize: 13, color: "var(--color-text-faint)" }}>
-              총 {data.length}건 중 {safePage} 페이지
+              총 {data.length}건
             </span>
-            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <PgBtn disabled={safePage <= 1} onClick={() => { setPage(safePage - 1); scrollRef.current?.scrollTo(0, 0); }}>
-                <ChevronLeft size={16} />
+                이전
               </PgBtn>
-              {getVisiblePages(safePage, totalPages).map((p, i) =>
-                p === "..." ? (
-                  <span key={`e${i}`} style={{ padding: "0 4px", color: "var(--color-text-muted)", fontSize: 13 }}>…</span>
-                ) : (
-                  <PgBtn key={p} active={p === safePage} onClick={() => { setPage(p as number); scrollRef.current?.scrollTo(0, 0); }}>
-                    {p}
-                  </PgBtn>
-                )
-              )}
+              <span style={{ minWidth: 56, textAlign: "center", fontSize: 13, fontWeight: 600, color: "var(--color-text-muted)", fontVariantNumeric: "tabular-nums" }}>
+                {safePage} / {totalPages}
+              </span>
               <PgBtn disabled={safePage >= totalPages} onClick={() => { setPage(safePage + 1); scrollRef.current?.scrollTo(0, 0); }}>
-                <ChevronRight size={16} />
+                다음
               </PgBtn>
             </div>
           </div>
@@ -233,17 +226,17 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
   return createPortal(modal, document.body);
 }
 
-function PgBtn({ children, active, disabled, onClick }: { children: React.ReactNode; active?: boolean; disabled?: boolean; onClick?: () => void }) {
+function PgBtn({ children, disabled, onClick }: { children: React.ReactNode; disabled?: boolean; onClick?: () => void }) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
       style={{
-        width: 32,
+        minWidth: 48,
         height: 32,
         borderRadius: 8,
-        border: "none",
+        border: "1px solid var(--color-border)",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -251,30 +244,15 @@ function PgBtn({ children, active, disabled, onClick }: { children: React.ReactN
         fontWeight: 600,
         fontFamily: "inherit",
         cursor: disabled ? "not-allowed" : "pointer",
-        background: active ? "#2563EB" : "transparent",
-        color: active ? "#fff" : "#6B7280",
+        background: "#fff",
+        color: "#6B7280",
         opacity: disabled ? 0.3 : 1,
         transition: "background 0.15s",
       }}
-      onMouseEnter={(e) => { if (!active && !disabled) e.currentTarget.style.background = "#F3F4F6"; }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+      onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.background = "#F3F4F6"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
     >
       {children}
     </button>
   );
-}
-
-function getVisiblePages(current: number, total: number): (number | "...")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | "...")[] = [];
-  if (current <= 4) {
-    for (let i = 1; i <= 5; i++) pages.push(i);
-    pages.push("...", total);
-  } else if (current >= total - 3) {
-    pages.push(1, "...");
-    for (let i = total - 4; i <= total; i++) pages.push(i);
-  } else {
-    pages.push(1, "...", current - 1, current, current + 1, "...", total);
-  }
-  return pages;
 }

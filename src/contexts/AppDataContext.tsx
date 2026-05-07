@@ -137,9 +137,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           if (!attendance[mid]) attendance[mid] = {};
           const status = r.status as string;
           attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as any;
-          if (r.reason?.trim()) {
+          const absentNote = String(r.note ?? r.reason ?? "").trim();
+          if (absentNote) {
             if (!attendanceReasons[mid]) attendanceReasons[mid] = {};
-            attendanceReasons[mid][week] = r.reason;
+            attendanceReasons[mid][week] = absentNote;
           }
         });
         setDb(prev => ({ ...prev, attendance, attendanceReasons }));
