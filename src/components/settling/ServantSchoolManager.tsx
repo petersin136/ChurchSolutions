@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
+import { ModernSelect } from "@/components/common/ModernSelect";
 
 interface Graduate {
   id: string;
@@ -24,6 +25,15 @@ interface MemberOption {
 interface Props {
   members: MemberOption[];
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
+}
+
+function isServantEligibleRole(role?: string): boolean {
+  const v = (role || "").trim();
+  if (!v) return false;
+  if (v.includes("집사")) return true; // 집사, 안수집사 포함
+  if (v.includes("권사") || v.includes("장로")) return true;
+  if (v.includes("목사") || v.includes("전도사")) return true;
+  return false;
 }
 
 function useIsMobile(bp = 768) {
@@ -87,7 +97,20 @@ export function ServantSchoolManager({ members, toast }: Props) {
 
   const existingMemberIds = useMemo(() => new Set(graduates.map((g) => g.member_id)), [graduates]);
 
-  const availableMembers = useMemo(() => members.filter((m) => !existingMemberIds.has(m.id)), [members, existingMemberIds]);
+  const availableMembers = useMemo(
+    () => members.filter((m) => !existingMemberIds.has(m.id) && isServantEligibleRole(m.role)),
+    [members, existingMemberIds]
+  );
+  const availableMemberOptions = useMemo(
+    () => [
+      { value: "", label: `집사 이상 성도 선택 (${availableMembers.length}명)` },
+      ...availableMembers.map((m) => ({
+        value: m.id,
+        label: `${m.name}${m.role ? ` (${m.role})` : ""}${m.dept ? ` · ${m.dept}` : ""}`,
+      })),
+    ],
+    [availableMembers]
+  );
 
   const selectedMember = useMemo(
     () => availableMembers.find((m) => m.id === selectedMemberId) ?? null,
@@ -168,24 +191,13 @@ export function ServantSchoolManager({ members, toast }: Props) {
           섬김이 학교 수료자 등록
         </h3>
         <div className={mob ? "flex flex-col gap-2" : "flex flex-col items-start gap-3 sm:flex-row"}>
-          <select
+          <ModernSelect
             value={selectedMemberId}
-            onChange={(e) => setSelectedMemberId(e.target.value)}
-            className={
-              mob
-                ? "h-7 w-full rounded border border-gray-200 px-2 py-1.5 text-[11px]"
-                : "min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-[#1e40af] focus:outline-none focus:ring-2 focus:ring-[#1e40af]/20"
-            }
-          >
-            <option value="">-- 성도 선택 ({availableMembers.length}명) --</option>
-            {availableMembers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-                {m.role ? ` (${m.role})` : ""}
-                {m.dept ? ` · ${m.dept}` : ""}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedMemberId}
+            options={availableMemberOptions}
+            compact={mob}
+            style={{ marginBottom: 0, minWidth: 0, flex: 1, width: "100%" }}
+          />
           <div className={mob ? "w-full" : "w-full shrink-0 sm:w-48"}>
             <CalendarDropdown
               value={graduatedAt}
@@ -207,7 +219,7 @@ export function ServantSchoolManager({ members, toast }: Props) {
             className={
               mob
                 ? "h-7 w-full rounded border border-gray-200 px-2 py-1.5 text-[11px]"
-                : "w-full shrink-0 rounded-lg border border-gray-200 px-3 py-2.5 text-sm sm:w-48"
+                : "w-full shrink-0 rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-[#1e40af] focus:outline-none focus:ring-2 focus:ring-[#1e40af]/20 sm:w-48"
             }
           />
           <button

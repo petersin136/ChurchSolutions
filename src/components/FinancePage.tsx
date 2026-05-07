@@ -324,22 +324,22 @@ function financeSubTabStyle(isSelected: boolean, layout: "rowEqual" | "gridCell"
     fontSize: fs,
     fontWeight: isSelected ? 600 : 500,
     padding: mob ? "8px 10px" : "10px 18px",
-    border: "none",
-    borderBottom: isSelected ? `2.5px solid ${C.primary}` : "2.5px solid transparent",
-    background: "none",
+    border: isSelected ? `1px solid ${C.primary}` : "1px solid var(--color-border)",
+    background: isSelected ? C.primaryLighter : C.surface,
     color: isSelected ? C.primary : C.text3,
     whiteSpace: "nowrap",
     lineHeight: 1.2,
     cursor: "pointer",
     outline: "none",
     boxShadow: "none",
-    transition: "color 0.15s ease, border-color 0.15s ease",
+    transition: "color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease",
     WebkitTapHighlightColor: "transparent",
     fontFamily: "inherit",
     textAlign: "center",
     overflow: "hidden",
     textOverflow: "ellipsis",
-    marginBottom: -1,
+    marginBottom: 0,
+    borderRadius: mob ? 8 : 10,
   };
   if (layout === "gridCell") {
     return { ...base, width: "100%", boxSizing: "border-box" };
@@ -349,11 +349,11 @@ function financeSubTabStyle(isSelected: boolean, layout: "rowEqual" | "gridCell"
 
 const financeSubTabRowStyle: CSSProperties = {
   display: "flex",
-  gap: 0,
+  gap: 6,
   marginBottom: 10,
   width: "100%",
   alignItems: "stretch",
-  borderBottom: "1px solid var(--color-border)",
+  borderBottom: "none",
 };
 
 /** 보고서 유형·예결산 등 2~5개 토글 — 동일 규격 */
@@ -368,22 +368,22 @@ function financeScrollRowPillStyle(isSelected: boolean, mob = true): CSSProperti
     fontSize: fs,
     fontWeight: isSelected ? 600 : 500,
     padding: mob ? "8px 10px" : "10px 14px",
-    border: "none",
-    borderBottom: isSelected ? `2.5px solid ${C.primary}` : "2.5px solid transparent",
-    background: "none",
+    border: isSelected ? `1px solid ${C.primary}` : "1px solid var(--color-border)",
+    background: isSelected ? C.primaryLighter : C.surface,
     color: isSelected ? C.primary : C.text3,
     whiteSpace: "nowrap",
     lineHeight: 1.2,
     cursor: "pointer",
     outline: "none",
     boxShadow: "none",
-    transition: "color 0.15s ease, border-color 0.15s ease",
+    transition: "color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease",
     fontFamily: "inherit",
     textAlign: "center",
     flex: "0 0 auto",
     minWidth: "calc((100% - 16px) / 4)",
     boxSizing: "border-box",
-    marginBottom: -1,
+    marginBottom: 0,
+    borderRadius: mob ? 8 : 10,
   };
 }
 

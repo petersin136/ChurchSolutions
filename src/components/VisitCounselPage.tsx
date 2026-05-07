@@ -483,7 +483,7 @@ function StatCard({
         backgroundColor: "var(--color-surface)",
         borderRadius: 12,
         border: "1px solid var(--color-border)",
-        borderLeft: `4px solid ${color}`,
+        borderLeft: "1px solid var(--color-border)",
         boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
         boxSizing: "border-box",
         transition: "all 0.2s",
@@ -503,15 +503,15 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       type="button"
       onClick={onClick}
       style={{
-        height: mob ? 26 : 34,
-        padding: mob ? "0 8px" : "0 14px",
-        borderRadius: mob ? 6 : 10,
-        fontSize: mob ? 10 : 13,
+        height: mob ? 30 : 34,
+        padding: mob ? "0 12px" : "0 16px",
+        borderRadius: 10,
+        fontSize: mob ? 12 : 13,
         fontWeight: 600,
         cursor: "pointer",
-        border: `1px solid ${active ? "#4466e0" : "#e8e9f0"}`,
-        background: active ? "var(--color-primary)" : "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))",
-        color: active ? "#fff" : "#555",
+        border: active ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
+        background: active ? C.accentBg : C.card,
+        color: active ? C.accent : C.textMuted,
         transition: "all 0.2s",
         display: "inline-flex",
         alignItems: "center",
@@ -542,25 +542,27 @@ function ListViewToggle({
     <div
       style={{
         display: "flex",
-        borderRadius: 6,
-        overflow: "hidden",
-        border: "1px solid var(--color-border)",
+        gap: mob ? 6 : 8,
         flexShrink: 0,
+        flexWrap: "nowrap",
       }}
     >
       <button
         type="button"
         onClick={onList}
         style={{
-          flex: 1,
-          height: mob ? 28 : 36,
+          height: mob ? 28 : 34,
+          padding: mob ? "0 10px" : "0 14px",
           fontSize: mob ? 11 : 13,
           fontWeight: 600,
-          border: "none",
-          background: mode === "list" ? "var(--color-primary)" : "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))",
-          color: mode === "list" ? "#fff" : "#555",
+          border: mode === "list" ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
+          borderRadius: 10,
+          background: mode === "list" ? C.accentBg : C.card,
+          color: mode === "list" ? C.accent : C.textMuted,
           cursor: "pointer",
           fontFamily: "inherit",
+          whiteSpace: "nowrap",
+          boxSizing: "border-box",
         }}
       >
         전체 목록
@@ -569,16 +571,18 @@ function ListViewToggle({
         type="button"
         onClick={onGroup}
         style={{
-          flex: 1,
-          height: mob ? 28 : 36,
+          height: mob ? 28 : 34,
+          padding: mob ? "0 10px" : "0 14px",
           fontSize: mob ? 11 : 13,
           fontWeight: 600,
-          border: "none",
-          borderLeft: "1px solid #e8e9f0",
-          background: mode === "byGroup" ? "var(--color-primary)" : "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))",
-          color: mode === "byGroup" ? "#fff" : "#555",
+          border: mode === "byGroup" ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
+          borderRadius: 10,
+          background: mode === "byGroup" ? C.accentBg : C.card,
+          color: mode === "byGroup" ? C.accent : C.textMuted,
           cursor: "pointer",
           fontFamily: "inherit",
+          whiteSpace: "nowrap",
+          boxSizing: "border-box",
         }}
       >
         목장별 보기
@@ -1271,8 +1275,8 @@ function MainDBVisitList({
         </button>
       </div>
       <ListViewToggle mode={viewMode} onList={() => { setViewMode("list"); setPage(1); }} onGroup={() => setViewMode("byGroup")} />
-      <div style={{ display: "flex", gap: 6, alignItems: "center", overflowX: "auto", flexWrap: "nowrap", WebkitOverflowScrolling: "touch" }}>
-        <span style={{ fontSize: 10, color: "#6b7b9e", flexShrink: 0 }}>유형</span>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", overflowX: "auto", flexWrap: "nowrap", WebkitOverflowScrolling: "touch" }}>
+        <span style={{ fontSize: mob ? 11 : 13, fontWeight: 600, color: C.textMuted, flexShrink: 0 }}>유형</span>
         <Chip label="전체" active={filterType === "all"} onClick={() => { setFilterType("all"); setPage(1); }} />
         {MAIN_VISIT_TYPES.map((t) => (
           <Chip key={t} label={t} active={filterType === t} onClick={() => { setFilterType(t); setPage(1); }} />

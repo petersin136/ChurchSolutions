@@ -1410,7 +1410,24 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
 }
 
 /* ====== Members ====== */
-const ROLE_PRIORITY: Record<string, number> = { "장로": 0, "안수집사": 1, "권사": 2, "집사": 3, "청년": 4, "성도": 5, "학생": 6, "새가족": 7, "영아": 8 };
+const ROLE_PRIORITY: Record<string, number> = {
+  "담임목사": 0,
+  "부목사": 1,
+  "강도사": 2,
+  "전도사": 3,
+  "교육전도사": 4,
+  "장로": 5,
+  "안수집사": 6,
+  "권사": 7,
+  "집사": 8,
+  "교사": 9,
+  "부교사": 10,
+  "청년": 11,
+  "성도": 12,
+  "학생": 13,
+  "새가족": 14,
+  "영아": 15,
+};
 
 function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, openQuickNote, churchId }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
@@ -1420,8 +1437,10 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   churchId: string | null;
 }) {
   const mob = useIsMobile();
+  const tabletOrLess = useIsMobile(1024);
   const listRef = useRef<HTMLDivElement>(null);
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerms, setSearchTerms] = useState<string[]>([]);
   const [deptF, setDeptF] = useState("all");
   const [roleF, setRoleF] = useState("all");
   const [mokjangF, setMokjangF] = useState("all");
@@ -1430,29 +1449,27 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const [prospectOnly, setProspectOnly] = useState(false);
   const [baptismF, setBaptismF] = useState("all");
   const [viewMode, setViewMode] = useState<"list" | "group">("list");
-  const [selectedMokjang, setSelectedMokjang] = useState<string | null>(null);
+  const [groupBy, setGroupBy] = useState<"dept" | "mokjang" | "role">("dept");
+  const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null);
   const [pageGroup, setPageGroup] = useState(1);
   const [pageList, setPageList] = useState(1);
-  const PAGE_SIZE_MEM = 10;
+  const PAGE_SIZE_MEM = tabletOrLess ? 10 : 15;
   const depts = getDepts(db);
-
-  const viewSegmentItems = useMemo(
+  const viewModeOptions = useMemo(
     () => [
-      { id: "list", label: "테이블", icon: <span style={{ display: "flex" }}><Icons.Table /></span> },
-      { id: "group", label: "목장별", icon: <span style={{ display: "flex" }}><Icons.Mokjang /></span> },
+      { value: "list", label: "테이블 보기" },
+      { value: "group", label: "그룹 보기" },
     ],
-    [],
+    []
   );
-  const onViewSegmentChange = useCallback((id: string) => {
-    if (id === "list") {
-      setViewMode("list");
-      setSelectedMokjang(null);
-      setPageList(1);
-    } else if (id === "group") {
-      setViewMode("group");
-      setSelectedMokjang(null);
-    }
-  }, []);
+  const groupByOptions = useMemo(
+    () => [
+      { value: "dept", label: "부서별" },
+      { value: "mokjang", label: "목장별" },
+      { value: "role", label: "직분별" },
+    ],
+    []
+  );
 
   /* 성도 목록: churchId 없으면 쿼리하지 않음. churchId가 준비되면 그때 로드. (setDb는 ref로 넣어 의존성에서 제외해 불필요한 재실행 방지) */
   const setDbRef = useRef(setDb);
@@ -1481,13 +1498,63 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const baptismOptions = isChimrye
     ? [{ value: "세례", label: "침례" }, { value: "입교", label: "입교" }]
     : BAPTISM_LIST.map(b => ({ value: b, label: b }));
+  const roleFilterOptions = useMemo(() => {
+    const baseOrder = ["담임목사", "부목사", "강도사", "전도사", "교육전도사", "장로", "안수집사", "권사", "집사", "교사", "부교사", "성도", "청년", "학생", "새가족"];
+    const fromMembers = Array.from(new Set(db.members.map((m) => (m.role || "").trim()).filter(Boolean)));
+    const merged = Array.from(new Set([...baseOrder, ...fromMembers]));
+    return merged.sort((a, b) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99) || a.localeCompare(b, "ko"));
+  }, [db.members]);
+  const deptSelectOptions = useMemo(
+    () => [{ value: "all", label: "부서" }, ...depts.map((d) => ({ value: d, label: d }))],
+    [depts]
+  );
+  const roleSelectOptions = useMemo(
+    () => [{ value: "all", label: "직분" }, ...roleFilterOptions.map((r) => ({ value: r, label: r }))],
+    [roleFilterOptions]
+  );
+  const mokjangSelectOptions = useMemo(
+    () => [{ value: "all", label: "목장" }, ...mokjangList.map((m) => ({ value: m, label: m }))],
+    [mokjangList]
+  );
 
   /* 대시보드와 동일 조건: status !== "졸업/전출" (DashboardSub는 x.status만 사용) */
   const filtered = useMemo(() => {
     let r = db.members.filter(m => (m.member_status ?? m.status) !== "졸업/전출");
-    if (search) {
-      const q = search.toLowerCase();
-      r = r.filter(m => (m.name || "").toLowerCase().includes(q) || (m.phone || "").replace(/\D/g, "").includes(q.replace(/\D/g, "")) || (m.address || "").toLowerCase().includes(q) || (m.memo || "").toLowerCase().includes(q) || (m.prayer || "").toLowerCase().includes(q));
+    if (searchTerms.length > 0) {
+      const cleanTerm = (s: string) => (s ?? "").trim().replace(/[,\uFF0C]+$/g, "").trim();
+      const terms = searchTerms
+        .map(cleanTerm)
+        .filter((t) => {
+          if (!t) return false;
+          const digits = t.replace(/\D/g, "");
+          // 한 글자 한글 검색어는 너무 넓게 매칭되어 오탐이 많으므로 무시
+          if (digits.length === 0 && t.length < 2) return false;
+          return true;
+        });
+      const norm = (s: string) => (s ?? "").toLowerCase().replace(/\s+/g, "").replace(/[,\uFF0C.]/g, "");
+      r = r.filter((m) => {
+        const nameN = norm(m.name || "");
+        const phoneN = (m.phone || "").replace(/\D/g, "");
+        const addrN = norm(m.address || "");
+        const memoN = norm(m.memo || "");
+        const prayerN = norm(m.prayer || "");
+        return terms.some((t) => {
+          const tn = norm(t);
+          if (!tn) return false;
+          // 1개만 검색할 때는 최대한 "그 사람만" 나오도록: 이름 정확일치 우선, 없으면 부분일치
+          if (terms.length === 1) {
+            if (nameN === tn) return true;
+          }
+          const digits = t.replace(/\D/g, "");
+          return (
+            nameN.includes(tn) ||
+            (digits.length > 0 ? phoneN.includes(digits) : false) ||
+            addrN.includes(tn) ||
+            memoN.includes(tn) ||
+            prayerN.includes(tn)
+          );
+        });
+      });
     }
     if (deptF !== "all") r = r.filter(m => m.dept === deptF);
     if (roleF !== "all") r = r.filter(m => m.role === roleF);
@@ -1497,23 +1564,58 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
     if (prospectOnly) r = r.filter(m => m.is_prospect === true);
     if (baptismF !== "all") r = r.filter(m => m.baptism_type === baptismF);
     return r;
-  }, [db.members, search, deptF, roleF, mokjangF, statusF, newFamilyOnly, prospectOnly, baptismF]);
+  }, [db.members, searchTerms, deptF, roleF, mokjangF, statusF, newFamilyOnly, prospectOnly, baptismF]);
 
-  /* 목장별 그룹핑 (목자=직분 높은 순 정렬) */
+  const addSearchTerm = useCallback(() => {
+    const v = searchInput.trim().replace(/[,\uFF0C]+$/g, "").trim();
+    if (!v) return;
+    const digits = v.replace(/\D/g, "");
+    if (digits.length === 0 && v.length < 2) {
+      toast("이름은 2글자 이상 입력해 주세요", "warn");
+      return;
+    }
+    setSearchTerms((prev) => {
+      const exists = prev.some((x) => x.toLowerCase() === v.toLowerCase());
+      const next = exists ? prev : [...prev, v];
+      return next;
+    });
+    setSearchInput("");
+    setPageList(1);
+    setPageGroup(1);
+  }, [searchInput]);
+
+  const removeSearchTerm = useCallback((term: string) => {
+    setSearchTerms((prev) => prev.filter((t) => t !== term));
+    setPageList(1);
+    setPageGroup(1);
+  }, []);
+
   const grouped = useMemo(() => {
     const map: Record<string, Member[]> = {};
-    filtered.forEach(m => {
-      const g = (m.mokjang ?? m.group) || "미배정";
-      if (!map[g]) map[g] = [];
-      map[g].push(m);
+    const sortedMembers = [...filtered].sort((a, b) =>
+      (ROLE_PRIORITY[a.role || ""] ?? 99) - (ROLE_PRIORITY[b.role || ""] ?? 99) || (a.name || "").localeCompare(b.name || "", "ko")
+    );
+    sortedMembers.forEach((m) => {
+      const key =
+        groupBy === "dept"
+          ? (m.dept || "미지정")
+          : groupBy === "mokjang"
+            ? (m.mokjang ?? m.group) || "미배정"
+            : (m.role || "미지정");
+      if (!map[key]) map[key] = [];
+      map[key].push(m);
     });
     for (const arr of Object.values(map)) {
-      arr.sort((a, b) => (ROLE_PRIORITY[a.role || ""] ?? 99) - (ROLE_PRIORITY[b.role || ""] ?? 99));
+      arr.sort((a, b) => (ROLE_PRIORITY[a.role || ""] ?? 99) - (ROLE_PRIORITY[b.role || ""] ?? 99) || (a.name || "").localeCompare(b.name || "", "ko"));
     }
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
-  }, [filtered]);
+    const entries = Object.entries(map);
+    if (groupBy === "role") {
+      return entries.sort(([a], [b]) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99) || a.localeCompare(b, "ko"));
+    }
+    return entries.sort(([a], [b]) => a.localeCompare(b, "ko"));
+  }, [filtered, groupBy]);
 
-  const selectedGroupMembers = selectedMokjang ? (grouped.find(([name]) => name === selectedMokjang)?.[1] ?? []) : [];
+  const selectedGroupMembers = selectedGroupKey ? (grouped.find(([name]) => name === selectedGroupKey)?.[1] ?? []) : [];
   const totalPagesGroup = Math.max(1, Math.ceil(selectedGroupMembers.length / PAGE_SIZE_MEM));
   const currentPageGroup = Math.min(pageGroup, totalPagesGroup);
   const pageGroupMembers = selectedGroupMembers.slice((currentPageGroup - 1) * PAGE_SIZE_MEM, currentPageGroup * PAGE_SIZE_MEM);
@@ -1521,6 +1623,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const totalPagesList = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE_MEM));
   const currentPageList = Math.min(pageList, totalPagesList);
   const pageListMembers = filtered.slice((currentPageList - 1) * PAGE_SIZE_MEM, currentPageList * PAGE_SIZE_MEM);
+
+  useEffect(() => {
+    setPageList((p) => Math.min(p, totalPagesList));
+    setPageGroup((p) => Math.min(p, totalPagesGroup));
+  }, [totalPagesList, totalPagesGroup]);
 
   const cycleAtt = (id: string) => {
     setDb(prev => {
@@ -1549,20 +1656,117 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap", width: "100%", minWidth: 0, ...(mob ? { flexShrink: 0 } : {}) }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
           <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textMuted }}><Icons.Search /></div>
-          <input value={search} onChange={e => { setSearch(e.target.value); setPageList(1); setPageGroup(1); }} placeholder="이름, 연락처 검색..." style={{ width: "100%", height: mob ? tokens.height.mobileInput : tokens.height.desktopInput, padding: mob ? tokens.space.padding.mobileInput : tokens.space.padding.desktopInput, fontFamily: "inherit", fontSize: mob ? 11 : tokens.fontSize.desktop.search, background: C.card, border: `1px solid ${C.border}`, borderRadius: mob ? tokens.radius.sm : tokens.radius.lg, color: C.text, outline: "none", boxSizing: "border-box" }} />
+          <input
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addSearchTerm();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setSearchInput("");
+              }
+            }}
+            placeholder="이름, 연락처 검색..."
+            style={{
+              width: "100%",
+              height: mob ? tokens.height.mobileInput : tokens.height.desktopInput,
+              paddingRight: 56,
+              paddingLeft: 34,
+              fontFamily: "inherit",
+              fontSize: mob ? 11 : tokens.fontSize.desktop.search,
+              background: C.card,
+              border: `1px solid ${C.border}`,
+              borderRadius: mob ? tokens.radius.sm : tokens.radius.lg,
+              color: C.text,
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+          <button
+            type="button"
+            onClick={addSearchTerm}
+            style={{
+              position: "absolute",
+              right: 8,
+              top: "50%",
+              transform: "translateY(-50%)",
+              height: mob ? 26 : 30,
+              padding: mob ? "0 10px" : "0 12px",
+              borderRadius: 10,
+              border: `1px solid ${C.border}`,
+              background: C.bg,
+              color: C.textMuted,
+              cursor: "pointer",
+              fontSize: mob ? 10 : 12,
+              fontWeight: 600,
+              fontFamily: "inherit",
+              whiteSpace: "nowrap",
+            }}
+          >
+            검색
+          </button>
         </div>
+        {searchTerms.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 6,
+              alignItems: "center",
+              width: "100%",
+              minWidth: 0,
+            }}
+          >
+            {searchTerms.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => removeSearchTerm(t)}
+                title="클릭하여 제거"
+                style={{
+                  height: mob ? 26 : 30,
+                  padding: mob ? "0 10px" : "0 12px",
+                  borderRadius: 999,
+                  border: `1px solid ${C.border}`,
+                  background: C.bg,
+                  color: C.text,
+                  cursor: "pointer",
+                  fontSize: mob ? 10 : 12,
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  whiteSpace: "nowrap",
+                  maxWidth: "100%",
+                }}
+              >
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{t}</span>
+                <span style={{ color: C.textMuted, fontWeight: 800 }}>×</span>
+              </button>
+            ))}
+          </div>
+        )}
         {mob ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%" }}>
-            <select
-              id="debug-dept"
-              className="members-mob-filter-select"
+            <ModernSelect
               value={deptF}
-              onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }}
-              style={{ minWidth: 0, width: "100%", appearance: "none", WebkitAppearance: "none", fontFamily: "inherit", color: C.text, cursor: "pointer", outline: "none" }}
-            >
-              <option value="all">부서</option>
-              {depts.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
+              onChange={(v) => { setDeptF(v); setPageList(1); setPageGroup(1); }}
+              options={deptSelectOptions}
+              compact
+              uniform32
+              style={{ marginBottom: 0 }}
+            />
+            <ModernSelect
+              value={roleF}
+              onChange={(v) => { setRoleF(v); setPageList(1); setPageGroup(1); }}
+              options={roleSelectOptions}
+              compact
+              uniform32
+              style={{ marginBottom: 0 }}
+            />
             <select
               id="debug-status"
               className="members-mob-filter-select"
@@ -1629,18 +1833,9 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
           </div>
         ) : (
           <>
-            <select value={deptF} onChange={e => { setDeptF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
-              <option value="all">부서</option>
-              {depts.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-            <select value={roleF} onChange={e => { setRoleF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
-              <option value="all">직분</option>
-              {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <select value={mokjangF} onChange={e => { setMokjangF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
-              <option value="all">목장</option>
-              {mokjangList.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+            <ModernSelect value={deptF} onChange={(v) => { setDeptF(v); setPageList(1); setPageGroup(1); }} options={deptSelectOptions} style={{ marginBottom: 0, minWidth: 120 }} />
+            <ModernSelect value={mokjangF} onChange={(v) => { setMokjangF(v); setPageList(1); setPageGroup(1); }} options={mokjangSelectOptions} style={{ marginBottom: 0, minWidth: 120 }} />
+            <ModernSelect value={roleF} onChange={(v) => { setRoleF(v); setPageList(1); setPageGroup(1); }} options={roleSelectOptions} style={{ marginBottom: 0, minWidth: 120 }} />
             <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
               <option value="all">전체 상태</option>
               {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
@@ -1657,32 +1852,50 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         )}
       </div>
 
-      {/* ─── 뷰 토글 — 모바일: 가로 전체 균등 분할(우측 빈 여백 방지) ─── */}
-      <div style={mob ? { display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: 6, width: "100%", minWidth: 0, flexShrink: 0 } : { display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ position: "relative", width: "100%", minWidth: 0, ...(mob ? { flex: "1 1 100%" } : {}) }}>
-          <SegmentedControl
-            items={viewSegmentItems}
-            value={viewMode}
-            onChange={onViewSegmentChange}
-            columns={2}
-            size={mob ? "sm" : "md"}
-            fullWidth
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : viewMode === "group" ? "180px 180px" : "180px", gap: 8, width: "100%", minWidth: 0, ...(mob ? { flexShrink: 0 } : {}) }}>
+        <ModernSelect
+          value={viewMode}
+          onChange={(v) => {
+            const next = v === "group" ? "group" : "list";
+            setViewMode(next);
+            setSelectedGroupKey(null);
+            setPageGroup(1);
+            setPageList(1);
+          }}
+          options={viewModeOptions}
+          compact={mob}
+          uniform32={mob}
+          style={{ marginBottom: 0 }}
+        />
+        {viewMode === "group" && (
+          <ModernSelect
+            value={groupBy}
+            onChange={(v) => {
+              const next = v === "dept" || v === "mokjang" || v === "role" ? v : "dept";
+              setGroupBy(next);
+              setSelectedGroupKey(null);
+              setPageGroup(1);
+            }}
+            options={groupByOptions}
+            compact={mob}
+            uniform32={mob}
+            style={{ marginBottom: 0 }}
           />
-        </div>
+        )}
       </div>
 
       <div style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : { width: "100%", minWidth: 0 }}>
       {/* ─── 목장별 뷰: 목장 이름만 진열 → 클릭 시 목장원 표시 (10명 단위 페이지) ─── */}
       {viewMode === "group" && (
         <>
-          {selectedMokjang === null ? (
+          {selectedGroupKey === null ? (
             /* 목장 이름 카드만 진열 */
             <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, ...(mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const, alignContent: "start" } : {}) }}>
               {grouped.length === 0 ? (
                 <Card><div style={{ textAlign: "center", color: C.textMuted, padding: 24 }}>검색 결과가 없습니다</div></Card>
               ) : grouped.map(([gName, gMembers]) => (
-                <button key={gName} type="button" onClick={() => { setSelectedMokjang(gName); setPageGroup(1); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 18px", background: "var(--color-primary-soft)", color: "var(--color-primary)", border: "1px solid var(--color-primary)", borderRadius: 16, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700, textAlign: "left", transition: "transform 0.15s, box-shadow 0.2s" }}>
-                  <span>🏠 {gName}</span>
+                <button key={gName} type="button" onClick={() => { setSelectedGroupKey(gName); setPageGroup(1); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 18px", background: "var(--color-primary-soft)", color: "var(--color-primary)", border: "1px solid var(--color-primary)", borderRadius: 16, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700, textAlign: "left", transition: "transform 0.15s, box-shadow 0.2s" }}>
+                  <span>{groupBy === "dept" ? "🏢 " : groupBy === "mokjang" ? "🏠 " : "🏷️ "}{gName}</span>
                   <span style={{ background: "rgba(255,255,255,0.25)", padding: "4px 10px", borderRadius: 20, fontSize: 13, fontWeight: 600 }}>{gMembers.length}명</span>
                 </button>
               ))}
@@ -1692,8 +1905,8 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
             <div style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { minWidth: 0 } : {}) }}>
               <div ref={listRef} style={{ flex: 1, minHeight: 0, ...(mob ? { overflowY: "auto", WebkitOverflowScrolling: "touch" as const } : {}) }}><Card style={{ padding: 0, overflow: "hidden", border: `1px solid ${C.border}`, borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
                 <div style={{ padding: "14px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                  <button type="button" onClick={() => { setSelectedMokjang(null); setPageGroup(1); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "none", background: "transparent", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 목장 목록</button>
-                  <span style={{ color: C.text, fontWeight: 700 }}>🏠 {selectedMokjang} ({selectedGroupMembers.length}명)</span>
+                  <button type="button" onClick={() => { setSelectedGroupKey(null); setPageGroup(1); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "none", background: "transparent", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 그룹 목록</button>
+                  <span style={{ color: C.text, fontWeight: 700 }}>{selectedGroupKey} ({selectedGroupMembers.length}명)</span>
                 </div>
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? listMobCell : 14 }}>
@@ -1708,7 +1921,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                       {pageGroupMembers.map((m, idx) => {
                         const ws = (db.attendance[m.id] || {})[currentWeek] || "n";
                         const globalIdx = (currentPageGroup - 1) * PAGE_SIZE_MEM + idx;
-                        const isLeader = globalIdx === 0;
+                        const isLeader = groupBy === "mokjang" && globalIdx === 0;
                         const notes = (db.notes[m.id] || []).slice().reverse();
                         const lastVisit = notes.find(n => n.type === "visit");
                         const prayerSnip = m.prayer ? (m.prayer.length > 20 ? m.prayer.substring(0, 20) + "…" : m.prayer) : "-";
@@ -1759,22 +1972,22 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                 <div className="min-h-0 overflow-x-auto w-full max-w-full">
                   <table className="w-full table-fixed border-collapse text-sm">
                     <colgroup>
-                      <col className="w-[5%]" />
-                      <col className="w-[17%]" />
-                      <col className="w-[10%]" />
-                      <col className="w-[10%]" />
-                      <col className="w-[6%]" />
-                      <col className="w-[14%]" />
-                      <col className="w-[12%]" />
-                      <col className="w-[12%]" />
-                      <col className="w-[8%]" />
+                      <col className="w-[52px]" />
+                      <col className="w-[190px]" />
+                      <col className="w-[120px]" />
+                      <col className="w-[190px]" />
+                      <col className="w-[72px]" />
+                      <col className="w-[160px] md:w-[220px] lg:w-[260px]" />
+                      <col className="w-[180px]" />
+                      <col className="w-[180px]" />
+                      <col className="w-[68px]" />
                     </colgroup>
                     <thead className="border-b border-gray-200 bg-gray-50/95">
                       <tr>
-                        {(["번호", "이름", "부서", "목장", "출석", "기도제목", "최근 심방", "최근 메모", "기록"] as const).map((h, i) => (
+                        {(["번호", "이름", "직분", "부서", "출석", "기도제목", "최근 심방", "최근 메모", "기록"] as const).map((h, i) => (
                           <th
                             key={h}
-                            className={`px-2 py-3 font-semibold text-[#1e40af] ${i === 0 ? "text-center" : i === 4 || i === 8 ? "text-center" : "text-left"}`}
+                            className={`py-3 font-semibold text-[#1e40af] ${i === 0 || i === 8 ? "px-2" : "px-3"} ${i === 0 ? "text-center" : i === 2 || i === 4 || i === 8 ? "text-center" : "text-left"}`}
                           >
                             {h}
                           </th>
@@ -1783,13 +1996,26 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                     </thead>
                     <tbody>
                       {filtered.length === 0 ? (
-                        <tr>
-                          <td colSpan={9} className="py-12 text-center text-gray-500">
-                            <div style={{ fontSize: 48, opacity: 0.3, marginBottom: 12 }}>📭</div>
-                            <div className="text-base font-semibold text-gray-900 mb-1">성도가 없습니다</div>
-                            <div className="text-sm">&apos;새 교인 등록&apos; 버튼으로 첫 성도를 등록해 주세요</div>
-                          </td>
-                        </tr>
+                        Array.from({ length: PAGE_SIZE_MEM }, (_, idx) => {
+                          const centerIdx = Math.floor(PAGE_SIZE_MEM / 2);
+                          if (idx === centerIdx) {
+                            return (
+                              <tr key={`members-empty-msg-${idx}`} className="h-12 border-b border-gray-100">
+                                <td colSpan={9} className="h-12 px-2 text-center align-middle text-gray-500">
+                                  <div className="inline-flex items-center gap-2">
+                                    <span style={{ fontSize: 18, opacity: 0.45 }}>📭</span>
+                                    <span className="text-sm font-medium">검색 결과가 없습니다</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          }
+                          return (
+                            <tr key={`members-empty-pad-${idx}`} className="h-12 border-b border-gray-100" aria-hidden>
+                              <td colSpan={9} className="h-12 p-0" />
+                            </tr>
+                          );
+                        })
                       ) : (
                         Array.from({ length: PAGE_SIZE_MEM }, (_, idx) => {
                           const m = pageListMembers[idx];
@@ -1806,6 +2032,15 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                           const lastMemo = notes.find((n) => n.type === "memo");
                           const lastPrayerNote = notes.find((n) => n.type === "prayer");
                           const lastVisit = notes.find((n) => n.type === "visit");
+                          const roleLabel = (m.role || "").trim();
+                          const deptLabel = (m.dept || "").trim();
+                          const mokjangLabel = ((m.mokjang ?? m.group) || "").trim();
+                          const primaryRoleText =
+                            roleLabel && roleLabel !== "학생" ? roleLabel : (deptLabel || roleLabel || "-");
+                          const affiliationText =
+                            deptLabel && mokjangLabel
+                              ? `${deptLabel} · ${mokjangLabel}`
+                              : deptLabel || mokjangLabel || "-";
                           const prayerPreview = m.prayer || lastPrayerNote?.content || "";
                           const prayerSnip = prayerPreview
                             ? prayerPreview.length > 15
@@ -1841,17 +2076,18 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                                   </div>
                                   <div className="min-w-0">
                                     <div className="truncate font-medium text-gray-900">{m.name}</div>
-                                    <div className="truncate text-xs text-gray-500">{m.role || ""}</div>
                                   </div>
                                 </div>
                               </td>
-                              <td className="overflow-hidden px-3 py-3 align-middle">
-                                <SBadge variant="gray" style={mob ? { fontSize: 9, padding: "1px 6px" } : undefined}>
-                                  {m.dept || "-"}
-                                </SBadge>
+                              <td className="overflow-hidden px-3 py-3 align-middle text-center">
+                                <div className="flex justify-center">
+                                  <SBadge variant="gray" style={mob ? { fontSize: 9, padding: "1px 6px" } : undefined}>
+                                    {primaryRoleText}
+                                  </SBadge>
+                                </div>
                               </td>
-                              <td className="overflow-hidden px-3 py-3 align-middle text-gray-600 truncate text-sm">
-                                {(m.mokjang ?? m.group) || "-"}
+                              <td className="overflow-hidden px-3 py-3 align-middle text-gray-600 text-sm">
+                                <div className="truncate">{affiliationText}</div>
                               </td>
                               <td className="px-3 py-3 text-center align-middle">
                                 <div className="flex justify-center">
@@ -1866,10 +2102,14 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                                   openQuickNote(m.id, m.name || "?", "prayer");
                                 }}
                               >
-                                {prayerSnip || <span className="text-gray-300">+ 추가</span>}
+                                {prayerSnip ? (
+                                  <div className="w-full overflow-hidden text-ellipsis whitespace-nowrap">{prayerSnip}</div>
+                                ) : (
+                                  <span className="text-gray-300 whitespace-nowrap">+ 추가</span>
+                                )}
                               </td>
-                              <td className="overflow-hidden px-3 py-3 align-middle text-sm text-gray-600 truncate max-w-0">
-                                {lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 12)}…` : "-"}
+                              <td className="overflow-hidden px-3 py-3 align-middle text-sm text-gray-600 max-w-0">
+                                <div className="truncate">{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 12)}…` : "-"}</div>
                               </td>
                               <td className="overflow-hidden px-3 py-3 align-middle max-w-0" onClick={(e) => e.stopPropagation()}>
                                 {memoSnip ? (
@@ -2405,6 +2645,7 @@ function NewFamilySub({ db, setDb, openProgramDetail, openMemberModal, toast }: 
   const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState<"all" | "진행중" | "수료" | "중단" | "no_mentor">("all");
   const [nfSubTab, setNfSubTab] = useState<"list" | "servant">("list");
+  const PAGE_SIZE_NEWFAMILY = 5;
 
   const programs = db.newFamilyPrograms || [];
   const nfMembers = db.members.filter(m => m.is_new_family === true);
@@ -2451,7 +2692,10 @@ function NewFamilySub({ db, setDb, openProgramDetail, openMemberModal, toast }: 
     return list;
   }, [nfMembers, programs, filter]);
 
-  const paginated = useMemo(() => filteredList.slice((currentPage - 1) * 10, currentPage * 10), [filteredList, currentPage]);
+  const paginated = useMemo(
+    () => filteredList.slice((currentPage - 1) * PAGE_SIZE_NEWFAMILY, currentPage * PAGE_SIZE_NEWFAMILY),
+    [filteredList, currentPage]
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -2476,21 +2720,20 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 10 : 20, ...(mob ? { minHeight: MOB_PANEL_MIN_H } : {}) }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 12, ...(mob ? { minHeight: MOB_PANEL_MIN_H } : {}) }}>
       <div
         style={{
           display: "flex",
-          gap: 8,
-          marginBottom: 4,
+          gap: 12,
+          marginBottom: 2,
+          flexWrap: "wrap",
           ...(mob ? { flexShrink: 0 } : {}),
           ...(mob
             ? {}
             : {
-                position: "sticky",
-                top: 0,
-                zIndex: 10,
-                background: C.card,
-                paddingTop: 8,
+                position: "static",
+                background: "transparent",
+                paddingTop: 0,
                 paddingBottom: 0,
               }),
         }}
@@ -2501,11 +2744,18 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
             type="button"
             onClick={() => setNfSubTab(tab.id)}
             style={{
-              padding: mob ? "5px 10px" : "8px 16px", borderRadius: 8, fontSize: mob ? 11 : 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+              height: mob ? 34 : 34,
+              padding: mob ? "0 14px" : "0 16px",
+              borderRadius: 10,
+              fontSize: mob ? 13 : 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "inherit",
               background: nfSubTab === tab.id ? C.accentBg : C.card,
               color: nfSubTab === tab.id ? C.accent : C.textMuted,
               border: nfSubTab === tab.id ? "1px solid var(--color-primary)" : `1px solid ${C.border}`,
               boxSizing: "border-box",
+              whiteSpace: "nowrap",
             }}
           >
             {tab.label}
@@ -2517,7 +2767,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
 
       {nfSubTab === "list" && (
       <div style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : {}}>
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: mob ? 6 : 12, ...(mob ? { flexShrink: 0, marginBottom: 12 } : {}) }}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: mob ? 6 : 12, ...(mob ? { flexShrink: 0, marginBottom: 18 } : { marginBottom: 8 }) }}>
         {[
           { label: "이번 달 새가족", value: `${thisMonthCount}명`, sub: thisMonth.replace("-", ".") },
           { label: "정착 진행중", value: `${inProgressCount}명`, sub: "프로그램" },
@@ -2543,7 +2793,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
       </div>
 
       <div ref={listRef} style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { minWidth: 0 } : {}) }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: mob ? 4 : 8, marginBottom: mob ? 8 : 16, ...(mob ? { flexShrink: 0 } : {}) }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: mob ? 8 : 8, marginBottom: mob ? 12 : 16, ...(mob ? { flexShrink: 0 } : {}) }}>
           {(["all", "진행중", "수료", "중단", "no_mentor"] as const).map(f => (
             <button key={f} type="button" onClick={() => { setFilter(f); setCurrentPage(1); }} style={{
               padding: mob ? "4px 10px" : "8px 14px", borderRadius: 8, fontSize: mob ? 10 : 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box",
@@ -2614,7 +2864,13 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
           </div>
         )}
         {filteredList.length > 0 && (
-          <Pagination compact={mob} totalItems={filteredList.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
+          <Pagination
+            compact={mob}
+            totalItems={filteredList.length}
+            itemsPerPage={PAGE_SIZE_NEWFAMILY}
+            currentPage={currentPage}
+            onPageChange={(p) => setCurrentPage(p)}
+          />
         )}
       </div>
       </div>
@@ -3319,7 +3575,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     setEditMbrId(id || null);
     const mokjangOptions = getMokjangList(db);
     if (m) {
-      setFName(m.name || ""); setFDept(m.dept || depts[0] || ""); setFRole(m.role || "");
+      setFName(m.name || ""); setFDept(m.dept || ""); setFRole(m.role || "");
       setFBirth(m.birth || ""); setFGender(m.gender || ""); setFPhone(m.phone || "");
       setFAddr(m.address || ""); setFFamily(m.family || ""); setFStatus(m.status || "새가족");
       setFSource(m.source || ""); setFPrayer(m.prayer || ""); setFMemo(m.memo || ""); setFPhoto(m.photo || "");
@@ -3327,7 +3583,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       setFGroup((m.mokjang ?? m.group) && mokjangOptions.includes((m.mokjang ?? m.group) || "") ? ((m.mokjang ?? m.group) || "") : ((m.mokjang ?? m.group) || ""));
       setFVisitPath((m.visit_path ?? m.visitPath) || ""); setFReferrerId(m.referrer_id || ""); setFJob(m.job || ""); setFFirstVisitDate((m.first_visit_date ?? m.firstVisitDate) || todayStr());
     } else {
-      setFName(""); setFDept(depts[0] || ""); setFRole(""); setFBirth(""); setFGender("");
+      setFName(""); setFDept(""); setFRole(""); setFBirth(""); setFGender("");
       setFPhone(""); setFAddr(""); setFFamily(""); setFStatus("새가족"); setFSource("");
       setFPrayer(""); setFMemo(""); setFPhoto(""); setFPhotoServerUrl("");
       setFGroup("");
@@ -3641,16 +3897,14 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                 style={{
                   marginBottom: mob ? 6 : 16,
                   paddingBottom: mob ? 8 : 12,
-                  borderBottom: `1px solid ${C.border}`,
+                  borderBottom: "none",
                   boxSizing: "border-box",
                   ...(mob
                     ? {}
                     : {
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        background: C.card,
-                        paddingTop: 8,
+                        position: "static",
+                        background: "transparent",
+                        paddingTop: 0,
                         paddingBottom: 0,
                       }),
                 }}
@@ -3701,14 +3955,34 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                     ))}
                   </>
                 ) : (
-                  <SegmentedControl
-                    items={attendanceSegmentItems}
-                    value={attendanceSubTab}
-                    onChange={(id) => setAttendanceSubTab(id as AttendanceSubTab)}
-                    columns={4}
-                    size="md"
-                    fullWidth
-                  />
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+                    {attendanceSegmentItems.map((item) => {
+                      const active = attendanceSubTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setAttendanceSubTab(item.id as AttendanceSubTab)}
+                          style={{
+                            height: 34,
+                            padding: "0 16px",
+                            borderRadius: 10,
+                            border: active ? "1px solid var(--color-primary)" : `1px solid ${C.border}`,
+                            background: active ? C.accentBg : C.card,
+                            color: active ? C.accent : C.textMuted,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            fontFamily: "inherit",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                            boxSizing: "border-box",
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
               {attendanceSubTab === "dashboard" && (
