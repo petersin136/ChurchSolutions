@@ -77,6 +77,44 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
   const handleLogout = async () => {
     await signOut();
   };
+  const focusFirstSearchInput = () => {
+    if (typeof window === "undefined") return;
+    const selectors = [
+      'input[placeholder*="검색"]',
+      'input[placeholder*="search"]',
+      'input[type="search"]',
+      "input",
+    ];
+    setTimeout(() => {
+      for (const selector of selectors) {
+        const target = document.querySelector(selector) as HTMLInputElement | null;
+        if (target && !target.disabled) {
+          target.focus();
+          target.select?.();
+          break;
+        }
+      }
+    }, 80);
+  };
+  const handleQuickSearch = () => {
+    setCurrentPage("pastoral");
+    focusFirstSearchInput();
+  };
+  const handleOpenProfile = () => {
+    setCurrentPage("settings");
+    toast("설정 페이지에서 사용자 정보를 확인하세요", "ok");
+  };
+  const handleOpenHelp = () => {
+    setCurrentPage("reports");
+    toast("도움말/보고서 페이지로 이동했습니다", "ok");
+  };
+  const handleOpenNotifications = () => {
+    setCurrentPage("visit");
+    toast("심방·상담 페이지로 이동했습니다", "ok");
+  };
+  const handleOpenSettings = () => {
+    setCurrentPage("settings");
+  };
 
   const noop = () => {};
   const noopStr = (_: string | null) => {};
@@ -135,7 +173,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
       </main>
 
       <aside className="pc-right-bar" aria-label="빠른 도구">
-        <button type="button" className="pc-right-btn" title="검색">
+        <button type="button" className="pc-right-btn" title="검색" onClick={handleQuickSearch}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.3-4.3" />
@@ -144,28 +182,28 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
         <div className="pc-right-church">
           <span className="pc-right-church-name">{user?.email?.split("@")[0] || "사용자"}</span>
         </div>
-        <button type="button" className="pc-right-btn pc-right-avatar" title="프로필">
+        <button type="button" className="pc-right-btn pc-right-avatar" title="프로필" onClick={handleOpenProfile}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
             <circle cx="12" cy="7" r="4" />
           </svg>
         </button>
         <div className="pc-right-divider" />
-        <button type="button" className="pc-right-btn" title="도움말">
+        <button type="button" className="pc-right-btn" title="도움말" onClick={handleOpenHelp}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="12" cy="12" r="10" />
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
             <path d="M12 17h.01" />
           </svg>
         </button>
-        <button type="button" className="pc-right-btn" title="알림">
+        <button type="button" className="pc-right-btn" title="알림" onClick={handleOpenNotifications}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
           <span className="pc-right-badge" />
         </button>
-        <button type="button" className="pc-right-btn" title="설정">
+        <button type="button" className="pc-right-btn" title="설정" onClick={handleOpenSettings}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
             <circle cx="12" cy="12" r="3" />
