@@ -4,7 +4,7 @@ import type { DB } from "@/types/db";
 import type { PageId, ToastItem } from "./SuperPlanner";
 import { PastoralPage } from "./PastoralPage";
 import { FinancePage } from "./FinancePage";
-import { VisitCounselPage } from "./VisitCounselPage";
+import { VisitCounselPage, VISIT_COUNSEL_SET_SUB_EVENT } from "./VisitCounselPage";
 import { BulletinPage } from "./BulletinPage";
 import { Toast } from "./Toast";
 import { Modals } from "./Modals";
@@ -110,7 +110,8 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
   };
   const handleOpenNotifications = () => {
     setCurrentPage("visit");
-    toast("심방·상담 페이지로 이동했습니다", "ok");
+    window.dispatchEvent(new CustomEvent(VISIT_COUNSEL_SET_SUB_EVENT, { detail: "followup" }));
+    toast("심방·상담 · 후속 조치 탭으로 이동했습니다", "ok");
   };
   const handleOpenSettings = () => {
     setCurrentPage("settings");

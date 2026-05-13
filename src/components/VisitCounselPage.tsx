@@ -2082,6 +2082,11 @@ function SettingsSub({ db, setDb, persist, toast }: { db: VCDB; setDb: React.Dis
    ============================================================ */
 type SubPage = "dash" | "visits" | "counsels" | "followup";
 
+/** Dispatched on `window` with `detail: SubPage` to switch 심방·상담 탭 without remounting. */
+export const VISIT_COUNSEL_SET_SUB_EVENT = "visitCounsel:setSub";
+
+const SUB_PAGE_KEYS = new Set<SubPage>(["dash", "visits", "counsels", "followup"]);
+
 const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dash", Icon: LayoutDashboard, label: "대시보드" },
   { id: "visits", Icon: Home, label: "심방 기록" },
@@ -2112,6 +2117,17 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
   const [visitsLoading, setVisitsLoading] = useState(false);
   const [visitSaving, setVisitSaving] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; msg: string }[]>([]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const d = (e as CustomEvent<string>).detail;
+      if (typeof d === "string" && SUB_PAGE_KEYS.has(d as SubPage)) {
+        setActiveSub(d as SubPage);
+      }
+    };
+    window.addEventListener(VISIT_COUNSEL_SET_SUB_EVENT, handler as EventListener);
+    return () => window.removeEventListener(VISIT_COUNSEL_SET_SUB_EVENT, handler as EventListener);
+  }, []);
 
   useEffect(() => {
     if (mainDb?.members) {
