@@ -121,5 +121,9 @@
     "files": [
       "static/chunks/_app-pages-browser_node_modules_jspdf_dist_jspdf_es_min_js.js"
     ]
+  },
+  "src/components/workflow/WorkflowCardModal.tsx -> @/lib/supabase": {
+    "id": "src/components/workflow/WorkflowCardModal.tsx -> @/lib/supabase",
+    "files": []
   }
 }

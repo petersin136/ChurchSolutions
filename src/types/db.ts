@@ -473,6 +473,115 @@ export interface SchoolTransferHistory {
   created_at?: string;
 }
 
+/* ────────────────────────────────────────────────────────────
+ *  사역흐름 (Workflow) — Planning Center People 컨셉의 한국형 구현
+ *  DB는 snake_case, TS는 동일 키를 유지 (기존 Family/Organization 패턴)
+ * ────────────────────────────────────────────────────────────*/
+
+/** 시드된 시스템 템플릿 식별자 — workflows.template_key 와 1:1 매칭 */
+export type WorkflowTemplateKey =
+  | "new_family"
+  | "absentee_recovery"
+  | "baptism"
+  | "ordination"
+  | "reactivation";
+
+export type WorkflowCategory =
+  | "새가족" | "결석회복" | "세례" | "임직" | "휴면복귀" | "심방" | "상담" | "기타";
+
+export type WorkflowCardStage = "open" | "snoozed" | "completed" | "dropped";
+export type WorkflowCardPriority = "low" | "normal" | "high" | "urgent";
+export type WorkflowCardSource =
+  | "manual" | "auto_new_family" | "auto_absentee" | "import" | "api";
+
+/** 사역흐름 정의 (workflows) */
+export interface Workflow {
+  id: string;
+  church_id: string;
+  name: string;
+  description?: string | null;
+  category: WorkflowCategory;
+  template_key?: WorkflowTemplateKey | null;
+  is_active: boolean;
+  color?: string | null;
+  icon?: string | null;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** 사역흐름 단계의 체크리스트 항목 1개 (workflow_steps.checklist_items 배열 요소) */
+export interface WorkflowChecklistItem {
+  id: string;
+  label: string;
+  order: number;
+}
+
+/** 카드별 체크리스트 진행 상태 (workflow_cards.checklist_state JSONB) */
+export interface WorkflowChecklistState {
+  /** checklist item id → checked */
+  items?: Record<string, boolean>;
+  /** workflow_step id → 완료일 YYYY-MM-DD */
+  step_dates?: Record<string, string | null>;
+  /** workflow_step id → 단계 메모 */
+  step_notes?: Record<string, string | null>;
+}
+
+/** 사역흐름 단계 (workflow_steps) */
+export interface WorkflowStep {
+  id: string;
+  church_id: string;
+  workflow_id: string;
+  name: string;
+  description?: string | null;
+  sort_order: number;
+  expected_days?: number | null;
+  auto_promote_days?: number | null;
+  is_terminal: boolean;
+  /** 체크리스트 항목 (없거나 빈 배열이면 체크박스 UI 미표시) */
+  checklist_items?: WorkflowChecklistItem[] | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** 진행카드 (workflow_cards) */
+export interface WorkflowCard {
+  id: string;
+  church_id: string;
+  workflow_id: string;
+  current_step_id?: string | null;
+  member_id?: string | null;
+  member_name: string;
+  member_phone?: string | null;
+  assignee_id?: string | null;
+  assignee_name?: string | null;
+  stage: WorkflowCardStage;
+  priority: WorkflowCardPriority;
+  due_date?: string | null;
+  snooze_until?: string | null;
+  moved_to_step_at: string;
+  completed_at?: string | null;
+  source: WorkflowCardSource;
+  source_ref?: string | null;
+  /** 단계별 체크리스트·완료일·메모 누적 (JSONB) */
+  checklist_state?: WorkflowChecklistState | null;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** 카드 메모 (workflow_card_notes) */
+export interface WorkflowCardNote {
+  id: string;
+  church_id: string;
+  card_id: string;
+  step_id?: string | null;
+  content: string;
+  author_id?: string | null;
+  author_name?: string | null;
+  created_at: string;
+}
+
 export interface DB {
   settings: Settings;
   members: Member[];
