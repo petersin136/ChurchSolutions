@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react";
-import type { DB, SchoolDepartment, SchoolClass, SchoolEnrollment, Workflow, WorkflowStep, WorkflowCard } from "@/types/db";
+import type { DB, SchoolDepartment, SchoolClass, SchoolEnrollment, Workflow, WorkflowStep, WorkflowCard, CeremonyTemplate, CeremonyStep, CeremonySession } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +53,10 @@ interface AppDataContextType {
   workflowSteps: WorkflowStep[];
   workflowCards: WorkflowCard[];
 
+  ceremonyTemplates: CeremonyTemplate[];
+  ceremonySteps: CeremonyStep[];
+  ceremonySessions: CeremonySession[];
+
   refreshAll: () => Promise<void>;
   refreshMembers: () => Promise<void>;
   refreshAttendance: () => Promise<void>;
@@ -71,6 +75,9 @@ interface AppDataContextType {
   refreshWorkflows: () => Promise<void>;
   refreshWorkflowSteps: () => Promise<void>;
   refreshWorkflowCards: () => Promise<void>;
+  refreshCeremonyTemplates: () => Promise<void>;
+  refreshCeremonySteps: () => Promise<void>;
+  refreshCeremonySessions: () => Promise<void>;
 }
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
@@ -96,6 +103,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [workflowCards, setWorkflowCards] = useState<WorkflowCard[]>([]);
+  const [ceremonyTemplates, setCeremonyTemplates] = useState<CeremonyTemplate[]>([]);
+  const [ceremonySteps, setCeremonySteps] = useState<CeremonyStep[]>([]);
+  const [ceremonySessions, setCeremonySessions] = useState<CeremonySession[]>([]);
   const channelRef = useRef<any>(null);
   const churchIdRef = useRef(churchId);
   churchIdRef.current = churchId;
@@ -295,6 +305,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       } else if (table === "workflow_cards") {
         const { data } = await supabase.from("workflow_cards").select("*").eq("church_id", cid).order("moved_to_step_at", { ascending: false });
         if (data) setWorkflowCards(data as WorkflowCard[]);
+      } else if (table === "ceremony_templates") {
+        const { data } = await supabase.from("ceremony_templates").select("*").order("is_system", { ascending: false }).order("sort_order", { ascending: true }).order("name", { ascending: true });
+        if (data) setCeremonyTemplates(data as CeremonyTemplate[]);
+      } else if (table === "ceremony_steps") {
+        const { data } = await supabase.from("ceremony_steps").select("*").order("template_id", { ascending: true }).order("step_order", { ascending: true });
+        if (data) setCeremonySteps(data as CeremonyStep[]);
+      } else if (table === "ceremony_sessions") {
+        const { data } = await supabase.from("ceremony_sessions").select("*").eq("church_id", cid).order("scheduled_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+        if (data) setCeremonySessions(data as CeremonySession[]);
       }
     } catch (e) {
       console.error(`[AppData] partial refresh ${table} failed:`, e);
@@ -420,6 +439,27 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       console.error("[AppData] workflow_cards timeout or error:", e);
     }
   }, [partialRefresh]);
+  const refreshCeremonyTemplates = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("ceremony_templates"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] ceremony_templates timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshCeremonySteps = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("ceremony_steps"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] ceremony_steps timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshCeremonySessions = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("ceremony_sessions"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] ceremony_sessions timeout or error:", e);
+    }
+  }, [partialRefresh]);
 
   const refreshCore = useCallback(async () => {
     const cid = churchIdRef.current;
@@ -450,6 +490,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       await refreshBudget();
       await Promise.all([refreshSchoolDepartments(), refreshSchoolClasses(), refreshSchoolEnrollments()]);
       await Promise.all([refreshWorkflows(), refreshWorkflowSteps(), refreshWorkflowCards()]);
+      await Promise.all([refreshCeremonyTemplates(), refreshCeremonySteps(), refreshCeremonySessions()]);
     } catch (e) {
       console.error("[AppData] background load error:", e);
     } finally {
@@ -471,6 +512,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     refreshWorkflows,
     refreshWorkflowSteps,
     refreshWorkflowCards,
+    refreshCeremonyTemplates,
+    refreshCeremonySteps,
+    refreshCeremonySessions,
   ]);
 
   const refreshAll = useCallback(async () => {
@@ -508,6 +552,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       "plans", "sermons", "settings", "budget",
       "school_departments", "school_classes", "school_enrollments",
       "workflows", "workflow_steps", "workflow_cards",
+      "ceremony_templates", "ceremony_steps", "ceremony_sessions",
     ];
 
     let channel = supabase.channel(`app-data-${churchId}`);
@@ -544,11 +589,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     db, setDb, saveDb, loading, loadError,
     rawAttendance, schoolDepartments, schoolClasses, schoolEnrollments,
     workflows, workflowSteps, workflowCards,
+    ceremonyTemplates, ceremonySteps, ceremonySessions,
     refreshAll, refreshMembers, refreshAttendance, refreshNotes,
     refreshVisits, refreshIncome, refreshExpense, refreshNewFamilyPrograms,
     refreshPlans, refreshSermons, refreshSettings, refreshBudget,
     refreshSchoolDepartments, refreshSchoolClasses, refreshSchoolEnrollments,
     refreshWorkflows, refreshWorkflowSteps, refreshWorkflowCards,
+    refreshCeremonyTemplates, refreshCeremonySteps, refreshCeremonySessions,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

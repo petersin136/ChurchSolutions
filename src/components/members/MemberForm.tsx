@@ -298,6 +298,37 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
           throw error;
         }
         memberId = (inserted as { id: string }).id;
+
+        // 새가족이면 정착 프로그램(4주) 자동 생성 — PastoralPage 등록 경로와 일관성 유지.
+        // 실패해도 멤버 등록은 롤백하지 않음 (사용자가 수동으로 보완 가능).
+        const statusStr = String(memberStatus ?? "");
+        const shouldCreateProgram =
+          payload.is_new_family === true ||
+          statusStr === "새가족" ||
+          statusStr === "정착중";
+        if (shouldCreateProgram) {
+          const startDate = firstVisitDate || new Date().toISOString().slice(0, 10);
+          const { error: nfpError } = await supabase
+            .from("new_family_program")
+            .insert({
+              member_id: memberId,
+              mentor_id: null,
+              program_start_date: startDate,
+              week1_completed: false, week1_date: null, week1_note: null,
+              week2_completed: false, week2_date: null, week2_note: null,
+              week3_completed: false, week3_date: null, week3_note: null,
+              week4_completed: false, week4_date: null, week4_note: null,
+              status: "진행중",
+              cell_group_assigned: null,
+              church_id: churchId,
+            });
+          if (nfpError) {
+            console.warn("[MemberForm] new_family_program 자동 생성 실패:", nfpError.message);
+            toast("정착 프로그램 자동 생성 실패: " + nfpError.message, "warn");
+          } else {
+            toast("정착 프로그램이 시작되었습니다 (4주 과정)", "ok");
+          }
+        }
       }
       let savedPhotoUrl: string | undefined = member?.photo;
       if (photoFile && memberId) {

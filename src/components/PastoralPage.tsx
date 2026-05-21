@@ -9,9 +9,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAppData, type RawAttendanceRow } from "@/contexts/AppDataContext";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
-import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, GitBranch } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, GitBranch, BookOpenCheck } from "lucide-react";
 import { WorkflowBoard } from "@/components/workflow";
-import { ensureNewFamilyCard } from "@/lib/workflow";
+import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -3345,7 +3345,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
 /* ============================================================
    MAIN COMPONENT
    ============================================================ */
-type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "workflow" | "settings";
+type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "workflow" | "ceremony" | "settings";
 
 const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dashboard", Icon: LayoutDashboard, label: "대시보드" },
@@ -3354,6 +3354,7 @@ const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[
   { id: "notes", Icon: StickyNote, label: "기도/메모" },
   { id: "newfamily", Icon: Sprout, label: "새가족 관리" },
   { id: "workflow", Icon: GitBranch, label: "사역흐름" },
+  { id: "ceremony", Icon: BookOpenCheck, label: "예식" },
   { id: "settings", Icon: Settings, label: "목장그룹관리" },
 ];
 
@@ -3364,10 +3365,11 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기도" },
   newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
   workflow: { title: "사역흐름", desc: "새가족·결석회복·세례 등 자동화된 목양 트랙" },
+  ceremony: { title: "예식 가이드", desc: "장례·추도·심방 등 교회 예식을 단계별로 진행합니다" },
   settings: { title: "목장그룹관리", desc: "목장·소그룹 생성 및 그룹원 관리" },
 };
 
-const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "workflow", "settings"];
+const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "workflow", "ceremony", "settings"];
 
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const { churchId } = useAuth();
@@ -3705,15 +3707,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           return next;
         });
         refreshMembers();
-        if (fStatus === "새가족" || fStatus === "정착중") {
-          void ensureNewFamilyCard({
-            id: newId,
-            name: newMember.name,
-            phone: newMember.phone ?? null,
-          }).then((card) => {
-            if (card) toast("새가족 사역흐름 카드가 생성되었습니다", "ok");
-          });
-        }
         toast("등록 완료", "ok");
       }
       setShowMemberModal(false);
@@ -4039,6 +4032,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openPrayerModal={openPrayerModal} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
           {activeSub === "workflow" && <WorkflowBoard toast={toast} />}
+          {activeSub === "ceremony" && <CeremonyBoard toast={toast} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} mokjangOnly />}
     </UnifiedPageLayout>
 
