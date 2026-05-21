@@ -492,7 +492,12 @@ export type WorkflowCategory =
 export type WorkflowCardStage = "open" | "snoozed" | "completed" | "dropped";
 export type WorkflowCardPriority = "low" | "normal" | "high" | "urgent";
 export type WorkflowCardSource =
-  | "manual" | "auto_new_family" | "auto_absentee" | "import" | "api";
+  | "manual"
+  | "auto_new_family"
+  | "auto_absentee"
+  | "absentee_management"
+  | "import"
+  | "api";
 
 /** 사역흐름 정의 (workflows) */
 export interface Workflow {

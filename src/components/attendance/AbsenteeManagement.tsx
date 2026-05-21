@@ -6,7 +6,9 @@ import { useAppData } from "@/contexts/AppDataContext";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
 import { ModernSelect } from "@/components/common/ModernSelect";
-import { ensureAbsenteeRecoveryCard } from "@/lib/workflow";
+import { WorkflowCardModal, WorkflowTemplatePicker } from "@/components/workflow";
+import { useWorkflowPermissions } from "@/lib/permissions";
+import type { WorkflowMemberRef } from "@/lib/workflow";
 import { GitBranch } from "lucide-react";
 
 export interface AbsenteeManagementProps {
@@ -133,24 +135,61 @@ export function AbsenteeManagement({
   toast,
 }: AbsenteeManagementProps) {
   const mob = useIsMobile();
-  const { db, rawAttendance } = useAppData();
+  const { db, rawAttendance, workflows, workflowCards } = useAppData();
+  const { canManage } = useWorkflowPermissions();
   const [nWeeks, setNWeeks] = useState(consecutiveWeeks);
   const [currentPage, setCurrentPage] = useState(1);
   const [deptFilter, setDeptFilter] = useState("");
   const [mokjangFilter, setMokjangFilter] = useState("");
 
+  // 회복 사역흐름 트리거용 state — picker/card 상세 모달 제어
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMember, setPickerMember] = useState<WorkflowMemberRef | null>(null);
+  const [cardModalId, setCardModalId] = useState<string | null>(null);
+
   const members = membersProp?.length ? membersProp : (db.members ?? []);
 
-  const startRecovery = async (memberId: string, cw: number) => {
+  const startRecovery = (memberId: string, cw: number) => {
     if (onStartRecoveryWorkflow) { onStartRecoveryWorkflow(memberId, cw); return; }
+    if (!canManage) {
+      toast?.("회복 사역흐름을 시작할 권한이 없습니다.", "warn");
+      return;
+    }
     const m = members.find((x) => x.id === memberId);
     if (!m) return;
-    const card = await ensureAbsenteeRecoveryCard(
-      { id: m.id, name: m.name, phone: m.phone ?? null },
-      cw,
+
+    // 1) absentee_recovery 템플릿 찾기
+    const recoveryWf = workflows.find(
+      (w) => w.is_active && w.template_key === "absentee_recovery",
     );
-    if (card) toast?.(`${m.name} 회복 사역흐름이 시작되었습니다`, "ok");
-    else toast?.("이미 진행 중이거나 템플릿이 없습니다", "warn");
+    if (!recoveryWf) {
+      toast?.("결석자 회복 사역흐름 템플릿이 없습니다. 시드 데이터 실행이 필요합니다.", "err");
+      return;
+    }
+
+    // 2) 이미 진행 중(open/snoozed) 카드가 있으면 새로 만들지 않고 그 카드를 띄움
+    const existingCard = workflowCards.find(
+      (c) =>
+        c.workflow_id === recoveryWf.id &&
+        c.member_id === m.id &&
+        (c.stage === "open" || c.stage === "snoozed"),
+    );
+    if (existingCard) {
+      toast?.("이미 진행 중인 회복 사역흐름이 있습니다.", "warn");
+      setCardModalId(existingCard.id);
+      return;
+    }
+
+    // 3) 새 카드 생성 흐름 — picker 열기 (우선순위/메모 등 보강 가능)
+    void cw; // consecutiveWeeks 는 picker 내부에서는 사용하지 않음 (감사 로그/메모로 보강 가능)
+    setPickerMember({ id: m.id, name: m.name, phone: m.phone ?? null });
+    setPickerOpen(true);
+  };
+
+  const handleCardCreated = (cardId: string) => {
+    setPickerOpen(false);
+    setPickerMember(null);
+    setCardModalId(cardId);
   };
   const attendanceList = useMemo(() => {
     if (attendanceListProp?.length) return attendanceListProp;
@@ -419,9 +458,10 @@ export function AbsenteeManagement({
                           ) : null}
                           <button
                             type="button"
-                            onClick={() => void startRecovery(member.id, cw)}
-                            title="회복 사역흐름 시작"
-                            className="h-5 shrink-0 rounded-md border border-[#1e40af] bg-white px-1.5 text-[8px] font-medium text-[#1e40af]"
+                            onClick={() => startRecovery(member.id, cw)}
+                            title={canManage ? "회복 사역흐름 시작" : "권한이 없습니다"}
+                            disabled={!canManage}
+                            className="h-5 shrink-0 rounded-md border border-[#1e40af] bg-white px-1.5 text-[8px] font-medium text-[#1e40af] disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <GitBranch size={10} />
                           </button>
@@ -546,11 +586,12 @@ export function AbsenteeManagement({
                               ) : null}
                               <button
                                 type="button"
-                                onClick={() => void startRecovery(member.id, cw)}
-                                className="inline-flex h-6 items-center justify-center gap-1 rounded-lg border border-[#1e40af] bg-white px-2.5 text-[11px] font-medium text-[#1e40af] shadow-sm hover:bg-[#eef1fb]"
-                                title="회복 사역흐름 시작"
+                                onClick={() => startRecovery(member.id, cw)}
+                                disabled={!canManage}
+                                className="inline-flex h-6 items-center justify-center gap-1 rounded-lg border border-[#1e40af] bg-white px-2.5 text-[11px] font-medium text-[#1e40af] shadow-sm hover:bg-[#eef1fb] disabled:cursor-not-allowed disabled:opacity-40"
+                                title={canManage ? "회복 사역흐름 시작" : "권한이 없습니다"}
                               >
-                                <GitBranch size={12} /> 회복
+                                <GitBranch size={12} /> 회복 시작
                               </button>
                             </div>
                           </td>
@@ -570,6 +611,25 @@ export function AbsenteeManagement({
           </>
         )}
       </div>
+
+      {/* 회복 사역흐름 시작 — picker (preset 적용) */}
+      <WorkflowTemplatePicker
+        open={pickerOpen}
+        onClose={() => { setPickerOpen(false); setPickerMember(null); }}
+        presetTemplateKey="absentee_recovery"
+        presetMember={pickerMember}
+        source="absentee_management"
+        onCreated={handleCardCreated}
+        onToast={toast}
+      />
+
+      {/* 생성된 / 기존 진행 중 카드의 상세 모달 */}
+      <WorkflowCardModal
+        open={!!cardModalId}
+        cardId={cardModalId}
+        onClose={() => setCardModalId(null)}
+        onToast={toast}
+      />
     </div>
   );
 }
