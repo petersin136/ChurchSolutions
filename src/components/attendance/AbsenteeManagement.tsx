@@ -6,6 +6,8 @@ import { useAppData } from "@/contexts/AppDataContext";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
 import { ModernSelect } from "@/components/common/ModernSelect";
+import { ensureAbsenteeRecoveryCard } from "@/lib/workflow";
+import { GitBranch } from "lucide-react";
 
 export interface AbsenteeManagementProps {
   /** Supabase 미사용 시 사용할 성도 목록 */
@@ -14,6 +16,8 @@ export interface AbsenteeManagementProps {
   attendanceList?: Attendance[];
   consecutiveWeeks?: number;
   onAddVisit?: (memberId: string) => void;
+  /** "회복 사역흐름 시작" 버튼 핸들러 (옵션). 없으면 기본 핸들러가 카드를 자동 생성. */
+  onStartRecoveryWorkflow?: (memberId: string, consecutiveWeeks: number) => void;
   toast?: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 const ABSENTEE_PAGE_SIZE = 10;
@@ -125,6 +129,7 @@ export function AbsenteeManagement({
   attendanceList: attendanceListProp,
   consecutiveWeeks = 3,
   onAddVisit,
+  onStartRecoveryWorkflow,
   toast,
 }: AbsenteeManagementProps) {
   const mob = useIsMobile();
@@ -135,6 +140,18 @@ export function AbsenteeManagement({
   const [mokjangFilter, setMokjangFilter] = useState("");
 
   const members = membersProp?.length ? membersProp : (db.members ?? []);
+
+  const startRecovery = async (memberId: string, cw: number) => {
+    if (onStartRecoveryWorkflow) { onStartRecoveryWorkflow(memberId, cw); return; }
+    const m = members.find((x) => x.id === memberId);
+    if (!m) return;
+    const card = await ensureAbsenteeRecoveryCard(
+      { id: m.id, name: m.name, phone: m.phone ?? null },
+      cw,
+    );
+    if (card) toast?.(`${m.name} 회복 사역흐름이 시작되었습니다`, "ok");
+    else toast?.("이미 진행 중이거나 템플릿이 없습니다", "warn");
+  };
   const attendanceList = useMemo(() => {
     if (attendanceListProp?.length) return attendanceListProp;
     const nWeeksAgo = new Date();
@@ -390,7 +407,7 @@ export function AbsenteeManagement({
                         <span className="truncate text-center text-gray-600">{member.dept || "·"}</span>
                         <span className="text-center text-sm font-bold tabular-nums leading-none text-red-600">{cw}주</span>
                         <span className="min-w-0 truncate text-center text-gray-500">{shortDate}</span>
-                        <span className="flex shrink-0 items-center justify-center">
+                        <span className="flex shrink-0 items-center justify-center gap-0.5">
                           {onAddVisit ? (
                             <button
                               type="button"
@@ -399,9 +416,15 @@ export function AbsenteeManagement({
                             >
                               심방
                             </button>
-                          ) : (
-                            <span className="text-gray-300">—</span>
-                          )}
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => void startRecovery(member.id, cw)}
+                            title="회복 사역흐름 시작"
+                            className="h-5 shrink-0 rounded-md border border-[#1e40af] bg-white px-1.5 text-[8px] font-medium text-[#1e40af]"
+                          >
+                            <GitBranch size={10} />
+                          </button>
                         </span>
                       </div>
                     );
@@ -511,17 +534,25 @@ export function AbsenteeManagement({
                             )}
                           </td>
                           <td className="px-3 py-3 align-middle text-center">
-                            {onAddVisit ? (
+                            <div className="inline-flex items-center justify-center gap-1.5">
+                              {onAddVisit ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onAddVisit(member.id)}
+                                  className="inline-flex h-6 items-center justify-center rounded-lg bg-[#1e40af] px-3 text-[11px] font-medium text-white shadow-sm hover:opacity-90"
+                                >
+                                  심방 등록
+                                </button>
+                              ) : null}
                               <button
                                 type="button"
-                                onClick={() => onAddVisit(member.id)}
-                                className="inline-flex h-6 items-center justify-center rounded-lg bg-[#1e40af] px-3 text-[11px] font-medium text-white shadow-sm hover:opacity-90"
+                                onClick={() => void startRecovery(member.id, cw)}
+                                className="inline-flex h-6 items-center justify-center gap-1 rounded-lg border border-[#1e40af] bg-white px-2.5 text-[11px] font-medium text-[#1e40af] shadow-sm hover:bg-[#eef1fb]"
+                                title="회복 사역흐름 시작"
                               >
-                                심방 등록
+                                <GitBranch size={12} /> 회복
                               </button>
-                            ) : (
-                              <span className="text-gray-400">—</span>
-                            )}
+                            </div>
                           </td>
                         </tr>
                       );

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react";
-import type { DB, SchoolDepartment, SchoolClass, SchoolEnrollment } from "@/types/db";
+import type { DB, SchoolDepartment, SchoolClass, SchoolEnrollment, Workflow, WorkflowStep, WorkflowCard } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,6 +49,10 @@ interface AppDataContextType {
   schoolClasses: SchoolClass[];
   schoolEnrollments: SchoolEnrollment[];
 
+  workflows: Workflow[];
+  workflowSteps: WorkflowStep[];
+  workflowCards: WorkflowCard[];
+
   refreshAll: () => Promise<void>;
   refreshMembers: () => Promise<void>;
   refreshAttendance: () => Promise<void>;
@@ -64,6 +68,9 @@ interface AppDataContextType {
   refreshSchoolDepartments: () => Promise<void>;
   refreshSchoolClasses: () => Promise<void>;
   refreshSchoolEnrollments: () => Promise<void>;
+  refreshWorkflows: () => Promise<void>;
+  refreshWorkflowSteps: () => Promise<void>;
+  refreshWorkflowCards: () => Promise<void>;
 }
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
@@ -86,6 +93,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [schoolDepartments, setSchoolDepartments] = useState<SchoolDepartment[]>([]);
   const [schoolClasses, setSchoolClasses] = useState<SchoolClass[]>([]);
   const [schoolEnrollments, setSchoolEnrollments] = useState<SchoolEnrollment[]>([]);
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
+  const [workflowCards, setWorkflowCards] = useState<WorkflowCard[]>([]);
   const channelRef = useRef<any>(null);
   const churchIdRef = useRef(churchId);
   churchIdRef.current = churchId;
@@ -276,6 +286,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       } else if (table === "school_enrollments") {
         const { data } = await supabase.from("school_enrollments").select("*").eq("church_id", cid).eq("is_active", true);
         if (data) setSchoolEnrollments(data as SchoolEnrollment[]);
+      } else if (table === "workflows") {
+        const { data } = await supabase.from("workflows").select("*").eq("church_id", cid).order("created_at", { ascending: true });
+        if (data) setWorkflows(data as Workflow[]);
+      } else if (table === "workflow_steps") {
+        const { data } = await supabase.from("workflow_steps").select("*").eq("church_id", cid).order("sort_order", { ascending: true });
+        if (data) setWorkflowSteps(data as WorkflowStep[]);
+      } else if (table === "workflow_cards") {
+        const { data } = await supabase.from("workflow_cards").select("*").eq("church_id", cid).order("moved_to_step_at", { ascending: false });
+        if (data) setWorkflowCards(data as WorkflowCard[]);
       }
     } catch (e) {
       console.error(`[AppData] partial refresh ${table} failed:`, e);
@@ -380,6 +399,27 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       console.error("[AppData] school_enrollments timeout or error:", e);
     }
   }, [partialRefresh]);
+  const refreshWorkflows = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("workflows"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] workflows timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshWorkflowSteps = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("workflow_steps"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] workflow_steps timeout or error:", e);
+    }
+  }, [partialRefresh]);
+  const refreshWorkflowCards = useCallback(async () => {
+    try {
+      await withTimeout(partialRefresh("workflow_cards"), REFRESH_TIMEOUT_MS);
+    } catch (e) {
+      console.error("[AppData] workflow_cards timeout or error:", e);
+    }
+  }, [partialRefresh]);
 
   const refreshCore = useCallback(async () => {
     const cid = churchIdRef.current;
@@ -409,6 +449,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       await Promise.all([refreshIncome(), refreshExpense()]);
       await refreshBudget();
       await Promise.all([refreshSchoolDepartments(), refreshSchoolClasses(), refreshSchoolEnrollments()]);
+      await Promise.all([refreshWorkflows(), refreshWorkflowSteps(), refreshWorkflowCards()]);
     } catch (e) {
       console.error("[AppData] background load error:", e);
     } finally {
@@ -427,6 +468,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     refreshSchoolDepartments,
     refreshSchoolClasses,
     refreshSchoolEnrollments,
+    refreshWorkflows,
+    refreshWorkflowSteps,
+    refreshWorkflowCards,
   ]);
 
   const refreshAll = useCallback(async () => {
@@ -463,6 +507,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       "income", "expense", "new_family_program",
       "plans", "sermons", "settings", "budget",
       "school_departments", "school_classes", "school_enrollments",
+      "workflows", "workflow_steps", "workflow_cards",
     ];
 
     let channel = supabase.channel(`app-data-${churchId}`);
@@ -498,10 +543,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const value: AppDataContextType = {
     db, setDb, saveDb, loading, loadError,
     rawAttendance, schoolDepartments, schoolClasses, schoolEnrollments,
+    workflows, workflowSteps, workflowCards,
     refreshAll, refreshMembers, refreshAttendance, refreshNotes,
     refreshVisits, refreshIncome, refreshExpense, refreshNewFamilyPrograms,
     refreshPlans, refreshSermons, refreshSettings, refreshBudget,
     refreshSchoolDepartments, refreshSchoolClasses, refreshSchoolEnrollments,
+    refreshWorkflows, refreshWorkflowSteps, refreshWorkflowCards,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
