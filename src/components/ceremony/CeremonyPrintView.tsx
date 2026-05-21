@@ -20,6 +20,7 @@ import type {
   CeremonyStep,
   Member,
 } from "@/types/db";
+import { substituteCeremonyPlaceholders } from "@/lib/ceremony";
 
 /* ──────────────────────────────────────────
  *  Props
@@ -31,6 +32,11 @@ export interface CeremonyPrintViewProps {
   steps: CeremonyStep[];        // step_order asc 정렬 완료된 상태
   churchName: string;
   subjectMember?: Member | null;
+  /**
+   * 두 번째 대상자 (결혼예식 신부 등).
+   * 결혼 카테고리일 때 헤더에 "신랑 ○○○ · 신부 ○○○" 형태로 함께 노출.
+   */
+  partnerMember?: Member | null;
   leaderName?: string | null;
 }
 
@@ -80,12 +86,18 @@ const FONT_NUMERIC =
  * ────────────────────────────────────────── */
 const WEEKDAY_KR = ["일", "월", "화", "수", "목", "금", "토"];
 
-/** "주후 2026년 5월 27일 수요일" */
+/**
+ * "2026년 5월 27일 수요일"
+ *
+ * 과거에는 `주후 2026년...` 접두사를 사용했으나, 모던한 식순지 디자인과 어울리지
+ * 않아 제거했다. 모든 카테고리(결혼·세례·임직 등)에서 공통으로 사용 가능한
+ * 깔끔한 한국어 날짜 표기로 통일.
+ */
 function fmtDateLong(iso: string | null | undefined): string {
   if (!iso) return "일시 미정";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "일시 미정";
-  return `주후 ${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAY_KR[d.getDay()]}요일`;
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAY_KR[d.getDay()]}요일`;
 }
 
 /** "오전 11시" / "오후 2시 30분" */
@@ -120,15 +132,23 @@ function joinNonEmpty(parts: Array<string | null | undefined>, sep: string): str
 function getSubjectLine(
   category: string | null | undefined,
   subjectMember: Member | null | undefined,
+  partnerMember?: Member | null | undefined,
 ): string | null {
-  if (!subjectMember?.name) return null;
-  const name = subjectMember.name;
+  const name = subjectMember?.name ?? null;
+  const partnerName = partnerMember?.name ?? null;
   switch (category) {
     case "funeral":
     case "memorial":
-      return `故 ${name} 성도`;
+      return name ? `故 ${name} 성도` : null;
     case "visit":
-      return `${name} 가정`;
+      return name ? `${name} 가정` : null;
+    case "wedding": {
+      // 결혼: 신랑·신부를 함께 노출. 한쪽만 선택돼 있어도 표기.
+      const groom = name ? `신랑 ${name}` : null;
+      const bride = partnerName ? `신부 ${partnerName}` : null;
+      const combined = joinNonEmpty([groom, bride], "  ·  ");
+      return combined.length > 0 ? combined : null;
+    }
     default:
       return name;
   }
@@ -227,6 +247,7 @@ function ParticipantView({
   steps,
   churchName,
   subjectMember,
+  partnerMember,
   leaderName,
   accent,
 }: {
@@ -235,10 +256,11 @@ function ParticipantView({
   steps: CeremonyStep[];
   churchName: string;
   subjectMember: Member | null | undefined;
+  partnerMember: Member | null | undefined;
   leaderName: string | null | undefined;
   accent: string;
 }) {
-  const subjectLine = getSubjectLine(template.category, subjectMember);
+  const subjectLine = getSubjectLine(template.category, subjectMember, partnerMember);
   const dateLine = fmtDateLong(session.scheduled_at);
   const timeLoc = joinNonEmpty(
     [fmtTimeNarr(session.scheduled_at), session.location],
@@ -369,11 +391,13 @@ function ParticipantView({
           margin: 0,
         }}
       >
-        {steps.map((s) => {
+        {steps.map((s, i) => {
           const c = s.content ?? {};
           const hasHymns = (c.hymn_numbers?.length ?? 0) > 0;
           const hasScriptures = (c.scriptures?.length ?? 0) > 0;
           const rightLabel = hasHymns ? "다 함 께" : "인 도 자";
+          // 번호는 필터링 후 1..N 으로 연속 (체크 해제로 빠진 step 의 자리를 채움)
+          const stepNo = i + 1;
 
           return (
             <li
@@ -401,7 +425,7 @@ function ParticipantView({
                     letterSpacing: "0.04em",
                   }}
                 >
-                  {String(s.step_order).padStart(2, "0")}
+                  {String(stepNo).padStart(2, "0")}
                 </span>
                 <span
                   style={{
@@ -549,6 +573,7 @@ function LeaderView({
   steps,
   churchName,
   subjectMember,
+  partnerMember,
   leaderName,
   accent,
 }: {
@@ -557,10 +582,11 @@ function LeaderView({
   steps: CeremonyStep[];
   churchName: string;
   subjectMember: Member | null | undefined;
+  partnerMember: Member | null | undefined;
   leaderName: string | null | undefined;
   accent: string;
 }) {
-  const subjectLine = getSubjectLine(template.category, subjectMember);
+  const subjectLine = getSubjectLine(template.category, subjectMember, partnerMember);
   const dateLine = fmtDateLong(session.scheduled_at);
   const timeLoc = joinNonEmpty(
     [fmtTimeNarr(session.scheduled_at), session.location],
@@ -774,12 +800,23 @@ function LeaderView({
         {steps.map((s, i) => {
           const c = s.content ?? {};
           const isLast = i === steps.length - 1;
+          // 템플릿의 ○○○ 자리표시자 → 실제 선택된 신랑·신부(또는 단일 대상자) 이름으로 치환
+          const substCtx = {
+            category: template.category,
+            subjectName: subjectMember?.name ?? null,
+            partnerName: partnerMember?.name ?? null,
+          };
+          const leaderScript = substituteCeremonyPlaceholders(c.leader_script, substCtx);
+          const tips = substituteCeremonyPlaceholders(c.tips, substCtx);
+          const prayerExamples = (c.prayer_examples ?? []).map((p) =>
+            substituteCeremonyPlaceholders(p, substCtx),
+          );
           const hasContent =
-            !!c.leader_script ||
-            (c.prayer_examples && c.prayer_examples.length > 0) ||
+            !!leaderScript ||
+            (prayerExamples.length > 0) ||
             (c.scriptures && c.scriptures.length > 0) ||
             (c.hymn_numbers && c.hymn_numbers.length > 0) ||
-            !!c.tips;
+            !!tips;
 
           return (
             <li
@@ -810,7 +847,7 @@ function LeaderView({
                     letterSpacing: "0.04em",
                   }}
                 >
-                  {String(s.step_order).padStart(2, "0")}
+                  {String(i + 1).padStart(2, "0")}
                 </span>
                 <span
                   style={{
@@ -854,7 +891,7 @@ function LeaderView({
               {/* 인도자 콘텐츠 — 번호 아래 들여쓰기 */}
               {hasContent ? (
                 <div style={{ marginLeft: "40pt", marginTop: "8pt" }}>
-                  {c.leader_script ? (
+                  {leaderScript ? (
                     <ContentBlock title="인 도 자  멘 트" accent={accent}>
                       <div
                         style={{
@@ -865,14 +902,14 @@ function LeaderView({
                           letterSpacing: "0.02em",
                         }}
                       >
-                        {c.leader_script}
+                        {leaderScript}
                       </div>
                     </ContentBlock>
                   ) : null}
 
-                  {c.prayer_examples && c.prayer_examples.length > 0 ? (
+                  {prayerExamples.length > 0 ? (
                     <ContentBlock title="기 도 문" accent={accent} thick>
-                      {c.prayer_examples.map((p, idx) => (
+                      {prayerExamples.map((p, idx) => (
                         <div
                           key={idx}
                           style={{
@@ -882,9 +919,7 @@ function LeaderView({
                             whiteSpace: "pre-wrap",
                             letterSpacing: "0.02em",
                             marginBottom:
-                              idx === c.prayer_examples!.length - 1
-                                ? 0
-                                : "8pt",
+                              idx === prayerExamples.length - 1 ? 0 : "8pt",
                           }}
                         >
                           {p}
@@ -944,7 +979,7 @@ function LeaderView({
                     </ContentBlock>
                   ) : null}
 
-                  {c.tips ? (
+                  {tips ? (
                     <ContentBlock title="진 행  팁" accent={accent} subtle>
                       <div
                         style={{
@@ -955,7 +990,7 @@ function LeaderView({
                           letterSpacing: "0.02em",
                         }}
                       >
-                        {c.tips}
+                        {tips}
                       </div>
                     </ContentBlock>
                   ) : null}
@@ -1038,6 +1073,7 @@ export function CeremonyPrintView({
   steps,
   churchName,
   subjectMember,
+  partnerMember,
   leaderName,
 }: CeremonyPrintViewProps) {
   const accent = getAccentByCategory(template.category);
@@ -1054,6 +1090,7 @@ export function CeremonyPrintView({
           steps={steps}
           churchName={churchName}
           subjectMember={subjectMember}
+          partnerMember={partnerMember}
           leaderName={leaderName}
           accent={accent}
         />
@@ -1064,6 +1101,7 @@ export function CeremonyPrintView({
           steps={steps}
           churchName={churchName}
           subjectMember={subjectMember}
+          partnerMember={partnerMember}
           leaderName={leaderName}
           accent={accent}
         />

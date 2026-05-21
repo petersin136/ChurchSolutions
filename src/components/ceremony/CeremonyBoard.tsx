@@ -51,13 +51,26 @@ function useIsMobile(bp = 768) {
 // TODO: 추후 useAuth 또는 church 설정에서 가져올 것
 const HARDCODED_DENOMINATION = "presbyterian_unified";
 
-const ETC_CATEGORIES = ["newyear", "easter", "housewarming", "ordination"] as const;
+/** 카테고리 탭에 명시되지 않은 — 또는 사용자가 임의로 입력한 — 카테고리는
+ *  자동으로 '기타' 로 묶인다 (whitelist 보다 known 카테고리의 not-in 으로 처리). */
+const KNOWN_CATEGORIES = [
+  "funeral",
+  "memorial",
+  "visit",
+  "holiday",
+  "communion",
+  "baptism",
+  "wedding",
+  "ordination",
+] as const;
 
 interface CategoryTab {
   id: string;
   label: string;
   /** 이 탭이 매칭하는 category 코드 목록. null 이면 전체 매칭. */
   categories: readonly string[] | null;
+  /** "기타" 처럼 known 에 없는 모든 카테고리를 잡기 위한 inverse 매칭 플래그 */
+  matchUnknown?: boolean;
 }
 
 const CATEGORY_TABS: CategoryTab[] = [
@@ -67,8 +80,10 @@ const CATEGORY_TABS: CategoryTab[] = [
   { id: "visit",     label: "심방예배", categories: ["visit"] },
   { id: "holiday",   label: "명절",     categories: ["holiday"] },
   { id: "communion", label: "성찬식",   categories: ["communion"] },
+  { id: "baptism",   label: "세례",     categories: ["baptism"] },
   { id: "wedding",   label: "결혼",     categories: ["wedding"] },
-  { id: "etc",       label: "기타",     categories: ETC_CATEGORIES },
+  { id: "ordination", label: "임직",   categories: ["ordination"] },
+  { id: "etc",       label: "기타",     categories: null, matchUnknown: true },
 ];
 
 type StatusFilter = "all" | CeremonySessionStatus;
@@ -156,6 +171,11 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
   /** 카테고리 탭 + 교단 + is_active 필터가 적용된 가시 템플릿 */
   const visibleTemplates = useMemo(() => {
     const all = getVisibleTemplates(ceremonyTemplates, HARDCODED_DENOMINATION);
+    if (currentTab.matchUnknown) {
+      /* 기타 탭: known 에 없는 모든 카테고리 (newyear/easter/thanksgiving/
+       * housewarming/등). 사용자가 직접 만든 임의 카테고리도 자동 포함. */
+      return all.filter((t) => !(KNOWN_CATEGORIES as readonly string[]).includes(t.category as string));
+    }
     if (currentTab.categories === null) return all;
     const cats = currentTab.categories;
     return all.filter((t) => cats.includes(t.category as string));
@@ -181,6 +201,13 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
 
   /** 카테고리 탭으로 1차 필터링된 세션 */
   const categoryScopedSessions = useMemo(() => {
+    if (currentTab.matchUnknown) {
+      return ceremonySessions.filter((s) => {
+        const t = templateMap[s.template_id];
+        if (!t) return false;
+        return !(KNOWN_CATEGORIES as readonly string[]).includes(t.category as string);
+      });
+    }
     if (currentTab.categories === null) return ceremonySessions;
     const cats = currentTab.categories;
     return ceremonySessions.filter((s) => {
@@ -315,7 +342,7 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
       >
         <div
           role="tablist"
-          aria-label="예식 카테고리"
+          aria-label="식순 카테고리"
           style={{
             display: "flex",
             gap: 12,
@@ -361,7 +388,7 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
           onClick={handleStartNew}
           disabled={!canEdit}
         >
-          새 예식 시작
+          새 식순 시작
         </PcButton>
       </div>
 
@@ -460,26 +487,41 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
       <div style={{ marginBottom: mob ? 4 : 6, maxWidth: mob ? "100%" : 420 }}>
         <PcInput
           size={mob ? "sm" : "md"}
-          placeholder="예식 제목 또는 대상 성도 검색"
+          placeholder="식순 제목 또는 대상 성도 검색"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           prefix={<Search size={14} color={C.textMuted} />}
         />
       </div>
 
-      {/* 6) 사용 가능한 가이드 (템플릿 갤러리) */}
+      {/* 6) 표준 식순 (템플릿 갤러리) */}
       <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <h3
+        <div
           style={{
-            margin: 0,
-            fontSize: mob ? 13 : 15,
-            fontWeight: 700,
-            color: C.text,
-            letterSpacing: "-0.01em",
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 8,
+            flexWrap: "wrap",
           }}
         >
-          사용 가능한 가이드
-        </h3>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: mob ? 13 : 15,
+              fontWeight: 700,
+              color: C.text,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {currentTab.id === "etc" ? "기타 · 우리 교회 식순" : "표준 식순"}
+          </h3>
+          {currentTab.id === "etc" && canEdit ? (
+            <span style={{ fontSize: 11, color: C.textFaint }}>
+              자유롭게 만들 수 있는 우리 교회 전용 식순. (목양 &gt; 식순 관리에서 편집)
+            </span>
+          ) : null}
+        </div>
         {visibleTemplates.length === 0 ? (
           <div
             style={{
@@ -492,9 +534,21 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
             }}
           >
             <BookOpen size={28} color={C.textFaint} style={{ margin: "0 auto 8px" }} />
-            <div style={{ fontSize: 13, color: C.textMuted }}>
-              해당 카테고리에 사용 가능한 가이드가 없습니다.
+            <div style={{ fontSize: 13, color: C.textMuted, marginBottom: currentTab.id === "etc" ? 12 : 0 }}>
+              {currentTab.id === "etc"
+                ? "아직 만든 식순이 없습니다. 표준에 없는 행사·예배는 직접 만들어 사용할 수 있습니다."
+                : "이 카테고리에 준비된 표준 식순이 없습니다."}
             </div>
+            {currentTab.id === "etc" && canEdit ? (
+              <PcButton
+                variant="primary"
+                size="sm"
+                leftIcon={<Plus size={13} />}
+                onClick={() => toast("커스텀 식순 만들기는 곧 추가됩니다.", "warn")}
+              >
+                새 커스텀 식순 만들기
+              </PcButton>
+            ) : null}
           </div>
         ) : (
           <div
@@ -629,7 +683,7 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
         )}
       </section>
 
-      {/* 7) 내 예식 (세션 리스트) */}
+      {/* 7) 내 식순 (세션 리스트) */}
       <section style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: mob ? 6 : 8 }}>
         <h3
           style={{
@@ -640,7 +694,7 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
             letterSpacing: "-0.01em",
           }}
         >
-          내 예식
+          내 식순
         </h3>
         {filteredSessions.length === 0 ? (
           <div
@@ -654,7 +708,7 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
             }}
           >
             <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
-              아직 진행 중인 예식이 없습니다. 우측 상단 &lsquo;새 예식 시작&rsquo; 을 눌러 시작하세요.
+              아직 진행 중인 식순이 없습니다. 우측 상단 &lsquo;새 식순 시작&rsquo; 을 눌러 시작하세요.
             </div>
             <PcButton
               variant="primary"
@@ -663,7 +717,7 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
               onClick={handleStartNew}
               disabled={!canEdit}
             >
-              새 예식 시작
+              새 식순 시작
             </PcButton>
           </div>
         ) : (
