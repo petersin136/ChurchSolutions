@@ -688,3 +688,134 @@ export const DEFAULT_CHECKLIST = [
   "기도제목 정리",
   "심방 일정 확인",
 ];
+
+// ============================================================================
+// Ceremony Guide System — 예식 가이드 시스템
+// ============================================================================
+
+// --- 교단 코드 -------------------------------------------------------------
+export type CeremonyDenomination =
+  | 'presbyterian_hapdong'
+  | 'presbyterian_tonghap'
+  | 'presbyterian_unified'
+  | 'methodist'
+  | 'baptist'
+  | 'pentecostal'
+  | 'common';
+
+// --- 예식 카테고리 ----------------------------------------------------------
+export type CeremonyCategory =
+  | 'funeral'        // 장례
+  | 'memorial'       // 추도예배
+  | 'visit'          // 심방예배
+  | 'holiday'        // 명절 가족예배
+  | 'communion'      // 성찬식
+  | 'wedding'        // 결혼예식
+  | 'newyear'        // 송구영신예배
+  | 'easter'         // 부활절 새벽예배
+  | 'housewarming'   // 입주예배
+  | 'ordination';    // 임직식
+
+// --- 장례 서브타입 (참고용; 다른 카테고리는 자유 문자열) ----------------------
+export type FuneralSubtype =
+  | 'imjong'   // 임종
+  | 'ipgwan'   // 입관
+  | 'balin'    // 발인
+  | 'hagwan'   // 하관
+  | 'samwoo';  // 삼우
+
+// --- 세션 상태 -------------------------------------------------------------
+export type CeremonySessionStatus =
+  | 'planned'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled';
+
+// --- 식순 콘텐츠 (ceremony_steps.content JSONB) -----------------------------
+export interface CeremonyStepScripture {
+  ref: string;          // 예: "요한복음 11:25-26"
+  text?: string;        // 본문 (저작권 이슈로 보통 비워둠)
+}
+
+export interface CeremonyStepContent {
+  leader_script?: string;            // 인도자 멘트 (마크다운)
+  prayer_examples?: string[];        // 기도문 예시 (0~N개)
+  scriptures?: CeremonyStepScripture[];
+  hymn_numbers?: number[];           // 찬송가 번호 (21세기 찬송가)
+  tips?: string;                     // 진행 팁
+}
+
+// --- 세션 진행 상태 (ceremony_sessions.progress_state JSONB) ----------------
+export interface CeremonyStepProgress {
+  checked: boolean;
+  checked_at?: string;  // ISO8601
+}
+
+export type CeremonyProgressState = Record<string, CeremonyStepProgress>;
+// key = ceremony_step.id (uuid)
+
+// --- 유족/가족 정보 (ceremony_sessions.family_info JSONB) -------------------
+// 자유 입력 구조이므로 Record 로 두되, 자주 쓰는 키는 힌트만 제공
+export interface CeremonyFamilyInfo {
+  deceased_name?: string;       // 고인 성함
+  chief_mourner?: string;       // 상주
+  relations?: string[];         // 유족 관계 자유 메모
+  contact?: string;             // 대표 연락처
+  [key: string]: unknown;       // 그 외 자유 필드
+}
+
+// --- 테이블 인터페이스 ------------------------------------------------------
+export interface CeremonyTemplate {
+  id: string;
+  church_id: string | null;            // 시스템 템플릿이면 null
+  is_system: boolean;
+  parent_template_id: string | null;   // 복제 원본 (시스템 템플릿 id)
+  is_customized: boolean;
+  denomination: CeremonyDenomination | string;
+  category: CeremonyCategory | string;
+  subtype: string | null;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CeremonyStep {
+  id: string;
+  template_id: string;
+  step_order: number;
+  title: string;
+  duration_minutes: number | null;
+  content: CeremonyStepContent;
+  is_optional: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CeremonySession {
+  id: string;
+  church_id: string;
+  template_id: string;
+  title: string;
+  scheduled_at: string | null;
+  location: string | null;
+  leader_user_id: string | null;
+  subject_member_id: string | null;
+  family_info: CeremonyFamilyInfo;
+  status: CeremonySessionStatus;
+  progress_state: CeremonyProgressState;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CeremonySessionNote {
+  id: string;
+  session_id: string;
+  body: string;
+  created_by: string | null;
+  created_at: string;
+}

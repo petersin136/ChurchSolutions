@@ -92,3 +92,83 @@ export async function fetchCanManageWorkflow(userId: string, churchId: string): 
     return false;
   }
 }
+
+/* ──────────────────────────────────────────
+ *  예식 가이드 권한
+ * ────────────────────────────────────────── */
+export interface CeremonyPermissions {
+  /** 시스템 템플릿 복제, 교회 템플릿/식순 편집·삭제, 세션 삭제 가능 */
+  canManage: boolean;
+  /** 세션 생성·진행·체크·메모 작성 가능 (로그인된 사용자) */
+  canEdit: boolean;
+  loading: boolean;
+}
+
+export function useCeremonyPermissions(): CeremonyPermissions {
+  const { user, churchId } = useAuth();
+  const [canManage, setCanManage] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user || !churchId || !supabase) {
+      setCanManage(false);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [churchUserRes, userRolesRes] = await Promise.all([
+          supabase.from("church_users")
+            .select("role")
+            .eq("user_id", user.id)
+            .eq("church_id", churchId)
+            .maybeSingle(),
+          supabase.from("user_roles")
+            .select("role_id, roles ( name )")
+            .eq("user_id", user.id),
+        ]);
+        if (cancelled) return;
+
+        const churchRole = (churchUserRes.data as { role?: string } | null)?.role ?? "";
+        const roleNames: string[] = ((userRolesRes.data ?? []) as Array<{ roles?: { name?: string } | null }>)
+          .map((r) => r.roles?.name ?? "")
+          .filter(Boolean);
+
+        const allowed =
+          churchRole === "admin" ||
+          roleNames.some((n) => (PASTORAL_ROLES as readonly string[]).includes(n));
+
+        setCanManage(allowed);
+      } catch (e) {
+        console.warn("[permissions] 권한 조회 실패 — 안전을 위해 거부:", e);
+        if (!cancelled) setCanManage(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, churchId]);
+
+  return { canManage, canEdit: !!user, loading };
+}
+
+/** 비-React 컨텍스트(예: 서버 보조 함수)에서 단발성 체크용 */
+export async function fetchCanManageCeremony(userId: string, churchId: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const [{ data: cu }, { data: ur }] = await Promise.all([
+      supabase.from("church_users").select("role")
+        .eq("user_id", userId).eq("church_id", churchId).maybeSingle(),
+      supabase.from("user_roles").select("roles ( name )").eq("user_id", userId),
+    ]);
+    const churchRole = (cu as { role?: string } | null)?.role ?? "";
+    const roleNames: string[] = ((ur ?? []) as Array<{ roles?: { name?: string } | null }>)
+      .map((r) => r.roles?.name ?? "")
+      .filter(Boolean);
+    return churchRole === "admin" ||
+      roleNames.some((n) => (PASTORAL_ROLES as readonly string[]).includes(n));
+  } catch {
+    return false;
+  }
+}
