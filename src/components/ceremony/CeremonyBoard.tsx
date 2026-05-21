@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, BookOpen } from "lucide-react";
+import { Plus, Search, BookOpen, Trash2 } from "lucide-react";
 import { useAppData } from "@/contexts/AppDataContext";
 import type {
   CeremonyTemplate,
@@ -28,10 +28,12 @@ import { useCeremonyPermissions } from "@/lib/permissions";
 import {
   getVisibleTemplates,
   getStepsForTemplate,
+  deleteSession,
 } from "@/lib/ceremony";
 import { PcButton } from "@/components/ui/PcButton";
 import { PcInput } from "@/components/ui/PcInput";
 import { CeremonyTemplatePicker } from "./CeremonyTemplatePicker";
+import { CeremonySessionModal } from "./CeremonySessionModal";
 
 /* ---------- useIsMobile (로컬, 다른 페이지들과 동일 패턴) ---------- */
 function useIsMobile(bp = 768) {
@@ -137,12 +139,14 @@ function calcProgress(
  * ────────────────────────────────────────── */
 export function CeremonyBoard({ toast }: CeremonyBoardProps) {
   const mob = useIsMobile();
-  const { ceremonyTemplates, ceremonySteps, ceremonySessions } = useAppData();
-  const { canEdit } = useCeremonyPermissions();
+  const { ceremonyTemplates, ceremonySteps, ceremonySessions, refreshCeremonySessions } =
+    useAppData();
+  const { canEdit, canManage } = useCeremonyPermissions();
 
   const [categoryTabId, setCategoryTabId] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const currentTab = useMemo(
     () => CATEGORY_TABS.find((t) => t.id === categoryTabId) ?? CATEGORY_TABS[0],
@@ -242,6 +246,7 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
   /* ---------- 모달 상태 ---------- */
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerInitialTemplateId, setPickerInitialTemplateId] = useState<string | null>(null);
+  const [sessionModalId, setSessionModalId] = useState<string | null>(null);
 
   /* ---------- 핸들러 ---------- */
   const handleStartNew = () => {
@@ -252,12 +257,45 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
     setPickerInitialTemplateId(template.id);
     setPickerOpen(true);
   };
-  const handleSessionClick = (_session: CeremonySession) => {
-    toast("세션 상세 화면은 다음 단계에서 구현됩니다.", "warn");
+  const handleSessionClick = (session: CeremonySession) => {
+    setSessionModalId(session.id);
   };
-  const handlePickerCreated = (_sessionId: string) => {
-    // 세션 모달 자동 오픈은 다음 단계에서 처리. 현재는 토스트만.
+  const handlePickerCreated = (sessionId: string) => {
+    // Picker 가 이미 성공 토스트를 띄우지만, 세션 모달을 바로 열어 진행을 이어간다.
     toast("예식이 생성되었습니다.", "ok");
+    setSessionModalId(sessionId);
+  };
+
+  /** 카드별 인라인 삭제. 카드 클릭(모달 열기)과 분리되어야 하므로 호출부에서
+   *  stopPropagation 처리 필요. canManage 권한 + confirm 다이얼로그로 보호. */
+  const handleDeleteSession = async (session: CeremonySession) => {
+    if (!canManage) {
+      toast("관리자/담임/부교역자만 삭제할 수 있습니다.", "warn");
+      return;
+    }
+    const label = session.title || "(제목 없음)";
+    if (
+      !window.confirm(
+        `「${label}」 예식을 영구 삭제하시겠습니까?\n진행 메모도 함께 사라집니다.`,
+      )
+    ) {
+      return;
+    }
+    setDeletingId(session.id);
+    try {
+      const ok = await deleteSession(session.id);
+      if (ok) {
+        await refreshCeremonySessions();
+        toast("예식이 삭제되었습니다.", "ok");
+      } else {
+        toast("삭제에 실패했습니다.", "err");
+      }
+    } catch (e) {
+      console.error("[CeremonyBoard] delete failed:", e);
+      toast("삭제에 실패했습니다.", "err");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   /* ──────────────────────────────────────────
@@ -793,25 +831,76 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
                     </div>
                   </div>
 
-                  {/* 우측: 상태 뱃지 */}
-                  <span
+                  {/* 우측: 상태 뱃지 + 삭제 버튼 */}
+                  <div
                     style={{
-                      display: "inline-flex",
+                      display: "flex",
                       alignItems: "center",
-                      fontSize: mob ? 10 : 12,
-                      fontWeight: 600,
-                      color: sb.fg,
-                      background: sb.bg,
-                      padding: mob ? "3px 10px" : "4px 12px",
-                      borderRadius: 20,
-                      border: `1px solid ${sb.fg}`,
+                      gap: mob ? 6 : 8,
                       flexShrink: 0,
                       alignSelf: mob ? "flex-start" : "center",
-                      whiteSpace: "nowrap",
                     }}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {sb.label}
-                  </span>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        fontSize: mob ? 10 : 12,
+                        fontWeight: 600,
+                        color: sb.fg,
+                        background: sb.bg,
+                        padding: mob ? "3px 10px" : "4px 12px",
+                        borderRadius: 20,
+                        border: `1px solid ${sb.fg}`,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {sb.label}
+                    </span>
+                    {canManage ? (
+                      <button
+                        type="button"
+                        aria-label="예식 삭제"
+                        title="예식 삭제"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDeleteSession(s);
+                        }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        disabled={deletingId === s.id}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: mob ? 28 : 32,
+                          height: mob ? 28 : 32,
+                          borderRadius: 8,
+                          border: `1px solid ${C.border}`,
+                          background: C.card,
+                          color: C.textMuted,
+                          cursor: deletingId === s.id ? "wait" : "pointer",
+                          padding: 0,
+                          fontFamily: "inherit",
+                          transition: "background 0.15s, color 0.15s, border-color 0.15s",
+                          opacity: deletingId === s.id ? 0.5 : 1,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (deletingId === s.id) return;
+                          e.currentTarget.style.background = C.dangerBg;
+                          e.currentTarget.style.color = C.danger;
+                          e.currentTarget.style.borderColor = C.danger;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = C.card;
+                          e.currentTarget.style.color = C.textMuted;
+                          e.currentTarget.style.borderColor = C.border;
+                        }}
+                      >
+                        <Trash2 size={mob ? 14 : 15} />
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               );
             })}
@@ -825,6 +914,14 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
         onClose={() => setPickerOpen(false)}
         initialTemplateId={pickerInitialTemplateId}
         onCreated={handlePickerCreated}
+        toast={toast}
+      />
+
+      {/* ----- 세션 상세 모달 ----- */}
+      <CeremonySessionModal
+        open={sessionModalId != null}
+        sessionId={sessionModalId}
+        onClose={() => setSessionModalId(null)}
         toast={toast}
       />
     </div>

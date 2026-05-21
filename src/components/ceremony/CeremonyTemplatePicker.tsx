@@ -102,11 +102,121 @@ function buildDefaultTitle(template: CeremonyTemplate | null, member: Member | n
         return `${name} 성도 추도예배`;
       case "visit":
         return `${name} 가정 심방예배`;
+      case "wedding":
+        return `${name} 성도 결혼예식`;
+      case "housewarming":
+        return `${name} 성도 가정 ${template.name}`;
+      case "ordination":
+        return `${name} ${template.name}`;
       default:
         return template.name;
     }
   }
   return template.name;
+}
+
+/** 카테고리별 폼 placeholder/label 세트.
+ *  장례 가정이 전부 default 였던 기존 동작을 카테고리별로 분리.
+ *  template.category 가 null/unknown 인 경우는 generic 으로 fallback. */
+interface CategoryFormCopy {
+  titleEx: string;
+  locationEx: string;
+  subjectLabel: string;
+  familyLabel: string;
+  familyEx: string;
+}
+
+function getCategoryFormCopy(category: string | null | undefined): CategoryFormCopy {
+  switch (category) {
+    case "funeral":
+      return {
+        titleEx: "예: 故 홍길동 성도 발인예배",
+        locationEx: "○○장례식장 1호실 / 본당 / 자택",
+        subjectLabel: "고인 (선택)",
+        familyLabel: "유족·가족 정보 (선택)",
+        familyEx: "상주: ○○○ (장남)\n장지: ○○공원묘원\n발인일: ...",
+      };
+    case "memorial":
+      return {
+        titleEx: "예: 홍길동 성도 1주기 추도예배",
+        locationEx: "유가족 자택 / 본당 / 묘소",
+        subjectLabel: "추도 대상 (선택)",
+        familyLabel: "유족·참석자 정보 (선택)",
+        familyEx: "기일: 2025-12-25\n참석: 자녀·손주 등\n특별 기도 제목: ...",
+      };
+    case "visit":
+      return {
+        titleEx: "예: 홍길동 가정 심방예배",
+        locationEx: "성도 자택 / 병원 / 직장",
+        subjectLabel: "심방 대상 (선택)",
+        familyLabel: "심방 정보 (선택)",
+        familyEx: "심방 이유: 병환 회복 기도\n가족 구성원: ...\n특별 기도 제목: ...",
+      };
+    case "holiday":
+      return {
+        titleEx: "예: 설 명절 가족예배",
+        locationEx: "성도 가정 / 본당",
+        subjectLabel: "가정 대표 (선택)",
+        familyLabel: "가족·참석자 정보 (선택)",
+        familyEx: "참석 가족: 부모·자녀·손주 등\n특별 기도 제목: 한 해 감사·건강 등",
+      };
+    case "wedding":
+      return {
+        titleEx: "예: 홍길동·김순희 결혼예식",
+        locationEx: "본당 / ○○예식장",
+        subjectLabel: "신랑·신부 (선택)",
+        familyLabel: "양가·가족 정보 (선택)",
+        familyEx: "신랑 측: ○○○ 장로 자녀\n신부 측: ○○○ 권사 자녀\n참석 인원: 약 ○○명",
+      };
+    case "communion":
+      return {
+        titleEx: "예: 성찬식",
+        locationEx: "본당",
+        subjectLabel: "집례자 (선택)",
+        familyLabel: "성찬 준비 메모 (선택)",
+        familyEx: "성도 수: 약 ○○명\n준비물: 떡·잔\n특이사항: ...",
+      };
+    case "easter":
+      return {
+        titleEx: "예: 부활주일 새벽예배",
+        locationEx: "본당 / 야외",
+        subjectLabel: "참여 대표 (선택)",
+        familyLabel: "참석·메모 (선택)",
+        familyEx: "참석 인원: 약 ○○명\n특이사항: ...",
+      };
+    case "newyear":
+      return {
+        titleEx: "예: 신년 헌신예배",
+        locationEx: "본당",
+        subjectLabel: "참여 대표 (선택)",
+        familyLabel: "참석·메모 (선택)",
+        familyEx: "참석 인원: 약 ○○명\n특별 기도 제목: 한 해 비전·헌신 등",
+      };
+    case "housewarming":
+      return {
+        titleEx: "예: 입주 감사예배",
+        locationEx: "○○○ 성도 가정 (새 주소)",
+        subjectLabel: "가정 (선택)",
+        familyLabel: "가정·축복 기도 메모 (선택)",
+        familyEx: "이전 주소: ...\n새 주소: ...\n축복 기도 제목: 가정의 평안·자녀 등",
+      };
+    case "ordination":
+      return {
+        titleEx: "예: 안수식 / 임직예배",
+        locationEx: "본당",
+        subjectLabel: "임직 대상 (선택)",
+        familyLabel: "임직·참석 정보 (선택)",
+        familyEx: "임직 대상: ○○○ 집사 (장로 안수)\n참석: 노회 위원 등",
+      };
+    default:
+      return {
+        titleEx: "예식 제목을 입력하세요",
+        locationEx: "본당 / 가정 등",
+        subjectLabel: "대상 (선택)",
+        familyLabel: "참석·메모 (선택)",
+        familyEx: "참석 인원: ...\n특별 기도 제목: ...",
+      };
+  }
 }
 
 /** YYYY-MM-DD + HH:MM → ISO. 빈 입력이면 null. */
@@ -243,6 +353,12 @@ export function CeremonyTemplatePicker({
     if (titleDirty) return;
     setTitle(buildDefaultTitle(selectedTemplate, subjectMember));
   }, [open, step, selectedTemplate, subjectMember, titleDirty]);
+
+  /* ---------- 카테고리별 폼 카피 ---------- */
+  const formCopy = useMemo(
+    () => getCategoryFormCopy(selectedTemplate?.category),
+    [selectedTemplate?.category],
+  );
 
   /* ---------- 핸들러 ---------- */
   const handlePickTemplate = (templateId: string) => {
@@ -630,7 +746,7 @@ export function CeremonyTemplatePicker({
           setTitle(e.target.value);
           setTitleDirty(true);
         }}
-        placeholder="예: 故 홍길동 성도 발인예배"
+        placeholder={formCopy.titleEx}
         autoFocus
         required
       />
@@ -677,12 +793,12 @@ export function CeremonyTemplatePicker({
         label="장소 (선택)"
         value={location}
         onChange={(e) => setLocation(e.target.value)}
-        placeholder="○○장례식장 1호실 / 본당 / 자택"
+        placeholder={formCopy.locationEx}
       />
 
       {/* 4) 대상 성도 */}
       <PcSelect
-        label="대상 성도 (선택)"
+        label={formCopy.subjectLabel}
         value={subjectMemberId}
         onChange={setSubjectMemberId}
         options={memberOptions}
@@ -693,11 +809,11 @@ export function CeremonyTemplatePicker({
 
       {/* 5) 유족/가족 정보 */}
       <PcTextarea
-        label="유족·가족 정보 (선택)"
+        label={formCopy.familyLabel}
         value={familyNote}
         onChange={(e) => setFamilyNote(e.target.value)}
         rows={4}
-        placeholder={"상주: ○○○ (장남)\n장지: ○○공원묘원\n발인일: ..."}
+        placeholder={formCopy.familyEx}
         fullWidth
       />
 
