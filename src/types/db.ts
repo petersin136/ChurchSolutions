@@ -710,11 +710,13 @@ export type CeremonyCategory =
   | 'visit'          // 심방예배
   | 'holiday'        // 명절 가족예배
   | 'communion'      // 성찬식
+  | 'baptism'        // 세례식 · 침례식 (성인/유아)
   | 'wedding'        // 결혼예식
   | 'newyear'        // 송구영신예배
   | 'easter'         // 부활절 새벽예배
-  | 'housewarming'   // 입주예배
-  | 'ordination';    // 임직식
+  | 'thanksgiving'   // 추수감사주일
+  | 'housewarming'   // 입주·임직 외 가정 예배
+  | 'ordination';    // 임직식 · 안수식 · 취임식
 
 // --- 장례 서브타입 (참고용; 다른 카테고리는 자유 문자열) ----------------------
 export type FuneralSubtype =
@@ -761,6 +763,19 @@ export interface CeremonyFamilyInfo {
   chief_mourner?: string;       // 상주
   relations?: string[];         // 유족 관계 자유 메모
   contact?: string;             // 대표 연락처
+  free_note?: string;           // 폼의 "유족·가족/참석자/메모" 자유 텍스트
+  /**
+   * 인도자 표시 이름 override.
+   * system user(leader_user_id) 가 아닌 외부 강사·노회장 등을 인쇄/표시에
+   * 노출하기 위해 사용. 비어 있으면 leader_user_id 기준으로 fallback.
+   */
+  leader_name_override?: string;
+  /**
+   * 두 번째 대상자 member id.
+   * 주로 결혼예식의 "신부" (subject_member_id 는 "신랑")처럼 두 명이 함께
+   * 등장하는 식순에서 사용. 다른 카테고리에선 비어 있음.
+   */
+  partner_member_id?: string | null;
   [key: string]: unknown;       // 그 외 자유 필드
 }
 

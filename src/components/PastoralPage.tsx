@@ -3354,7 +3354,7 @@ const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[
   { id: "notes", Icon: StickyNote, label: "기도/메모" },
   { id: "newfamily", Icon: Sprout, label: "새가족 관리" },
   { id: "workflow", Icon: GitBranch, label: "사역흐름" },
-  { id: "ceremony", Icon: BookOpenCheck, label: "예식" },
+  { id: "ceremony", Icon: BookOpenCheck, label: "식순" },
   { id: "settings", Icon: Settings, label: "목장그룹관리" },
 ];
 
@@ -3365,7 +3365,7 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기도" },
   newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
   workflow: { title: "사역흐름", desc: "새가족·결석회복·세례 등 자동화된 목양 트랙" },
-  ceremony: { title: "예식 가이드", desc: "장례·추도·심방 등 교회 예식을 단계별로 진행합니다" },
+  ceremony: { title: "식순 가이드", desc: "예배·예식·성례 모든 교회 순서를 단계별로 진행합니다" },
   settings: { title: "목장그룹관리", desc: "목장·소그룹 생성 및 그룹원 관리" },
 };
 

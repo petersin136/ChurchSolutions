@@ -53,6 +53,8 @@ import {
   deleteSession,
   addSessionNote,
   fetchSessionNotes,
+  getCategoryFormCopy,
+  substituteCeremonyPlaceholders,
 } from "@/lib/ceremony";
 import { CeremonyPrintView } from "./CeremonyPrintView";
 import type {
@@ -204,6 +206,18 @@ export function CeremonySessionModal({
       : null),
     [db.members, session?.subject_member_id],
   );
+  /**
+   * 두 번째 대상자 (예: 결혼예식 신부) - family_info.partner_member_id 기준.
+   * 인쇄 헤더에서 신랑·신부 두 이름을 함께 노출하기 위해 사용.
+   */
+  const partnerMember = useMemo(() => {
+    const pid =
+      typeof session?.family_info?.partner_member_id === "string"
+        ? (session.family_info.partner_member_id as string)
+        : "";
+    if (!pid) return null;
+    return db.members.find((m) => m.id === pid) ?? null;
+  }, [db.members, session?.family_info?.partner_member_id]);
 
   /* ---------- 진행 상태 (낙관적 미러) ---------- */
   const [progressState, setProgressState] = useState<CeremonyProgressState>({});
@@ -214,9 +228,23 @@ export function CeremonySessionModal({
   const [timeInput, setTimeInput] = useState("");
   const [locationInput, setLocationInput] = useState("");
   const [subjectInput, setSubjectInput] = useState("");
+  /** 두 번째 대상자 (결혼예식 신부 등) — family_info.partner_member_id 에 저장 */
+  const [partnerInput, setPartnerInput] = useState("");
   const [familyNoteInput, setFamilyNoteInput] = useState("");
+  /**
+   * 인도자 표시 이름 — system user (`leader_user_id`) 외에 외부 강사·노회장 등을
+   * 자유 입력으로 표시하기 위한 필드. family_info.leader_name_override 에 저장.
+   */
+  const [leaderNameInput, setLeaderNameInput] = useState("");
   const [metaSaving, setMetaSaving] = useState(false);
   const [metaCollapsed, setMetaCollapsed] = useState(false);
+
+  /**
+   * 폼 값을 초기화한 session id 를 추적.
+   * 같은 세션의 realtime 업데이트가 도착해도 사용자가 편집 중인 폼 입력을
+   * 덮어쓰지 않도록 sessionId 가 바뀔 때 한 번만 init.
+   */
+  const initedSessionIdRef = useRef<string | null>(null);
 
   /* ---------- 식순 아코디언 ---------- */
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
@@ -238,9 +266,24 @@ export function CeremonySessionModal({
 
   /* ──────────────────────────────────────────
    *  session 변경 시 내부 state 재초기화
+   *
+   *  주의: dependency 가 session 객체 전체가 아니라 sessionId 인 점.
+   *  realtime 업데이트로 session 객체가 새로 생성되어도 sessionId 만 같으면
+   *  편집 중인 form input(titleInput 등)을 보존한다. 그렇지 않으면
+   *  사용자가 제목을 타이핑하는 동안 realtime tick 마다 입력이 사라짐.
+   *
+   *  progress_state 는 사용자가 실시간으로 토글하는 값이므로 init 시점에만
+   *  복사하면 충분 (이후엔 optimistic local state 로 관리).
    * ────────────────────────────────────────── */
   useEffect(() => {
-    if (!open || !session) return;
+    if (!open) {
+      initedSessionIdRef.current = null;
+      return;
+    }
+    if (!session) return;
+    if (initedSessionIdRef.current === session.id) return;
+    initedSessionIdRef.current = session.id;
+
     setProgressState(session.progress_state ?? {});
     setTitleInput(session.title || "");
     const { date, time } = splitScheduledAt(session.scheduled_at);
@@ -248,15 +291,25 @@ export function CeremonySessionModal({
     setTimeInput(time);
     setLocationInput(session.location || "");
     setSubjectInput(session.subject_member_id || "");
+    const partnerId =
+      typeof session.family_info?.partner_member_id === "string"
+        ? (session.family_info.partner_member_id as string)
+        : "";
+    setPartnerInput(partnerId);
     const freeNote =
       typeof session.family_info?.free_note === "string"
         ? (session.family_info.free_note as string)
         : "";
     setFamilyNoteInput(freeNote);
+    const leaderOverride =
+      typeof session.family_info?.leader_name_override === "string"
+        ? (session.family_info.leader_name_override as string)
+        : "";
+    setLeaderNameInput(leaderOverride);
     setMetaCollapsed(false);
     setExpandedSteps(new Set());
     setNoteDraft("");
-  }, [open, session]);
+  }, [open, session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ──────────────────────────────────────────
    *  메모 lazy fetch (sessionId 변경 시)
@@ -283,11 +336,35 @@ export function CeremonySessionModal({
    *  파생 데이터
    * ────────────────────────────────────────── */
   const totalSteps = steps.length;
+  /**
+   * 식순지/인도자용에 포함될 step 수.
+   *
+   * 의미: 체크 = "이 식순을 포함" (기본 ON).
+   *   - progress_state 에 entry 가 없거나 checked !== false → 포함
+   *   - 명시적으로 checked === false → 제외
+   *
+   * 따라서 신규 세션(progress_state 비어 있음)은 자동으로 모든 step 이
+   * 포함된 것으로 시작하고, 사용자가 빼고 싶은 항목만 체크 해제하면 된다.
+   */
   const checkedCount = useMemo(
-    () => steps.reduce((acc, s) => acc + (progressState[s.id]?.checked ? 1 : 0), 0),
+    () =>
+      steps.reduce(
+        (acc, s) => acc + (progressState[s.id]?.checked !== false ? 1 : 0),
+        0,
+      ),
     [steps, progressState],
   );
   const progressPercent = totalSteps > 0 ? Math.round((checkedCount / totalSteps) * 100) : 0;
+
+  /**
+   * 식순지/인도자용 인쇄에 포함될 step 목록.
+   * 체크 해제된 step (progress_state[id].checked === false) 은 제외.
+   * 인쇄 포털과 함께 사용되며, hooks rule 을 위해 component 상단에서 계산.
+   */
+  const printableSteps = useMemo(
+    () => steps.filter((s) => progressState[s.id]?.checked !== false),
+    [steps, progressState],
+  );
 
   const memberOptions = useMemo<PcSelectOption[]>(() => {
     const opts: PcSelectOption[] = [{ value: "", label: "선택 안 함" }];
@@ -304,6 +381,14 @@ export function CeremonySessionModal({
       typeof session.family_info?.free_note === "string"
         ? (session.family_info.free_note as string)
         : "";
+    const origLeaderOverride =
+      typeof session.family_info?.leader_name_override === "string"
+        ? (session.family_info.leader_name_override as string)
+        : "";
+    const origPartner =
+      typeof session.family_info?.partner_member_id === "string"
+        ? (session.family_info.partner_member_id as string)
+        : "";
     const origSched = splitScheduledAt(session.scheduled_at);
     return (
       titleInput !== (session.title || "") ||
@@ -311,9 +396,28 @@ export function CeremonySessionModal({
       timeInput !== origSched.time ||
       locationInput !== (session.location || "") ||
       subjectInput !== (session.subject_member_id || "") ||
-      familyNoteInput !== origFreeNote
+      partnerInput !== origPartner ||
+      familyNoteInput !== origFreeNote ||
+      leaderNameInput !== origLeaderOverride
     );
-  }, [session, titleInput, dateInput, timeInput, locationInput, subjectInput, familyNoteInput]);
+  }, [
+    session,
+    titleInput,
+    dateInput,
+    timeInput,
+    locationInput,
+    subjectInput,
+    partnerInput,
+    familyNoteInput,
+    leaderNameInput,
+  ]);
+
+  /** 현재 세션의 카테고리(템플릿 기준) — 폼 카피/placeholder 분기에 사용 */
+  const sessionCategory = template?.category ?? null;
+  const formCopy = useMemo(
+    () => getCategoryFormCopy(sessionCategory),
+    [sessionCategory],
+  );
 
   const leaderLabel = useMemo(() => {
     if (!session?.leader_user_id) return "미배정";
@@ -323,15 +427,34 @@ export function CeremonySessionModal({
     return shortUserLabel(session.leader_user_id);
   }, [session?.leader_user_id, user?.id, user?.email]);
 
-  /** 인쇄용 — 현재 사용자가 인도자일 때만 실명 노출, 외부 인도자는 null (헤더에서 생략) */
+  /**
+   * 인쇄용 인도자 이름.
+   *
+   * 우선순위:
+   *   1) family_info.leader_name_override  (사용자가 폼에서 직접 입력한 자유 텍스트)
+   *      - 외부 강사·노회장 등 system user 가 아닌 인도자를 표시할 때 사용.
+   *   2) leader_user_id 가 현재 로그인 사용자와 같을 경우 사용자의 metadata.name / email
+   *   3) 그 외엔 null → 헤더에서 인도자 라인 생략 (다른 user 의 실명을 노출하지 않음)
+   */
   const printLeaderName = useMemo<string | null>(() => {
+    const override =
+      typeof session?.family_info?.leader_name_override === "string"
+        ? (session.family_info.leader_name_override as string).trim()
+        : "";
+    if (override) return override;
     if (!session?.leader_user_id) return null;
     if (user?.id && session.leader_user_id === user.id) {
       const meta = user.user_metadata as { name?: string } | undefined;
       return meta?.name ?? user.email ?? null;
     }
     return null;
-  }, [session?.leader_user_id, user?.id, user?.email, user?.user_metadata]);
+  }, [
+    session?.family_info?.leader_name_override,
+    session?.leader_user_id,
+    user?.id,
+    user?.email,
+    user?.user_metadata,
+  ]);
 
   /* ──────────────────────────────────────────
    *  핸들러 — 식순
@@ -395,6 +518,13 @@ export function CeremonySessionModal({
       const trimmedFree = familyNoteInput.trim();
       if (trimmedFree) next.free_note = trimmedFree;
       else if (next.free_note !== undefined) delete next.free_note;
+
+      const trimmedLeader = leaderNameInput.trim();
+      if (trimmedLeader) next.leader_name_override = trimmedLeader;
+      else if (next.leader_name_override !== undefined) delete next.leader_name_override;
+
+      if (partnerInput) next.partner_member_id = partnerInput;
+      else if (next.partner_member_id !== undefined) delete next.partner_member_id;
 
       const ok = await updateSession(sessionId, {
         title: trimmedTitle,
@@ -686,8 +816,8 @@ export function CeremonySessionModal({
       {/* 좌측: 진행률 */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>
-          단계 <span style={{ color: C.text }}>{checkedCount}</span> /{" "}
-          <span style={{ color: C.text }}>{totalSteps}</span> 완료
+          포함 식순 <span style={{ color: C.text }}>{checkedCount}</span> /{" "}
+          <span style={{ color: C.text }}>{totalSteps}</span>
         </div>
         <div
           style={{
@@ -865,11 +995,11 @@ export function CeremonySessionModal({
       {!metaCollapsed ? (
         <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 14 }}>
           <PcInput
-            label="예식 제목"
+            label="식순 제목"
             value={titleInput}
             onChange={(e) => setTitleInput(e.target.value)}
             disabled={!canEdit}
-            placeholder="예: 故 홍길동 성도 발인예배"
+            placeholder={formCopy.titleEx}
           />
 
           {/* 일정 */}
@@ -910,11 +1040,11 @@ export function CeremonySessionModal({
             value={locationInput}
             onChange={(e) => setLocationInput(e.target.value)}
             disabled={!canEdit}
-            placeholder="○○장례식장 1호실 / 본당 / 자택"
+            placeholder={formCopy.locationEx}
           />
 
           <PcSelect
-            label="대상 성도"
+            label={formCopy.subjectLabel}
             value={subjectInput}
             onChange={setSubjectInput}
             options={memberOptions}
@@ -924,39 +1054,63 @@ export function CeremonySessionModal({
             fullWidth
           />
 
+          {/*
+            두 명을 함께 선택해야 하는 카테고리(결혼: 신랑·신부)에서만 노출.
+            저장 위치: family_info.partner_member_id (JSONB)
+          */}
+          {formCopy.secondarySubjectLabel ? (
+            <PcSelect
+              label={formCopy.secondarySubjectLabel}
+              value={partnerInput}
+              onChange={setPartnerInput}
+              options={memberOptions}
+              placeholder="성도를 검색·선택하세요"
+              searchable
+              disabled={!canEdit}
+              fullWidth
+            />
+          ) : null}
+
           <PcTextarea
-            label="유족·가족 정보"
+            label={formCopy.familyLabel}
             value={familyNoteInput}
             onChange={(e) => setFamilyNoteInput(e.target.value)}
             rows={4}
-            placeholder={"상주: ○○○ (장남)\n장지: ○○공원묘원\n발인일: ..."}
+            placeholder={formCopy.familyEx}
             disabled={!canEdit}
             fullWidth
           />
 
-          {/* 인도자 (읽기 전용) */}
+          {/*
+            인도자 — 시스템 사용자(leader_user_id)와 별개로 외부 인도자(노회장·강사 등)
+            도 직접 입력할 수 있도록 자유 텍스트로 전환.
+            저장 위치: family_info.leader_name_override
+            - 비워두면 system user(leader_user_id) 의 이름이 표시됨
+            - 입력하면 인쇄/표시에서 우선 사용됨
+          */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "var(--color-primary)",
-              }}
-            >
-              인도자
-            </label>
-            <div
-              style={{
-                padding: "10px 14px",
-                border: `1px solid ${C.border}`,
-                borderRadius: 8,
-                background: C.bg,
-                color: C.text,
-                fontSize: 13,
-              }}
-            >
-              {leaderLabel}
-            </div>
+            <PcInput
+              label="인도자"
+              value={leaderNameInput}
+              onChange={(e) => setLeaderNameInput(e.target.value)}
+              placeholder={
+                session?.leader_user_id
+                  ? `${leaderLabel} (기본값) · 다른 인도자를 입력하려면 적어주세요`
+                  : "예: 김○○ 목사 / 노회장 / 외부 강사"
+              }
+              disabled={!canEdit}
+            />
+            {!leaderNameInput.trim() && session?.leader_user_id ? (
+              <div
+                style={{
+                  fontSize: 11,
+                  color: C.muted,
+                  paddingLeft: 2,
+                }}
+              >
+                현재 인쇄·표시 인도자: <strong>{leaderLabel}</strong>
+              </div>
+            ) : null}
           </div>
 
           {/* 저장 액션 */}
@@ -999,7 +1153,12 @@ export function CeremonySessionModal({
           marginBottom: 12,
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>식순</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>식순</div>
+          <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.4 }}>
+            체크된 식순만 식순지·인도자용에 포함됩니다. 빼고 싶은 식순은 체크를 해제하세요.
+          </div>
+        </div>
         {steps.length > 0 ? (
           <PcButton
             variant="link"
@@ -1029,15 +1188,27 @@ export function CeremonySessionModal({
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {steps.map((s) => {
             const prog = progressState[s.id];
-            const isChecked = !!prog?.checked;
+            // 의미: missing entry → 기본 포함(체크 표시), 명시적 false 만 제외
+            const isChecked = prog?.checked !== false;
             const isExpanded = expandedSteps.has(s.id);
             const content = s.content ?? {};
+            // 템플릿의 ○○○ 자리표시자 → 선택된 신랑·신부/단일 대상자 이름으로 치환
+            const substCtx = {
+              category: template?.category ?? null,
+              subjectName: subjectMember?.name ?? null,
+              partnerName: partnerMember?.name ?? null,
+            };
+            const leaderScriptResolved = substituteCeremonyPlaceholders(content.leader_script, substCtx);
+            const tipsResolved = substituteCeremonyPlaceholders(content.tips, substCtx);
+            const prayerExamplesResolved = (content.prayer_examples ?? []).map((p) =>
+              substituteCeremonyPlaceholders(p, substCtx),
+            );
             const hasContent =
-              !!content.leader_script ||
+              !!leaderScriptResolved ||
               (content.hymn_numbers && content.hymn_numbers.length > 0) ||
               (content.scriptures && content.scriptures.length > 0) ||
-              (content.prayer_examples && content.prayer_examples.length > 0) ||
-              !!content.tips;
+              (prayerExamplesResolved.length > 0) ||
+              !!tipsResolved;
 
             return (
               <div
@@ -1185,7 +1356,7 @@ export function CeremonySessionModal({
                       gap: 14,
                     }}
                   >
-                    {content.leader_script ? (
+                    {leaderScriptResolved ? (
                       <ContentSection title="인도자 멘트">
                         <div
                           style={{
@@ -1195,7 +1366,7 @@ export function CeremonySessionModal({
                             whiteSpace: "pre-wrap",
                           }}
                         >
-                          {content.leader_script}
+                          {leaderScriptResolved}
                         </div>
                       </ContentSection>
                     ) : null}
@@ -1244,10 +1415,10 @@ export function CeremonySessionModal({
                       </ContentSection>
                     ) : null}
 
-                    {content.prayer_examples && content.prayer_examples.length > 0 ? (
+                    {prayerExamplesResolved.length > 0 ? (
                       <ContentSection title="기도문 예시">
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {content.prayer_examples.map((p, idx) => (
+                          {prayerExamplesResolved.map((p, idx) => (
                             <div
                               key={idx}
                               style={{
@@ -1268,7 +1439,7 @@ export function CeremonySessionModal({
                       </ContentSection>
                     ) : null}
 
-                    {content.tips ? (
+                    {tipsResolved ? (
                       <ContentSection title="진행 팁">
                         <div
                           style={{
@@ -1278,7 +1449,7 @@ export function CeremonySessionModal({
                             whiteSpace: "pre-wrap",
                           }}
                         >
-                          {content.tips}
+                          {tipsResolved}
                         </div>
                       </ContentSection>
                     ) : null}
@@ -1442,6 +1613,9 @@ export function CeremonySessionModal({
   /* ──────────────────────────────────────────
    *  인쇄 포털 — body 직속에 ceremony-print-root 마운트
    *  (visibility 트릭과 page-break 규칙은 src/styles/print.css 참고)
+   *
+   *  체크 해제된 step 은 인쇄에서 제외 (포함 식순만 출력).
+   *  printableSteps 는 component 상단 hooks 영역에서 계산 (early return 보다 위).
    * ────────────────────────────────────────── */
   const printPortal =
     printMode && template && typeof document !== "undefined"
@@ -1455,9 +1629,10 @@ export function CeremonySessionModal({
               mode={printMode}
               session={session}
               template={template}
-              steps={steps}
+              steps={printableSteps}
               churchName={churchName ?? "교회"}
               subjectMember={subjectMember}
+              partnerMember={partnerMember}
               leaderName={printLeaderName}
             />
           </div>,

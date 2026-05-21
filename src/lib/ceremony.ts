@@ -17,6 +17,182 @@ import type {
 } from "@/types/db";
 
 /* ──────────────────────────────────────────
+ *  카테고리별 폼 카피 (Picker · SessionModal 공용)
+ *
+ *  기존엔 Picker 에만 있었으나 SessionModal 의 예식 정보 폼에서도
+ *  동일한 카테고리 컨텍스트가 필요하므로 lib 로 승격.
+ * ────────────────────────────────────────── */
+export interface CategoryFormCopy {
+  titleEx: string;
+  locationEx: string;
+  subjectLabel: string;
+  /**
+   * 두 명을 선택해야 하는 카테고리(예: 결혼 — 신랑·신부)의 두 번째 슬롯 라벨.
+   * 값이 있으면 폼에서 두 번째 PcSelect 가 렌더링되며, 선택값은
+   * `family_info.partner_member_id` 에 저장된다.
+   * 값이 없으면 기존 단일 선택 동작.
+   */
+  secondarySubjectLabel?: string;
+  familyLabel: string;
+  familyEx: string;
+}
+
+/**
+ * 템플릿의 인도자 멘트·기도문·팁에 들어 있는 `○○○` 자리표시자(placeholder) 를
+ * 실제 선택된 이름으로 치환한다.
+ *
+ *  - `○○○○년` 처럼 4개 이상의 ○ 가 연속된 패턴(연도 자리)은 건드리지 않음
+ *    (`(?<!○)○○○(?!○)` lookaround).
+ *  - 결혼예식의 경우 `○○○ 형제` → subject(신랑), `○○○ 자매` → partner(신부)
+ *    로 컨텍스트에 따라 다르게 치환.
+ *  - 그 외 카테고리(장례·세례·임직 등)는 모든 `○○○` 자리표시자를 subject 이름
+ *    으로 통일 치환. subjectName 이 비어 있으면 원문을 그대로 둠.
+ *  - 이 함수는 순수 함수 — DB 호출 없음.
+ */
+export function substituteCeremonyPlaceholders(
+  text: string | null | undefined,
+  context: {
+    category?: string | null;
+    subjectName?: string | null;
+    partnerName?: string | null;
+  },
+): string {
+  if (!text) return text ?? "";
+  const subject = (context.subjectName ?? "").trim();
+  const partner = (context.partnerName ?? "").trim();
+
+  let out = text;
+
+  if (context.category === "wedding") {
+    // 결혼: ○○○ 형제 → subject(신랑), ○○○ 자매 → partner(신부)
+    if (subject) {
+      out = out.replace(/○○○(?=\s*형제)/g, subject);
+    }
+    if (partner) {
+      out = out.replace(/○○○(?=\s*자매)/g, partner);
+    }
+    return out;
+  }
+
+  // 그 외 카테고리: 단일 subject 로 모든 ○○○ 치환 (단, 연도 등 4+ 연속 제외)
+  if (subject) {
+    out = out.replace(/(?<!○)○○○(?!○)/g, subject);
+  }
+
+  return out;
+}
+
+export function getCategoryFormCopy(category: string | null | undefined): CategoryFormCopy {
+  switch (category) {
+    case "funeral":
+      return {
+        titleEx: "예: 故 홍길동 성도 발인예배",
+        locationEx: "○○장례식장 1호실 / 본당 / 자택",
+        subjectLabel: "고인 (선택)",
+        familyLabel: "유족·가족 정보 (선택)",
+        familyEx: "상주: ○○○ (장남)\n장지: ○○공원묘원\n발인일: ...",
+      };
+    case "memorial":
+      return {
+        titleEx: "예: 홍길동 성도 1주기 추도예배",
+        locationEx: "유가족 자택 / 본당 / 묘소",
+        subjectLabel: "추도 대상 (선택)",
+        familyLabel: "유족·참석자 정보 (선택)",
+        familyEx: "기일: 2025-12-25\n참석: 자녀·손주 등\n특별 기도 제목: ...",
+      };
+    case "visit":
+      return {
+        titleEx: "예: 홍길동 가정 심방예배",
+        locationEx: "성도 자택 / 병원 / 직장",
+        subjectLabel: "심방 대상 (선택)",
+        familyLabel: "심방 정보 (선택)",
+        familyEx: "심방 이유: 병환 회복 기도\n가족 구성원: ...\n특별 기도 제목: ...",
+      };
+    case "holiday":
+      return {
+        titleEx: "예: 설 명절 가족예배",
+        locationEx: "성도 가정 / 본당",
+        subjectLabel: "가정 대표 (선택)",
+        familyLabel: "가족·참석자 정보 (선택)",
+        familyEx: "참석 가족: 부모·자녀·손주 등\n특별 기도 제목: 한 해 감사·건강 등",
+      };
+    case "wedding":
+      return {
+        titleEx: "예: 홍길동·김순희 결혼예식",
+        locationEx: "본당 / ○○예식장",
+        subjectLabel: "신랑 (선택)",
+        secondarySubjectLabel: "신부 (선택)",
+        familyLabel: "양가·가족 정보 (선택)",
+        familyEx: "신랑 측: ○○○ 장로 자녀\n신부 측: ○○○ 권사 자녀\n참석 인원: 약 ○○명",
+      };
+    case "baptism":
+      return {
+        titleEx: "예: 2026년 봄학기 성인 세례식",
+        locationEx: "본당 / 세례탕",
+        subjectLabel: "수세자 대표 (선택)",
+        familyLabel: "수세자·후견인 메모 (선택)",
+        familyEx: "수세자 명단: ○○○, ○○○, ...\n신앙고백 확인 여부: ...\n후견인/대부모: ...",
+      };
+    case "communion":
+      return {
+        titleEx: "예: 성찬식",
+        locationEx: "본당",
+        subjectLabel: "집례자 (선택)",
+        familyLabel: "성찬 준비 메모 (선택)",
+        familyEx: "성도 수: 약 ○○명\n준비물: 떡·잔\n특이사항: ...",
+      };
+    case "easter":
+      return {
+        titleEx: "예: 부활주일 새벽예배",
+        locationEx: "본당 / 야외",
+        subjectLabel: "참여 대표 (선택)",
+        familyLabel: "참석·메모 (선택)",
+        familyEx: "참석 인원: 약 ○○명\n특이사항: ...",
+      };
+    case "newyear":
+      return {
+        titleEx: "예: 신년 헌신예배",
+        locationEx: "본당",
+        subjectLabel: "참여 대표 (선택)",
+        familyLabel: "참석·메모 (선택)",
+        familyEx: "참석 인원: 약 ○○명\n특별 기도 제목: 한 해 비전·헌신 등",
+      };
+    case "thanksgiving":
+      return {
+        titleEx: "예: 추수감사주일 예배",
+        locationEx: "본당",
+        subjectLabel: "참여 대표 (선택)",
+        familyLabel: "참석·메모 (선택)",
+        familyEx: "참석 인원: 약 ○○명\n특별 감사 제목: ...",
+      };
+    case "housewarming":
+      return {
+        titleEx: "예: 입주 감사예배",
+        locationEx: "○○○ 성도 가정 (새 주소)",
+        subjectLabel: "가정 (선택)",
+        familyLabel: "가정·축복 기도 메모 (선택)",
+        familyEx: "이전 주소: ...\n새 주소: ...\n축복 기도 제목: 가정의 평안·자녀 등",
+      };
+    case "ordination":
+      return {
+        titleEx: "예: 안수식 / 임직예배",
+        locationEx: "본당",
+        subjectLabel: "임직 대상 (선택)",
+        familyLabel: "임직·참석 정보 (선택)",
+        familyEx: "임직 대상: ○○○ 집사 (장로 안수)\n참석: 노회 위원 등",
+      };
+    default:
+      return {
+        titleEx: "예식 제목을 입력하세요",
+        locationEx: "본당 / 가정 등",
+        subjectLabel: "대상 (선택)",
+        familyLabel: "참석·메모 (선택)",
+        familyEx: "참석 인원: ...\n특별 기도 제목: ...",
+      };
+  }
+}
+
+/* ──────────────────────────────────────────
  *  UI 표시용 selector (순수 함수, DB 호출 없음)
  * ────────────────────────────────────────── */
 /**

@@ -33,6 +33,7 @@ import {
   getVisibleTemplates,
   getStepsForTemplate,
   createSession,
+  getCategoryFormCopy,
 } from "@/lib/ceremony";
 import type {
   CeremonyTemplate,
@@ -57,23 +58,36 @@ function useIsMobile(bp = 720): boolean {
 // TODO: 추후 useAuth 또는 church 설정에서 가져올 것
 const HARDCODED_DENOMINATION = "presbyterian_unified";
 
-const ETC_CATEGORIES = ["newyear", "easter", "housewarming", "ordination"] as const;
+/** CeremonyBoard 와 동일한 known 카테고리 목록 — 그 외는 자동으로 "기타" 매핑 */
+const KNOWN_CATEGORIES = [
+  "funeral",
+  "memorial",
+  "visit",
+  "holiday",
+  "communion",
+  "baptism",
+  "wedding",
+  "ordination",
+] as const;
 
 interface CategoryTab {
   id: string;
   label: string;
   categories: readonly string[] | null;
+  matchUnknown?: boolean;
 }
 
 const CATEGORY_TABS: CategoryTab[] = [
-  { id: "all",       label: "전체",     categories: null },
-  { id: "funeral",   label: "장례",     categories: ["funeral"] },
-  { id: "memorial",  label: "추도예배", categories: ["memorial"] },
-  { id: "visit",     label: "심방예배", categories: ["visit"] },
-  { id: "holiday",   label: "명절",     categories: ["holiday"] },
-  { id: "communion", label: "성찬식",   categories: ["communion"] },
-  { id: "wedding",   label: "결혼",     categories: ["wedding"] },
-  { id: "etc",       label: "기타",     categories: ETC_CATEGORIES },
+  { id: "all",        label: "전체",     categories: null },
+  { id: "funeral",    label: "장례",     categories: ["funeral"] },
+  { id: "memorial",   label: "추도예배", categories: ["memorial"] },
+  { id: "visit",      label: "심방예배", categories: ["visit"] },
+  { id: "holiday",    label: "명절",     categories: ["holiday"] },
+  { id: "communion",  label: "성찬식",   categories: ["communion"] },
+  { id: "baptism",    label: "세례",     categories: ["baptism"] },
+  { id: "wedding",    label: "결혼",     categories: ["wedding"] },
+  { id: "ordination", label: "임직",     categories: ["ordination"] },
+  { id: "etc",        label: "기타",     categories: null, matchUnknown: true },
 ];
 
 /** 30분 단위 06:00 ~ 23:30 */
@@ -91,9 +105,14 @@ const TIME_SLOTS: ModernSelectOption[] = (() => {
 })();
 
 /* ---------- 헬퍼 ---------- */
-function buildDefaultTitle(template: CeremonyTemplate | null, member: Member | null): string {
+function buildDefaultTitle(
+  template: CeremonyTemplate | null,
+  member: Member | null,
+  partner?: Member | null,
+): string {
   if (!template) return "";
   const name = member?.name?.trim() ?? "";
+  const partnerName = partner?.name?.trim() ?? "";
   if (name) {
     switch (template.category) {
       case "funeral":
@@ -103,7 +122,12 @@ function buildDefaultTitle(template: CeremonyTemplate | null, member: Member | n
       case "visit":
         return `${name} 가정 심방예배`;
       case "wedding":
-        return `${name} 성도 결혼예식`;
+        // 두 명이 함께 선택돼 있으면 "신랑·신부 결혼예식", 한쪽만이면 그 이름만.
+        return partnerName
+          ? `${name}·${partnerName} 결혼예식`
+          : `${name} 성도 결혼예식`;
+      case "baptism":
+        return `${name} ${template.name}`;
       case "housewarming":
         return `${name} 성도 가정 ${template.name}`;
       case "ordination":
@@ -115,109 +139,7 @@ function buildDefaultTitle(template: CeremonyTemplate | null, member: Member | n
   return template.name;
 }
 
-/** 카테고리별 폼 placeholder/label 세트.
- *  장례 가정이 전부 default 였던 기존 동작을 카테고리별로 분리.
- *  template.category 가 null/unknown 인 경우는 generic 으로 fallback. */
-interface CategoryFormCopy {
-  titleEx: string;
-  locationEx: string;
-  subjectLabel: string;
-  familyLabel: string;
-  familyEx: string;
-}
-
-function getCategoryFormCopy(category: string | null | undefined): CategoryFormCopy {
-  switch (category) {
-    case "funeral":
-      return {
-        titleEx: "예: 故 홍길동 성도 발인예배",
-        locationEx: "○○장례식장 1호실 / 본당 / 자택",
-        subjectLabel: "고인 (선택)",
-        familyLabel: "유족·가족 정보 (선택)",
-        familyEx: "상주: ○○○ (장남)\n장지: ○○공원묘원\n발인일: ...",
-      };
-    case "memorial":
-      return {
-        titleEx: "예: 홍길동 성도 1주기 추도예배",
-        locationEx: "유가족 자택 / 본당 / 묘소",
-        subjectLabel: "추도 대상 (선택)",
-        familyLabel: "유족·참석자 정보 (선택)",
-        familyEx: "기일: 2025-12-25\n참석: 자녀·손주 등\n특별 기도 제목: ...",
-      };
-    case "visit":
-      return {
-        titleEx: "예: 홍길동 가정 심방예배",
-        locationEx: "성도 자택 / 병원 / 직장",
-        subjectLabel: "심방 대상 (선택)",
-        familyLabel: "심방 정보 (선택)",
-        familyEx: "심방 이유: 병환 회복 기도\n가족 구성원: ...\n특별 기도 제목: ...",
-      };
-    case "holiday":
-      return {
-        titleEx: "예: 설 명절 가족예배",
-        locationEx: "성도 가정 / 본당",
-        subjectLabel: "가정 대표 (선택)",
-        familyLabel: "가족·참석자 정보 (선택)",
-        familyEx: "참석 가족: 부모·자녀·손주 등\n특별 기도 제목: 한 해 감사·건강 등",
-      };
-    case "wedding":
-      return {
-        titleEx: "예: 홍길동·김순희 결혼예식",
-        locationEx: "본당 / ○○예식장",
-        subjectLabel: "신랑·신부 (선택)",
-        familyLabel: "양가·가족 정보 (선택)",
-        familyEx: "신랑 측: ○○○ 장로 자녀\n신부 측: ○○○ 권사 자녀\n참석 인원: 약 ○○명",
-      };
-    case "communion":
-      return {
-        titleEx: "예: 성찬식",
-        locationEx: "본당",
-        subjectLabel: "집례자 (선택)",
-        familyLabel: "성찬 준비 메모 (선택)",
-        familyEx: "성도 수: 약 ○○명\n준비물: 떡·잔\n특이사항: ...",
-      };
-    case "easter":
-      return {
-        titleEx: "예: 부활주일 새벽예배",
-        locationEx: "본당 / 야외",
-        subjectLabel: "참여 대표 (선택)",
-        familyLabel: "참석·메모 (선택)",
-        familyEx: "참석 인원: 약 ○○명\n특이사항: ...",
-      };
-    case "newyear":
-      return {
-        titleEx: "예: 신년 헌신예배",
-        locationEx: "본당",
-        subjectLabel: "참여 대표 (선택)",
-        familyLabel: "참석·메모 (선택)",
-        familyEx: "참석 인원: 약 ○○명\n특별 기도 제목: 한 해 비전·헌신 등",
-      };
-    case "housewarming":
-      return {
-        titleEx: "예: 입주 감사예배",
-        locationEx: "○○○ 성도 가정 (새 주소)",
-        subjectLabel: "가정 (선택)",
-        familyLabel: "가정·축복 기도 메모 (선택)",
-        familyEx: "이전 주소: ...\n새 주소: ...\n축복 기도 제목: 가정의 평안·자녀 등",
-      };
-    case "ordination":
-      return {
-        titleEx: "예: 안수식 / 임직예배",
-        locationEx: "본당",
-        subjectLabel: "임직 대상 (선택)",
-        familyLabel: "임직·참석 정보 (선택)",
-        familyEx: "임직 대상: ○○○ 집사 (장로 안수)\n참석: 노회 위원 등",
-      };
-    default:
-      return {
-        titleEx: "예식 제목을 입력하세요",
-        locationEx: "본당 / 가정 등",
-        subjectLabel: "대상 (선택)",
-        familyLabel: "참석·메모 (선택)",
-        familyEx: "참석 인원: ...\n특별 기도 제목: ...",
-      };
-  }
-}
+/* getCategoryFormCopy 는 SessionModal 과 공용 — src/lib/ceremony.ts 참조 */
 
 /** YYYY-MM-DD + HH:MM → ISO. 빈 입력이면 null. */
 function combineScheduledAt(date: string, time: string): string | null {
@@ -267,6 +189,8 @@ export function CeremonyTemplatePicker({
   const [scheduledTime, setScheduledTime] = useState<string>("");
   const [location, setLocation] = useState<string>("");
   const [subjectMemberId, setSubjectMemberId] = useState<string>("");
+  /** 두 번째 대상자 (결혼: 신부) — family_info.partner_member_id 에 저장 */
+  const [partnerMemberId, setPartnerMemberId] = useState<string>("");
   const [familyNote, setFamilyNote] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -283,6 +207,7 @@ export function CeremonyTemplatePicker({
       setScheduledTime("");
       setLocation("");
       setSubjectMemberId("");
+      setPartnerMemberId("");
       setFamilyNote("");
       setSaving(false);
       setError(null);
@@ -310,6 +235,11 @@ export function CeremonyTemplatePicker({
   );
 
   const visibleTemplates = useMemo(() => {
+    if (currentTab.matchUnknown) {
+      return visibleTemplatesAll.filter(
+        (t) => !(KNOWN_CATEGORIES as readonly string[]).includes(t.category as string),
+      );
+    }
     if (currentTab.categories === null) return visibleTemplatesAll;
     const cats = currentTab.categories;
     return visibleTemplatesAll.filter((t) => cats.includes(t.category as string));
@@ -336,6 +266,10 @@ export function CeremonyTemplatePicker({
     () => (subjectMemberId ? db.members.find((m) => m.id === subjectMemberId) ?? null : null),
     [db.members, subjectMemberId],
   );
+  const partnerMember = useMemo(
+    () => (partnerMemberId ? db.members.find((m) => m.id === partnerMemberId) ?? null : null),
+    [db.members, partnerMemberId],
+  );
 
   const memberOptions = useMemo<PcSelectOption[]>(() => {
     const opts: PcSelectOption[] = [{ value: "", label: "선택 안 함" }];
@@ -351,8 +285,8 @@ export function CeremonyTemplatePicker({
     if (!open) return;
     if (step !== 2) return;
     if (titleDirty) return;
-    setTitle(buildDefaultTitle(selectedTemplate, subjectMember));
-  }, [open, step, selectedTemplate, subjectMember, titleDirty]);
+    setTitle(buildDefaultTitle(selectedTemplate, subjectMember, partnerMember));
+  }, [open, step, selectedTemplate, subjectMember, partnerMember, titleDirty]);
 
   /* ---------- 카테고리별 폼 카피 ---------- */
   const formCopy = useMemo(
@@ -392,9 +326,9 @@ export function CeremonyTemplatePicker({
     setError(null);
     setSaving(true);
     try {
-      const familyInfo: CeremonyFamilyInfo = familyNote.trim()
-        ? { free_note: familyNote.trim() }
-        : {};
+      const familyInfo: CeremonyFamilyInfo = {};
+      if (familyNote.trim()) familyInfo.free_note = familyNote.trim();
+      if (partnerMemberId) familyInfo.partner_member_id = partnerMemberId;
 
       const session = await createSession({
         churchId,
@@ -491,7 +425,7 @@ export function CeremonyTemplatePicker({
             fontSize: 13,
           }}
         >
-          이 카테고리에 사용 가능한 가이드가 없습니다.
+          이 카테고리에 준비된 표준 식순이 없습니다.
         </div>
       ) : (
         <div
@@ -796,7 +730,7 @@ export function CeremonyTemplatePicker({
         placeholder={formCopy.locationEx}
       />
 
-      {/* 4) 대상 성도 */}
+      {/* 4) 대상 성도 (단일/주 대상자) */}
       <PcSelect
         label={formCopy.subjectLabel}
         value={subjectMemberId}
@@ -806,6 +740,19 @@ export function CeremonyTemplatePicker({
         searchable
         fullWidth
       />
+
+      {/* 4b) 두 명을 함께 선택하는 카테고리(결혼: 신부 등) */}
+      {formCopy.secondarySubjectLabel ? (
+        <PcSelect
+          label={formCopy.secondarySubjectLabel}
+          value={partnerMemberId}
+          onChange={setPartnerMemberId}
+          options={memberOptions}
+          placeholder="성도를 검색·선택하세요"
+          searchable
+          fullWidth
+        />
+      ) : null}
 
       {/* 5) 유족/가족 정보 */}
       <PcTextarea
@@ -900,7 +847,7 @@ export function CeremonyTemplatePicker({
     <PcModalShell
       open={open}
       onClose={onClose}
-      title="새 예식 시작"
+      title="새 식순 시작"
       maxWidth={720}
       footer={footer}
     >
