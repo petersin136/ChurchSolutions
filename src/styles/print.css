@@ -1,0 +1,197 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * 예식 가이드 — 인쇄 전용 스타일 ("Refined Modern with Color")
+ *
+ *   화면에서는 .ceremony-print-root 를 off-screen 으로 격리 (display:none 미사용).
+ *   인쇄 미디어에선 body 의 다른 직속 자식을 모두 display:none 으로 가린 뒤
+ *   인쇄 루트를 normal flow 로 보여준다. position:absolute 는 사용하지 않는다
+ *   (멀티 페이지 자연 분할이 깨짐).
+ *
+ *   실제 DOM 마운트는 React Portal 로 document.body 직속 (`.ceremony-print-root`).
+ *
+ *   베이스 컬러:
+ *     종이색       #FAFAF7  (살짝 따뜻한 아이보리)
+ *     본문 텍스트  #1A1A1A  (부드러운 잉크)
+ *     보조 텍스트  #6B6760
+ *     가는 라인    #D4CFC4
+ *   액센트 컬러는 카테고리에 따라 컴포넌트에서 인라인 스타일로 주입.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ────────────────────────────────────────────
+ *  화면 모드 — 인쇄 루트를 off-screen 으로 격리
+ * ──────────────────────────────────────────── */
+@media screen {
+  .ceremony-print-root {
+    position: fixed !important;
+    left: -99999px !important;
+    top: 0 !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
+  }
+}
+
+/* ────────────────────────────────────────────
+ *  인쇄 모드
+ * ──────────────────────────────────────────── */
+@media print {
+  @page {
+    /* 식순지(participant) 기본 — 한 페이지에 맞추므로 베이지를 크게.
+     * 좌·우 마진은 브라우저 하드 마진(보통 0.25in≈6.35mm)보다 충분히 크게
+     * 두어 오른쪽 테두리가 잘리지 않도록 한다. */
+    size: A4;
+    margin: 14mm 13mm 16mm;
+  }
+
+  /* 인도자용 멀티페이지 — 페이지마다 위/아래로 자연스러운 숨 쉴 공간 확보.
+   * 좌우는 식순지와 동일 폭이 되도록 동일하게 13mm. */
+  @page leader {
+    size: A4;
+    margin: 18mm 13mm 20mm;
+  }
+
+  .ceremony-print-root.ceremony-leader {
+    page: leader;
+  }
+
+  /* 인쇄 article 이 100% 폭을 차지하고 우측 테두리가 잘리지 않도록 */
+  .ceremony-print-root article {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  /* ────────────────────────────────────────────
+   *  인도자용 — 페이지마다 4면 액자 + 매 페이지 상/하 여백
+   * ──────────────────────────────────────────── */
+
+  /* 1) 4면 액자: position: fixed 는 CSS22 사양상 인쇄 시 모든 페이지에 반복
+   *    렌더링된다. top/right/bottom/left = 0 은 page box 의 인쇄 가능 영역
+   *    (=@page 마진을 제외한 베이지 영역) 경계를 의미하므로 매 페이지 동일
+   *    위치에 4면 테두리가 그려진다. */
+  .ceremony-print-root.ceremony-leader .ceremony-leader-frame {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    border-style: solid !important;
+    border-width: 0.7pt !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+    /* border-color 는 컴포넌트에서 인라인으로 카테고리 액센트 주입 */
+  }
+
+  /* 2) 매 페이지 상/하 여백 보장:
+   *    <thead> 와 <tfoot> 는 인쇄 시 매 페이지 위/아래에 자동 반복된다.
+   *    높이만 가진 스페이서 row 를 두면 매 페이지 액자 안쪽 위/아래로
+   *    breathing room 이 자연스럽게 확보된다. */
+  .ceremony-print-root.ceremony-leader table.ceremony-leader-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+  .ceremony-print-root.ceremony-leader table.ceremony-leader-table thead,
+  .ceremony-print-root.ceremony-leader table.ceremony-leader-table tfoot {
+    /* 매 페이지 반복되도록 디스플레이 명시 (브라우저 기본값과 동일이지만
+     * !important 로 외부 리셋 영향 차단) */
+    display: table-header-group !important;
+  }
+  .ceremony-print-root.ceremony-leader table.ceremony-leader-table tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* 컬러·배경 인쇄 강제 — 종이색·액센트 라인이 빠지지 않도록 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fafaf7 !important;
+    color: #1a1a1a !important;
+  }
+
+  /* 1) body 의 직속 자식 중 인쇄 루트가 아닌 모든 노드 숨김 */
+  body > *:not(.ceremony-print-root) {
+    display: none !important;
+  }
+
+  /* 2) 인쇄 루트 — normal flow 로 복원 */
+  .ceremony-print-root {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: auto !important;
+    background: #fafaf7 !important;
+    color: #1a1a1a !important;
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font-size: 12pt;
+    line-height: 1.6;
+  }
+
+  /* 3) 인쇄 루트 자손 강제 visible */
+  .ceremony-print-root * {
+    visibility: visible !important;
+  }
+
+  /* 4) 명시적 인쇄 제외 노드 */
+  [data-print-hide="true"] {
+    display: none !important;
+  }
+
+  /* 4-1) 다른 인쇄 시스템(BulletinPage, Reports 등) 포털 노드 강제 숨김
+   *      — html body 접두사로 specificity 0,1,2 확보해 동적 주입된 @media print
+   *      룰을 무력화 (handlePrint 의 disable 처리와 이중 안전망) */
+  html body #bulletin-print-only,
+  html body #report-print-area,
+  html body #bulletin-print-area {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* 5) step 단위 페이지 분할 보호 */
+  .ceremony-print-step {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* 6) 링크 URL 인쇄 방지 */
+  a,
+  a:visited {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+  a[href]::after {
+    content: "" !important;
+  }
+
+  /* ────────────────────────────────────────────
+   *  인도자용 — 페이지별 머리/꼬리 (CSS Paged Media)
+   * ──────────────────────────────────────────── */
+  .ceremony-print-root.ceremony-leader {
+    /* 본문은 normal flow */
+  }
+
+  /* 페이지 번호 카운터 — 본문 안 .ceremony-page-counter 가 자동으로 채워짐
+   * (Chrome/Edge/Safari 모두 인쇄 컨텍스트에서 counter(page)/counter(pages) 지원) */
+  .ceremony-page-counter::after {
+    content: counter(page) " / " counter(pages);
+  }
+}
