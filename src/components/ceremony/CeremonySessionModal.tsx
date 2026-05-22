@@ -1104,7 +1104,7 @@ export function CeremonySessionModal({
               <div
                 style={{
                   fontSize: 11,
-                  color: C.muted,
+                  color: C.textMuted,
                   paddingLeft: 2,
                 }}
               >

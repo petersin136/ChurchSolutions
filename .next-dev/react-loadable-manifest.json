@@ -5,6 +5,12 @@
       "static/chunks/_app-pages-browser_src_components_auth_LoginForm_tsx.js"
     ]
   },
+  "app/(auth)/register/page.tsx -> @/components/auth/RegisterForm": {
+    "id": "app/(auth)/register/page.tsx -> @/components/auth/RegisterForm",
+    "files": [
+      "static/chunks/_app-pages-browser_src_components_auth_RegisterForm_tsx.js"
+    ]
+  },
   "app/(main)/page.tsx -> @/components/MainPageClient": {
     "id": "app/(main)/page.tsx -> @/components/MainPageClient",
     "files": [
@@ -106,6 +112,18 @@
   },
   "src/components/report/A4Reports.tsx -> jspdf": {
     "id": "src/components/report/A4Reports.tsx -> jspdf",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_jspdf_dist_jspdf_es_min_js.js"
+    ]
+  },
+  "src/components/reports/MonthlyAttendanceBulletin.tsx -> html2canvas-pro": {
+    "id": "src/components/reports/MonthlyAttendanceBulletin.tsx -> html2canvas-pro",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_html2canvas-pro_dist_html2canvas-pro_esm_js.js"
+    ]
+  },
+  "src/components/reports/MonthlyAttendanceBulletin.tsx -> jspdf": {
+    "id": "src/components/reports/MonthlyAttendanceBulletin.tsx -> jspdf",
     "files": [
       "static/chunks/_app-pages-browser_node_modules_jspdf_dist_jspdf_es_min_js.js"
     ]
