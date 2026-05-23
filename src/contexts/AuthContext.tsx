@@ -241,10 +241,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    try {
-      if (supabase) await supabase.auth.signOut({ scope: "global" });
-    } catch (e) {
-      console.error("[signOut] supabase error:", e);
+    // ⚠️ Supabase 서버가 응답 안 하면 supabase.auth.signOut() 가 무한정 대기하는
+    //   사례가 있음. 이 함수가 영원히 끝나지 않으면 "지금 로그인 화면으로 이동"
+    //   같은 버튼이 무반응처럼 보이므로, 3초 타임아웃 race + fire-and-forget 처리.
+    const SIGNOUT_TIMEOUT_MS = 3000;
+    if (supabase) {
+      try {
+        await Promise.race([
+          supabase.auth.signOut({ scope: "global" }),
+          new Promise<void>((resolve) =>
+            setTimeout(() => {
+              console.warn("[signOut] supabase.auth.signOut 타임아웃 — 로컬 정리만 수행");
+              resolve();
+            }, SIGNOUT_TIMEOUT_MS),
+          ),
+        ]);
+      } catch (e) {
+        console.error("[signOut] supabase error:", e);
+      }
     }
 
     setUser(null);
@@ -253,31 +267,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setChurchName(null);
 
     if (typeof window !== "undefined") {
-      localStorage.clear();
-    }
-
-    if (typeof window !== "undefined") {
-      sessionStorage.clear();
+      try { localStorage.clear(); } catch {}
+      try { sessionStorage.clear(); } catch {}
     }
 
     if (typeof document !== "undefined") {
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c.trim().split("=")[0] + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-      });
+      try {
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c.trim().split("=")[0] + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        });
+      } catch {}
     }
 
     if (typeof window !== "undefined" && window.indexedDB) {
       try {
-        const databases = await window.indexedDB.databases();
+        const databases = await Promise.race([
+          window.indexedDB.databases(),
+          new Promise<IDBDatabaseInfo[]>((resolve) => setTimeout(() => resolve([]), 500)),
+        ]);
         databases.forEach((db) => {
           if (db.name) window.indexedDB.deleteDatabase(db.name);
         });
       } catch (_) {
-        // indexedDB.databases() 미지원 등
+        // indexedDB.databases() 미지원 등 - 무시
       }
     }
 
-    window.location.replace("/login");
+    if (typeof window !== "undefined") {
+      window.location.replace("/login");
+    }
   }, []);
 
   useEffect(() => {
