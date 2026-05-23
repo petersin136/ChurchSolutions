@@ -306,23 +306,11 @@ function ParticipantView({
       >
         {displayChurchName}
       </div>
-      <div
-        style={{
-          textAlign: "center",
-          marginTop: "3pt",
-          color: SUB,
-          fontFamily: FONT_NUMERIC,
-          fontSize: "8pt",
-          letterSpacing: "0.55em",
-          paddingLeft: "0.55em",
-          fontWeight: 400,
-        }}
-      >
-        DAY MINISTRY
-      </div>
 
       {/* ── 다이아 가로 라인 ── */}
-      <DiamondRule color={accent} compact />
+      <div style={{ marginTop: "6pt" }}>
+        <DiamondRule color={accent} compact />
+      </div>
 
       {/* ── 대상자 + 예식 명 ── */}
       <div style={{ textAlign: "center", margin: "14pt 0 10pt" }}>
@@ -710,6 +698,7 @@ function LeaderView({
       >
         {displayChurchName}
       </div>
+      {/* 인도자용 페이지 카운터 (영문 부제 제거) */}
       <div
         style={{
           textAlign: "center",
@@ -717,13 +706,11 @@ function LeaderView({
           color: SUB,
           fontFamily: FONT_NUMERIC,
           fontSize: "8pt",
-          letterSpacing: "0.55em",
-          paddingLeft: "0.55em",
+          letterSpacing: "0.4em",
+          paddingLeft: "0.4em",
           fontWeight: 400,
         }}
       >
-        DAY MINISTRY
-        <span style={{ margin: "0 8pt", letterSpacing: 0 }}>·</span>
         <span className="ceremony-page-counter" />
       </div>
 

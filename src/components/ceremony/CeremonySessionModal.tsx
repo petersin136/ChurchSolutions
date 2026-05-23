@@ -690,6 +690,10 @@ export function CeremonySessionModal({
 
   /* ──────────────────────────────────────────
    *  핸들러 — 인쇄 (브라우저 window.print)
+   *
+   *  · document.title 을 임시로 "{예식제목}_{식순지|인도자용}" 으로 변경 →
+   *    macOS "PDF로 저장" / Chrome 인쇄 다이얼로그에서 자동 파일명으로 들어감.
+   *  · 인쇄 끝나면 원래 title 복원.
    * ────────────────────────────────────────── */
   const handlePrint = (mode: "participant" | "leader") => {
     if (steps.length === 0) {
@@ -711,9 +715,19 @@ export function CeremonySessionModal({
         }
       }
 
+      // document.title → 시스템 인쇄 다이얼로그의 기본 파일명
+      const originalTitle = document.title;
+      const modeLabel = mode === "leader" ? "인도자용" : "식순지";
+      const safeTitle = (session?.title ?? "예식").replace(/[\\/:*?"<>|]/g, "_");
+      document.title = `${safeTitle}_${modeLabel}`;
+
       try {
         window.print();
       } finally {
+        // setTimeout 으로 인쇄 다이얼로그가 title 을 다 읽은 후 복원
+        setTimeout(() => {
+          document.title = originalTitle;
+        }, 100);
         for (const { el, prevDisabled } of toRestore) {
           el.disabled = prevDisabled;
         }
