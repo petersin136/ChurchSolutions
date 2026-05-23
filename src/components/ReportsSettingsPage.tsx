@@ -13,7 +13,6 @@ import { SeniorPastorReport } from "@/components/reports/SeniorPastorReport";
 import { DepartmentReport } from "@/components/reports/DepartmentReport";
 import { VisitPlanReport } from "@/components/reports/VisitPlanReport";
 import { UpcomingEvents } from "@/components/reports/UpcomingEvents";
-import { AttendanceStatistics } from "@/components/attendance/AttendanceStatistics";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { BarChart3, Banknote, Bell, Building2, CalendarDays, CalendarRange, ChevronRight, ClipboardList, Database, FileBarChart, FileText, Home, LayoutDashboard, MessageCircle, Moon, Palette, Receipt, Sprout, UserCheck, UserX, Users, Wallet } from "lucide-react";
 import { PcButton, PcCard, PcInput, PcSegmented, PcTabs } from "@/components/ui";
@@ -475,6 +474,220 @@ function NotificationSettingsCard({ db, setDb, save }: Pick<ReportsSettingsPageP
   );
 }
 
+/** ===== 보고서 시트 공통 스타일 ===== */
+const RP_TBL_WRAP: React.CSSProperties = { width: "100%", borderCollapse: "collapse", fontSize: 14, color: TEXT };
+const RP_TH: React.CSSProperties = {
+  textAlign: "left",
+  padding: "12px 12px",
+  color: NAVY,
+  fontWeight: 700,
+  fontSize: 14,
+  letterSpacing: "-0.01em",
+};
+const RP_TD: React.CSSProperties = { padding: "12px 12px", fontSize: 14, color: TEXT, lineHeight: 1.5 };
+const RP_SECTION_TITLE: React.CSSProperties = {
+  fontSize: 17,
+  fontWeight: 700,
+  color: NAVY,
+  marginBottom: 14,
+  letterSpacing: "-0.01em",
+};
+/** 보고서 표 한 페이지에 보일 행 수 (사이트 전체 통일) */
+const RP_ROWS_PER_PAGE = 20;
+
+/** 페이지네이션 바 (보고서 시트 공통) */
+function ReportPagination({
+  page,
+  totalPages,
+  totalItems,
+  onChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  onChange: (p: number) => void;
+}) {
+  return (
+    <div
+      data-print-hide="true"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "14px 16px",
+        background: BG_SUMMARY,
+        borderTop: `1px solid ${BORDER}`,
+        borderLeft: `1px solid ${BORDER}`,
+        borderRight: `1px solid ${BORDER}`,
+        borderBottomLeftRadius: 8,
+        borderBottomRightRadius: 8,
+      }}
+    >
+      <div style={{ fontSize: 13, color: SUB, fontVariantNumeric: "tabular-nums" }}>
+        총 <b style={{ color: NAVY, fontWeight: 700 }}>{totalItems.toLocaleString()}</b>건
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(1, page - 1))}
+          disabled={page <= 1}
+          style={{
+            height: 32,
+            padding: "0 12px",
+            fontSize: 13,
+            borderRadius: 6,
+            border: `1px solid ${BORDER}`,
+            background: WHITE,
+            color: page <= 1 ? FOOT_MUTED : TEXT,
+            cursor: page <= 1 ? "not-allowed" : "pointer",
+            fontFamily: "inherit",
+            fontWeight: 500,
+          }}
+        >
+          이전
+        </button>
+        <span style={{ fontSize: 13, color: TEXT, fontVariantNumeric: "tabular-nums", minWidth: 64, textAlign: "center" }}>
+          <b style={{ color: NAVY, fontWeight: 700 }}>{page}</b> / {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(Math.min(totalPages, page + 1))}
+          disabled={page >= totalPages}
+          style={{
+            height: 32,
+            padding: "0 12px",
+            fontSize: 13,
+            borderRadius: 6,
+            border: `1px solid ${BORDER}`,
+            background: WHITE,
+            color: page >= totalPages ? FOOT_MUTED : TEXT,
+            cursor: page >= totalPages ? "not-allowed" : "pointer",
+            fontFamily: "inherit",
+            fontWeight: 500,
+          }}
+        >
+          다음
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReportSimpleTable({
+  headers,
+  rows,
+  align,
+  paginated = true,
+  rowsPerPage = RP_ROWS_PER_PAGE,
+  showIndex = false,
+}: {
+  headers: string[];
+  rows: React.ReactNode[][];
+  align?: ("left" | "right")[];
+  paginated?: boolean;
+  rowsPerPage?: number;
+  showIndex?: boolean;
+}) {
+  const [page, setPage] = useState(1);
+  const totalItems = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+  const safePage = Math.min(page, totalPages);
+  useEffect(() => {
+    if (safePage !== page) setPage(safePage);
+  }, [safePage, page]);
+  const startIdx = (safePage - 1) * rowsPerPage;
+  const visible = paginated ? rows.slice(startIdx, startIdx + rowsPerPage) : rows;
+  const emptyRows = paginated ? Math.max(0, rowsPerPage - visible.length) : 0;
+  const effHeaders = showIndex ? ["#", ...headers] : headers;
+  const effAlign = showIndex ? (["right" as const, ...((align ?? []) as ("left" | "right")[])]) : align;
+  return (
+    <div
+      style={{
+        border: paginated ? `1px solid ${BORDER}` : "none",
+        borderRadius: paginated ? 8 : 0,
+        overflow: "hidden",
+      }}
+    >
+      <table style={RP_TBL_WRAP}>
+        <thead style={{ background: BG_SUMMARY }}>
+          <tr style={{ borderBottom: `2px solid ${NAVY}` }}>
+            {effHeaders.map((h, j) => (
+              <th
+                key={`${h}-${j}`}
+                style={{
+                  ...RP_TH,
+                  textAlign: effAlign?.[j] ?? "left",
+                  width: showIndex && j === 0 ? 56 : undefined,
+                }}
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {visible.length === 0 && emptyRows === 0 ? (
+            <tr>
+              <td
+                colSpan={effHeaders.length}
+                style={{ ...RP_TD, color: SUB, textAlign: "center", padding: "48px 12px" }}
+              >
+                데이터가 없습니다
+              </td>
+            </tr>
+          ) : (
+            <>
+              {visible.map((row, i) => {
+                const globalIdx = startIdx + i;
+                return (
+                  <tr
+                    key={`r-${globalIdx}`}
+                    style={{
+                      borderBottom: `1px solid ${BAR_TRACK}`,
+                      background: i % 2 === 0 ? WHITE : ROW_ALT,
+                    }}
+                  >
+                    {showIndex && (
+                      <td style={{ ...RP_TD, textAlign: "right", color: SUB, fontVariantNumeric: "tabular-nums" }}>
+                        {globalIdx + 1}
+                      </td>
+                    )}
+                    {row.map((c, j) => (
+                      <td key={j} style={{ ...RP_TD, textAlign: align?.[j] ?? "left" }}>
+                        {c ?? "-"}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+              {/* 빈행으로 표 높이 고정 */}
+              {Array.from({ length: emptyRows }).map((_, k) => (
+                <tr
+                  key={`e-${k}`}
+                  style={{
+                    borderBottom: `1px solid ${BAR_TRACK}`,
+                    background: (visible.length + k) % 2 === 0 ? WHITE : ROW_ALT,
+                  }}
+                  aria-hidden
+                >
+                  {effHeaders.map((_h, j) => (
+                    <td key={j} style={{ ...RP_TD, color: "transparent" }}>
+                      &nbsp;
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </>
+          )}
+        </tbody>
+      </table>
+      {paginated && totalItems > 0 && (
+        <ReportPagination page={safePage} totalPages={totalPages} totalItems={totalItems} onChange={setPage} />
+      )}
+    </div>
+  );
+}
+
 function ReportPrintHeader({
   churchName,
   reportTitle,
@@ -494,19 +707,19 @@ function ReportPrintHeader({
         justifyContent: "space-between",
         alignItems: "flex-start",
         borderBottom: `2px solid ${NAVY}`,
-        paddingBottom: 12,
-        marginBottom: 16,
+        paddingBottom: 16,
+        marginBottom: 24,
       }}
     >
       <div>
-        <div style={{ fontSize: 11, color: SUB }}>{churchName.trim() || "교회명"}</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, marginTop: 4 }}>{reportTitle}</div>
+        <div style={{ fontSize: 14, color: SUB, letterSpacing: "-0.01em" }}>{churchName.trim() || "교회명"}</div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>{reportTitle}</div>
       </div>
       <div style={{ textAlign: "right" }}>
-        <div style={{ fontSize: 11, color: SUB }}>
+        <div style={{ fontSize: 14, color: SUB, fontWeight: 500 }}>
           {startDate} ~ {endDate}
         </div>
-        <div style={{ fontSize: 10, color: FOOT_MUTED, marginTop: 2 }}>생성일: {created}</div>
+        <div style={{ fontSize: 12, color: FOOT_MUTED, marginTop: 4 }}>생성일: {created}</div>
       </div>
     </div>
   );
@@ -519,10 +732,10 @@ function ReportPrintFooter({ churchName }: { churchName: string }) {
     <div
       style={{
         borderTop: `1px solid ${BORDER}`,
-        paddingTop: 8,
-        marginTop: 16,
+        paddingTop: 14,
+        marginTop: 28,
         textAlign: "center",
-        fontSize: 9,
+        fontSize: 12,
         color: FOOT_MUTED,
       }}
     >
@@ -547,55 +760,62 @@ function MemberListPrintBody({
   departments: { name: string; count: number; barPct: number; sharePct: number }[];
 }) {
   const card: React.CSSProperties = {
-    padding: "10px 12px",
-    borderRadius: 6,
+    padding: "18px 20px",
+    borderRadius: 10,
     background: BG_SUMMARY,
     border: `1px solid ${BORDER}`,
   };
   const th: React.CSSProperties = {
-    padding: "6px 8px",
+    padding: "12px 12px",
     textAlign: "left",
     fontWeight: 700,
     color: NAVY,
-    fontSize: 11,
+    fontSize: 14,
+    letterSpacing: "-0.01em",
+  };
+  const td: React.CSSProperties = {
+    padding: "12px 12px",
+    fontSize: 14,
+    color: TEXT,
+    lineHeight: 1.5,
   };
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
         <div style={card}>
-          <div style={{ fontSize: 10, color: MUTED }}>전체 성도</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: NAVY }}>{totalMembers}명</div>
+          <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>전체 성도</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>{totalMembers}명</div>
         </div>
         <div style={card}>
-          <div style={{ fontSize: 10, color: MUTED }}>활동 성도</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: NAVY }}>{activeMembers}명</div>
+          <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>활동 성도</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>{activeMembers}명</div>
         </div>
         <div style={card}>
-          <div style={{ fontSize: 10, color: MUTED }}>새가족</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: NAVY }}>{newFamilyCount}명</div>
+          <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>새가족</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>{newFamilyCount}명</div>
         </div>
         <div style={card}>
-          <div style={{ fontSize: 10, color: MUTED }}>휴면·위험</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: NAVY }}>{riskCount}명</div>
+          <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>휴면·위험</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>{riskCount}명</div>
         </div>
       </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginBottom: 8 }}>부서별 현황</div>
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 17, fontWeight: 700, color: NAVY, marginBottom: 14, letterSpacing: "-0.01em" }}>부서별 현황</div>
         {departments.length === 0 ? (
-          <div style={{ fontSize: 11, color: SUB }}>데이터 없음</div>
+          <div style={{ fontSize: 14, color: SUB }}>데이터 없음</div>
         ) : (
           departments.map((dept) => (
-            <div key={dept.name} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <div style={{ width: 72, fontSize: 11, color: TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={dept.name}>
+            <div key={dept.name} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+              <div style={{ width: 110, fontSize: 14, color: TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }} title={dept.name}>
                 {dept.name}
               </div>
               <div
                 style={{
                   flex: 1,
-                  height: 16,
+                  height: 22,
                   background: BAR_TRACK,
-                  borderRadius: 4,
+                  borderRadius: 6,
                   overflow: "hidden",
                   minWidth: 40,
                 }}
@@ -605,11 +825,11 @@ function MemberListPrintBody({
                     width: `${dept.barPct}%`,
                     height: "100%",
                     background: NAVY,
-                    borderRadius: 4,
+                    borderRadius: 6,
                   }}
                 />
               </div>
-              <div style={{ width: 72, fontSize: 11, color: TEXT, textAlign: "right", flexShrink: 0 }}>
+              <div style={{ width: 110, fontSize: 14, color: TEXT, textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
                 {dept.count}명 ({dept.sharePct}%)
               </div>
             </div>
@@ -618,35 +838,183 @@ function MemberListPrintBody({
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginBottom: 8 }}>상세 명단</div>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-          <thead>
-            <tr style={{ borderBottom: `2px solid ${NAVY}` }}>
-              <th style={th}>이름</th>
-              <th style={th}>부서</th>
-              <th style={th}>직분</th>
-              <th style={th}>연락처</th>
-              <th style={th}>상태</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((m, i) => (
-              <tr
-                key={m.id}
+        <div style={RP_SECTION_TITLE}>상세 명단</div>
+        <ReportSimpleTable
+          showIndex
+          headers={["이름", "부서", "직분", "연락처", "상태"]}
+          rows={members.map((m) => [
+            <span key="n" style={{ color: NAVY, fontWeight: 600 }}>{m.name}</span>,
+            m.dept || "-",
+            m.role || "-",
+            <span key="p" style={{ fontVariantNumeric: "tabular-nums" }}>{m.phone || "-"}</span>,
+            m.member_status ?? m.status ?? "-",
+          ])}
+        />
+      </div>
+    </>
+  );
+}
+
+/** 출석 통계 보고서 — 다른 시트와 동일한 톤 */
+function AttendancePrintBody({
+  members,
+  attendanceList,
+  startDate,
+  endDate,
+}: {
+  members: Member[];
+  attendanceList: Attendance[];
+  startDate: string;
+  endDate: string;
+}) {
+  const inRange = (d: string) => d >= startDate && d <= endDate;
+  const filtered = attendanceList.filter((a) => inRange(a.date));
+  const memberIdSet = new Set(members.map((m) => m.id));
+  const byMember = new Map<string, { present: number; online: number; absent: number; weeks: Set<string> }>();
+  // 모든 활동 멤버 0 초기화
+  members.forEach((m) => {
+    byMember.set(m.id, { present: 0, online: 0, absent: 0, weeks: new Set<string>() });
+  });
+  // 기간 내 주차 집합 (전체 기준)
+  const allWeeks = new Set<string>();
+  filtered.forEach((a) => {
+    allWeeks.add(a.date);
+    if (!memberIdSet.has(a.member_id)) return;
+    const slot = byMember.get(a.member_id)!;
+    slot.weeks.add(a.date);
+    if (a.status === "출석") slot.present += 1;
+    else if (a.status === "온라인") slot.online += 1;
+    else if (a.status === "결석") slot.absent += 1;
+  });
+  const totalWeekCount = allWeeks.size || 1;
+  const rows = members.map((m) => {
+    const s = byMember.get(m.id) || { present: 0, online: 0, absent: 0, weeks: new Set<string>() };
+    const attended = s.present + s.online;
+    const rate = totalWeekCount ? Math.round((attended / totalWeekCount) * 100) : 0;
+    return { m, attended, absent: s.absent, total: totalWeekCount, rate };
+  });
+  rows.sort((a, b) => b.rate - a.rate || a.m.name.localeCompare(b.m.name, "ko"));
+  const totalAttended = rows.reduce((s, r) => s + r.attended, 0);
+  const totalAbsent = rows.reduce((s, r) => s + r.absent, 0);
+  const avgRate = rows.length
+    ? Math.round(rows.reduce((s, r) => s + r.rate, 0) / rows.length)
+    : 0;
+  // 부서별 평균 출석률
+  const deptMap = new Map<string, { sum: number; count: number }>();
+  rows.forEach((r) => {
+    const d = (r.m.dept || "(미배정)").trim() || "(미배정)";
+    const cur = deptMap.get(d) || { sum: 0, count: 0 };
+    cur.sum += r.rate;
+    cur.count += 1;
+    deptMap.set(d, cur);
+  });
+  const deptStats = Array.from(deptMap.entries())
+    .map(([name, v]) => ({ name, avg: Math.round(v.sum / Math.max(1, v.count)), n: v.count }))
+    .sort((a, b) => b.n - a.n);
+  const maxDeptN = Math.max(...deptStats.map((d) => d.n), 1);
+
+  const card: React.CSSProperties = {
+    padding: "18px 20px",
+    borderRadius: 10,
+    background: BG_SUMMARY,
+    border: `1px solid ${BORDER}`,
+  };
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+        <div style={card}>
+          <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>대상 인원</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>
+            {members.length}명
+          </div>
+          <div style={{ fontSize: 12, color: SUB, marginTop: 4 }}>활동 성도</div>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>평균 출석률</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>
+            {avgRate}%
+          </div>
+          <div style={{ fontSize: 12, color: SUB, marginTop: 4 }}>주일 {totalWeekCount}회</div>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>누적 출석</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>
+            {totalAttended.toLocaleString()}
+          </div>
+          <div style={{ fontSize: 12, color: SUB, marginTop: 4 }}>기간 합계</div>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>누적 결석</div>
+          <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>
+            {totalAbsent.toLocaleString()}
+          </div>
+          <div style={{ fontSize: 12, color: SUB, marginTop: 4 }}>기간 합계</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <div style={RP_SECTION_TITLE}>부서별 평균 출석률</div>
+        {deptStats.length === 0 ? (
+          <div style={{ fontSize: 14, color: SUB }}>데이터 없음</div>
+        ) : (
+          deptStats.map((d) => (
+            <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+              <div style={{ width: 110, fontSize: 14, color: TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>
+                {d.name}
+              </div>
+              <div
                 style={{
-                  borderBottom: `1px solid ${BAR_TRACK}`,
-                  background: i % 2 === 0 ? WHITE : ROW_ALT,
+                  flex: 1,
+                  height: 22,
+                  background: BAR_TRACK,
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  minWidth: 40,
+                  position: "relative",
                 }}
               >
-                <td style={{ padding: "6px 8px", color: NAVY, fontWeight: 600 }}>{m.name}</td>
-                <td style={{ padding: "6px 8px", color: TEXT }}>{m.dept || "-"}</td>
-                <td style={{ padding: "6px 8px", color: TEXT }}>{m.role || "-"}</td>
-                <td style={{ padding: "6px 8px", color: TEXT }}>{m.phone || "-"}</td>
-                <td style={{ padding: "6px 8px", color: TEXT }}>{m.member_status ?? m.status ?? "-"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                <div
+                  style={{
+                    width: `${d.avg}%`,
+                    height: "100%",
+                    background: NAVY,
+                    borderRadius: 6,
+                  }}
+                />
+              </div>
+              <div style={{ width: 140, fontSize: 14, color: TEXT, textAlign: "right", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+                {d.avg}% · {d.n}명
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={RP_SECTION_TITLE}>성도별 출석 현황</div>
+        <ReportSimpleTable
+          showIndex
+          headers={["이름", "부서", "목장", "총주일수", "출석", "결석", "출석률"]}
+          align={["left", "left", "left", "right", "right", "right", "right"]}
+          rows={rows.map(({ m, attended, absent, total, rate }) => [
+            <span key="n" style={{ color: NAVY, fontWeight: 600 }}>{m.name}</span>,
+            m.dept || "-",
+            (m.mokjang || m.group || "-") as string,
+            <span key="t" style={{ fontVariantNumeric: "tabular-nums" }}>{total}</span>,
+            <span key="a" style={{ fontVariantNumeric: "tabular-nums" }}>{attended}</span>,
+            <span key="x" style={{ fontVariantNumeric: "tabular-nums" }}>{absent}</span>,
+            <span
+              key="r"
+              style={{
+                fontVariantNumeric: "tabular-nums",
+                fontWeight: 700,
+                color: rate >= 80 ? "#1b7a36" : rate >= 50 ? NAVY : "#a83232",
+              }}
+            >
+              {rate}%
+            </span>,
+          ])}
+        />
       </div>
     </>
   );
@@ -683,6 +1051,44 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
 
   const [selectedReport, setSelectedReport] = useState<ReportCardDef | null>(null);
   const [activeReportCategory, setActiveReportCategory] = useState("목양");
+
+  // 보고서 상세 진입 시 history entry 추가 → 브라우저 뒤로가기/제스처로도 목록으로 복귀
+  const reportNavStateRef = useRef<string | null>(null);
+  const selectReport = useCallback((r: ReportCardDef | null) => {
+    setSelectedReport((prev) => {
+      if (typeof window !== "undefined") {
+        if (r && !prev) {
+          // 상세 진입 — history 에 marker push
+          const marker = `report-detail-${Date.now()}`;
+          reportNavStateRef.current = marker;
+          try { window.history.pushState({ __reportDetail: marker }, ""); } catch {}
+        } else if (!r && prev && reportNavStateRef.current) {
+          // UI '뒤로' 버튼으로 목록 복귀 — history entry 도 정리
+          try {
+            if ((window.history.state as { __reportDetail?: string } | null)?.__reportDetail === reportNavStateRef.current) {
+              window.history.back();
+            }
+          } catch {}
+          reportNavStateRef.current = null;
+        }
+      }
+      return r;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onPop = (e: PopStateEvent) => {
+      // 브라우저 뒤로가기로 detail entry 를 벗어나는 순간 — 상세 닫기
+      const incoming = (e.state as { __reportDetail?: string } | null)?.__reportDetail ?? null;
+      if (reportNavStateRef.current && incoming !== reportNavStateRef.current) {
+        reportNavStateRef.current = null;
+        setSelectedReport(null);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const endD = useMemo(() => new Date(), []);
   const startD = useMemo(() => {
     const s = new Date();
@@ -783,7 +1189,17 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
 
-    const printWindow = window.open("", "_blank", "width=800,height=1000");
+    // 현재 사이트의 primary 컬러 값을 읽어서 새 창의 :root 에 inject
+    const rootStyle = getComputedStyle(document.documentElement);
+    const primaryHex = (rootStyle.getPropertyValue("--color-primary").trim() || "#1B2A4A");
+
+    // 인쇄 영역을 복제하고 [data-print-hide] 요소 제거 (페이지네이션 바 등)
+    const cloned = printArea.cloneNode(true) as HTMLElement;
+    cloned.querySelectorAll<HTMLElement>("[data-print-hide=\"true\"]").forEach((el) => el.remove());
+    // 빈행(aria-hidden) 제거하여 PDF 가 깔끔하게 나오도록
+    cloned.querySelectorAll<HTMLElement>("tr[aria-hidden]").forEach((el) => el.remove());
+
+    const printWindow = window.open("", "_blank", "width=900,height=1100");
     if (!printWindow) {
       toast("팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도해 주세요.", "warn");
       return;
@@ -796,52 +1212,67 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
   <meta charset="utf-8" />
   <title>${safeTitle}</title>
   <style>
+    :root { --color-primary: ${primaryHex}; }
     @page {
       size: A4 portrait;
-      margin: 15mm;
+      margin: 14mm 12mm;
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
-      color: var(--color-primary);
+    html, body {
+      background: #ffffff;
+      color: #333;
       padding: 0;
       margin: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      font-size: 12.5px;
+      line-height: 1.55;
     }
-    th, td {
-      padding: 6px 8px;
-      text-align: left;
-      font-size: 11px;
+    /* 인쇄 시 외곽 패딩/보더 제거 (페이지 여백은 @page 가 담당) */
+    #report-print-area {
+      padding: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
     }
-    th {
-      border-bottom: 2px solid var(--color-primary);
-      font-weight: 700;
-    }
-    td {
-      border-bottom: 1px solid #e2e5ef;
-    }
-    tr:nth-child(even) {
-      background: #fafbfc;
-    }
+    table { width: 100%; border-collapse: collapse; }
+    /* 페이지 사이에서 행이 잘리지 않도록 */
+    tr, td, th { page-break-inside: avoid; break-inside: avoid; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    /* 페이지네이션, 버튼 등 인쇄 시 숨김 */
+    [data-print-hide="true"] { display: none !important; }
+    button { display: none !important; }
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
 </head>
 <body>
-${printArea.innerHTML}
+<div id="report-print-area">
+${cloned.innerHTML}
+</div>
 </body>
 </html>
     `);
 
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => {
+    // 폰트 로딩 대기 후 print
+    const triggerPrint = () => {
+      try { printWindow.focus(); } catch {}
       printWindow.print();
-      printWindow.close();
-    }, 500);
+      // print 다이얼로그 닫힌 후 잠시 뒤 창 닫기
+      setTimeout(() => { try { printWindow.close(); } catch {} }, 400);
+    };
+    const fonts = (printWindow.document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
+    if (fonts && fonts.ready) {
+      fonts.ready.then(() => setTimeout(triggerPrint, 80)).catch(() => triggerPrint());
+    } else {
+      setTimeout(triggerPrint, 250);
+    }
   }, [selectedReport?.title, toast]);
 
   const categoryTone = (category: string) => {
@@ -914,15 +1345,7 @@ ${printArea.innerHTML}
     if (id === "x_upcoming") return <UpcomingEvents members={db.members} db={db} />;
 
     if (id === "p_attendance") {
-      return (
-        <AttendanceStatistics
-          members={membersFiltered}
-          attendanceList={attendanceList}
-          startDate={startDate}
-          endDate={endDate}
-          toast={toast}
-        />
-      );
+      return null; // 별도 본문 컴포넌트(AttendancePrintBody)로 렌더
     }
 
     if (id === "p_member_list") {
@@ -931,30 +1354,35 @@ ${printArea.innerHTML}
 
     if (id === "p_new_family") {
       const programs = db.newFamilyPrograms ?? [];
+      const idToName = new Map(db.members.map((m) => [m.id, m.name] as const));
       return (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, color: TEXT }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-              {["회원ID", "시작일", "상태", "4주 진행"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "6px 4px", color: NAVY, fontWeight: 700 }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {programs.map((p) => (
-              <tr key={p.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <td style={{ padding: "6px 4px" }}>{p.member_id}</td>
-                <td style={{ padding: "6px 4px" }}>{p.program_start_date || "-"}</td>
-                <td style={{ padding: "6px 4px" }}>{p.status}</td>
-                <td style={{ padding: "6px 4px" }}>
-                  {[p.week1_completed, p.week2_completed, p.week3_completed, p.week4_completed].filter(Boolean).length}/4
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ReportSimpleTable
+          showIndex
+          headers={["성도", "시작일", "상태", "4주 진행"]}
+          align={["left", "left", "left", "right"]}
+          rows={programs.map((p) => {
+            const done = [p.week1_completed, p.week2_completed, p.week3_completed, p.week4_completed].filter(Boolean).length;
+            return [
+              <span key="n" style={{ color: NAVY, fontWeight: 600 }}>{idToName.get(p.member_id) || p.member_id}</span>,
+              p.program_start_date || "-",
+              <span
+                key="s"
+                style={{
+                  display: "inline-block",
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: p.status === "수료" ? "#eaf6ec" : p.status === "중단" ? "#fdecec" : "#eaf1ff",
+                  color: p.status === "수료" ? "#1b7a36" : p.status === "중단" ? "#a83232" : NAVY,
+                }}
+              >
+                {p.status}
+              </span>,
+              <span key="p" style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{done}/4</span>,
+            ];
+          })}
+        />
       );
     }
 
@@ -966,77 +1394,52 @@ ${printArea.innerHTML}
       });
       const rows = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
       return (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, color: TEXT }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-              <th style={{ textAlign: "left", padding: "6px 4px", color: NAVY }}>목장</th>
-              <th style={{ textAlign: "left", padding: "6px 4px", color: NAVY }}>인원</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(([name, n]) => (
-              <tr key={name} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <td style={{ padding: "6px 4px" }}>{name}</td>
-                <td style={{ padding: "6px 4px" }}>{n}명</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ReportSimpleTable
+          showIndex
+          headers={["목장", "인원"]}
+          align={["left", "right"]}
+          rows={rows.map(([name, n]) => [
+            <span key="n" style={{ color: NAVY, fontWeight: 600 }}>{name}</span>,
+            <span key="c" style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{n}명</span>,
+          ])}
+        />
       );
     }
 
     if (id === "p_absentee") {
       return (
-        <div style={{ fontSize: 12, color: TEXT, lineHeight: 1.6 }}>
-          <p style={{ margin: "0 0 8px", color: SUB }}>
+        <div>
+          <p style={{ margin: "0 0 16px", color: SUB, fontSize: 14, lineHeight: 1.6 }}>
             최근 주차 기준 활동 성도 중 출석 기록이 없거나 부족한 경우를 요약합니다. 상세 관리는 목양 &gt; 출석부 &gt; 결석자 관리에서 진행하세요.
           </p>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <th style={{ textAlign: "left", padding: "6px 4px", color: NAVY }}>이름</th>
-                <th style={{ textAlign: "left", padding: "6px 4px", color: NAVY }}>부서</th>
-                <th style={{ textAlign: "left", padding: "6px 4px", color: NAVY }}>비고</th>
-              </tr>
-            </thead>
-            <tbody>
-              {membersFiltered.slice(0, 40).map((m) => (
-                <tr key={m.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  <td style={{ padding: "6px 4px" }}>{m.name}</td>
-                  <td style={{ padding: "6px 4px" }}>{m.dept || "-"}</td>
-                  <td style={{ padding: "6px 4px", color: SUB }}>출석 데이터 기준 점검</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ReportSimpleTable
+            showIndex
+            headers={["이름", "부서", "비고"]}
+            rows={membersFiltered.map((m) => [
+              <span key="n" style={{ color: NAVY, fontWeight: 600 }}>{m.name}</span>,
+              m.dept || "-",
+              <span key="r" style={{ color: SUB }}>출석 데이터 기준 점검</span>,
+            ])}
+          />
         </div>
       );
     }
 
     if (id === "v_visit") {
       const visits = (db.visits ?? []).filter((v) => inDateRange(v.date));
+      const idToName = new Map(db.members.map((m) => [m.id, m.name] as const));
       return (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, color: TEXT }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-              {["날짜", "성도ID", "유형", "요약"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "6px 4px", color: NAVY }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {visits.map((v) => (
-              <tr key={v.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <td style={{ padding: "6px 4px" }}>{v.date}</td>
-                <td style={{ padding: "6px 4px" }}>{v.memberId}</td>
-                <td style={{ padding: "6px 4px" }}>{v.type}</td>
-                <td style={{ padding: "6px 4px" }}>{(v.content || "").slice(0, 80)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ReportSimpleTable
+          showIndex
+          headers={["날짜", "성도", "유형", "요약"]}
+          align={["left", "left", "left", "left"]}
+          rows={visits.map((v) => [
+            <span key="d" style={{ fontVariantNumeric: "tabular-nums" }}>{v.date}</span>,
+            <span key="n" style={{ color: NAVY, fontWeight: 600 }}>{idToName.get(v.memberId) || v.memberId}</span>,
+            v.type,
+            (v.content || "").slice(0, 80),
+          ])}
+        />
       );
     }
 
@@ -1044,82 +1447,57 @@ ${printArea.innerHTML}
       const counsels = ((db as DB & { counsels?: { id: string; date: string; memberId: string; type: string; summary?: string }[] }).counsels ?? []).filter((c) =>
         inDateRange(c.date)
       );
+      const idToName = new Map(db.members.map((m) => [m.id, m.name] as const));
       return (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, color: TEXT }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-              {["날짜", "성도ID", "유형", "요약"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "6px 4px", color: NAVY }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {counsels.map((c) => (
-              <tr key={c.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <td style={{ padding: "6px 4px" }}>{c.date}</td>
-                <td style={{ padding: "6px 4px" }}>{c.memberId}</td>
-                <td style={{ padding: "6px 4px" }}>{c.type}</td>
-                <td style={{ padding: "6px 4px" }}>{(c.summary ?? "").slice(0, 80)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ReportSimpleTable
+          showIndex
+          headers={["날짜", "성도", "유형", "요약"]}
+          align={["left", "left", "left", "left"]}
+          rows={counsels.map((c) => [
+            <span key="d" style={{ fontVariantNumeric: "tabular-nums" }}>{c.date}</span>,
+            <span key="n" style={{ color: NAVY, fontWeight: 600 }}>{idToName.get(c.memberId) || c.memberId}</span>,
+            c.type,
+            (c.summary ?? "").slice(0, 80),
+          ])}
+        />
       );
     }
 
     if (id === "f_offering") {
       const rows = (db.income ?? []).filter((r: Income) => inDateRange(r.date));
       return (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, color: TEXT }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-              {["날짜", "항목", "금액", "비고"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "6px 4px", color: NAVY }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <td style={{ padding: "6px 4px" }}>{r.date}</td>
-                <td style={{ padding: "6px 4px" }}>{r.type}</td>
-                <td style={{ padding: "6px 4px" }}>{r.amount?.toLocaleString?.() ?? r.amount}</td>
-                <td style={{ padding: "6px 4px" }}>{(r.memo || "").slice(0, 40)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ReportSimpleTable
+          showIndex
+          headers={["날짜", "항목", "금액", "비고"]}
+          align={["left", "left", "right", "left"]}
+          rows={rows.map((r) => [
+            <span key="d" style={{ fontVariantNumeric: "tabular-nums" }}>{r.date}</span>,
+            <span key="t" style={{ color: NAVY, fontWeight: 600 }}>{r.type}</span>,
+            <span key="a" style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
+              ₩{(r.amount ?? 0).toLocaleString()}
+            </span>,
+            (r.memo || "").slice(0, 40),
+          ])}
+        />
       );
     }
 
     if (id === "f_expense") {
       const rows = (db.expense ?? []).filter((r: Expense) => inDateRange(r.date));
       return (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, color: TEXT }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-              {["날짜", "항목", "금액", "비고"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "6px 4px", color: NAVY }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <td style={{ padding: "6px 4px" }}>{r.date}</td>
-                <td style={{ padding: "6px 4px" }}>{r.category}</td>
-                <td style={{ padding: "6px 4px" }}>{r.amount?.toLocaleString?.() ?? r.amount}</td>
-                <td style={{ padding: "6px 4px" }}>{(r.memo || "").slice(0, 40)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ReportSimpleTable
+          showIndex
+          headers={["날짜", "항목", "금액", "비고"]}
+          align={["left", "left", "right", "left"]}
+          rows={rows.map((r) => [
+            <span key="d" style={{ fontVariantNumeric: "tabular-nums" }}>{r.date}</span>,
+            <span key="c" style={{ color: NAVY, fontWeight: 600 }}>{r.category}</span>,
+            <span key="a" style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
+              ₩{(r.amount ?? 0).toLocaleString()}
+            </span>,
+            (r.memo || "").slice(0, 40),
+          ])}
+        />
       );
     }
 
@@ -1257,7 +1635,7 @@ ${printArea.innerHTML}
                               <button
                                 type="button"
                                 className={`${reportItemStyles.button}${selected ? ` ${reportItemStyles.buttonSelected}` : ""}`}
-                                onClick={() => setSelectedReport(item)}
+                                onClick={() => selectReport(item)}
                               >
                                 <span className={reportItemStyles.iconBox} style={{ background: tone.soft, color: tone.main, border: "1px solid var(--color-border)" }}>
                                   <ItemIcon size={24} />
@@ -1279,43 +1657,45 @@ ${printArea.innerHTML}
             )}
             {selectedReport && (
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                   <button
                     type="button"
-                    onClick={() => setSelectedReport(null)}
+                    onClick={() => selectReport(null)}
                     style={{
-                      height: 28,
-                      padding: "0 10px",
-                      fontSize: 11,
-                      borderRadius: 6,
+                      height: 36,
+                      padding: "0 14px",
+                      fontSize: 14,
+                      borderRadius: 8,
                       border: `1px solid ${BORDER}`,
                       background: WHITE,
                       color: TEXT,
                       cursor: "pointer",
                       flexShrink: 0,
                       fontFamily: "inherit",
+                      fontWeight: 500,
                     }}
                   >
                     ← 뒤로
                   </button>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: NAVY, minWidth: 0 }}>{detailTitle}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: NAVY, minWidth: 0, letterSpacing: "-0.01em" }}>{detailTitle}</div>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
                   <button
                     type="button"
                     onClick={handlePrint}
                     style={{
-                      height: 32,
-                      padding: "0 14px",
-                      fontSize: 12,
+                      height: 38,
+                      padding: "0 18px",
+                      fontSize: 14,
                       fontWeight: 600,
-                      borderRadius: 6,
+                      borderRadius: 8,
                       background: NAVY,
                       color: WHITE,
                       border: "none",
                       cursor: "pointer",
                       fontFamily: "inherit",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     PDF / 인쇄
@@ -1326,10 +1706,11 @@ ${printArea.innerHTML}
                   id="report-print-area"
                   style={{
                     background: WHITE,
-                    borderRadius: 8,
+                    borderRadius: 12,
                     border: `1px solid ${BORDER}`,
-                    padding: 20,
-                    minHeight: 120,
+                    padding: "32px 36px",
+                    minHeight: 200,
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif',
                   }}
                 >
                   <ReportPrintHeader
@@ -1347,8 +1728,15 @@ ${printArea.innerHTML}
                       riskCount={memberListPrintData.riskCount}
                       departments={memberListPrintData.departments}
                     />
+                  ) : selectedReport.id === "p_attendance" ? (
+                    <AttendancePrintBody
+                      members={membersFiltered}
+                      attendanceList={attendanceList}
+                      startDate={startDate}
+                      endDate={endDate}
+                    />
                   ) : (
-                    <div style={{ fontSize: 12 }}>{renderPreview()}</div>
+                    <div style={{ fontSize: 14, color: TEXT, lineHeight: 1.6 }}>{renderPreview()}</div>
                   )}
                   <ReportPrintFooter churchName={churchName} />
                 </div>
