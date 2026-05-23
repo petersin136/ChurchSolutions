@@ -40,6 +40,11 @@ BEGIN
   IF to_regclass('public.school_enrollments')  IS NOT NULL THEN DELETE FROM school_enrollments  WHERE church_id = v_church_id; END IF;
   IF to_regclass('public.school_departments')  IS NOT NULL THEN DELETE FROM school_departments  WHERE church_id = v_church_id; END IF;
 
+  -- 사역흐름 (workflows) — 카드 → steps → workflow 순서로 삭제 (FK CASCADE도 가능하지만 명시)
+  IF to_regclass('public.workflow_cards')      IS NOT NULL THEN DELETE FROM workflow_cards      WHERE church_id = v_church_id; END IF;
+  IF to_regclass('public.workflow_steps')      IS NOT NULL THEN DELETE FROM workflow_steps      WHERE church_id = v_church_id; END IF;
+  IF to_regclass('public.workflows')           IS NOT NULL THEN DELETE FROM workflows           WHERE church_id = v_church_id; END IF;
+
   -- 사역 데이터
   IF to_regclass('public.counsels')            IS NOT NULL THEN DELETE FROM counsels            WHERE church_id = v_church_id; END IF;
   IF to_regclass('public.visits')              IS NOT NULL THEN DELETE FROM visits              WHERE church_id = v_church_id; END IF;
