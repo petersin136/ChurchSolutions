@@ -23,12 +23,11 @@ export default function MainPageClient() {
 
   // 2) 로그인은 됐는데 churchId 가 끝까지 null —
   //    DB에서 교회가 삭제된 계정이거나 church_users 매핑이 없는 경우.
-  //    무한 blank 화면 방지를 위해 안내 화면 표시 후 자동 로그아웃 → /login.
+  //    무한 blank 화면 방지를 위해 안내 화면 표시 후 자동 정리 → /login.
   useEffect(() => {
     if (loading) return;
     if (!user) return;
     if (churchId) {
-      // 정상 진입 - 혹시 예약된 타이머 있으면 취소
       if (signOutTimerRef.current) {
         clearTimeout(signOutTimerRef.current);
         signOutTimerRef.current = null;
@@ -36,20 +35,12 @@ export default function MainPageClient() {
       setOrphanState("idle");
       return;
     }
-    // user 는 있는데 churchId 가 null 인 상태 진입
     if (orphanState !== "idle") return;
     setOrphanState("checking");
-    // loadChurch 가 비동기로 한 번 더 churchId 를 채워줄 가능성이 있으므로
-    // 약간의 그레이스 후에도 여전히 null 이면 강제 로그아웃.
-    signOutTimerRef.current = setTimeout(async () => {
+    signOutTimerRef.current = setTimeout(() => {
       setOrphanState("signingOut");
-      console.warn("[MainPage] churchId 미결정 — 세션 정리 후 로그인 화면으로 이동");
-      try {
-        await signOut();
-      } catch (e) {
-        console.error("[MainPage] auto signOut 실패:", e);
-        router.replace("/login");
-      }
+      console.warn("[MainPage] churchId 미결정 — 강제 정리 후 로그인 화면으로 이동");
+      void signOut();
     }, 1500);
     return () => {
       if (signOutTimerRef.current) {
@@ -90,7 +81,20 @@ export default function MainPageClient() {
         <button
           type="button"
           onClick={() => {
+            // ⚠️ supabase 응답을 기다리지 않고 즉시 강제 이동.
+            //    네트워크/Supabase 가 느려도 사용자가 반드시 빠져나갈 수 있어야 함.
             void signOut();
+            try {
+              if (typeof window !== "undefined") {
+                localStorage.clear();
+                sessionStorage.clear();
+              }
+            } catch {}
+            setTimeout(() => {
+              if (typeof window !== "undefined") {
+                window.location.replace("/login");
+              }
+            }, 50);
           }}
           style={{
             marginTop: 6,
