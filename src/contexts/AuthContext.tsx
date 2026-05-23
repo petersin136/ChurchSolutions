@@ -168,25 +168,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
 
-    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
-      console.log("[Auth] getSession 결과:", !!s, "user:", s?.user?.email);
+    // ⚠️ Vercel 콜드스타트/네트워크 지연으로 getSession() 이 행이 걸리면
+    //   화면이 영구 blank 상태가 되는 사고를 막기 위해 8초 안전망 타임아웃.
+    //   타임아웃이 먼저 발화해도 이후 응답이 오면 정상 처리되도록 cancelled 플래그를 사용.
+    const SESSION_TIMEOUT_MS = 8000;
+    const failsafeTimer = setTimeout(() => {
       if (cancelled) return;
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        console.log("[Auth] loadChurch 호출:", s.user.id);
-        await loadChurch(s.user.id);
-      } else {
-        setChurchId(null);
-        setChurchName(null);
-        console.log("[AuthContext] 세션 없음 — churchId null 유지");
-      }
-      if (!cancelled) {
-        console.log("[Auth] setLoading(false) 실행");
-        setLoading(false);
-        console.log("[AuthContext] getSession 완료, loading=false, user=", !!s?.user);
-      }
-    });
+      console.warn("[Auth] getSession 타임아웃 — loading=false 강제 해제");
+      setLoading(false);
+    }, SESSION_TIMEOUT_MS);
+
+    supabase.auth.getSession()
+      .then(async ({ data: { session: s } }) => {
+        console.log("[Auth] getSession 결과:", !!s, "user:", s?.user?.email);
+        if (cancelled) return;
+        setSession(s);
+        setUser(s?.user ?? null);
+        if (s?.user) {
+          console.log("[Auth] loadChurch 호출:", s.user.id);
+          await loadChurch(s.user.id);
+        } else {
+          setChurchId(null);
+          setChurchName(null);
+          console.log("[AuthContext] 세션 없음 — churchId null 유지");
+        }
+        if (!cancelled) {
+          clearTimeout(failsafeTimer);
+          console.log("[Auth] setLoading(false) 실행");
+          setLoading(false);
+          console.log("[AuthContext] getSession 완료, loading=false, user=", !!s?.user);
+        }
+      })
+      .catch((err) => {
+        console.error("[Auth] getSession 실패:", err);
+        if (!cancelled) {
+          clearTimeout(failsafeTimer);
+          setLoading(false);
+        }
+      });
 
     const {
       data: { subscription },
@@ -215,6 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      clearTimeout(failsafeTimer);
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 단일 구독 유지, StrictMode 대응
