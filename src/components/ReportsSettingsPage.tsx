@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback, useContext } from "react";
 import type { DB, Attendance, Income, Expense, Settings, Member } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -495,6 +495,9 @@ const RP_SECTION_TITLE: React.CSSProperties = {
 /** 보고서 표 한 페이지에 보일 행 수 (사이트 전체 통일) */
 const RP_ROWS_PER_PAGE = 20;
 
+/** PDF 캡처 모드 컨텍스트 — true 면 ReportSimpleTable 이 모든 행을 한 번에 렌더 */
+const PdfCaptureContext = React.createContext(false);
+
 /** 페이지네이션 바 (보고서 시트 공통) */
 function ReportPagination({
   page,
@@ -511,9 +514,10 @@ function ReportPagination({
     <div
       data-print-hide="true"
       style={{
-        display: "flex",
+        display: "grid",
+        gridTemplateColumns: "1fr auto 1fr",
         alignItems: "center",
-        justifyContent: "space-between",
+        gap: 12,
         padding: "14px 16px",
         background: BG_SUMMARY,
         borderTop: `1px solid ${BORDER}`,
@@ -523,10 +527,12 @@ function ReportPagination({
         borderBottomRightRadius: 8,
       }}
     >
-      <div style={{ fontSize: 13, color: SUB, fontVariantNumeric: "tabular-nums" }}>
+      {/* left: 총 N건 */}
+      <div style={{ fontSize: 13, color: SUB, fontVariantNumeric: "tabular-nums", textAlign: "left", minWidth: 0 }}>
         총 <b style={{ color: NAVY, fontWeight: 700 }}>{totalItems.toLocaleString()}</b>건
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      {/* center: 페이지네이션 컨트롤 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, justifySelf: "center" }}>
         <button
           type="button"
           onClick={() => onChange(Math.max(1, page - 1))}
@@ -569,6 +575,8 @@ function ReportPagination({
           다음
         </button>
       </div>
+      {/* right: 빈 셀 (중앙 정렬 균형용) */}
+      <div aria-hidden />
     </div>
   );
 }
@@ -589,15 +597,18 @@ function ReportSimpleTable({
   showIndex?: boolean;
 }) {
   const [page, setPage] = useState(1);
+  const isPdfCapture = useContext(PdfCaptureContext);
   const totalItems = rows.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
   const safePage = Math.min(page, totalPages);
   useEffect(() => {
     if (safePage !== page) setPage(safePage);
   }, [safePage, page]);
-  const startIdx = (safePage - 1) * rowsPerPage;
-  const visible = paginated ? rows.slice(startIdx, startIdx + rowsPerPage) : rows;
-  const emptyRows = paginated ? Math.max(0, rowsPerPage - visible.length) : 0;
+  // PDF 캡처 모드 — 모든 행 한 번에 렌더 (페이지네이션 무시, 인덱스 1부터)
+  const effectivePaginated = paginated && !isPdfCapture;
+  const startIdx = effectivePaginated ? (safePage - 1) * rowsPerPage : 0;
+  const visible = effectivePaginated ? rows.slice(startIdx, startIdx + rowsPerPage) : rows;
+  const emptyRows = effectivePaginated ? Math.max(0, rowsPerPage - visible.length) : 0;
   const effHeaders = showIndex ? ["#", ...headers] : headers;
   const effAlign = showIndex ? (["right" as const, ...((align ?? []) as ("left" | "right")[])]) : align;
   return (
@@ -781,7 +792,7 @@ function MemberListPrintBody({
   };
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+      <div data-pdf-break style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
         <div style={card}>
           <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>전체 성도</div>
           <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>{totalMembers}명</div>
@@ -800,7 +811,7 @@ function MemberListPrintBody({
         </div>
       </div>
 
-      <div style={{ marginBottom: 28 }}>
+      <div data-pdf-break style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 17, fontWeight: 700, color: NAVY, marginBottom: 14, letterSpacing: "-0.01em" }}>부서별 현황</div>
         {departments.length === 0 ? (
           <div style={{ fontSize: 14, color: SUB }}>데이터 없음</div>
@@ -837,7 +848,7 @@ function MemberListPrintBody({
         )}
       </div>
 
-      <div style={{ marginBottom: 16 }}>
+      <div data-pdf-break style={{ marginBottom: 16 }}>
         <div style={RP_SECTION_TITLE}>상세 명단</div>
         <ReportSimpleTable
           showIndex
@@ -921,7 +932,7 @@ function AttendancePrintBody({
   };
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+      <div data-pdf-break style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
         <div style={card}>
           <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>대상 인원</div>
           <div style={{ fontSize: 32, fontWeight: 800, color: NAVY, marginTop: 6, letterSpacing: "-0.02em" }}>
@@ -952,7 +963,7 @@ function AttendancePrintBody({
         </div>
       </div>
 
-      <div style={{ marginBottom: 28 }}>
+      <div data-pdf-break style={{ marginBottom: 28 }}>
         <div style={RP_SECTION_TITLE}>부서별 평균 출석률</div>
         {deptStats.length === 0 ? (
           <div style={{ fontSize: 14, color: SUB }}>데이터 없음</div>
@@ -990,7 +1001,7 @@ function AttendancePrintBody({
         )}
       </div>
 
-      <div style={{ marginBottom: 16 }}>
+      <div data-pdf-break style={{ marginBottom: 16 }}>
         <div style={RP_SECTION_TITLE}>성도별 출석 현황</div>
         <ReportSimpleTable
           showIndex
@@ -1051,6 +1062,30 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
 
   const [selectedReport, setSelectedReport] = useState<ReportCardDef | null>(null);
   const [activeReportCategory, setActiveReportCategory] = useState("목양");
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState<"idle" | "preview" | "download">("idle");
+  /** PDF 캡처 중에만 true — ReportSimpleTable 들이 모든 행을 한 번에 렌더하도록 */
+  const [pdfCaptureMode, setPdfCaptureMode] = useState(false);
+
+  // 미리보기 URL 정리
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+    };
+  }, [pdfPreviewUrl]);
+
+  // ESC 키로 PDF 미리보기 모달 닫기
+  useEffect(() => {
+    if (!pdfPreviewUrl) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        URL.revokeObjectURL(pdfPreviewUrl);
+        setPdfPreviewUrl(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pdfPreviewUrl]);
 
   // 보고서 상세 진입 시 history entry 추가 → 브라우저 뒤로가기/제스처로도 목록으로 복귀
   const reportNavStateRef = useRef<string | null>(null);
@@ -1177,103 +1212,262 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
     return dateStr >= startDate && dateStr <= endDate;
   };
 
-  const handlePrint = useCallback(() => {
-    if (typeof document === "undefined") return;
+  /** PDF 생성 — html2canvas-pro 로 보고서 영역 캡처 → jsPDF 로 A4 다중 페이지 PDF blob
+   *  · 사이트 primary 컬러 그대로 유지 (override 안 함)
+   *  · 표 행(<tr>) 경계에 맞춰 슬라이스 — 행이 페이지 경계에서 잘리지 않음
+   *  · 매 페이지 하단에 페이지 번호 푸터 (1 / N) */
+  const renderReportPdfBlob = useCallback(async (): Promise<Blob> => {
     const printArea = document.getElementById("report-print-area");
-    if (!printArea) return;
+    if (!printArea) throw new Error("렌더링된 보고서 영역을 찾을 수 없습니다.");
 
-    const reportTitle = selectedReport?.title ?? "보고서";
-    const safeTitle = reportTitle
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    // 폰트 로딩 대기 (최대 3초)
+    await Promise.race([
+      (typeof document !== "undefined" && document.fonts?.ready) || Promise.resolve(),
+      new Promise<void>((r) => setTimeout(r, 3000)),
+    ]);
 
-    // 현재 사이트의 primary 컬러 값을 읽어서 새 창의 :root 에 inject
-    const rootStyle = getComputedStyle(document.documentElement);
-    const primaryHex = (rootStyle.getPropertyValue("--color-primary").trim() || "#1B2A4A");
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    type Html2CanvasFn = (el: HTMLElement, opts?: any) => Promise<HTMLCanvasElement>;
+    type JsPdfCtor = any;
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+    const [h2cMod, pdfMod] = await Promise.all([import("html2canvas-pro"), import("jspdf")]);
+    const h2cAny = h2cMod as { default?: Html2CanvasFn };
+    const html2canvas = (h2cAny.default ?? (h2cMod as unknown as Html2CanvasFn)) as Html2CanvasFn;
+    const pdfModAny = pdfMod as { default?: JsPdfCtor; jsPDF?: JsPdfCtor };
+    const JsPDF: JsPdfCtor = pdfModAny.default ?? pdfModAny.jsPDF;
+    if (!html2canvas || !JsPDF) throw new Error("PDF 라이브러리를 불러오지 못했습니다.");
 
-    // 인쇄 영역을 복제하고 [data-print-hide] 요소 제거 (페이지네이션 바 등)
-    const cloned = printArea.cloneNode(true) as HTMLElement;
-    cloned.querySelectorAll<HTMLElement>("[data-print-hide=\"true\"]").forEach((el) => el.remove());
-    // 빈행(aria-hidden) 제거하여 PDF 가 깔끔하게 나오도록
-    cloned.querySelectorAll<HTMLElement>("tr[aria-hidden]").forEach((el) => el.remove());
+    // 캡처 전 — 잘림 방지를 위한 cuttable 경계(y) 측정
+    // 각 <tr> 끝점 + KPI 카드/섹션 사이 공백을 페이지 경계 후보로 사용
+    const areaRect = printArea.getBoundingClientRect();
+    const cuttable: number[] = [0];
+    printArea.querySelectorAll<HTMLElement>("tr, [data-pdf-break]").forEach((el) => {
+      // 빈행은 제외
+      if (el.getAttribute("aria-hidden")) return;
+      const r = el.getBoundingClientRect();
+      cuttable.push(Math.max(0, Math.round(r.bottom - areaRect.top)));
+    });
+    cuttable.push(Math.round(printArea.scrollHeight));
+    const cuttableSorted = Array.from(new Set(cuttable)).sort((a, b) => a - b);
 
-    const printWindow = window.open("", "_blank", "width=900,height=1100");
-    if (!printWindow) {
-      toast("팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도해 주세요.", "warn");
-      return;
-    }
-
-    printWindow.document.write(`
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <title>${safeTitle}</title>
-  <style>
-    :root { --color-primary: ${primaryHex}; }
-    @page {
-      size: A4 portrait;
-      margin: 14mm 12mm;
-    }
-    html, body {
-      background: #ffffff;
-      color: #333;
-      padding: 0;
-      margin: 0;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
-      font-size: 12.5px;
-      line-height: 1.55;
-    }
-    /* 인쇄 시 외곽 패딩/보더 제거 (페이지 여백은 @page 가 담당) */
-    #report-print-area {
-      padding: 0 !important;
-      border: none !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-    }
-    table { width: 100%; border-collapse: collapse; }
-    /* 페이지 사이에서 행이 잘리지 않도록 */
-    tr, td, th { page-break-inside: avoid; break-inside: avoid; }
-    thead { display: table-header-group; }
-    tfoot { display: table-footer-group; }
-    /* 페이지네이션, 버튼 등 인쇄 시 숨김 */
-    [data-print-hide="true"] { display: none !important; }
-    button { display: none !important; }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
-  </style>
-</head>
-<body>
-<div id="report-print-area">
-${cloned.innerHTML}
-</div>
-</body>
-</html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    // 폰트 로딩 대기 후 print
-    const triggerPrint = () => {
-      try { printWindow.focus(); } catch {}
-      printWindow.print();
-      // print 다이얼로그 닫힌 후 잠시 뒤 창 닫기
-      setTimeout(() => { try { printWindow.close(); } catch {} }, 400);
+    // 표 헤더 반복 — 각 <table> 의 thead 위치 및 부모 table 범위 기록 (DOM 좌표)
+    type TableHeaderInfo = {
+      tableY0: number;
+      tableY1: number;
+      theadY0: number;
+      theadY1: number;
     };
-    const fonts = (printWindow.document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
-    if (fonts && fonts.ready) {
-      fonts.ready.then(() => setTimeout(triggerPrint, 80)).catch(() => triggerPrint());
-    } else {
-      setTimeout(triggerPrint, 250);
+    const tableHeadersDom: TableHeaderInfo[] = [];
+    printArea.querySelectorAll<HTMLTableElement>("table").forEach((tbl) => {
+      const thead = tbl.querySelector("thead");
+      if (!thead) return;
+      const tblR = tbl.getBoundingClientRect();
+      const thR = thead.getBoundingClientRect();
+      tableHeadersDom.push({
+        tableY0: Math.round(tblR.top - areaRect.top),
+        tableY1: Math.round(tblR.bottom - areaRect.top),
+        theadY0: Math.round(thR.top - areaRect.top),
+        theadY1: Math.round(thR.bottom - areaRect.top),
+      });
+    });
+
+    const canvas = await html2canvas(printArea, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      imageTimeout: 15000,
+      width: printArea.offsetWidth,
+      height: printArea.offsetHeight,
+      onclone: (clonedDoc: Document) => {
+        // 클론 DOM 에서 페이지네이션·버튼·빈행 제거 (PDF 노이즈 제거)
+        clonedDoc.querySelectorAll<HTMLElement>("[data-print-hide=\"true\"]").forEach((el) => el.remove());
+        clonedDoc.querySelectorAll<HTMLElement>("tr[aria-hidden]").forEach((el) => el.remove());
+        clonedDoc.querySelectorAll<HTMLButtonElement>("button").forEach((el) => el.remove());
+        // 외곽 카드 보더 제거 (A4 종이에 어색하지 않게)
+        const root = clonedDoc.getElementById("report-print-area");
+        if (root) {
+          root.style.padding = "24px 28px";
+          root.style.border = "none";
+          root.style.borderRadius = "0";
+          root.style.boxShadow = "none";
+          root.style.background = "#ffffff";
+        }
+      },
+    });
+
+    // 캡처 좌표 ↔ DOM 좌표 (scale=2 이지만 html2canvas-pro 가 자동 처리)
+    const domToCanvas = canvas.width / printArea.offsetWidth;
+    const cuttableCanvas = cuttableSorted.map((y) => Math.round(y * domToCanvas));
+
+    // 각 thead 영역을 별도 캔버스로 잘라 보관 (페이지마다 합성용)
+    type TableHeaderCanvasInfo = {
+      tableY0c: number;  // canvas 좌표
+      tableY1c: number;
+      theadY0c: number;
+      theadY1c: number;
+      theadH: number;
+      theadCanvas: HTMLCanvasElement;
+    };
+    const tableHeaders: TableHeaderCanvasInfo[] = tableHeadersDom
+      .map((h) => {
+        const theadY0c = Math.round(h.theadY0 * domToCanvas);
+        const theadY1c = Math.round(h.theadY1 * domToCanvas);
+        const tableY0c = Math.round(h.tableY0 * domToCanvas);
+        const tableY1c = Math.round(h.tableY1 * domToCanvas);
+        const theadH = theadY1c - theadY0c;
+        if (theadH <= 0) return null;
+        const c = document.createElement("canvas");
+        c.width = canvas.width;
+        c.height = theadH;
+        const cctx = c.getContext("2d");
+        if (cctx) {
+          cctx.fillStyle = "#ffffff";
+          cctx.fillRect(0, 0, canvas.width, theadH);
+          cctx.drawImage(canvas, 0, theadY0c, canvas.width, theadH, 0, 0, canvas.width, theadH);
+        }
+        return { tableY0c, tableY1c, theadY0c, theadY1c, theadH, theadCanvas: c };
+      })
+      .filter((x): x is TableHeaderCanvasInfo => x !== null);
+
+    /** y 위치(canvas 좌표)가 어떤 table 의 본문 안이면 그 표의 thead 정보 반환 */
+    const headerForY = (y: number): TableHeaderCanvasInfo | null => {
+      for (const h of tableHeaders) {
+        if (y > h.theadY1c + 2 && y < h.tableY1c) return h;
+      }
+      return null;
+    };
+
+    const A4_W_MM = 210;
+    const A4_H_MM = 297;
+    const TOP_MARGIN_MM = 13;       // 매 페이지 상단 여백 (인쇄 호흡)
+    const FOOTER_RESERVED_MM = 14;  // 페이지 번호 표시 영역
+    const RULE_MARGIN_X_MM = 14;    // 상·하단 라인 좌우 여백
+    const TOP_RULE_Y_MM = 9;        // 상단 구분선 y
+    const BOTTOM_RULE_Y_MM = A4_H_MM - 11; // 하단 구분선 y
+
+    const pdf = new JsPDF("p", "mm", "a4");
+    const pxPerMm = canvas.width / A4_W_MM;
+    const usableMm = A4_H_MM - TOP_MARGIN_MM - FOOTER_RESERVED_MM;
+    const pagePxBudget = Math.floor(usableMm * pxPerMm);
+
+    // 1차 패스 — 행 경계에 맞춰 페이지 cut 위치 결정 (행이 잘리지 않도록)
+    // p>0 페이지가 표 본문 중간에서 시작하면 thead 합성을 위해 budget 을 thead 만큼 줄임
+    const cuts: number[] = [0];
+    let cursor = 0;
+    let pageIdxTmp = 0;
+    while (cursor < canvas.height - 1) {
+      const headerInfo = pageIdxTmp > 0 ? headerForY(cursor) : null;
+      const reservedHeader = headerInfo ? headerInfo.theadH : 0;
+      const effBudget = pagePxBudget - reservedHeader;
+      const ideal = cursor + effBudget;
+      if (ideal >= canvas.height) {
+        cuts.push(canvas.height);
+        break;
+      }
+      // (cursor + 40%) ~ ideal 사이에서 가장 아래쪽 row 경계로 cut
+      const minAcceptable = cursor + effBudget * 0.4;
+      let cut = ideal;
+      for (let i = cuttableCanvas.length - 1; i >= 0; i--) {
+        const y = cuttableCanvas[i];
+        if (y > minAcceptable && y <= ideal) {
+          cut = y;
+          break;
+        }
+      }
+      if (cut <= cursor) cut = ideal; // 안전장치
+      cuts.push(cut);
+      cursor = cut;
+      pageIdxTmp += 1;
     }
-  }, [selectedReport?.title, toast]);
+    const totalPages = Math.max(1, cuts.length - 1);
+
+    // 2차 패스 — 슬라이스 + (필요 시) 표 헤더 합성 + 페이지 번호 푸터
+    for (let p = 0; p < totalPages; p++) {
+      const y0 = cuts[p];
+      const y1 = cuts[p + 1];
+      const sliceH = y1 - y0;
+      const headerInfo = p > 0 ? headerForY(y0) : null;
+      const headerH = headerInfo ? headerInfo.theadH : 0;
+
+      const pageCanvas = document.createElement("canvas");
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = sliceH + headerH;
+      const ctx = pageCanvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, sliceH + headerH);
+        // 표 헤더 먼저 (페이지 상단)
+        if (headerInfo) {
+          ctx.drawImage(headerInfo.theadCanvas, 0, 0);
+        }
+        // 본문 슬라이스 — headerH 만큼 아래로 밀어서 배치
+        ctx.drawImage(canvas, 0, y0, canvas.width, sliceH, 0, headerH, canvas.width, sliceH);
+      }
+      const dataUrl = pageCanvas.toDataURL("image/png");
+      if (p > 0) pdf.addPage();
+      // 상단 마진을 두고 본문 배치
+      pdf.addImage(dataUrl, "PNG", 0, TOP_MARGIN_MM, A4_W_MM, (sliceH + headerH) / pxPerMm);
+      // 상·하단 구분선
+      pdf.setDrawColor(190);
+      pdf.setLineWidth(0.3);
+      pdf.line(RULE_MARGIN_X_MM, TOP_RULE_Y_MM, A4_W_MM - RULE_MARGIN_X_MM, TOP_RULE_Y_MM);
+      pdf.line(RULE_MARGIN_X_MM, BOTTOM_RULE_Y_MM, A4_W_MM - RULE_MARGIN_X_MM, BOTTOM_RULE_Y_MM);
+      // 페이지 번호 (숫자만 — jsPDF 기본 폰트로 한글 영향 X)
+      pdf.setFontSize(9);
+      pdf.setTextColor(140);
+      pdf.text(`${p + 1} / ${totalPages}`, A4_W_MM / 2, A4_H_MM - 5, { align: "center" });
+    }
+
+    return pdf.output("blob");
+  }, []);
+
+  const pdfFileName = useMemo(() => {
+    const t = (selectedReport?.title ?? "보고서").replace(/[\s/\\?%*:|"<>]/g, "_");
+    const today = new Date();
+    const d = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+    return `${(db.settings.churchName ?? "교회").trim()}_${t}_${d}.pdf`;
+  }, [selectedReport?.title, db.settings.churchName]);
+
+  const handlePrint = useCallback(async () => {
+    if (pdfBusy !== "idle") return;
+    setPdfBusy("preview");
+    // 1) 캡처 모드 ON — 모든 행 한 번에 렌더되도록 트리거
+    setPdfCaptureMode(true);
+    // 2) 두 번의 RAF + 짧은 timeout 으로 re-render & 폰트 metric 안정화 대기
+    await new Promise<void>((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => r()))
+    );
+    await new Promise<void>((r) => setTimeout(r, 80));
+    try {
+      const blob = await renderReportPdfBlob();
+      if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+      setPdfPreviewUrl(URL.createObjectURL(blob));
+    } catch (e) {
+      console.error("[report] PDF preview 실패:", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      toast(`PDF 생성 실패: ${msg}`, "err");
+    } finally {
+      setPdfCaptureMode(false);
+      setPdfBusy("idle");
+    }
+  }, [pdfBusy, pdfPreviewUrl, renderReportPdfBlob, toast]);
+
+  const handlePdfDownload = useCallback(() => {
+    if (!pdfPreviewUrl) return;
+    const a = document.createElement("a");
+    a.href = pdfPreviewUrl;
+    a.download = pdfFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [pdfPreviewUrl, pdfFileName]);
+
+  const closePdfPreview = useCallback(() => {
+    if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+    setPdfPreviewUrl(null);
+  }, [pdfPreviewUrl]);
 
   const categoryTone = (category: string) => {
     if (category === "목양") {
@@ -1684,62 +1878,68 @@ ${cloned.innerHTML}
                   <button
                     type="button"
                     onClick={handlePrint}
+                    disabled={pdfBusy !== "idle"}
                     style={{
                       height: 38,
                       padding: "0 18px",
                       fontSize: 14,
                       fontWeight: 600,
                       borderRadius: 8,
-                      background: NAVY,
+                      background: pdfBusy !== "idle" ? "#9aa3b7" : NAVY,
                       color: WHITE,
                       border: "none",
-                      cursor: "pointer",
+                      cursor: pdfBusy !== "idle" ? "wait" : "pointer",
                       fontFamily: "inherit",
                       letterSpacing: "-0.01em",
+                      opacity: pdfBusy !== "idle" ? 0.85 : 1,
                     }}
                   >
-                    PDF / 인쇄
+                    {pdfBusy === "preview" ? "PDF 생성 중…" : "PDF 미리보기"}
                   </button>
                 </div>
 
-                <div
-                  id="report-print-area"
-                  style={{
-                    background: WHITE,
-                    borderRadius: 12,
-                    border: `1px solid ${BORDER}`,
-                    padding: "32px 36px",
-                    minHeight: 200,
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif',
-                  }}
-                >
-                  <ReportPrintHeader
-                    churchName={churchName}
-                    reportTitle={detailTitle}
-                    startDate={startDate}
-                    endDate={endDate}
-                  />
-                  {selectedReport.id === "p_member_list" ? (
-                    <MemberListPrintBody
-                      members={membersFiltered}
-                      totalMembers={memberListPrintData.totalMembers}
-                      activeMembers={memberListPrintData.activeMembers}
-                      newFamilyCount={memberListPrintData.newFamilyCount}
-                      riskCount={memberListPrintData.riskCount}
-                      departments={memberListPrintData.departments}
-                    />
-                  ) : selectedReport.id === "p_attendance" ? (
-                    <AttendancePrintBody
-                      members={membersFiltered}
-                      attendanceList={attendanceList}
+                <PdfCaptureContext.Provider value={pdfCaptureMode}>
+                  <div
+                    id="report-print-area"
+                    style={{
+                      background: WHITE,
+                      borderRadius: 12,
+                      border: `1px solid ${BORDER}`,
+                      padding: "32px 36px",
+                      minHeight: 200,
+                      maxWidth: 880,
+                      margin: "0 auto",
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif',
+                    }}
+                  >
+                    <ReportPrintHeader
+                      churchName={churchName}
+                      reportTitle={detailTitle}
                       startDate={startDate}
                       endDate={endDate}
                     />
-                  ) : (
-                    <div style={{ fontSize: 14, color: TEXT, lineHeight: 1.6 }}>{renderPreview()}</div>
-                  )}
-                  <ReportPrintFooter churchName={churchName} />
-                </div>
+                    {selectedReport.id === "p_member_list" ? (
+                      <MemberListPrintBody
+                        members={membersFiltered}
+                        totalMembers={memberListPrintData.totalMembers}
+                        activeMembers={memberListPrintData.activeMembers}
+                        newFamilyCount={memberListPrintData.newFamilyCount}
+                        riskCount={memberListPrintData.riskCount}
+                        departments={memberListPrintData.departments}
+                      />
+                    ) : selectedReport.id === "p_attendance" ? (
+                      <AttendancePrintBody
+                        members={membersFiltered}
+                        attendanceList={attendanceList}
+                        startDate={startDate}
+                        endDate={endDate}
+                      />
+                    ) : (
+                      <div style={{ fontSize: 14, color: TEXT, lineHeight: 1.6 }}>{renderPreview()}</div>
+                    )}
+                    <ReportPrintFooter churchName={churchName} />
+                  </div>
+                </PdfCaptureContext.Provider>
               </div>
             )}
           </section>
@@ -1759,6 +1959,101 @@ ${cloned.innerHTML}
           </section>
           ) : null}
       </div>
+
+      {/* ===== PDF 미리보기 모달 (시스템 인쇄 다이얼로그 대체) ===== */}
+      {pdfPreviewUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={closePdfPreview}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 22, 38, 0.55)",
+            backdropFilter: "blur(2px)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(96vw, 1000px)",
+              height: "min(96vh, 1200px)",
+              background: WHITE,
+              borderRadius: 14,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 18px",
+                borderBottom: `1px solid ${BORDER}`,
+                background: BG_SUMMARY,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: NAVY, letterSpacing: "-0.01em" }}>
+                  {selectedReport?.title ?? "보고서"}
+                </span>
+                <span style={{ fontSize: 13, color: SUB }}>· PDF 미리보기</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={handlePdfDownload}
+                  style={{
+                    height: 34,
+                    padding: "0 14px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    borderRadius: 7,
+                    background: NAVY,
+                    color: WHITE,
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  PDF 다운로드
+                </button>
+                <button
+                  type="button"
+                  onClick={closePdfPreview}
+                  style={{
+                    height: 34,
+                    padding: "0 14px",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    borderRadius: 7,
+                    background: WHITE,
+                    color: TEXT,
+                    border: `1px solid ${BORDER}`,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+            <iframe
+              title="report-pdf-preview"
+              src={pdfPreviewUrl}
+              style={{ flex: 1, border: "none", background: "#f4f5f8" }}
+            />
+          </div>
+        </div>
+      )}
     </UnifiedPageLayout>
   );
 }

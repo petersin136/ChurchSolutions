@@ -227,7 +227,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
     await load();
   };
 
-  if (loading) return <div style={{ padding: 24, fontSize: 12, color: MUTED }}>로딩 중...</div>;
+  if (loading) return <div style={{ padding: 24, fontSize: 14, color: MUTED }}>로딩 중...</div>;
 
   if (!supabase) {
     return (
@@ -244,18 +244,18 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>부서 목록</h3>
+        <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: NAVY, letterSpacing: "-0.01em" }}>부서 목록</h3>
         <button
           type="button"
           onClick={() => setAddDeptOpen(true)}
           style={{
-            height: 30,
-            fontSize: 11,
+            height: 36,
+            fontSize: 13,
             fontWeight: 600,
-            padding: "0 12px",
-            borderRadius: 6,
+            padding: "0 16px",
+            borderRadius: 8,
             background: NAVY,
             color: "var(--color-primary-on)",
             border: "none",
@@ -267,16 +267,16 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div style={{ background: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <div style={{ background: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
           <table className="w-full" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>이름</th>
-                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>연령대</th>
-                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>담당</th>
-                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>교사/학생</th>
-                <th style={{ padding: "6px 8px", textAlign: "left", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>예배</th>
-                <th style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, fontSize: 10, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>관리</th>
+                <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, fontSize: 12, color: NAVY, borderBottom: `2px solid ${NAVY}`, letterSpacing: "-0.005em" }}>이름</th>
+                <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, fontSize: 12, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>연령대</th>
+                <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, fontSize: 12, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>담당</th>
+                <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, fontSize: 12, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>교사/학생</th>
+                <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 700, fontSize: 12, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>예배</th>
+                <th style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700, fontSize: 12, color: NAVY, borderBottom: `2px solid ${NAVY}` }}>관리</th>
               </tr>
             </thead>
             <tbody>
@@ -293,22 +293,22 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                   onMouseEnter={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = "var(--color-surface-elevated)"; }}
                   onMouseLeave={(e) => { if (selectedDeptId !== d.id) e.currentTarget.style.background = "transparent"; }}
                 >
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT, fontWeight: 500 }}>{d.name}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{d.age_range ?? "-"}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{d.leader_name ?? "-"}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{deptCounts[d.id]?.teachers ?? 0} / {deptCounts[d.id]?.students ?? 0}</td>
-                  <td style={{ padding: 8, fontSize: 11, color: TEXT }}>{d.meeting_time ?? "-"}</td>
-                  <td style={{ padding: 8, textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
+                  <td style={{ padding: "12px 14px", fontSize: 14, color: TEXT, fontWeight: 600 }}>{d.name}</td>
+                  <td style={{ padding: "12px 14px", fontSize: 14, color: TEXT }}>{d.age_range ?? "-"}</td>
+                  <td style={{ padding: "12px 14px", fontSize: 14, color: TEXT }}>{d.leader_name ?? "-"}</td>
+                  <td style={{ padding: "12px 14px", fontSize: 14, color: TEXT, fontVariantNumeric: "tabular-nums" }}>{deptCounts[d.id]?.teachers ?? 0} / {deptCounts[d.id]?.students ?? 0}</td>
+                  <td style={{ padding: "12px 14px", fontSize: 14, color: TEXT }}>{d.meeting_time ?? "-"}</td>
+                  <td style={{ padding: "12px 14px", textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       onClick={() => openEditDept(d)}
                       style={{
                         marginRight: 8,
-                        fontSize: 10,
+                        fontSize: 12,
                         color: NAVY,
                         border: `1px solid ${BORDER}`,
-                        borderRadius: 4,
-                        padding: "2px 8px",
+                        borderRadius: 6,
+                        padding: "5px 12px",
                         background: "var(--color-surface-elevated)",
                         fontWeight: 600,
                         cursor: "pointer",
@@ -316,7 +316,22 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                     >
                       수정
                     </button>
-                    <button type="button" onClick={() => handleDeleteDepartment(d)} style={{ fontSize: 10, color: "var(--color-text)", border: "none", background: "transparent", cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}>삭제</button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteDepartment(d)}
+                      style={{
+                        fontSize: 12,
+                        color: "var(--color-text)",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                        fontWeight: 600,
+                        padding: "5px 4px",
+                      }}
+                    >
+                      삭제
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -324,36 +339,42 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
           </table>
         </div>
 
-        <div style={{ background: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: 16 }}>
+        <div style={{ background: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: 20 }}>
           {selectedDept ? (
             <>
-              <div className="flex items-center justify-between mb-3">
-                <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>{selectedDept.name} — 반 목록</h4>
+              <div className="flex items-center justify-between mb-4">
+                <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: NAVY, letterSpacing: "-0.01em" }}>{selectedDept.name} — 반 목록</h4>
                 <button
                   type="button"
                   onClick={() => setAddClassOpen(true)}
-                  style={{ height: 30, fontSize: 11, fontWeight: 600, padding: "0 12px", borderRadius: 6, background: NAVY, color: "var(--color-primary-on)", border: "none", cursor: "pointer" }}
+                  style={{ height: 36, fontSize: 13, fontWeight: 600, padding: "0 16px", borderRadius: 8, background: NAVY, color: "var(--color-primary-on)", border: "none", cursor: "pointer" }}
                 >
                   반 추가
                 </button>
               </div>
               {deptClasses.length === 0 ? (
-                <p style={{ fontSize: 12, color: MUTED }}>등록된 반이 없습니다.</p>
+                <p style={{ fontSize: 14, color: MUTED }}>등록된 반이 없습니다.</p>
               ) : (
                 <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                   {deptClasses.map((c) => (
-                    <li key={c.id} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "10px 0", borderBottom: `1px solid ${ROW_LINE}` }}>
-                      <span style={{ fontSize: 11, color: TEXT }}>{c.name}</span>
-                      <span style={{ fontSize: 10, color: MUTED }}>{c.teacher_name ?? "-"} · {classCounts[c.id] ?? 0}명</span>
+                    <li key={c.id} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: `1px solid ${ROW_LINE}` }}>
+                      <span style={{ fontSize: 14, color: TEXT, fontWeight: 600 }}>{c.name}</span>
+                      <span style={{ fontSize: 13, color: MUTED, fontVariantNumeric: "tabular-nums" }}>{c.teacher_name ?? "-"} · {classCounts[c.id] ?? 0}명</span>
                       <span style={{ display: "flex", gap: 8 }}>
                         <button
                           type="button"
                           onClick={() => { setEditClassOpen(c); setEditClassName(c.name); }}
-                          style={{ fontSize: 10, color: "var(--color-text)", border: `1px solid ${BORDER}`, borderRadius: 4, padding: "2px 8px", background: "var(--color-surface-elevated)", cursor: "pointer", fontWeight: 600 }}
+                          style={{ fontSize: 12, color: "var(--color-text)", border: `1px solid ${BORDER}`, borderRadius: 6, padding: "5px 12px", background: "var(--color-surface-elevated)", cursor: "pointer", fontWeight: 600 }}
                         >
                           수정
                         </button>
-                        <button type="button" onClick={() => handleDeleteClass(c)} style={{ fontSize: 10, color: "var(--color-text)", background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}>삭제</button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteClass(c)}
+                          style={{ fontSize: 12, color: "var(--color-text)", background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline", fontWeight: 600, padding: "5px 4px" }}
+                        >
+                          삭제
+                        </button>
                       </span>
                     </li>
                   ))}
@@ -361,7 +382,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
               )}
             </>
           ) : (
-            <p style={{ fontSize: 12, color: MUTED, padding: 16, textAlign: "center", margin: 0 }}>부서를 선택하세요</p>
+            <p style={{ fontSize: 14, color: MUTED, padding: 20, textAlign: "center", margin: 0 }}>부서를 선택하세요</p>
           )}
         </div>
       </div>

@@ -1008,6 +1008,21 @@ video {
 .badge-orange { background: var(--orange-light); color: var(--orange); }
 .badge-red { background: var(--red-light); color: var(--red); }
 .badge-gray { background: rgba(142,142,147,0.12); color: var(--text2); }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tbl thead th {
+    padding: 10px 14px; text-align: left; font-weight: 600;
+    font-size: 11px; color: var(--text2); text-transform: uppercase;
+    letter-spacing: 0.5px; background: var(--surface2);
+    border-bottom: 0.5px solid var(--border); white-space: nowrap;
+    position: sticky; top: 0; z-index: 1;
+  }
+table.tbl tbody tr { transition: background 0.1s; cursor: pointer; }
+table.tbl tbody tr:hover { background: rgba(0,122,255,0.04); }
+table.tbl tbody td {
+    padding: 10px 14px; border-bottom: 0.5px solid var(--sep);
+    vertical-align: middle; white-space: nowrap;
+  }
+table.tbl tbody tr:last-child td { border-bottom: none; }
 .name-cell .info strong { font-weight: 600; font-size: 13px; }
 .name-cell .info small { font-size: 11px; color: var(--text2); display: block; }
 .att-dot.\!p { background: var(--green) !important; box-shadow: 0 0 4px rgba(52,199,89,0.4) !important; }
@@ -1394,6 +1409,9 @@ input[type="date"]::-webkit-date-and-time-value {
 }
 .inline {
   display: inline;
+}
+.\!inline {
+  display: inline !important;
 }
 .flex {
   display: flex;

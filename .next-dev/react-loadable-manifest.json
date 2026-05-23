@@ -1,16 +1,4 @@
 {
-  "app/(auth)/login/page.tsx -> @/components/auth/LoginForm": {
-    "id": "app/(auth)/login/page.tsx -> @/components/auth/LoginForm",
-    "files": [
-      "static/chunks/_app-pages-browser_src_components_auth_LoginForm_tsx.js"
-    ]
-  },
-  "app/(auth)/register/page.tsx -> @/components/auth/RegisterForm": {
-    "id": "app/(auth)/register/page.tsx -> @/components/auth/RegisterForm",
-    "files": [
-      "static/chunks/_app-pages-browser_src_components_auth_RegisterForm_tsx.js"
-    ]
-  },
   "app/(main)/page.tsx -> @/components/MainPageClient": {
     "id": "app/(main)/page.tsx -> @/components/MainPageClient",
     "files": [
@@ -70,6 +58,18 @@
     "files": [
       "static/css/_app-pages-browser_src_components_SuperPlanner_tsx.css",
       "static/chunks/_app-pages-browser_src_components_SuperPlanner_tsx.js"
+    ]
+  },
+  "src/components/ReportsSettingsPage.tsx -> html2canvas-pro": {
+    "id": "src/components/ReportsSettingsPage.tsx -> html2canvas-pro",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_html2canvas-pro_dist_html2canvas-pro_esm_js.js"
+    ]
+  },
+  "src/components/ReportsSettingsPage.tsx -> jspdf": {
+    "id": "src/components/ReportsSettingsPage.tsx -> jspdf",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_jspdf_dist_jspdf_es_min_js.js"
     ]
   },
   "src/components/finance/SealSettingsSection.tsx -> @/utils/fontLoader": {

@@ -26,12 +26,13 @@ function formatBudgetAmountInput(n: number): string {
   return n.toLocaleString("ko-KR");
 }
 
-const BUDGET_COL_ITEM_PX = 80;
-const BUDGET_COL_ANNUAL_PX = 130;
-const BUDGET_TABLE_COLGROUP = (
+const BUDGET_COL_ITEM_PX = 96;
+const BUDGET_COL_ANNUAL_PX = 140;
+/** 6개월 분할 테이블 colgroup */
+const BUDGET_HALF_COLGROUP = (
   <colgroup>
     <col style={{ width: BUDGET_COL_ITEM_PX }} />
-    <col span={12} />
+    <col span={6} />
     <col style={{ width: BUDGET_COL_ANNUAL_PX }} />
   </colgroup>
 );
@@ -52,10 +53,10 @@ function useIsMobile(bp = 768) {
 }
 
 const bmTh = (align: "left" | "right" | "center", mob = true): CSSProperties => ({
-  fontSize: mob ? 10 : 13,
+  fontSize: mob ? 11 : 13,
   fontWeight: 700,
   color: NAVY,
-  padding: mob ? "6px 8px" : "10px 14px",
+  padding: mob ? "8px 10px" : "12px 14px",
   borderBottom: `2px solid ${NAVY}`,
   background: "var(--color-surface)",
   textAlign: align,
@@ -63,103 +64,26 @@ const bmTh = (align: "left" | "right" | "center", mob = true): CSSProperties => 
 });
 
 const bmTd = (isEven: boolean, align: "left" | "right" | "center", mob = true): CSSProperties => ({
-  fontSize: mob ? 11 : 14,
+  fontSize: mob ? 12 : 14,
   color: "var(--color-text-muted)",
-  padding: mob ? "8px" : "12px 14px",
+  padding: mob ? "8px 10px" : "12px 14px",
   borderBottom: `1px solid ${ROW_LINE}`,
   background: isEven ? "#fafbfc" : "#fff",
   textAlign: align,
+  whiteSpace: "nowrap",
+  fontVariantNumeric: "tabular-nums",
 });
 
 const bmTotalTd = (align: "left" | "right" | "center", mob = true): CSSProperties => ({
-  fontSize: mob ? 11 : 14,
+  fontSize: mob ? 12 : 14,
   fontWeight: 700,
   color: NAVY,
-  padding: mob ? "8px" : "12px 14px",
+  padding: mob ? "8px 10px" : "12px 14px",
   background: "var(--color-border-soft)",
   borderBottom: `1px solid ${ROW_LINE}`,
   textAlign: align,
-});
-
-const BM_STICKY_HEADER_BG = "#f1f3f5";
-
-/** 첫 열(항목) — sticky 좌측 */
-const bmThStickyItem = (mob: boolean): CSSProperties => ({
-  ...bmTh("left", mob),
-  minWidth: BUDGET_COL_ITEM_PX,
-  width: BUDGET_COL_ITEM_PX,
-  position: "sticky",
-  left: 0,
-  background: BM_STICKY_HEADER_BG,
-  zIndex: 2,
-});
-
-const bmTdStickyItem = (isEven: boolean, mob: boolean): CSSProperties => ({
-  ...bmTd(isEven, "left", mob),
-  minWidth: BUDGET_COL_ITEM_PX,
-  width: BUDGET_COL_ITEM_PX,
-  position: "sticky",
-  left: 0,
-  background: isEven ? "#fafbfc" : "#fff",
-  zIndex: 2,
-});
-
-const bmTotalTdStickyItem = (mob: boolean): CSSProperties => ({
-  ...bmTotalTd("left", mob),
-  minWidth: BUDGET_COL_ITEM_PX,
-  width: BUDGET_COL_ITEM_PX,
-  position: "sticky",
-  left: 0,
-  zIndex: 2,
-});
-
-/** 연간합계 열 — sticky 우측 */
-const bmThStickyAnnual = (mob: boolean): CSSProperties => ({
-  ...bmTh("right", mob),
-  minWidth: BUDGET_COL_ANNUAL_PX,
-  width: BUDGET_COL_ANNUAL_PX,
-  textAlign: "right",
   whiteSpace: "nowrap",
-  position: "sticky",
-  right: 0,
-  background: BM_STICKY_HEADER_BG,
-  zIndex: 2,
-  boxShadow: "-2px 0 4px rgba(0,0,0,0.05)",
-});
-
-const bmTdStickyAnnual = (isEven: boolean, mob: boolean): CSSProperties => ({
-  ...bmTd(isEven, "right", mob),
-  minWidth: BUDGET_COL_ANNUAL_PX,
-  width: BUDGET_COL_ANNUAL_PX,
-  textAlign: "right",
-  whiteSpace: "nowrap",
-  position: "sticky",
-  right: 0,
-  background: isEven ? "#fafbfc" : "#fff",
-  zIndex: 2,
-  boxShadow: "-2px 0 4px rgba(0,0,0,0.05)",
-});
-
-const bmTotalTdStickyAnnual = (mob: boolean): CSSProperties => ({
-  ...bmTotalTd("right", mob),
-  minWidth: BUDGET_COL_ANNUAL_PX,
-  width: BUDGET_COL_ANNUAL_PX,
-  whiteSpace: "nowrap",
-  position: "sticky",
-  right: 0,
-  zIndex: 2,
-  boxShadow: "-2px 0 4px rgba(0,0,0,0.05)",
-});
-
-const bmThMonth = (mob: boolean): CSSProperties => ({
-  ...bmTh("right", mob),
-  overflow: "hidden",
-});
-
-const bmTdMonth = (isEven: boolean, mob: boolean): CSSProperties => ({
-  ...bmTd(isEven, "right", mob),
-  overflow: "hidden",
-  verticalAlign: "middle",
+  fontVariantNumeric: "tabular-nums",
 });
 
 const inputCompactStyle = (mob: boolean): CSSProperties => ({
@@ -167,11 +91,11 @@ const inputCompactStyle = (mob: boolean): CSSProperties => ({
   maxWidth: "100%",
   minWidth: 0,
   boxSizing: "border-box",
-  height: mob ? 28 : 36,
-  padding: mob ? "0 6px" : "0 10px",
-  fontSize: mob ? 11 : 13,
+  height: mob ? 32 : 38,
+  padding: mob ? "0 8px" : "0 12px",
+  fontSize: mob ? 12 : 14,
   textAlign: "right",
-  borderRadius: mob ? 4 : 6,
+  borderRadius: mob ? 5 : 7,
   border: `1px solid ${BORDER}`,
   outline: "none",
   boxShadow: "none",
@@ -179,10 +103,145 @@ const inputCompactStyle = (mob: boolean): CSSProperties => ({
   color: "var(--color-text-muted)",
   overflow: "hidden",
   textOverflow: "ellipsis",
+  fontVariantNumeric: "tabular-nums",
 });
 
 const DEFAULT_INCOME_CATEGORIES = ["십일조", "감사헌금", "주일헌금", "건축헌금", "선교헌금", "기타수입"];
 const DEFAULT_EXPENSE_CATEGORIES = ["인건비", "사역비", "관리비", "선교비", "교육비", "행사비", "기타지출"];
+
+/** 반기 단위 예산 표 (6개월) — 칸 폭을 2배로 확보 */
+function BudgetHalfTable({
+  rows,
+  months,
+  halfLabel,
+  totalRowLabel,
+  onChange,
+  mob,
+}: {
+  rows: { category: string; amounts: Record<number, number> }[];
+  months: number[];
+  halfLabel: string;
+  totalRowLabel: string;
+  onChange: (rowIndex: number, month: number, value: number) => void;
+  mob: boolean;
+}) {
+  const halfTotals = useMemo(() => {
+    const byMonth: Record<number, number> = {};
+    months.forEach((m) => {
+      byMonth[m] = rows.reduce((s, r) => s + (r.amounts[m] || 0), 0);
+    });
+    const total = months.reduce((s, m) => s + byMonth[m], 0);
+    return { byMonth, total };
+  }, [rows, months]);
+
+  return (
+    <div style={{ borderBottom: `1px solid ${ROW_LINE}` }}>
+      <div
+        style={{
+          padding: mob ? "8px 12px" : "10px 18px",
+          fontSize: mob ? 11.5 : 12,
+          fontWeight: 700,
+          color: "var(--color-text-muted)",
+          letterSpacing: "0.04em",
+          background: "var(--color-surface)",
+          borderBottom: `1px solid ${ROW_LINE}`,
+        }}
+      >
+        {halfLabel}
+      </div>
+      <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
+        {BUDGET_HALF_COLGROUP}
+        <thead>
+          <tr>
+            <th style={{ ...bmTh("left", mob), minWidth: BUDGET_COL_ITEM_PX, width: BUDGET_COL_ITEM_PX }}>항목</th>
+            {months.map((m) => (
+              <th key={m} style={{ ...bmTh("right", mob), overflow: "hidden" }}>
+                {m}월
+              </th>
+            ))}
+            <th
+              style={{
+                ...bmTh("right", mob),
+                minWidth: BUDGET_COL_ANNUAL_PX,
+                width: BUDGET_COL_ANNUAL_PX,
+                background: "var(--color-border-soft)",
+              }}
+            >
+              반기 합계
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => {
+            const even = ri % 2 === 1;
+            const halfSum = months.reduce((s, m) => s + (row.amounts[m] || 0), 0);
+            return (
+              <tr key={row.category}>
+                <td
+                  style={{
+                    ...bmTd(even, "left", mob),
+                    minWidth: BUDGET_COL_ITEM_PX,
+                    width: BUDGET_COL_ITEM_PX,
+                    fontWeight: 600,
+                  }}
+                >
+                  {row.category}
+                </td>
+                {months.map((m) => (
+                  <td key={m} style={{ ...bmTd(even, "right", mob), overflow: "hidden" }}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={formatBudgetAmountInput(row.amounts[m] ?? 0)}
+                      onChange={(e) => onChange(ri, m, parseBudgetAmountInput(e.target.value))}
+                      style={inputCompactStyle(mob)}
+                    />
+                  </td>
+                ))}
+                <td
+                  style={{
+                    ...bmTd(even, "right", mob),
+                    minWidth: BUDGET_COL_ANNUAL_PX,
+                    width: BUDGET_COL_ANNUAL_PX,
+                    fontWeight: 600,
+                  }}
+                >
+                  {fmt(halfSum)}
+                </td>
+              </tr>
+            );
+          })}
+          <tr>
+            <td
+              style={{
+                ...bmTotalTd("left", mob),
+                minWidth: BUDGET_COL_ITEM_PX,
+                width: BUDGET_COL_ITEM_PX,
+              }}
+            >
+              {totalRowLabel}
+            </td>
+            {months.map((m) => (
+              <td key={m} style={{ ...bmTotalTd("right", mob), overflow: "hidden" }}>
+                {fmt(halfTotals.byMonth[m])}
+              </td>
+            ))}
+            <td
+              style={{
+                ...bmTotalTd("right", mob),
+                minWidth: BUDGET_COL_ANNUAL_PX,
+                width: BUDGET_COL_ANNUAL_PX,
+              }}
+            >
+              {fmt(halfTotals.total)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export interface BudgetManagementProps {
   /** 초기 회계연도 (기본: 현재 연도) */
@@ -484,137 +543,122 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
     </div>
   );
 
+  const H1_MONTHS = [1, 2, 3, 4, 5, 6];
+  const H2_MONTHS = [7, 8, 9, 10, 11, 12];
+
+  const renderBudgetCard = (
+    title: string,
+    rows: { category: string; amounts: Record<number, number> }[],
+    totals: { byMonth: Record<number, number>; annual: number },
+    totalRowLabel: string,
+    onChange: (rowIndex: number, month: number, value: number) => void,
+  ) => (
+    <div
+      style={{
+        background: "var(--color-surface)",
+        borderRadius: mob ? 8 : 16,
+        border: `1px solid ${BORDER}`,
+        overflow: "hidden",
+      }}
+    >
+      <h3
+        style={{
+          margin: 0,
+          padding: mob ? "12px 14px" : "16px 20px",
+          fontSize: mob ? 14 : 17,
+          fontWeight: 700,
+          color: NAVY,
+          borderBottom: `1px solid ${ROW_LINE}`,
+          letterSpacing: "-0.01em",
+        }}
+      >
+        {title}
+      </h3>
+      <div style={{ overflowX: "auto" }}>
+        <BudgetHalfTable
+          rows={rows}
+          months={H1_MONTHS}
+          halfLabel="상반기 (1월 ~ 6월)"
+          totalRowLabel={totalRowLabel}
+          onChange={onChange}
+          mob={mob}
+        />
+        <BudgetHalfTable
+          rows={rows}
+          months={H2_MONTHS}
+          halfLabel="하반기 (7월 ~ 12월)"
+          totalRowLabel={totalRowLabel}
+          onChange={onChange}
+          mob={mob}
+        />
+        {/* 연간 합계 강조 행 */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "baseline",
+            padding: mob ? "12px 14px" : "16px 20px",
+            background: "var(--color-primary-soft)",
+            borderTop: `1px solid ${ROW_LINE}`,
+          }}
+        >
+          <span
+            style={{
+              fontSize: mob ? 13 : 15,
+              fontWeight: 700,
+              color: NAVY,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            연간 합계
+          </span>
+          <span
+            style={{
+              fontSize: mob ? 16 : 22,
+              fontWeight: 800,
+              color: NAVY,
+              letterSpacing: "-0.02em",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {fmt(totals.annual)} <span style={{ fontSize: mob ? 12 : 14, fontWeight: 600 }}>원</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
   const bodyBlocks = (
     <>
-      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
-        <h3
+      {renderBudgetCard("수입 예산", incomeRows, incomeTotals, "수입 합계", updateIncomeAmount)}
+      {renderBudgetCard("지출 예산", expenseRows, expenseTotals, "지출 합계", updateExpenseAmount)}
+
+      <div
+        style={{
+          background: "var(--color-surface)",
+          borderRadius: mob ? 8 : 16,
+          border: `1px solid ${BORDER}`,
+          padding: mob ? "14px 16px" : "20px 24px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          gap: 12,
+        }}
+      >
+        <div style={{ fontSize: mob ? 14 : 17, fontWeight: 700, color: NAVY, letterSpacing: "-0.01em" }}>
+          수지 차액 <span style={{ fontSize: mob ? 11 : 13, color: "var(--color-text-faint)", fontWeight: 500, marginLeft: 6 }}>(수입 − 지출)</span>
+        </div>
+        <div
           style={{
-            margin: 0,
-            padding: mob ? "10px 12px" : "14px 18px",
-            fontSize: mob ? 13 : 16,
-            fontWeight: 700,
-            color: NAVY,
-            borderBottom: `1px solid ${ROW_LINE}`,
+            fontSize: mob ? 18 : 24,
+            fontWeight: 800,
+            color: balance < 0 ? "#dc2626" : NAVY,
+            letterSpacing: "-0.02em",
+            fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
           }}
         >
-          수입 예산
-        </h3>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
-            {BUDGET_TABLE_COLGROUP}
-            <thead>
-              <tr>
-                <th style={bmThStickyItem(mob)}>항목</th>
-                {MONTHS.map((m) => (
-                  <th key={m} style={bmThMonth(mob)}>
-                    {m}월
-                  </th>
-                ))}
-                <th style={bmThStickyAnnual(mob)}>연간합계</th>
-              </tr>
-            </thead>
-            <tbody>
-              {incomeRows.map((row, ri) => {
-                const even = ri % 2 === 1;
-                return (
-                  <tr key={row.category}>
-                    <td style={bmTdStickyItem(even, mob)}>{row.category}</td>
-                    {MONTHS.map((m) => (
-                      <td key={m} style={bmTdMonth(even, mob)}>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="off"
-                          value={formatBudgetAmountInput(row.amounts[m] ?? 0)}
-                          onChange={(e) => updateIncomeAmount(ri, m, parseBudgetAmountInput(e.target.value))}
-                          style={inputCompactStyle(mob)}
-                        />
-                      </td>
-                    ))}
-                    <td style={bmTdStickyAnnual(even, mob)}>{fmt(Object.values(row.amounts).reduce((s, v) => s + v, 0))}</td>
-                  </tr>
-                );
-              })}
-              <tr>
-                <td style={bmTotalTdStickyItem(mob)}>수입 합계</td>
-                {MONTHS.map((m) => (
-                  <td key={m} style={{ ...bmTotalTd("right", mob), overflow: "hidden" }}>
-                    {fmt(incomeTotals.byMonth[m])}
-                  </td>
-                ))}
-                <td style={bmTotalTdStickyAnnual(mob)}>{fmt(incomeTotals.annual)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
-        <h3
-          style={{
-            margin: 0,
-            padding: mob ? "10px 12px" : "14px 18px",
-            fontSize: mob ? 13 : 16,
-            fontWeight: 700,
-            color: NAVY,
-            borderBottom: `1px solid ${ROW_LINE}`,
-          }}
-        >
-          지출 예산
-        </h3>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse" }}>
-            {BUDGET_TABLE_COLGROUP}
-            <thead>
-              <tr>
-                <th style={bmThStickyItem(mob)}>항목</th>
-                {MONTHS.map((m) => (
-                  <th key={m} style={bmThMonth(mob)}>
-                    {m}월
-                  </th>
-                ))}
-                <th style={bmThStickyAnnual(mob)}>연간합계</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expenseRows.map((row, ri) => {
-                const even = ri % 2 === 1;
-                return (
-                  <tr key={row.category}>
-                    <td style={bmTdStickyItem(even, mob)}>{row.category}</td>
-                    {MONTHS.map((m) => (
-                      <td key={m} style={bmTdMonth(even, mob)}>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="off"
-                          value={formatBudgetAmountInput(row.amounts[m] ?? 0)}
-                          onChange={(e) => updateExpenseAmount(ri, m, parseBudgetAmountInput(e.target.value))}
-                          style={inputCompactStyle(mob)}
-                        />
-                      </td>
-                    ))}
-                    <td style={bmTdStickyAnnual(even, mob)}>{fmt(Object.values(row.amounts).reduce((s, v) => s + v, 0))}</td>
-                  </tr>
-                );
-              })}
-              <tr>
-                <td style={bmTotalTdStickyItem(mob)}>지출 합계</td>
-                {MONTHS.map((m) => (
-                  <td key={m} style={{ ...bmTotalTd("right", mob), overflow: "hidden" }}>
-                    {fmt(expenseTotals.byMonth[m])}
-                  </td>
-                ))}
-                <td style={bmTotalTdStickyAnnual(mob)}>{fmt(expenseTotals.annual)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? "12px 14px" : "18px 24px" }}>
-        <div style={{ fontSize: mob ? 14 : 18, fontWeight: 700, color: NAVY }}>
-          수지 차액 (수입 - 지출): <span style={{ color: NAVY }}>{fmt(balance)}</span>
+          {fmt(balance)} <span style={{ fontSize: mob ? 13 : 15, fontWeight: 600 }}>원</span>
         </div>
       </div>
     </>

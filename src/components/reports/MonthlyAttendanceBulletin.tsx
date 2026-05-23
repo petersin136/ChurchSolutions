@@ -45,6 +45,19 @@ const FONT_SERIF = '"Nanum Myeongjo", "Noto Serif KR", serif';
 const A4_W_MM = 210;
 const A4_H_MM = 297;
 
+/** 부서별 액센트 컬러 — 부서 헤더에 ‘이름만’ 컬러로 표시 (잉크 절약) */
+function deptAccent(name: string): string {
+  if (!name || name === "교회 전체") return COLORS.ink;
+  if (name.includes("청년")) return COLORS.violet;
+  if (name.includes("장년") || name.includes("성인")) return COLORS.blue;
+  if (name.includes("고등") || name.includes("청소년")) return COLORS.rose;
+  if (name.includes("중등") || name.includes("중고")) return COLORS.amber;
+  if (name.includes("초등")) return COLORS.emerald;
+  if (name.includes("유년") || name.includes("유치") || name.includes("영아")) return "#0EA5E9"; // sky
+  if (name.includes("학생")) return COLORS.violet;
+  return COLORS.blue;
+}
+
 /* ───────── 유틸 ───────── */
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -895,6 +908,7 @@ function ReportPage({
   const longTrend = agg.longAbsent.length === 0 ? "해당 없음" : `${agg.longAbsent.length}명 심방 필요`;
 
   const highlights = generateHighlights(agg, weekCount, year, month);
+  const accent = deptAccent(agg.label);
 
   return (
     <div data-report-page={pageIdx} className="mab-page" style={pageStyle}>
@@ -980,28 +994,24 @@ function ReportPage({
         </div>
       </div>
 
-      {/* ── 부서 카드 ── */}
-      <div style={deptCardStyle}>
-        {/* radial accent */}
-        <div
-          style={{
-            position: "absolute",
-            right: -40,
-            top: -40,
-            width: 160,
-            height: 160,
-            background: "radial-gradient(circle, rgba(59,130,246,0.25), transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4 }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: "0.25em", fontWeight: 600 }}>
+      {/* ── 부서 카드 (잉크 절약: 흰 배경 + 좌측 컬러 바 + 부서명만 컬러) ── */}
+      <div style={{ ...deptCardStyle, borderLeftColor: accent }}>
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ fontSize: 9.5, color: COLORS.inkFaint, letterSpacing: "0.22em", fontWeight: 600 }}>
             {agg.isAll ? "CHURCH WIDE" : "DEPARTMENT"}
           </div>
-          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.01em", color: "#fff" }}>
+          <div
+            style={{
+              fontSize: 26,
+              fontWeight: 800,
+              letterSpacing: "-0.01em",
+              color: accent,
+              lineHeight: 1.1,
+            }}
+          >
             {agg.label}
           </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>
+          <div style={{ fontSize: 10.5, color: COLORS.inkSoft, marginTop: 2 }}>
             {agg.isAll
               ? `부서 ${agg.byGroup.length}개 · 통합 출석 현황`
               : agg.byGroup.length > 0
@@ -1011,17 +1021,25 @@ function ReportPage({
         </div>
         <div style={{ position: "relative", textAlign: "right" }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end", gap: 4 }}>
-            <span style={{ fontFamily: FONT_NUM, fontSize: 40, fontWeight: 800, lineHeight: 1, color: "#fff" }}>
+            <span
+              style={{
+                fontFamily: FONT_NUM,
+                fontSize: 36,
+                fontWeight: 800,
+                lineHeight: 1,
+                color: COLORS.ink,
+              }}
+            >
               {agg.total}
             </span>
-            <span style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", fontWeight: 500 }}>명</span>
+            <span style={{ fontSize: 13, color: COLORS.inkSoft, fontWeight: 600 }}>명</span>
           </div>
           <div
             style={{
-              fontSize: 9.5,
-              color: "rgba(255,255,255,0.6)",
+              fontSize: 9,
+              color: COLORS.inkFaint,
               letterSpacing: "0.2em",
-              marginTop: 4,
+              marginTop: 3,
               fontWeight: 600,
             }}
           >
@@ -1031,7 +1049,7 @@ function ReportPage({
       </div>
 
       {/* ── KPI 4개 ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 8 }}>
         <KpiCard
           label="월 평균 출석률"
           value={agg.avgRate}
@@ -1067,7 +1085,7 @@ function ReportPage({
       </div>
 
       {/* ── chart row #1: 콤보 + 3개월 추이 ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8, marginBottom: 8 }}>
         <ChartBox title="주차별 출석 추이" sub={`WEEKLY ATTENDANCE · ${year}.${pad2(month)}`}>
           <div style={{ display: "flex", gap: 10, fontSize: 9.5, color: COLORS.inkSoft, marginBottom: 4 }}>
             <span>
@@ -1113,7 +1131,7 @@ function ReportPage({
       </div>
 
       {/* ── chart row #2: 도넛 + 그룹별 ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
         <ChartBox title="출석률 구간 분포" sub="RATE DISTRIBUTION">
           <DonutDistribution dist={agg.distribution} />
         </ChartBox>
@@ -1123,7 +1141,17 @@ function ReportPage({
       </div>
 
       {/* ── chart row #3: 연령대 + 하이라이트 ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 0, flex: 1, minHeight: 0 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 8,
+          marginBottom: 0,
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
+        }}
+      >
         <ChartBox title="연령대별 출석률" sub="BY AGE GROUP">
           {agg.byAge.length === 0 ? (
             <EmptyHint>출생년월 데이터가 부족합니다.</EmptyHint>
@@ -1174,36 +1202,46 @@ function KpiCard({
         background: "#fff",
         border: `1px solid ${COLORS.line}`,
         borderRadius: 10,
-        padding: "10px 12px",
+        padding: "9px 12px",
         position: "relative",
         overflow: "hidden",
       }}
     >
+      {/* 라벨 + 컬러 도트 (좌측 stripe 대체) */}
       <div
         style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 3,
-          background: stripe,
-        }}
-      />
-      <div
-        style={{
-          fontSize: 9.5,
-          color: COLORS.inkSoft,
-          fontWeight: 600,
-          marginBottom: 5,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          marginBottom: 4,
         }}
       >
-        {label}
+        <span
+          aria-hidden
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: stripe,
+            flexShrink: 0,
+          }}
+        />
+        <span
+          style={{
+            fontSize: 9.5,
+            color: COLORS.inkSoft,
+            fontWeight: 600,
+            letterSpacing: "-0.005em",
+          }}
+        >
+          {label}
+        </span>
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
         <span
           style={{
             fontFamily: FONT_NUM,
-            fontSize: 26,
+            fontSize: 24,
             fontWeight: 800,
             color: COLORS.ink,
             lineHeight: 1,
@@ -1212,9 +1250,9 @@ function KpiCard({
         >
           {value}
         </span>
-        <span style={{ fontSize: 12, color: COLORS.inkSoft, fontWeight: 600 }}>{unit}</span>
+        <span style={{ fontSize: 11.5, color: COLORS.inkSoft, fontWeight: 600 }}>{unit}</span>
       </div>
-      <div style={{ fontSize: 9.5, color: tColor, marginTop: 5, fontWeight: 600 }}>{trend}</div>
+      <div style={{ fontSize: 9, color: tColor, marginTop: 4, fontWeight: 600 }}>{trend}</div>
     </div>
   );
 }
@@ -1236,10 +1274,11 @@ function ChartBox({
         background: "#fff",
         border: `1px solid ${COLORS.line}`,
         borderRadius: 10,
-        padding: "10px 14px",
+        padding: "8px 12px",
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
+        overflow: "hidden",
       }}
     >
       <div
@@ -1247,15 +1286,15 @@ function ChartBox({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
-          marginBottom: 8,
-          paddingBottom: 6,
+          marginBottom: 6,
+          paddingBottom: 5,
           borderBottom: `1px solid ${COLORS.lineSoft}`,
         }}
       >
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.ink }}>{title}</div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: COLORS.ink }}>{title}</div>
           {sub && (
-            <div style={{ fontSize: 9, color: COLORS.inkFaint, letterSpacing: "0.08em", marginTop: 1 }}>{sub}</div>
+            <div style={{ fontSize: 8.5, color: COLORS.inkFaint, letterSpacing: "0.08em", marginTop: 1 }}>{sub}</div>
           )}
         </div>
       </div>
@@ -1609,9 +1648,9 @@ function HBarList({
   tall?: boolean;
 }) {
   if (items.length === 0) return <EmptyHint>표시할 데이터가 없습니다.</EmptyHint>;
-  const barH = tall ? 16 : 13;
+  const barH = tall ? 11 : 10;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: tall ? 7 : 6 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: tall ? 4 : 3 }}>
       {items.map((item) => {
         const color =
           colorMode === "violet"
@@ -1837,7 +1876,7 @@ const pageStyle: React.CSSProperties = {
   width: `${A4_W_MM}mm`,
   height: `${A4_H_MM}mm`,
   background: COLORS.bg,
-  padding: "16mm 14mm",
+  padding: "13mm 13mm 12mm",
   boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
   boxSizing: "border-box",
   color: COLORS.ink,
@@ -1868,27 +1907,30 @@ const pillStyle: React.CSSProperties = {
 };
 
 const deptCardStyle: React.CSSProperties = {
-  background: COLORS.headerBg,
-  color: "#fff",
-  borderRadius: 12,
-  padding: "16px 20px",
+  background: "#FFFFFF",
+  color: COLORS.ink,
+  border: `1px solid ${COLORS.line}`,
+  borderLeft: "6px solid #3B82F6", // 부서별로 동적 override (borderLeftColor)
+  borderRadius: 10,
+  padding: "12px 18px",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  marginBottom: 14,
+  marginBottom: 10,
   position: "relative",
   overflow: "hidden",
 };
 
 const pageFootStyle: React.CSSProperties = {
-  marginTop: 12,
-  paddingTop: 10,
+  marginTop: 8,
+  paddingTop: 8,
   borderTop: `1px solid ${COLORS.line}`,
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
   fontSize: 9.5,
   color: COLORS.inkFaint,
+  flexShrink: 0,
 };
 
 const btnBase: React.CSSProperties = {

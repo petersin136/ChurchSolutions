@@ -3431,7 +3431,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
   // 출결 Phase 3: 예배별 출결
   type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "bulletin";
-  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "statistics", "bulletin", "check", "absentee"];
+  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "statistics", "check", "absentee", "bulletin"];
   const [attendanceSubTab, setAttendanceSubTabState] = useState<AttendanceSubTab>(() => {
     if (typeof window === "undefined") return "dashboard";
     const v = localStorage.getItem("pastoral_attendance_sub_tab");
@@ -3443,9 +3443,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     () => [
       { id: "dashboard", label: "대시보드" },
       { id: "statistics", label: "출석 통계" },
-      { id: "bulletin", label: "월간 게시판" },
       { id: "check", label: "출석 체크" },
       { id: "absentee", label: "결석자 관리" },
+      { id: "bulletin", label: "월간 게시판" },
     ],
     [],
   );
