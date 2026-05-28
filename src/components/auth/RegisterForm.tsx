@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function RegisterForm() {
@@ -17,10 +16,6 @@ export default function RegisterForm() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) {
-      setError("서버 연결에 실패했습니다.");
-      return;
-    }
 
     const trimmedChurch = churchName.trim();
     const trimmedEmail = email.trim();
@@ -44,81 +39,24 @@ export default function RegisterForm() {
     isRegistering.current = true;
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: trimmedEmail,
-        password,
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password,
+          churchName: trimmedChurch,
+        }),
       });
 
-      console.log("[RegisterForm] signUp 결과:", { userId: data?.user?.id, error: signUpError });
+      const result = await res.json();
 
-      if (signUpError) {
-        if (signUpError.message.includes("already registered")) {
-          setError("이미 등록된 이메일입니다.");
-        } else {
-          setError(signUpError.message);
-        }
+      if (!res.ok) {
+        setError(result.error ?? "회원가입에 실패했습니다.");
         setLoading(false);
-        isRegistering.current = false;
         return;
       }
 
-      if (!data?.user?.id) {
-        setError("사용자 생성에 실패했습니다. (user.id 없음)");
-        setLoading(false);
-        isRegistering.current = false;
-        return;
-      }
-
-      const { data: churchData, error: churchError } = await supabase
-        .from("churches")
-        .insert({ name: trimmedChurch })
-        .select("id")
-        .single();
-
-      console.log("[RegisterForm] churches INSERT:", { churchData, churchError });
-
-      if (churchError) {
-        setError("교회 등록 실패: " + churchError.message);
-        setLoading(false);
-        isRegistering.current = false;
-        return;
-      }
-
-      if (!churchData?.id) {
-        setError("교회 등록 실패: id를 받지 못했습니다.");
-        setLoading(false);
-        isRegistering.current = false;
-        return;
-      }
-
-      const { data: cuData, error: cuError } = await supabase
-        .from("church_users")
-        .insert({
-          user_id: data.user.id,
-          church_id: churchData.id,
-          role: "admin",
-        })
-        .select();
-
-      console.log("[RegisterForm] church_users INSERT:", { cuData, cuError });
-
-      if (cuError) {
-        setError("교회 사용자 등록 실패: " + cuError.message);
-        setLoading(false);
-        isRegistering.current = false;
-        return;
-      }
-
-      const { error: settingsError } = await supabase
-        .from("settings")
-        .insert({ church_id: churchData.id, church_name: trimmedChurch, depts: "장년부,청년부,중고등부,초등부,유치부,영아부" });
-
-      if (settingsError) {
-        console.warn("기본 설정 생성 실패 (무시 가능):", settingsError.message);
-      }
-
-      await supabase.auth.signOut();
-      isRegistering.current = false;
       setSuccess(true);
     } catch (err) {
       setError("회원가입 중 오류가 발생했습니다.");
