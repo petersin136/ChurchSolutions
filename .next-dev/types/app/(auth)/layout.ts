@@ -1,4 +1,4 @@
-// File: /Users/seung-yongmaegbug/Documents/GitHub/ChurchSolutions/app/(auth)/layout.tsx
+// File: /Users/jibmaeg/Church Solutions/app/(auth)/layout.tsx
 import * as entry from '../../../../app/(auth)/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
