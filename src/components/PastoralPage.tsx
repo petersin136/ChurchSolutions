@@ -1349,7 +1349,7 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
                     display: "flex",
                     gap: 12,
                     padding: "14px 0",
-                    borderBottom: idx < pastoralFeed.length - 1 ? "1px solid #F5F1EA" : "none",
+                    borderBottom: idx < pastoralFeed.length - 1 ? "1px solid var(--color-border-soft)" : "none",
                     alignItems: "flex-start",
                   }}
                 >

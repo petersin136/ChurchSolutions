@@ -25,6 +25,7 @@ import {
   TB_EVENTS,
   TB_PLACES,
 } from "./plannerDb";
+import { EVENT_CATEGORIES, getEventCategory, type EventCategoryCode } from "./eventCategories";
 
 export type PlannerToast = (msg: string, type?: "ok" | "err" | "warn") => void;
 
@@ -79,14 +80,12 @@ export type ChurchCalendarRow = {
   color: string | null;
 };
 
-const EVENT_TYPES: { value: string; label: string }[] = [
-  { value: "worship", label: "예배" },
-  { value: "event", label: "행사" },
-  { value: "meeting", label: "회의" },
-  { value: "retreat", label: "수련회" },
-  { value: "service", label: "봉사" },
-  { value: "other", label: "기타" },
-];
+/** @deprecated EVENT_CATEGORIES (eventCategories.ts)를 사용하세요.
+ *  이 상수는 호환성을 위해 남겨두지만 새 코드에서는 쓰지 않습니다. */
+const EVENT_TYPES: { value: string; label: string }[] = EVENT_CATEGORIES.map((c) => ({
+  value: c.code as EventCategoryCode,
+  label: c.label,
+}));
 
 const RECURRENCE: { value: string; label: string }[] = [
   { value: "", label: "안함" },
@@ -351,6 +350,9 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   const [showLegendModal, setShowLegendModal] = useState(false);
   const [briefingEvent, setBriefingEvent] = useState<any>(null);
 
+  // 카테고리 필터 (Step 1.3)
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<EventCategoryCode | "all">("all");
+
   const resetEventForm = useCallback(() => {
     setEventForm({
       title: "",
@@ -517,16 +519,25 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
 
   const monthCells = useMemo(() => buildMonthGridCells(cursorY, cursorM), [cursorY, cursorM]);
 
+  // 카테고리 필터 적용된 이벤트 (Step 1.3)
+  const filteredEvents = useMemo(
+    () =>
+      activeCategoryFilter === "all"
+        ? events
+        : events.filter((e) => e.event_type === activeCategoryFilter),
+    [events, activeCategoryFilter]
+  );
+
   const monthEventsForBulkDelete = useMemo(() => {
     const dim = new Date(cursorY, cursorM, 0).getDate();
     const monthStart = dateKey(cursorY, cursorM, 1);
     const monthEnd = dateKey(cursorY, cursorM, dim);
-    return events.filter((ev) => {
+    return filteredEvents.filter((ev) => {
       const s = ev.start_date.substring(0, 10);
       const end = (ev.end_date || ev.start_date).substring(0, 10);
       return !(end < monthStart || s > monthEnd);
     });
-  }, [events, cursorY, cursorM]);
+  }, [filteredEvents, cursorY, cursorM]);
 
   const openAddEvent = (y: number, m: number, d: number) => {
     resetEventForm();
@@ -835,6 +846,184 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   const addEventDayForHeader =
     cursorY === todayY && cursorM === todayM ? todayD : 1;
 
+  // 카테고리별 이벤트 개수 (현재 월 기준, Step 1.4)
+  const categoryCounts = useMemo(() => {
+    const dim = new Date(cursorY, cursorM, 0).getDate();
+    const monthStart = dateKey(cursorY, cursorM, 1);
+    const monthEnd = dateKey(cursorY, cursorM, dim);
+    const inMonth = events.filter((ev) => {
+      const s = ev.start_date.substring(0, 10);
+      const end = (ev.end_date || ev.start_date).substring(0, 10);
+      return !(end < monthStart || s > monthEnd);
+    });
+    const counts: Record<string, number> = { all: inMonth.length };
+    for (const c of EVENT_CATEGORIES) {
+      counts[c.code] = inMonth.filter((ev) => ev.event_type === c.code).length;
+    }
+    return counts;
+  }, [events, cursorY, cursorM]);
+
+  const categoryFilterRow = useMemo(() => {
+    type Chip = {
+      code: EventCategoryCode | "all";
+      label: string;
+      icon: typeof EVENT_CATEGORIES[number]["icon"] | null;
+      colorVar: string;
+    };
+    const chips: Chip[] = [
+      { code: "all", label: "전체", icon: null, colorVar: "var(--color-text)" },
+      ...EVENT_CATEGORIES.map((c) => ({
+        code: c.code,
+        label: c.label,
+        icon: c.icon,
+        colorVar: c.colorVar,
+      })),
+    ];
+    const totalCount = categoryCounts.all ?? 0;
+
+    return (
+      <div
+        style={{
+          marginBottom: 14,
+          paddingBottom: 14,
+          borderBottom: "1px dashed rgba(0,0,0,0.08)",
+        }}
+      >
+        {/* 컨텍스트 줄 */}
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 500,
+            color: "var(--color-text-muted)",
+            marginBottom: 8,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          이번 달 일정{" "}
+          <span
+            style={{
+              fontWeight: 600,
+              color: "var(--color-text)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {totalCount}
+          </span>
+          건
+        </div>
+
+        {/* 칩 줄 */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
+          {chips.map((chip) => {
+            const active = activeCategoryFilter === chip.code;
+            const Icon = chip.icon;
+            const count = categoryCounts[chip.code] ?? 0;
+            const empty = count === 0 && chip.code !== "all";
+
+            return (
+              <button
+                key={chip.code}
+                type="button"
+                onClick={() =>
+                  setActiveCategoryFilter(chip.code as EventCategoryCode | "all")
+                }
+                onMouseEnter={(e) => {
+                  if (active) return;
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)";
+                  e.currentTarget.style.borderColor = "rgba(0,0,0,0.14)";
+                }}
+                onMouseLeave={(e) => {
+                  if (active) return;
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 1px 2px rgba(0,0,0,0.03)";
+                  e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.transition = "all 0.05s ease";
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.transition = "all 0.18s ease";
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  padding: "7px 13px 7px 12px",
+                  borderRadius: 999,
+                  border: active
+                    ? `1px solid ${chip.colorVar}`
+                    : "1px solid rgba(0,0,0,0.08)",
+                  background: active ? chip.colorVar : "var(--color-surface)",
+                  color: active ? "#fff" : "var(--color-text)",
+                  fontSize: 12.5,
+                  fontWeight: active ? 600 : 500,
+                  letterSpacing: "-0.01em",
+                  cursor: "pointer",
+                  transition: "all 0.18s ease",
+                  whiteSpace: "nowrap",
+                  opacity: empty ? 0.45 : 1,
+                  boxShadow: active
+                    ? `0 1px 2px ${chip.colorVar}40, 0 4px 12px ${chip.colorVar}24`
+                    : "0 1px 2px rgba(0,0,0,0.03)",
+                  outline: "none",
+                }}
+              >
+                {Icon && (
+                  <Icon
+                    size={13}
+                    strokeWidth={1.75}
+                    style={{
+                      color: active ? "#fff" : chip.colorVar,
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                {!Icon && (
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: active ? "#fff" : "var(--color-text-muted)",
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                <span>{chip.label}</span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    fontVariantNumeric: "tabular-nums",
+                    color: active
+                      ? "rgba(255,255,255,0.85)"
+                      : "rgba(0,0,0,0.45)",
+                    marginLeft: 1,
+                    minWidth: 12,
+                    textAlign: "right",
+                  }}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }, [activeCategoryFilter, categoryCounts]);
+
   const plannerMonthGridInner = useMemo(
     () => (
       <>
@@ -869,7 +1058,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   const nRows = Math.ceil(monthCells.length / 7);
                   const isLastCol = col === 6;
                   const isLastRow = row === nRows - 1;
-                  const list = events.filter((e) => eventCoversDate(e, dateKey(cell.y, cell.m, cell.d)));
+                  const list = filteredEvents.filter((e) => eventCoversDate(e, dateKey(cell.y, cell.m, cell.d)));
                   const markers = calByDate.get(dateKey(cell.y, cell.m, cell.d));
                   const seasonText = markers?.map((x) => x.name).join(" · ");
                   const isTodayCell = cell.y === todayY && cell.m === todayM && cell.d === todayD;
@@ -892,7 +1081,9 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           : C.text;
                   const visible = mob ? list : list.slice(0, 3);
                   const more = mob ? 0 : Math.max(0, list.length - 3);
-                  const baseBg = !cell.inMonth ? "var(--color-surface-muted)" : "var(--color-surface)";
+                  const baseBg = !cell.inMonth
+                    ? "rgba(0,0,0,0.015)"
+                    : "var(--color-surface)";
 
                   return (
                     <button
@@ -900,13 +1091,14 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       type="button"
                       onClick={() => openAddEvent(cell.y, cell.m, cell.d)}
                       style={{
+                        position: "relative",
                         minHeight: mob ? 38 : 140,
-                        padding: mob ? 2 : 8,
+                        padding: mob ? 2 : 10,
                         cursor: "pointer",
-                        transition: "background 0.15s",
+                        transition: "background 0.2s ease",
                         border: "none",
-                        borderRight: isLastCol ? "none" : "1px solid var(--color-border)",
-                        borderBottom: isLastRow ? "none" : "1px solid var(--color-border)",
+                        borderRight: isLastCol ? "none" : "1px solid rgba(0,0,0,0.06)",
+                        borderBottom: isLastRow ? "none" : "1px solid rgba(0,0,0,0.06)",
                         borderRadius: 0,
                         background: baseBg,
                         textAlign: "left",
@@ -919,10 +1111,16 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         boxSizing: "border-box",
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-elevated))";
+                        if (cell.inMonth) {
+                          e.currentTarget.style.background = "color-mix(in srgb, var(--color-primary) 4%, var(--color-surface))";
+                        }
+                        const plus = e.currentTarget.querySelector(".planner-empty-plus") as HTMLElement | null;
+                        if (plus) plus.style.opacity = "0.25";
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.background = baseBg;
+                        const plus = e.currentTarget.querySelector(".planner-empty-plus") as HTMLElement | null;
+                        if (plus) plus.style.opacity = "0";
                       }}
                     >
                       <span
@@ -930,13 +1128,13 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           display: isTodayCell ? "inline-flex" : "inline-block",
                           alignItems: isTodayCell ? "center" : undefined,
                           justifyContent: isTodayCell ? "center" : undefined,
-                          fontSize: mob ? 12 : 14,
-                          fontWeight: 600,
-                          marginBottom: 4,
+                          fontSize: mob ? 12 : 13,
+                          fontWeight: 500,
+                          marginBottom: 6,
                           color: isTodayCell ? "var(--color-primary-on)" : numColor,
-                          width: isTodayCell ? 28 : undefined,
-                          height: isTodayCell ? 28 : undefined,
-                          minWidth: isTodayCell ? 28 : undefined,
+                          width: isTodayCell ? 24 : undefined,
+                          height: isTodayCell ? 24 : undefined,
+                          minWidth: isTodayCell ? 24 : undefined,
                           borderRadius: isTodayCell ? "50%" : undefined,
                           background: isTodayCell ? C.primary : "transparent",
                           boxSizing: "border-box",
@@ -944,6 +1142,25 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       >
                         {cell.d}
                       </span>
+                      {!mob && cell.inMonth && list.length === 0 && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            top: 8,
+                            right: 8,
+                            opacity: 0,
+                            transition: "opacity 0.15s ease",
+                            pointerEvents: "none",
+                            fontSize: 14,
+                            lineHeight: 1,
+                            color: "var(--color-text-muted)",
+                            fontWeight: 300,
+                          }}
+                          className="planner-empty-plus"
+                        >
+                          +
+                        </span>
+                      )}
                       {seasonText ? (
                         <div style={{ fontSize: 9, color: "var(--color-danger)", fontWeight: 500, lineHeight: 1.2, marginBottom: 2 }}>{seasonText}</div>
                       ) : null}
@@ -1001,11 +1218,12 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                 )}
                                 <span
                                   style={{
-                                    width: 5,
-                                    height: 5,
+                                    width: 6,
+                                    height: 6,
                                     borderRadius: "50%",
                                     background: hex,
                                     flexShrink: 0,
+                                    boxShadow: `0 0 0 1.5px ${hex}30`,
                                   }}
                                 />
                               </span>
@@ -1029,40 +1247,52 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                   else setBriefingEvent(ev);
                                 }
                               }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = `${hex}1F`;
+                                e.currentTarget.style.borderColor = `${hex}50`;
+                                e.currentTarget.style.boxShadow = `0 1px 3px ${hex}20`;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = `${hex}14`;
+                                e.currentTarget.style.borderColor = `${hex}28`;
+                                e.currentTarget.style.boxShadow = "none";
+                              }}
                               style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: 0,
-                                background: `${hex}20`,
-                                color: hex,
-                                fontSize: mob ? 8 : 11,
-                                fontWeight: 600,
-                                borderRadius: mob ? 4 : 6,
-                                padding: mob ? "1px 3px" : "2px 6px",
-                                marginBottom: 2,
+                                gap: 6,
+                                background: `${hex}14`,
+                                border: `1px solid ${hex}28`,
+                                borderRadius: 5,
+                                padding: "3px 8px",
+                                marginBottom: 3,
                                 cursor: "pointer",
                                 maxWidth: "100%",
                                 overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
+                                transition: "all 0.15s ease",
                               }}
                             >
+                              {/* 컬러 동그라미 */}
+                              <span
+                                style={{
+                                  width: 10,
+                                  height: 10,
+                                  borderRadius: "50%",
+                                  background: hex,
+                                  flexShrink: 0,
+                                }}
+                              />
                               {selectMode && (
                                 <input
                                   type="checkbox"
                                   checked={selectedEventIds.has(ev.id)}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    toggleSelect();
-                                  }}
+                                  onChange={toggleSelect}
                                   onClick={(e) => e.stopPropagation()}
                                   style={{
-                                    width: 13,
-                                    height: 13,
-                                    marginRight: 4,
-                                    cursor: "pointer",
+                                    accentColor: C.primary,
+                                    alignSelf: "center",
+                                    marginLeft: 2,
                                     flexShrink: 0,
-                                    accentColor: "#4A90D9",
                                   }}
                                 />
                               )}
@@ -1070,22 +1300,42 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                 style={{
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: 0,
+                                  gap: 5,
                                   minWidth: 0,
                                   flex: 1,
                                   overflow: "hidden",
                                 }}
                               >
-                                <span style={{ fontWeight: 600, fontSize: mob ? 8 : 10, flexShrink: 0 }}>
-                                  {eventDepartmentName(ev, departments)}
-                                </span>
-                                <span style={{ margin: "0 3px", opacity: 0.5, flexShrink: 0 }}>:</span>
                                 <span
                                   style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: hex,
+                                    flexShrink: 0,
+                                    letterSpacing: "-0.01em",
+                                  }}
+                                >
+                                  {eventDepartmentName(ev, departments)}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    color: `${hex}90`,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  ·
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 11.5,
+                                    fontWeight: 500,
+                                    color: "var(--color-text)",
                                     minWidth: 0,
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
                                     whiteSpace: "nowrap",
+                                    letterSpacing: "-0.01em",
                                   }}
                                 >
                                   {ev.title}
@@ -1109,9 +1359,26 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                 setMoreModal({ y: cell.y, m: cell.m, d: cell.d, list });
                               }
                             }}
-                            style={{ fontSize: 10, color: C.textFaint, cursor: "pointer" }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "rgba(0,0,0,0.04)";
+                              e.currentTarget.style.color = "var(--color-text)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.color = "var(--color-text-muted)";
+                            }}
+                            style={{
+                              fontSize: 10.5,
+                              color: "var(--color-text-muted)",
+                              cursor: "pointer",
+                              fontWeight: 500,
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              alignSelf: "flex-start",
+                              transition: "background 0.15s",
+                            }}
                           >
-                            +{more} 더보기
+                            +{more}
                           </span>
                         )}
                       </div>
@@ -1124,7 +1391,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
     [
       mob,
       monthCells,
-      events,
+      filteredEvents,
       calByDate,
       departments,
       selectMode,
@@ -1388,7 +1655,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           if (events.length > 0 && selectedEventIds.size === events.length) {
                             setSelectedEventIds(new Set());
                           } else {
-                            setSelectedEventIds(new Set(events.map((e) => e.id)));
+                            setSelectedEventIds(new Set(filteredEvents.map((e) => e.id)));
                           }
                         }}
                         style={{
@@ -1439,6 +1706,8 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     </div>
                   </div>
                 )}
+
+                {categoryFilterRow}
 
                 <div
                   style={{
@@ -1636,7 +1905,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           if (events.length > 0 && selectedEventIds.size === events.length) {
                             setSelectedEventIds(new Set());
                           } else {
-                            setSelectedEventIds(new Set(events.map((e) => e.id)));
+                            setSelectedEventIds(new Set(filteredEvents.map((e) => e.id)));
                           }
                         }}
                         style={{
@@ -1687,6 +1956,8 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     </div>
                   </div>
                 )}
+
+                {categoryFilterRow}
 
                 <div
                   style={{
@@ -1789,7 +2060,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   const day = d.getDate();
                   const dow = d.getDay();
                   const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                  const dayEvents = events.filter((ev) => eventCoversDate(ev, dateStr));
+                  const dayEvents = filteredEvents.filter((ev) => eventCoversDate(ev, dateStr));
                   const isToday = dateStr === dateKey(todayY, todayM, todayD);
                   const isSunday = dow === 0;
                   const isSaturday = dow === 6;
@@ -1941,7 +2212,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   const day = d.getDate();
                   const dow = d.getDay();
                   const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                  const dayEvents = events.filter((ev) => eventCoversDate(ev, dateStr));
+                  const dayEvents = filteredEvents.filter((ev) => eventCoversDate(ev, dateStr));
                   return (
                     <div
                       key={d.toISOString()}
