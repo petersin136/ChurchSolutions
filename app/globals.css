@@ -10,12 +10,12 @@
   --color-primary-soft: #FDF1E8;
   --color-primary-on: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-muted: color-mix(in srgb, var(--color-primary-soft) 40%, #ffffff);
-  --color-surface-sidebar: var(--color-primary-soft);
+  --color-surface-muted: #ffffff;
+  --color-surface-sidebar: #F9FAFB;
   --color-surface-elevated: #ffffff;
-  --color-border: #F0EBE3;
-  --color-border-strong: #E5DFD3;
-  --color-border-soft: #F5F1EA;
+  --color-border: #E5E7EB;
+  --color-border-strong: #D1D5DB;
+  --color-border-soft: #F3F4F6;
   --color-text: #1a1d26;
   --color-text-muted: #4a5068;
   --color-text-faint: #8b90a0;
@@ -55,13 +55,13 @@
 
 :root[data-mode="light"] {
   --color-surface: #ffffff;
-  /* 테마(오렌지/블루/그린/퍼플)에 맞춰 본문·콘텐츠 영역 배경 톤이 따라가도록 primary-soft 와 혼합 */
-  --color-surface-muted: color-mix(in srgb, var(--color-primary-soft) 40%, #ffffff);
-  --color-surface-sidebar: var(--color-primary-soft);
+  /* Step 1.6: 베이지(primary-soft 혼합) → 뉴트럴 화이트/그레이. 테마(orange/blue/green/purple) 무관하게 사이드바·보더 동일 톤. */
+  --color-surface-muted: #ffffff;
+  --color-surface-sidebar: #F9FAFB;
   --color-surface-elevated: #ffffff;
-  --color-border: #F0EBE3;
-  --color-border-strong: #E5DFD3;
-  --color-border-soft: #F5F1EA;
+  --color-border: #E5E7EB;
+  --color-border-strong: #D1D5DB;
+  --color-border-soft: #F3F4F6;
   --color-text: #1a1d26;
   --color-text-muted: #4a5068;
   --color-text-faint: #8b90a0;
