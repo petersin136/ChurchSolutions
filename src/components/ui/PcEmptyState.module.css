@@ -4,7 +4,7 @@
   align-items: center;
   text-align: center;
   padding: var(--pc-space-12);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   box-sizing: border-box;
 }
 

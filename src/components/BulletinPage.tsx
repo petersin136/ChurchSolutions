@@ -4221,9 +4221,9 @@ export function BulletinPage() {
         .bulletin-page-content .tp-date { font-size:10px; opacity:.75; letter-spacing:1px; }
         .bulletin-page-content .tp-time { font-size:9px; opacity:.5; margin-top:2px; }
         .bulletin-page-content .tp-pastor { font-size:10px; opacity:.6; margin-top:18px; letter-spacing:2px; }
-        .bulletin-page-content .tp-hd { font-size:11.5px; font-weight:800; padding:8px 8px; border-bottom:2px solid; letter-spacing:.8px; background:#fafbfc; font-family:'Inter','Noto Sans KR',sans-serif; }
+        .bulletin-page-content .tp-hd { font-size:11.5px; font-weight:800; padding:8px 8px; border-bottom:2px solid; letter-spacing:.8px; background:#fafbfc; font-family:var(--font-sans); }
         .bulletin-page-content .tp-bd { padding:8px 8px 10px; font-size:9.5px; line-height:1.6; color:#333; }
-        .bulletin-page-content .tp-label { font-size:9px; font-weight:700; letter-spacing:.4px; margin-top:10px; margin-bottom:3px; font-family:'Inter','Noto Sans KR',sans-serif; }
+        .bulletin-page-content .tp-label { font-size:9px; font-weight:700; letter-spacing:.4px; margin-top:10px; margin-bottom:3px; font-family:var(--font-sans); }
         .bulletin-page-content .tp-label:first-child { margin-top:0; }
         .bulletin-page-content .tp-val { font-size:9px; line-height:1.6; color:#555; }
         .bulletin-page-content .tp-church-badge { margin-top:auto; padding:10px; border-radius:4px; color:inherit; text-align:center; font-size:11px; font-weight:700; letter-spacing:2px; position:absolute; bottom:14px; left:14px; right:14px; }
@@ -4235,7 +4235,7 @@ export function BulletinPage() {
         .bulletin-page-content .tp-column { border-left:3px solid; padding:6px 8px; margin-top:8px; background:linear-gradient(135deg,#faf5ef,#f3ebe0); border-radius:4px; }
         .bulletin-page-content .tp-col-txt { font-size:9px; line-height:1.75; color:#444; }
         .bulletin-page-content .tp-ad { padding:6px 8px; margin-bottom:6px; background:#f8f9fa; border-radius:3px; border-left:3px solid; }
-        .bulletin-page-content .tp-ad-dept { font-size:8px; font-weight:700; letter-spacing:.4px; font-family:'Inter','Noto Sans KR',sans-serif; }
+        .bulletin-page-content .tp-ad-dept { font-size:8px; font-weight:700; letter-spacing:.4px; font-family:var(--font-sans); }
         .bulletin-page-content .tp-ad-txt { font-size:9px; color:#444; line-height:1.5; margin-top:1px; }
         .bulletin-page-content .tp-bday { margin-top:10px; padding-top:8px; border-top:1px solid #eee; }
         .bulletin-page-content .tp-bday-list { display:flex; flex-wrap:wrap; gap:3px; margin-top:5px; }
@@ -4269,7 +4269,7 @@ export function BulletinPage() {
         .bulletin-page-content .bp-date-line { font-size:10px; opacity:.75; letter-spacing:1px; }
         .bulletin-page-content .bp-time-line { font-size:9px; opacity:.5; margin-top:2px; }
         .bulletin-page-content .bp-pastor-line { font-size:10px; opacity:.6; margin-top:18px; letter-spacing:2px; }
-        .bulletin-page-content .bp-page-hd { font-size:12px; font-weight:800; padding:10px 16px; border-bottom:2px solid #1e40af; letter-spacing:.8px; background:#fafbfc; font-family:'Inter','Noto Sans KR',sans-serif; }
+        .bulletin-page-content .bp-page-hd { font-size:12px; font-weight:800; padding:10px 16px; border-bottom:2px solid #1e40af; letter-spacing:.8px; background:#fafbfc; font-family:var(--font-sans); }
         .bulletin-page-content .bp-page-bd { padding:12px 16px 16px; font-size:10px; line-height:1.6; color:#333; }
         .bulletin-page-content .bp-note { font-size:9px; color:#666; margin-bottom:3px; }
         .bulletin-page-content .bp-colbox { background:linear-gradient(135deg,#faf5ef,#f3ebe0); border-radius:5px; padding:11px; margin-top:10px; border-left:3px solid; }
@@ -4277,7 +4277,7 @@ export function BulletinPage() {
         .bulletin-page-content .bp-col-txt { font-size:9px; line-height:1.7; color:#444; }
         .bulletin-page-content .bp-adlist { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
         .bulletin-page-content .bp-ad { padding:6px 9px; background:#f8f9fa; border-radius:4px; border-left:3px solid; }
-        .bulletin-page-content .bp-ad-dept { font-size:8px; font-weight:700; letter-spacing:.4px; font-family:'Inter','Noto Sans KR',sans-serif; }
+        .bulletin-page-content .bp-ad-dept { font-size:8px; font-weight:700; letter-spacing:.4px; font-family:var(--font-sans); }
         .bulletin-page-content .bp-ad-txt { font-size:9.5px; color:#444; line-height:1.5; }
         .bulletin-page-content .bp-bday-sec { margin-top:10px; padding-top:8px; border-top:1px solid #eee; }
         .bulletin-page-content .bp-sub-hd { font-size:10.5px; font-weight:800; margin-bottom:6px; }
@@ -4285,7 +4285,7 @@ export function BulletinPage() {
         .bulletin-page-content .bp-bday-tag { padding:2px 6px; border-radius:8px; font-size:9px; font-weight:500; }
         .bulletin-page-content .bp-igrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
         .bulletin-page-content .bp-icell { background:#f8f9fa; border-radius:5px; padding:8px; }
-        .bulletin-page-content .bp-ititle { font-size:9px; font-weight:700; letter-spacing:.3px; margin-bottom:3px; font-family:'Inter','Noto Sans KR',sans-serif; }
+        .bulletin-page-content .bp-ititle { font-size:9px; font-weight:700; letter-spacing:.3px; margin-bottom:3px; font-family:var(--font-sans); }
         .bulletin-page-content .bp-itxt { font-size:9px; line-height:1.6; color:#555; }
         .bulletin-page-content .bp-offering { background:#f8f9fa; border-radius:5px; padding:8px; margin-bottom:7px; }
         .bulletin-page-content .bp-acct { background:#f0f4f8; border-radius:5px; padding:8px; margin-bottom:10px; border:1px dashed #c8d6e5; }
@@ -4301,7 +4301,7 @@ export function BulletinPage() {
         [data-bview="back"] .bp-four-face .bp-spread:first-child .bp-cell:last-child { display:none !important; }
 
         /* ==================== ONLINE/PDF ==================== */
-        .bulletin-page-content .bp-online { width:380px; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.08); font-family:'Inter','Noto Sans KR',sans-serif; }
+        .bulletin-page-content .bp-online { width:380px; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.08); font-family:var(--font-sans); }
         .bulletin-page-content .ol-header { padding:28px 24px; color:inherit; text-align:center; position:relative; }
         .bulletin-page-content .ol-cross { font-size:22px; opacity:.35; margin-bottom:10px; }
         .bulletin-page-content .ol-church { font-size:20px; font-weight:800; letter-spacing:3px; }

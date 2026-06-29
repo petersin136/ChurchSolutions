@@ -1,7 +1,7 @@
 .wrap {
   position: relative;
   width: 100%;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
 }
 
 .table {

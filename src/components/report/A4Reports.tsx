@@ -769,7 +769,7 @@ export function ReportPreviewModal({
         <div ref={reportRef} style={{
           display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
           width: "210mm", maxWidth: "100%",
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          fontFamily: "var(--font-sans)",
         }}>
           {reportId === "weekly" && <WeeklyReport db={db} churchName={churchName} churchId={churchId} />}
           {reportId === "members" && <MembersReport db={db} churchName={churchName} />}

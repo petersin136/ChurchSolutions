@@ -37,9 +37,8 @@ const COLORS = {
   violet: "#8B5CF6",
 } as const;
 
-const FONT_SANS =
-  '"Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-const FONT_NUM = '"Inter", -apple-system, BlinkMacSystemFont, sans-serif';
+const FONT_SANS = "var(--font-sans)";
+const FONT_NUM = "var(--font-sans)";
 const FONT_SERIF = '"Nanum Myeongjo", "Noto Serif KR", serif';
 
 const A4_W_MM = 210;

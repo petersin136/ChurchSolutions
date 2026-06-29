@@ -10,7 +10,7 @@
   border-radius: var(--pc-radius);
   background: var(--pc-surface);
   box-shadow: var(--pc-shadow-md);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   pointer-events: auto;
   opacity: 0;
   transform: translateX(var(--pc-space-8));

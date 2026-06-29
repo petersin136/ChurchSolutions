@@ -3,7 +3,7 @@
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius-md);
   box-sizing: border-box;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   color: var(--pc-text-strong);
 }
 

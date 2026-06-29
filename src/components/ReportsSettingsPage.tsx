@@ -1909,7 +1909,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
                       minHeight: 200,
                       maxWidth: 880,
                       margin: "0 auto",
-                      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif',
+                      fontFamily: "var(--font-sans)",
                     }}
                   >
                     <ReportPrintHeader

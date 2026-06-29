@@ -69,7 +69,7 @@ export default function SuperPlanner() {
 
   if (!churchId) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font-sans)" }}>
         <p style={{ fontSize: 15, color: "var(--text2)" }}>교회 정보를 불러오는 중...</p>
       </div>
     );
@@ -77,7 +77,7 @@ export default function SuperPlanner() {
 
   if (loadError) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font-sans)" }}>
         <p style={{ fontSize: 15, color: "var(--danger, #dc2626)" }}>데이터 로드에 실패했습니다. 새로고침 해 주세요.</p>
       </div>
     );
@@ -85,7 +85,7 @@ export default function SuperPlanner() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--bg, #f2f2f7)", fontFamily: "var(--font-sans)" }}>
         <p style={{ fontSize: 15, color: "var(--text2)" }}>데이터 불러오는 중...</p>
       </div>
     );

@@ -4,7 +4,7 @@
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-weight: var(--pc-weight-semibold);
   color: var(--pc-on-accent);
   box-sizing: border-box;

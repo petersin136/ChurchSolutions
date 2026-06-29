@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--pc-space-1-5);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   position: relative;
 }
 
@@ -72,7 +72,7 @@
   padding: 0 var(--pc-space-3);
   border: none;
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   color: var(--pc-text-strong);
   text-align: left;
   cursor: pointer;
@@ -210,7 +210,7 @@
   min-width: 0;
   border: none;
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-base);
   font-weight: var(--pc-weight-semibold);
   color: var(--pc-text-strong);
@@ -267,7 +267,7 @@
   border: 1px solid transparent;
   border-radius: var(--pc-radius);
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-sm);
   color: var(--pc-text-strong);
   cursor: pointer;
@@ -327,7 +327,7 @@
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius);
   background: var(--pc-surface);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-sm);
   color: var(--pc-text-strong);
   cursor: pointer;
@@ -357,7 +357,7 @@
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius);
   background: var(--pc-surface);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-sm);
   color: var(--pc-text-strong);
   cursor: pointer;
@@ -385,7 +385,7 @@
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius);
   background: var(--pc-surface);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-sm);
   font-weight: var(--pc-weight-medium);
   color: var(--pc-text-strong);

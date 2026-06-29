@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font)", "Inter", "Noto Sans KR", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)"],
       },
       colors: {
         bg: "var(--bg)",
@@ -22,6 +22,18 @@ const config: Config = {
         "text1": "var(--text1)",
         "text2": "var(--text2)",
         "text3": "var(--text3)",
+        // Design System v1 — 디자이너 핸드오프 컬러 토큰
+        "app-black": "#0b0c0e",
+        "app-white": "#f4f4f6",
+        "app-gray": "#a0a5b1",
+        "lavender": "#c7b0ff",
+        "citrus-green": "#e0e446",
+        "peach": "#ffe8d2",
+        "sunset-orange": "#ff7144",
+        "glacier-blue": "#d8e6ff",
+        "app-blue": "#334ed8",
+        "deep-green": "#33473b",
+        "app-pink": "#ffa9ff",
       },
     },
   },

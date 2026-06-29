@@ -2,7 +2,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-weight: var(--pc-weight-medium);
   border-radius: var(--pc-radius-xl);
   white-space: nowrap;

@@ -57,7 +57,7 @@ const KakaoShareCard = forwardRef<HTMLDivElement, KakaoShareCardProps>(
           backgroundColor: "var(--color-surface)",
           borderRadius: 16,
           overflow: "hidden",
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif",
+          fontFamily: "var(--font-sans)",
           boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
         }}
       >

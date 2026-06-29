@@ -10,7 +10,6 @@ export default function NotFound() {
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
-        fontFamily: "system-ui, sans-serif",
         background: "var(--bg, #F2F2F7)",
         color: "var(--text1, #1C1C1E)",
       }}

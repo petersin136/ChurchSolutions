@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthCardShell, AuthPageLoading } from "@/components/auth/AuthCardShell";
+import { GoogleLogo, KakaoLogo } from "@/components/auth/SocialBrandIcons";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -48,33 +50,13 @@ export default function LoginForm() {
   };
 
   if (authLoading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: PAGE_BG }}>
-        <div style={{ fontSize: 14, color: "#9ca3af" }}>로딩 중...</div>
-      </div>
-    );
+    return <AuthPageLoading />;
   }
 
   if (user) return null;
 
-  const Brand = (
-    <div style={{ textAlign: "center", marginBottom: 40 }}>
-      <div style={{ color: "#111111", fontWeight: 800, fontSize: 40, letterSpacing: -1, lineHeight: 1.2 }}>
-        church u<span style={{ display: "inline-block", transform: "translateY(-0.2em)" }}>p</span>
-      </div>
-      <div style={{ marginTop: 12, fontSize: 14 }}>
-        <span style={{ color: "#6b7280", fontWeight: 500 }}>행정은 가볍게 </span>
-        <span style={{ color: "#111111", fontWeight: 700 }}>시선은 목양에</span>
-      </div>
-    </div>
-  );
-
   return (
-    <div style={pageStyle}>
-      {styleTag}
-      <div style={cardStyle}>
-        {Brand}
-
+    <AuthCardShell styleTag={styleTag}>
         <form onSubmit={handleLogin} noValidate>
           <input
             className="cu-input"
@@ -121,8 +103,8 @@ export default function LoginForm() {
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: keepLoggedIn ? "#111111" : "#ffffff",
-                  border: keepLoggedIn ? "1px solid #111111" : "1px solid #c4c4c8",
+                  background: keepLoggedIn ? "var(--color-black)" : "#ffffff",
+                  border: keepLoggedIn ? "1px solid var(--color-black)" : "1px solid #c4c4c8",
                 }}
               >
                 {keepLoggedIn ? (
@@ -131,7 +113,7 @@ export default function LoginForm() {
                   </svg>
                 ) : null}
               </span>
-              <span style={{ fontSize: 13, color: keepLoggedIn ? "#111111" : "#6b7280", fontWeight: keepLoggedIn ? 600 : 400 }}>
+              <span style={{ fontSize: 13, color: keepLoggedIn ? "var(--color-black)" : "var(--color-text-muted)", fontWeight: keepLoggedIn ? 600 : 400 }}>
                 로그인 상태 유지
               </span>
             </label>
@@ -140,7 +122,7 @@ export default function LoginForm() {
               type="button"
               className="cu-link"
               onClick={() => router.push("/forgot-password")}
-              style={{ background: "none", border: "none", fontSize: 13, color: "#9ca3af", cursor: "pointer" }}
+              style={{ background: "none", border: "none", fontSize: 13, color: "var(--color-text-muted)", cursor: "pointer" }}
             >
               비밀번호 찾기
             </button>
@@ -177,7 +159,7 @@ export default function LoginForm() {
               height: 52,
               marginTop: 18,
               borderRadius: 4,
-              background: loading ? "#3a3a3a" : "#111111",
+              background: loading ? "#3a3a3a" : "var(--color-black)",
               color: "#ffffff",
               fontSize: 15,
               fontWeight: 700,
@@ -190,15 +172,22 @@ export default function LoginForm() {
         </form>
 
         <div style={{ textAlign: "center", fontSize: 13, marginTop: 20 }}>
-          <span style={{ color: "#9ca3af" }}>계정이 없으신가요? </span>
-          <a href="/register" className="cu-link-strong" style={{ color: "#111111", fontWeight: 700, textDecoration: "none" }}>
+          <span style={{ color: "var(--color-text-muted)" }}>계정이 없으신가요? </span>
+          <a href="/register" className="cu-link-strong" style={{ color: "var(--color-black)", fontWeight: 700, textDecoration: "none" }}>
             회원가입
+          </a>
+        </div>
+
+        <div style={{ textAlign: "center", fontSize: 13, marginTop: 12 }}>
+          <span style={{ color: "var(--color-text-muted)" }}>소속 교회를 찾고 계신가요? </span>
+          <a href="/church-search" className="cu-link-strong" style={{ color: "var(--color-black)", fontWeight: 700, textDecoration: "none" }}>
+            교회 찾기
           </a>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "28px 0 20px" }}>
           <div style={{ flex: 1, height: 1, background: "#ebebeb" }} />
-          <span style={{ fontSize: 12, color: "#9ca3af" }}>SNS 계정으로 시작</span>
+          <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>SNS 계정으로 시작</span>
           <div style={{ flex: 1, height: 1, background: "#ebebeb" }} />
         </div>
 
@@ -206,10 +195,12 @@ export default function LoginForm() {
           type="button"
           className="cu-social"
           onClick={() => alert("카카오 로그인은 준비 중입니다")}
-          style={{ ...socialBtnBase, background: "#FEE500", color: "#111111" }}
+          style={{ ...socialBtnBase, background: "#FEE500", color: "var(--color-black)" }}
         >
-          <span style={{ position: "absolute", left: 18, fontSize: 16, fontWeight: 800 }}>K</span>
-          카카오로 시작하기
+          <span style={socialIconStyle}>
+            <KakaoLogo size={20} />
+          </span>
+          Kakao로 시작하기
         </button>
 
         <div style={{ height: 10 }} />
@@ -218,35 +209,16 @@ export default function LoginForm() {
           type="button"
           className="cu-social"
           onClick={() => alert("구글 로그인은 준비 중입니다")}
-          style={{ ...socialBtnBase, background: "#ebebeb", color: "#111111" }}
+          style={{ ...socialBtnBase, background: "#ebebeb", color: "var(--color-black)" }}
         >
-          <span style={{ position: "absolute", left: 18, fontSize: 16, fontWeight: 800 }}>G</span>
-          구글로 시작하기
+          <span style={socialIconStyle}>
+            <GoogleLogo size={20} />
+          </span>
+          Google로 시작하기
         </button>
-      </div>
-    </div>
+    </AuthCardShell>
   );
 }
-
-const PAGE_BG = "#f0f0f2";
-
-const pageStyle: React.CSSProperties = {
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: PAGE_BG,
-  padding: "24px 16px",
-};
-
-const cardStyle: React.CSSProperties = {
-  width: "100%",
-  maxWidth: 420,
-  background: "#ffffff",
-  borderRadius: 12,
-  padding: "48px 40px",
-  boxSizing: "border-box",
-};
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -255,7 +227,7 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 4,
   border: "1px solid transparent",
   background: "#ebebeb",
-  color: "#111111",
+  color: "var(--color-black)",
   fontSize: 15,
   outline: "none",
   boxSizing: "border-box",
@@ -275,23 +247,31 @@ const socialBtnBase: React.CSSProperties = {
   position: "relative",
 };
 
+const socialIconStyle: React.CSSProperties = {
+  position: "absolute",
+  left: 18,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
 const styleTag = (
   <style>{`
     .cu-input { transition: border-color .12s ease; }
-    .cu-input::placeholder { color: #9ca3af; }
-    .cu-input:focus { border-color: #111111; }
+    .cu-input::placeholder { color: var(--color-text-faint); }
+    .cu-input:focus { border-color: var(--color-black); }
     .cu-input:-webkit-autofill,
     .cu-input:-webkit-autofill:hover,
     .cu-input:-webkit-autofill:focus,
     .cu-input:-webkit-autofill:active {
-      -webkit-text-fill-color: #111111;
+      -webkit-text-fill-color: var(--color-black);
       -webkit-box-shadow: 0 0 0 1000px #ebebeb inset;
       box-shadow: 0 0 0 1000px #ebebeb inset;
-      caret-color: #111111;
+      caret-color: var(--color-black);
       transition: background-color 9999s ease-in-out 0s;
     }
     .cu-link { transition: color .12s ease; }
-    .cu-link:hover, .cu-link:active { color: #111111; }
+    .cu-link:hover, .cu-link:active { color: var(--color-black); }
     .cu-link-strong { transition: opacity .12s ease; }
     .cu-link-strong:hover { opacity: .65; }
     .cu-social { transition: transform .06s ease, filter .12s ease; }
