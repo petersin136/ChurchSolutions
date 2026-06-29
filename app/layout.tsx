@@ -12,7 +12,7 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "교역자 슈퍼플래너",
+  title: "church up",
   description: "목양노트 · 교역자 플래너 · 재정관리",
   manifest: "/manifest.json",
   icons: {

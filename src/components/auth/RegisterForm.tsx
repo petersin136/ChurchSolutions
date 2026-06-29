@@ -71,26 +71,70 @@ export default function RegisterForm() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8f7f4" }}>
-        <div style={{ fontSize: 14, color: "#6b7280" }}>로딩 중...</div>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f0f0f2" }}>
+        <div style={{ fontSize: 14, color: "#9ca3af" }}>로딩 중...</div>
       </div>
     );
   }
 
+  const Brand = (
+    <div style={{ textAlign: "center", marginBottom: 28 }}>
+      <div style={{ color: "#0B0C0E", fontWeight: 800, fontSize: 40, letterSpacing: -1, lineHeight: 1.2 }}>
+        church u<span style={{ display: "inline-block", transform: "translateY(-0.2em)" }}>p</span>
+      </div>
+      <div style={{ marginTop: 12, fontSize: 14 }}>
+        <span style={{ color: "#6b7280", fontWeight: 500 }}>행정은 가볍게 </span>
+        <span style={{ color: "#0B0C0E", fontWeight: 700 }}>시선은 목양에</span>
+      </div>
+    </div>
+  );
+
   if (success) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8f7f4", padding: "0 16px" }}>
-        <div style={{ width: "100%", maxWidth: 384, textAlign: "center" }}>
-          <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #e2e5ef", padding: 32 }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#2563eb", marginBottom: 8 }}>회원가입 완료</div>
-            <div style={{ fontSize: 14, color: "#6b7b9e", marginBottom: 24 }}>
-              이메일 인증 후 로그인할 수 있습니다.<br />
-              메일함을 확인해주세요.
+      <div style={pageStyle}>
+        {styleTag}
+        <div style={cardStyle}>
+          {Brand}
+          <div style={{ textAlign: "center" }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                margin: "0 auto 16px",
+                borderRadius: "50%",
+                background: "#0B0C0E",
+                color: "#ffffff",
+                fontSize: 22,
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ✓
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#0B0C0E" }}>회원가입 완료</div>
+            <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: "#9ca3af" }}>
+              이메일 인증 후 로그인할 수 있습니다.
+              <br />
+              메일함을 확인해 주세요.
             </div>
             <a
               href="/login"
-              style={{ display: "block", width: "100%", padding: "10px 0", borderRadius: 12, background: "#2563eb", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none", textAlign: "center" }}
+              style={{
+                display: "block",
+                width: "100%",
+                height: 52,
+                lineHeight: "52px",
+                marginTop: 24,
+                borderRadius: 4,
+                background: "#0B0C0E",
+                color: "#ffffff",
+                fontSize: 15,
+                fontWeight: 700,
+                textDecoration: "none",
+                textAlign: "center",
+              }}
             >
               로그인 페이지로
             </a>
@@ -101,65 +145,93 @@ export default function RegisterForm() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "flex-start", justifyContent: "center", background: "#f8f7f4", padding: "40px 16px", overflowY: "auto" }}>
-      <div style={{ width: "100%", maxWidth: 384 }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>⛪</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "#2563eb" }}>회원가입</div>
-          <div style={{ fontSize: 14, color: "#6b7b9e", marginTop: 4 }}>교회와 관리자 계정을 생성합니다</div>
+    <div style={pageStyle}>
+      {styleTag}
+      <div style={cardStyle}>
+        {Brand}
+
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#0B0C0E" }}>회원가입</div>
+          <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: "#9ca3af" }}>
+            교회와 관리자 계정을 생성합니다.
+          </div>
         </div>
 
-        <form onSubmit={handleRegister} style={{ background: "#fff", borderRadius: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.05)", border: "1px solid #e2e5ef", padding: 24 }}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#6b7b9e", marginBottom: 6 }}>교회 이름</label>
-            <input
-              type="text"
-              value={churchName}
-              onChange={(e) => setChurchName(e.target.value)}
-              placeholder="예: 사랑의교회"
-              required
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#6b7b9e", marginBottom: 6 }}>이메일</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@church.com"
-              required
-              autoComplete="email"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#6b7b9e", marginBottom: 6 }}>비밀번호</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="6자 이상"
-              required
-              autoComplete="new-password"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#6b7b9e", marginBottom: 6 }}>비밀번호 확인</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="비밀번호를 다시 입력"
-              required
-              autoComplete="new-password"
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e5ef", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
+        <form onSubmit={handleRegister} noValidate>
+          <input
+            className="cu-input"
+            type="text"
+            value={churchName}
+            onChange={(e) => {
+              setChurchName(e.target.value);
+              if (error) setError("");
+            }}
+            placeholder="교회 이름"
+            required
+            style={inputStyle}
+          />
+          <div style={{ height: 12 }} />
+          <input
+            className="cu-input"
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (error) setError("");
+            }}
+            placeholder="이메일 주소"
+            required
+            autoComplete="email"
+            style={inputStyle}
+          />
+          <div style={{ height: 12 }} />
+          <input
+            className="cu-input"
+            type="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (error) setError("");
+            }}
+            placeholder="비밀번호 (6자 이상)"
+            required
+            autoComplete="new-password"
+            style={inputStyle}
+          />
+          <div style={{ height: 12 }} />
+          <input
+            className="cu-input"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              if (error) setError("");
+            }}
+            placeholder="비밀번호 확인"
+            required
+            autoComplete="new-password"
+            style={inputStyle}
+          />
 
           {error ? (
-            <div style={{ borderRadius: 12, background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", fontSize: 12, padding: "10px 12px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, color: "#e02424", fontSize: 13 }}>
+              <span
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: "#e02424",
+                  color: "#ffffff",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                !
+              </span>
               {error}
             </div>
           ) : null}
@@ -169,24 +241,24 @@ export default function RegisterForm() {
             disabled={loading}
             style={{
               width: "100%",
-              padding: "12px 0",
-              borderRadius: 12,
-              backgroundColor: loading ? "#9ca3af" : "#2563eb",
+              height: 52,
+              marginTop: 18,
+              borderRadius: 4,
+              background: loading ? "#3a3a3a" : "#0B0C0E",
               color: "#ffffff",
-              fontSize: 14,
-              fontWeight: 600,
+              fontSize: 15,
+              fontWeight: 700,
               border: "none",
               cursor: loading ? "not-allowed" : "pointer",
-              marginTop: 8,
             }}
           >
             {loading ? "가입 중..." : "회원가입"}
           </button>
         </form>
 
-        <div style={{ textAlign: "center", fontSize: 12, color: "#6b7b9e", marginTop: 20 }}>
-          이미 계정이 있으신가요?{" "}
-          <a href="/login" style={{ color: "#4361ee", fontWeight: 500, textDecoration: "none" }}>
+        <div style={{ textAlign: "center", fontSize: 13, marginTop: 20 }}>
+          <span style={{ color: "#9ca3af" }}>이미 계정이 있으신가요? </span>
+          <a href="/login" className="cu-link-strong" style={{ color: "#0B0C0E", fontWeight: 700, textDecoration: "none" }}>
             로그인
           </a>
         </div>
@@ -194,3 +266,54 @@ export default function RegisterForm() {
     </div>
   );
 }
+
+const pageStyle: React.CSSProperties = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#f0f0f2",
+  padding: "40px 16px",
+};
+
+const cardStyle: React.CSSProperties = {
+  width: "100%",
+  maxWidth: 420,
+  background: "#ffffff",
+  borderRadius: 12,
+  padding: "48px 40px",
+  boxSizing: "border-box",
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  height: 52,
+  padding: "0 16px",
+  borderRadius: 4,
+  border: "1px solid transparent",
+  background: "#ebebeb",
+  color: "#0B0C0E",
+  fontSize: 15,
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const styleTag = (
+  <style>{`
+    .cu-input { transition: border-color .12s ease; }
+    .cu-input::placeholder { color: #9ca3af; }
+    .cu-input:focus { border-color: #0B0C0E; }
+    .cu-input:-webkit-autofill,
+    .cu-input:-webkit-autofill:hover,
+    .cu-input:-webkit-autofill:focus,
+    .cu-input:-webkit-autofill:active {
+      -webkit-text-fill-color: #0B0C0E;
+      -webkit-box-shadow: 0 0 0 1000px #ebebeb inset;
+      box-shadow: 0 0 0 1000px #ebebeb inset;
+      caret-color: #0B0C0E;
+      transition: background-color 9999s ease-in-out 0s;
+    }
+    .cu-link-strong { transition: opacity .12s ease; }
+    .cu-link-strong:hover { opacity: .65; }
+  `}</style>
+);
