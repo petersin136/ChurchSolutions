@@ -98,7 +98,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_churches_phone
 DO $$ BEGIN RAISE NOTICE '[step 3] churches.name trigram GIN 인덱스 생성'; END $$;
 
 CREATE INDEX IF NOT EXISTS idx_churches_name_trgm
-  ON public.churches USING gin (name gin_trgm_ops);
+  ON public.churches USING gin (name extensions.gin_trgm_ops);
 
 
 -- =====================================================================
@@ -218,7 +218,7 @@ AS $$
       OR address ILIKE '%' || q || '%'
     )
   ORDER BY
-    CASE WHEN q IS NULL OR q = '' THEN 0 ELSE similarity(name, q) END DESC NULLS LAST,
+    CASE WHEN q IS NULL OR q = '' THEN 0 ELSE extensions.similarity(name, q) END DESC NULLS LAST,
     name ASC
   LIMIT 50;
 $$;
@@ -267,13 +267,13 @@ AS $$
     c.address,
     c.denomination,
     c.pastor_name,
-    similarity(
+    extensions.similarity(
       public.normalize_church_name(c.name),
       public.normalize_church_name(input_name)
     ) AS sim
   FROM public.churches c
   WHERE c.is_active = true
-    AND similarity(
+    AND extensions.similarity(
       public.normalize_church_name(c.name),
       public.normalize_church_name(input_name)
     ) >= threshold
