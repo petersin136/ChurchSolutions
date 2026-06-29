@@ -1,29 +1,29 @@
 import { NextResponse } from "next/server";
-import { getServiceSupabase } from "@/lib/supabase";
+import { getAnonSupabase } from "@/lib/supabase";
 
 interface ResendVerificationBody {
   email: string;
-  password: string;
 }
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Partial<ResendVerificationBody>;
     const email = body.email?.trim();
-    const password = body.password;
 
-    if (!email || !password) {
+    if (!email) {
       return NextResponse.json(
-        { error: "이메일과 비밀번호가 필요합니다." },
+        { error: "이메일이 필요합니다." },
         { status: 400 },
       );
     }
 
-    const supabase = getServiceSupabase();
-    const { error: mailError } = await supabase.auth.admin.generateLink({
+    const anonClient = getAnonSupabase();
+    const { error: mailError } = await anonClient.auth.resend({
       type: "signup",
       email,
-      password,
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/login`,
+      },
     });
 
     if (mailError) {
