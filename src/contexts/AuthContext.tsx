@@ -15,6 +15,7 @@ interface AuthState {
   loading: boolean;
   signOut: () => Promise<void>;
   setRegistering: (v: boolean) => void;
+  refreshChurch: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthState>({
   loading: true,
   signOut: async () => {},
   setRegistering: () => {},
+  refreshChurch: async () => {},
 });
 
 export function useAuth() {
@@ -157,6 +159,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await syncFromDb();
     }
   }, []);
+
+  const refreshChurch = useCallback(async () => {
+    if (user?.id) {
+      await loadChurch(user.id);
+    }
+  }, [user, loadChurch]);
 
   // 클라이언트에서만 실행: auth 상태 + localStorage 읽기. 한 번만 구독, cleanup 필수.
   useEffect(() => {
@@ -303,7 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [churchId]);
 
   return (
-    <AuthContext.Provider value={{ user, session, churchId, churchName, loading, signOut, setRegistering: setIsRegistering }}>
+    <AuthContext.Provider value={{ user, session, churchId, churchName, loading, signOut, setRegistering: setIsRegistering, refreshChurch }}>
       {children}
     </AuthContext.Provider>
   );
