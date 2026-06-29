@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { AuthCardShell } from "@/components/auth/AuthCardShell";
 import { PcModal } from "@/components/ui/PcModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { CreatingSplash } from "@/components/common/CreatingSplash";
 import styles from "./ChurchSearchPage.module.css";
 
 export interface ChurchSearchItem {
@@ -52,12 +55,18 @@ function filterChurches(query: string): ChurchSearchItem[] {
 }
 
 export default function ChurchSearchPage() {
+  const { session, refreshChurch } = useAuth();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSelectedId, setModalSelectedId] = useState<string | null>(null);
+  const [createMode, setCreateMode] = useState(false);
+  const [newChurchName, setNewChurchName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const isExampleMode = !hasSearched;
 
@@ -131,7 +140,51 @@ export default function ChurchSearchPage() {
   };
 
   const handleCreateChurch = () => {
-    console.log("교회 개설");
+    setCreateMode(true);
+    setCreateError(null);
+  };
+
+  const handleCancelCreate = () => {
+    setCreateMode(false);
+    setNewChurchName("");
+    setCreateError(null);
+    setCreating(false);
+  };
+
+  const handleSubmitCreate = async () => {
+    const trimmed = newChurchName.trim();
+    if (!trimmed) {
+      setCreateError("교회 이름을 입력해주세요.");
+      return;
+    }
+
+    setCreateError(null);
+    setCreating(true);
+
+    try {
+      const res = await fetch("/api/church/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ churchName: trimmed }),
+      });
+
+      const result = (await res.json()) as { ok?: boolean; error?: string };
+
+      if (!res.ok || !result.ok) {
+        setCreateError(result.error || "교회 개설에 실패했습니다.");
+        setCreating(false);
+        return;
+      }
+
+      await refreshChurch();
+      router.push("/");
+    } catch {
+      setCreateError("교회 개설 중 오류가 발생했습니다. 다시 시도해 주세요.");
+      setCreating(false);
+    }
   };
 
   const showEmpty = hasSearched && listItems.length === 0;
@@ -148,6 +201,10 @@ export default function ChurchSearchPage() {
       </button>
     </footer>
   );
+
+  if (creating) {
+    return <CreatingSplash />;
+  }
 
   return (
     <>
@@ -185,6 +242,46 @@ export default function ChurchSearchPage() {
             </button>
           </div>
         </form>
+
+        {createMode ? (
+          <div className={styles.pickSection}>
+            <p className={styles.pickHint}>새로 개설할 교회 이름을 입력해 주세요.</p>
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="개설할 교회 이름을 입력하세요"
+              value={newChurchName}
+              onChange={(e) => setNewChurchName(e.target.value)}
+              disabled={creating}
+              aria-label="개설할 교회 이름"
+            />
+            {createError ? (
+              <p className={styles.emptyDesc} role="alert">
+                {createError}
+              </p>
+            ) : null}
+            <div className={styles.applyBar}>
+              <div className={styles.modalFooter}>
+              <button
+                type="button"
+                className={styles.btnModalSecondary}
+                onClick={handleCancelCreate}
+                disabled={creating}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                onClick={() => void handleSubmitCreate()}
+                disabled={creating}
+              >
+                {creating ? "개설 중..." : "개설하기"}
+              </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {showEmpty ? (
           <div className={styles.empty}>
