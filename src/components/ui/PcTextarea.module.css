@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--pc-space-1-5);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
 }
 
 .wrapFullWidth {
@@ -48,7 +48,7 @@
   border: none;
   border-radius: var(--pc-radius);
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-base);
   line-height: var(--pc-leading-relaxed);
   color: var(--pc-text-strong);

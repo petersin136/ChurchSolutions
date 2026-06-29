@@ -76,8 +76,7 @@ function getAccentByCategory(category: string | null | undefined): string {
  * ────────────────────────────────────────── */
 const FONT_DISPLAY =
   '"Nanum Myeongjo", "Noto Serif KR", "Batang", "본명조", serif';
-const FONT_BODY =
-  '"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+const FONT_BODY = "var(--font-sans)";
 const FONT_NUMERIC =
   '"Cormorant Garamond", "Nanum Myeongjo", "Noto Serif KR", serif';
 

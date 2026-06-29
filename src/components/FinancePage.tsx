@@ -2234,7 +2234,7 @@ function ExportTab({ offerings, expenses, categories, departments, expenseCatego
 
 /* ---------- 기부금 영수증 탭: 새 양식용 CSS ---------- */
 const RECEIPT_CSS = `
-  .receipt-wrapper-r { width: 210mm; max-width: 100%; box-sizing: border-box; background: #fff; position: relative; padding: 0; box-shadow: none; font-family: 'Noto Sans KR', 'Pretendard', sans-serif; }
+  .receipt-wrapper-r { width: 210mm; max-width: 100%; box-sizing: border-box; background: #fff; position: relative; padding: 0; box-shadow: none; font-family: var(--font-sans); }
   .receipt-header-r { background: linear-gradient(135deg, #1a2a4a 0%, #2c3e6b 100%); padding: 36px 48px 28px; position: relative; overflow: hidden; }
   .receipt-header-r::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #c9a96e, #e8d5a3, #c9a96e); }
   .receipt-header-r::before { content: '✝'; position: absolute; right: 40px; top: 50%; transform: translateY(-50%); font-size: 100px; color: rgba(255,255,255,0.04); font-weight: 300; }

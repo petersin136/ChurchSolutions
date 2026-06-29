@@ -28,7 +28,7 @@
   border-radius: var(--pc-radius-lg);
   background: var(--pc-surface);
   box-shadow: var(--pc-shadow-lg);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   color: var(--pc-text-strong);
   outline: none;
   opacity: 0;

@@ -1,0 +1,125 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-white);
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+.loadingText {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.card {
+  width: 440px;
+  max-width: 100%;
+  height: 720px;
+  min-height: 720px;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 48px 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: 40px;
+  flex-shrink: 0;
+}
+
+.brandWordmark {
+  color: var(--color-black);
+  font-weight: 800;
+  font-size: 40px;
+  letter-spacing: -1px;
+  line-height: 1.2;
+}
+
+.brandUp {
+  display: inline-block;
+  transform: translateY(-0.2em);
+}
+
+.brandTagline {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.brandTaglineMuted {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.brandTaglineStrong {
+  color: var(--color-black);
+  font-weight: 700;
+}
+
+.cardBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardBodyScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cardBodyScrollHidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cardBodyScrollHidden::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.cardBodyScrollLocked {
+  overflow: hidden;
+  overflow-y: hidden;
+  overscroll-behavior: none;
+}
+
+.scrollBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 32px;
+  margin: 0 0 6px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: var(--color-border-soft);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.scrollBtn:hover {
+  background: var(--color-border);
+  color: var(--color-black);
+}
+
+.cardBodyScroll + .scrollBtn {
+  margin: 6px 0 0;
+}
+
+.cardFooter {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 20px;
+}

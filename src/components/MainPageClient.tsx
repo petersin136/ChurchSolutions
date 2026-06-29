@@ -67,7 +67,7 @@ export default function MainPageClient() {
           padding: 24,
           background: "#FAFAFA",
           color: "#374151",
-          fontFamily: "Inter, system-ui, sans-serif",
+          fontFamily: "var(--font-sans)",
           textAlign: "center",
         }}
       >

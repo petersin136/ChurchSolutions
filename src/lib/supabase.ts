@@ -31,6 +31,17 @@ export function getServiceSupabase(): SupabaseClient {
   return createClient(supabaseUrl, serviceKey);
 }
 
+/** API Route 등 서버에서 anon 키로 auth.signUp 호출용 (커스텀 인증 메일 템플릿 적용) */
+export function getAnonSupabase(): SupabaseClient {
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error("Supabase env not set");
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
 /**
  * Supabase Storage에 저장된 성도 프로필 이미지 URL에서 파일 경로를 추출해 삭제.
  * URL 예: .../storage/v1/object/public/member-photos/member-id.jpg 또는 .../object/sign/...

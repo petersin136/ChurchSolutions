@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--pc-space-2);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-weight: var(--pc-weight-semibold);
   line-height: 1;
   border-radius: var(--pc-radius);

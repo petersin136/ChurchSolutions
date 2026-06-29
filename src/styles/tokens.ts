@@ -235,7 +235,7 @@ export const pcTokens = {
     16: "64px",
   },
   font: {
-    family: "var(--pc-font)",
+    family: "var(--font-sans)",
     sizes: {
       xs: "11px",
       sm: "12px",

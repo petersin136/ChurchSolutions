@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { AuthCardShell } from "@/components/auth/AuthCardShell";
 
 export default function ForgotPasswordForm() {
   const router = useRouter();
@@ -33,22 +34,10 @@ export default function ForgotPasswordForm() {
   };
 
   return (
-    <div style={pageStyle}>
-      {styleTag}
-      <div style={cardStyle}>
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ color: "#0B0C0E", fontWeight: 800, fontSize: 40, letterSpacing: -1, lineHeight: 1.2 }}>
-            church u<span style={{ display: "inline-block", transform: "translateY(-0.2em)" }}>p</span>
-          </div>
-          <div style={{ marginTop: 12, fontSize: 14 }}>
-            <span style={{ color: "#6b7280", fontWeight: 500 }}>행정은 가볍게 </span>
-            <span style={{ color: "#0B0C0E", fontWeight: 700 }}>시선은 목양에</span>
-          </div>
-        </div>
-
+    <AuthCardShell styleTag={styleTag}>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#0B0C0E" }}>비밀번호 재설정</div>
-          <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: "#9ca3af" }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-black)" }}>비밀번호 재설정</div>
+          <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: "var(--color-text-muted)" }}>
             가입하신 이메일 주소를 입력하시면
             <br />
             재설정 링크를 보내드립니다.
@@ -56,13 +45,13 @@ export default function ForgotPasswordForm() {
         </div>
 
         {sent ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 18, color: "#0B0C0E", fontSize: 13 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 18, color: "var(--color-black)", fontSize: 13 }}>
             <span
               style={{
                 width: 16,
                 height: 16,
                 borderRadius: "50%",
-                background: "#0B0C0E",
+                background: "var(--color-black)",
                 color: "#ffffff",
                 fontSize: 11,
                 fontWeight: 700,
@@ -123,7 +112,7 @@ export default function ForgotPasswordForm() {
                 height: 52,
                 marginTop: 18,
                 borderRadius: 4,
-                background: loading ? "#3a3a3a" : "#0B0C0E",
+                background: loading ? "#3a3a3a" : "var(--color-black)",
                 color: "#ffffff",
                 fontSize: 15,
                 fontWeight: 700,
@@ -141,33 +130,14 @@ export default function ForgotPasswordForm() {
             type="button"
             className="cu-link"
             onClick={() => router.push("/login")}
-            style={{ background: "none", border: "none", fontSize: 13, color: "#9ca3af", cursor: "pointer" }}
+            style={{ background: "none", border: "none", fontSize: 13, color: "var(--color-text-muted)", cursor: "pointer" }}
           >
             로그인 화면으로 돌아가기
           </button>
         </div>
-      </div>
-    </div>
+    </AuthCardShell>
   );
 }
-
-const pageStyle: React.CSSProperties = {
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "#f0f0f2",
-  padding: "24px 16px",
-};
-
-const cardStyle: React.CSSProperties = {
-  width: "100%",
-  maxWidth: 420,
-  background: "#ffffff",
-  borderRadius: 12,
-  padding: "48px 40px",
-  boxSizing: "border-box",
-};
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -176,7 +146,7 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 4,
   border: "1px solid transparent",
   background: "#ebebeb",
-  color: "#0B0C0E",
+  color: "var(--color-black)",
   fontSize: 15,
   outline: "none",
   boxSizing: "border-box",
@@ -185,19 +155,19 @@ const inputStyle: React.CSSProperties = {
 const styleTag = (
   <style>{`
     .cu-input { transition: border-color .12s ease; }
-    .cu-input::placeholder { color: #9ca3af; }
-    .cu-input:focus { border-color: #0B0C0E; }
+    .cu-input::placeholder { color: var(--color-text-faint); }
+    .cu-input:focus { border-color: var(--color-black); }
     .cu-input:-webkit-autofill,
     .cu-input:-webkit-autofill:hover,
     .cu-input:-webkit-autofill:focus,
     .cu-input:-webkit-autofill:active {
-      -webkit-text-fill-color: #0B0C0E;
+      -webkit-text-fill-color: var(--color-black);
       -webkit-box-shadow: 0 0 0 1000px #ebebeb inset;
       box-shadow: 0 0 0 1000px #ebebeb inset;
-      caret-color: #0B0C0E;
+      caret-color: var(--color-black);
       transition: background-color 9999s ease-in-out 0s;
     }
     .cu-link { transition: color .12s ease; }
-    .cu-link:hover, .cu-link:active { color: #0B0C0E; }
+    .cu-link:hover, .cu-link:active { color: var(--color-black); }
   `}</style>
 );

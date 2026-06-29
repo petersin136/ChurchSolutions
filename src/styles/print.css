@@ -141,7 +141,7 @@
     z-index: auto !important;
     background: #fafaf7 !important;
     color: #1a1a1a !important;
-    font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font-family: var(--font-sans);
     font-size: 12pt;
     line-height: 1.6;
   }

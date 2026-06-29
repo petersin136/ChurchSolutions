@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--pc-space-2);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-weight: var(--pc-weight-semibold);
   line-height: 1;
   border-radius: var(--pc-radius);
@@ -161,7 +161,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--pc-space-1-5);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
 }
 
 .PcTextarea_wrapFullWidth__s6HqW {
@@ -207,7 +207,7 @@
   border: none;
   border-radius: var(--pc-radius);
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-base);
   line-height: var(--pc-leading-relaxed);
   color: var(--pc-text-strong);
@@ -285,7 +285,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--pc-space-1-5);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   position: relative;
 }
 
@@ -346,7 +346,7 @@
   padding: 0 var(--pc-space-3);
   border: none;
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   color: var(--pc-text-strong);
   text-align: left;
   cursor: pointer;
@@ -432,7 +432,7 @@
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius);
   background: var(--pc-surface);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-sm);
   color: var(--pc-text-strong);
   outline: none;
@@ -517,7 +517,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--pc-space-1-5);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   width: 100%;
 }
 
@@ -568,7 +568,7 @@
   min-width: 0;
   border: none;
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   color: var(--pc-text-strong);
   outline: none;
   box-sizing: border-box;
@@ -624,7 +624,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-weight: var(--pc-weight-medium);
   border-radius: var(--pc-radius-xl);
   white-space: nowrap;
@@ -684,7 +684,7 @@
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius-md);
   box-sizing: border-box;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   color: var(--pc-text-strong);
 }
 
@@ -772,7 +772,7 @@
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-weight: var(--pc-weight-semibold);
   color: var(--pc-on-accent);
   box-sizing: border-box;
@@ -834,7 +834,7 @@
   align-items: center;
   text-align: center;
   padding: var(--pc-space-12);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   box-sizing: border-box;
 }
 
@@ -922,7 +922,7 @@
   border-radius: var(--pc-radius-lg);
   background: var(--pc-surface);
   box-shadow: var(--pc-shadow-lg);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   color: var(--pc-text-strong);
   outline: none;
   opacity: 0;
@@ -1054,7 +1054,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--pc-space-1-5);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   position: relative;
 }
 
@@ -1124,7 +1124,7 @@
   padding: 0 var(--pc-space-3);
   border: none;
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   color: var(--pc-text-strong);
   text-align: left;
   cursor: pointer;
@@ -1262,7 +1262,7 @@
   min-width: 0;
   border: none;
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-base);
   font-weight: var(--pc-weight-semibold);
   color: var(--pc-text-strong);
@@ -1319,7 +1319,7 @@
   border: 1px solid transparent;
   border-radius: var(--pc-radius);
   background: transparent;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-sm);
   color: var(--pc-text-strong);
   cursor: pointer;
@@ -1379,7 +1379,7 @@
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius);
   background: var(--pc-surface);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-sm);
   color: var(--pc-text-strong);
   cursor: pointer;
@@ -1409,7 +1409,7 @@
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius);
   background: var(--pc-surface);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-sm);
   color: var(--pc-text-strong);
   cursor: pointer;
@@ -1437,7 +1437,7 @@
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius);
   background: var(--pc-surface);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   font-size: var(--pc-text-sm);
   font-weight: var(--pc-weight-medium);
   color: var(--pc-text-strong);
@@ -1489,7 +1489,7 @@
   border-radius: var(--pc-radius);
   background: var(--pc-surface);
   box-shadow: var(--pc-shadow-md);
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
   pointer-events: auto;
   opacity: 0;
   transform: translateX(var(--pc-space-8));
@@ -1603,7 +1603,7 @@
 .PcTable_wrap__ZXp5F {
   position: relative;
   width: 100%;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
 }
 
 .PcTable_table__7bufk {
@@ -1831,7 +1831,7 @@
   \*******************************************************************************************************************************************************************************************************************************************************************************/
 .PcTabs_root__nyv_0 {
   width: 100%;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
 }
 
 .PcTabs_list__BgYUU {
@@ -2014,7 +2014,7 @@
   border-radius: var(--pc-radius);
   border: 1px solid var(--pc-border);
   box-sizing: border-box;
-  font-family: var(--pc-font);
+  font-family: var(--font-sans);
 }
 
 .PcSegmented_rootFullWidth__4W_C9 {

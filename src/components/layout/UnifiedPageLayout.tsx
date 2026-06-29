@@ -202,7 +202,7 @@ export function UnifiedPageLayout({
   return (
     <div
       style={{
-        fontFamily: "'Inter','Noto Sans KR',-apple-system,sans-serif",
+        fontFamily: "var(--font-sans)",
         background: LAYOUT.mainBg,
         position: "relative" as const,
         top: "auto",
