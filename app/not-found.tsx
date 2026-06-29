@@ -31,7 +31,7 @@ export default function NotFound() {
           textDecoration: "none",
         }}
       >
-        ⛪ 슈퍼플래너 홈으로
+        church up 홈으로
       </Link>
     </div>
   );
