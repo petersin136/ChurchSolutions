@@ -140,6 +140,10 @@ export default function ChurchSearchPage() {
   };
 
   const handleCreateChurch = () => {
+    const prefill = submittedQuery.trim() || query.trim();
+    if (prefill && !newChurchName.trim()) {
+      setNewChurchName(prefill);
+    }
     setCreateMode(true);
     setCreateError(null);
   };

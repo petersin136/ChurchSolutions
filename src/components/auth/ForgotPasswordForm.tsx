@@ -22,12 +22,12 @@ export default function ForgotPasswordForm() {
     setLoading(true);
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/login` : undefined,
+      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
     });
 
     setLoading(false);
     if (resetError) {
-      setError(resetError.message);
+      setError("재설정 메일 발송에 실패했어요. 이메일 주소를 확인해 주세요.");
       return;
     }
     setSent(true);

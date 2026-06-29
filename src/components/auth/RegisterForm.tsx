@@ -8,6 +8,24 @@ type SuccessPhase = "sent" | "verified" | null;
 
 const RESEND_COOLDOWN_SEC = 30;
 
+const toKoreanResendError = (raw?: string): string => {
+  const msg = (raw ?? "").toLowerCase();
+  if (msg.includes("after") && msg.includes("seconds")) {
+    const m = msg.match(/(\d+)\s*seconds?/);
+    const sec = m ? m[1] : null;
+    return sec
+      ? `보안을 위해 ${sec}초 후에 다시 시도할 수 있어요.`
+      : "잠시 후에 다시 시도해주세요.";
+  }
+  if (msg.includes("rate limit") || msg.includes("too many")) {
+    return "요청이 많아요. 잠시 후 다시 시도해주세요.";
+  }
+  if (msg.includes("already confirmed") || msg.includes("already registered")) {
+    return "이미 인증이 완료된 계정이에요. 로그인해주세요.";
+  }
+  return "인증 메일 재발송에 실패했어요. 잠시 후 다시 시도해주세요.";
+};
+
 export default function RegisterForm() {
   const isRegistering = useRef(false);
   const { loading: authLoading, setRegistering } = useAuth();
@@ -143,7 +161,7 @@ export default function RegisterForm() {
       const result = await res.json();
 
       if (!res.ok) {
-        setVerifyMessage(result.error ?? "인증 메일 재발송에 실패했습니다.");
+        setVerifyMessage(toKoreanResendError(result.error));
         return;
       }
 
