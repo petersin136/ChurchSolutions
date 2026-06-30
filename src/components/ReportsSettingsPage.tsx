@@ -1325,16 +1325,26 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
       new Promise<void>((r) => setTimeout(r, 3000)),
     ]);
 
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    type Html2CanvasFn = (el: HTMLElement, opts?: any) => Promise<HTMLCanvasElement>;
-    type JsPdfCtor = any;
-    /* eslint-enable @typescript-eslint/no-explicit-any */
+    type Html2CanvasFn = (el: HTMLElement, opts?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
+    type JsPdfInstance = {
+      addPage: () => void;
+      addImage: (data: string, format: string, x: number, y: number, w: number, h: number) => void;
+      output: (type: string) => Blob;
+      setDrawColor: (r: number) => void;
+      setLineWidth: (width: number) => void;
+      line: (x1: number, y1: number, x2: number, y2: number) => void;
+      setFontSize: (size: number) => void;
+      setTextColor: (r: number) => void;
+      text: (text: string, x: number, y: number, opts?: { align?: string }) => void;
+    };
+    type JsPdfCtor = new (orientation: string, unit: string, format: string) => JsPdfInstance;
     const [h2cMod, pdfMod] = await Promise.all([import("html2canvas-pro"), import("jspdf")]);
     const h2cAny = h2cMod as { default?: Html2CanvasFn };
     const html2canvas = (h2cAny.default ?? (h2cMod as unknown as Html2CanvasFn)) as Html2CanvasFn;
     const pdfModAny = pdfMod as { default?: JsPdfCtor; jsPDF?: JsPdfCtor };
-    const JsPDF: JsPdfCtor = pdfModAny.default ?? pdfModAny.jsPDF;
-    if (!html2canvas || !JsPDF) throw new Error("PDF 라이브러리를 불러오지 못했습니다.");
+    const JsPDFRaw = pdfModAny.default ?? pdfModAny.jsPDF;
+    if (!html2canvas || !JsPDFRaw) throw new Error("PDF 라이브러리를 불러오지 못했습니다.");
+    const JsPDF = JsPDFRaw as JsPdfCtor;
 
     // 캡처 전 — 잘림 방지를 위한 cuttable 경계(y) 측정
     // 각 <tr> 끝점 + KPI 카드/섹션 사이 공백을 페이지 경계 후보로 사용
