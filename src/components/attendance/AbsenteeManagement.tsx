@@ -10,6 +10,7 @@ import { WorkflowCardModal, WorkflowTemplatePicker } from "@/components/workflow
 import { useWorkflowPermissions } from "@/lib/permissions";
 import type { WorkflowMemberRef } from "@/lib/workflow";
 import { GitBranch } from "lucide-react";
+import { MemberPhotoCircle } from "@/components/common/MemberPhoto";
 
 export interface AbsenteeManagementProps {
   /** Supabase 미사용 시 사용할 성도 목록 */
@@ -431,16 +432,13 @@ export function AbsenteeManagement({
                       >
                         <span className="text-center tabular-nums text-gray-500">{num}</span>
                         <div className="flex min-w-0 items-center gap-1">
-                          {member.photo ? (
-                            <div
-                              className="h-4 w-4 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
-                              style={{ backgroundImage: `url(${member.photo})` }}
-                            />
-                          ) : (
-                            <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 text-[8px] font-semibold text-gray-600">
-                              {memberSurnameInitial(member.name)}
-                            </div>
-                          )}
+                          <MemberPhotoCircle
+                            photo={member.photo}
+                            name={member.name}
+                            getInitial={memberSurnameInitial}
+                            imageClassName="h-4 w-4 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
+                            fallbackClassName="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 text-[8px] font-semibold text-gray-600"
+                          />
                           <span className="min-w-0 truncate font-medium text-gray-900">{member.name}</span>
                         </div>
                         <span className="truncate text-center text-gray-600">{member.dept || "·"}</span>
@@ -531,16 +529,13 @@ export function AbsenteeManagement({
                           <td className="px-2 py-3 text-center align-middle tabular-nums text-gray-500">{num}</td>
                           <td className="overflow-hidden px-3 py-3 align-middle font-medium">
                             <div className="flex min-w-0 items-center gap-2">
-                              {member.photo ? (
-                                <div
-                                  className="h-7 w-7 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
-                                  style={{ backgroundImage: `url(${member.photo})` }}
-                                />
-                              ) : (
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-semibold text-gray-600">
-                                  {memberSurnameInitial(member.name)}
-                                </div>
-                              )}
+                              <MemberPhotoCircle
+                                photo={member.photo}
+                                name={member.name}
+                                getInitial={memberSurnameInitial}
+                                imageClassName="h-7 w-7 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
+                                fallbackClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-semibold text-gray-600"
+                              />
                               <div className="min-w-0 truncate" title={member.name}>
                                 {member.name}
                               </div>

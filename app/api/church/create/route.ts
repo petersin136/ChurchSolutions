@@ -3,6 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase";
 
 interface CreateChurchBody {
   churchName: string;
+  pastorName?: string | null;
 }
 
 export async function POST(request: Request) {
@@ -12,6 +13,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Partial<CreateChurchBody>;
     const churchName = body.churchName?.trim();
+    const pastorName = body.pastorName?.trim() || null;
 
     if (!churchName) {
       return NextResponse.json(
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
 
     const { data: churchData, error: churchError } = await supabase
       .from("churches")
-      .insert({ name: churchName })
+      .insert({ name: churchName, pastor_name: pastorName })
       .select("id")
       .single();
 

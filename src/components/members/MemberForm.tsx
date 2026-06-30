@@ -339,22 +339,9 @@ export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormP
           alert("이미지 업로드 실패: " + upErr.message);
         }
         if (!upErr) {
-          const { data: signed } = await supabase.storage.from("member-photos").createSignedUrl(path, 60 * 60 * 24 * 365);
-          if (signed?.signedUrl) {
-            await supabase.from("members").update({ photo: signed.signedUrl }).eq("id", memberId).eq("church_id", getChurchId());
-            savedPhotoUrl = signed.signedUrl;
-            const imageUrl = signed.signedUrl;
-            console.log("=== 프로필 이미지 URL 디버깅 (MemberForm) ===");
-            console.log("생성된 URL:", imageUrl);
-            fetch(imageUrl)
-              .then((res) => {
-                console.log("이미지 접근 상태코드:", res.status);
-                console.log("Content-Type:", res.headers.get("content-type"));
-                if (!res.ok) console.error("이미지 접근 실패! 상태:", res.status, res.statusText);
-              })
-              .catch((err) => console.error("이미지 fetch 에러:", err));
+            await supabase.from("members").update({ photo: path }).eq("id", memberId).eq("church_id", getChurchId());
+            savedPhotoUrl = path;
           }
-        }
       }
       const saved: Member = {
         ...(member || {}),

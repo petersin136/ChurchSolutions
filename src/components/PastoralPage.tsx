@@ -9,6 +9,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAppData, type RawAttendanceRow } from "@/contexts/AppDataContext";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
+import {
+  getMemberPhotoForSave,
+  isEphemeralMemberPhotoUrl,
+} from "@/lib/member-photo";
+import { MemberPhoto } from "@/components/common/MemberPhoto";
 import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, GitBranch, BookOpenCheck } from "lucide-react";
 import { WorkflowBoard } from "@/components/workflow";
 import { CeremonyBoard } from "@/components/ceremony";
@@ -1935,7 +1940,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                             <td style={{ padding: "10px 14px", minWidth: 0 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                                 <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: isLeader ? `linear-gradient(135deg, ${C.accent}, ${C.purple})` : `linear-gradient(135deg, ${C.accentBg}, ${C.tealBg})`, color: isLeader ? "var(--color-primary-on)" : C.text, overflow: "hidden", flexShrink: 0 }}>
-                                  {m.photo ? <img src={m.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.name || "?")[0]}
+                                    <MemberPhoto photo={m.photo} name={m.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 </div>
                                 <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ fontWeight: 700, fontSize: listMobName, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{m.name}</span>{isLeader && <span style={{ fontSize: mob ? 9 : 10, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>목자</span>}</div><div style={{ fontSize: listMobRole, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
                               </div>
@@ -2071,11 +2076,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                                       color: C.text,
                                     }}
                                   >
-                                    {m.photo ? (
-                                      <img src={m.photo} alt="" className="h-full w-full object-cover" />
-                                    ) : (
-                                      (m.name || "?")[0]
-                                    )}
+                                    <MemberPhoto photo={m.photo} name={m.name} className="h-full w-full object-cover" />
                                   </div>
                                   <div className="min-w-0">
                                     <div className="truncate font-medium text-gray-900">{m.name}</div>
@@ -2508,7 +2509,7 @@ function PrayerModal({
     >
         <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 16, marginBottom: 16, borderBottom: `1px solid ${C.border}` }}>
           <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: C.text, border: `1px solid ${C.border}` }}>
-            {member.photo ? <img src={member.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (member.name || "?")[0]}
+            <MemberPhoto photo={member.photo} name={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div>
             <span style={{ fontSize: 17, fontWeight: 700, color: C.text }}>{member.name}</span>
@@ -2834,7 +2835,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: mob ? 8 : 10, minWidth: 0 }}>
                       <div style={{ width: mob ? 32 : 44, height: mob ? 32 : 44, borderRadius: "50%", background: "color-mix(in srgb, var(--color-primary) 16%, var(--color-surface-elevated))", color: "var(--color-primary)", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: mob ? 12 : 16, overflow: "hidden", flexShrink: 0 }}>
-                        {member.photo ? <img src={member.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (member.name || "?")[0]}
+                        <MemberPhoto photo={member.photo} name={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       </div>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: mob ? 13 : 16, color: "var(--color-text)", display: "flex", alignItems: "center", gap: 6 }}>
@@ -2973,7 +2974,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
       <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${C.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 20, overflow: "hidden", flexShrink: 0 }}>
-            {member.photo ? <img src={member.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (member.name || "?")[0]}
+            <MemberPhoto photo={member.photo} name={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 18, color: C.text }}>{member.name}</div>
@@ -3409,6 +3410,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [fSource, setFSource] = useState(""); const [fPrayer, setFPrayer] = useState(""); const [fMemo, setFMemo] = useState("");
   const [fGroup, setFGroup] = useState(""); const [fPhoto, setFPhoto] = useState("");
   const [fPhotoServerUrl, setFPhotoServerUrl] = useState("");
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [fVisitPath, setFVisitPath] = useState(""); const [fReferrerId, setFReferrerId] = useState(""); const [fJob, setFJob] = useState(""); const [fFirstVisitDate, setFFirstVisitDate] = useState(todayStr());
   const photoRef = useRef<HTMLInputElement>(null);
 
@@ -3602,6 +3604,15 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
   const saveMember = async () => {
     if (!fName.trim()) { toast("이름을 입력하세요", "err"); return; }
+    if (photoUploading) {
+      toast("사진 업로드 중입니다. 잠시 후 저장해 주세요.", "warn");
+      return;
+    }
+    const photoToSave = getMemberPhotoForSave(fPhotoServerUrl, fPhoto);
+    if ((fPhoto.trim() || fPhotoServerUrl.trim()) && !photoToSave) {
+      toast("사진 업로드가 완료될 때까지 기다려 주세요.", "warn");
+      return;
+    }
     if (!supabase) {
       console.error("=== DB 저장 불가: Supabase 클라이언트 없음 ===");
       toast("저장할 수 없습니다. Supabase 연결을 확인하세요.", "err");
@@ -3623,7 +3634,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       prayer: fPrayer.trim() || null,
       memo: fMemo.trim() || null,
       mokjang: fGroup || null,
-      photo: (fPhotoServerUrl || fPhoto) || null,
+      photo: photoToSave,
       visit_path: fVisitPath || null,
       referrer_id: fReferrerId || null,
       job: fJob.trim() || null,
@@ -3840,29 +3851,32 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     if (!file) return;
     const localPreview = URL.createObjectURL(file);
     setFPhoto(localPreview);
+    setFPhotoServerUrl("");
+    setPhotoUploading(true);
     try {
       const compressed = await compressImage(file, 400, 0.7);
       const fd = new FormData();
       fd.append("file", compressed);
       const r = await fetch("/api/upload-photo", { method: "POST", body: fd });
-      const data = await r.json();
-      if (data.url) {
-        const serverUrl = data.url;
-        const testImg = new Image();
-        testImg.onload = () => {
-          URL.revokeObjectURL(localPreview);
-          setFPhoto(serverUrl);
-          setFPhotoServerUrl(serverUrl);
-        };
-        testImg.onerror = () => {
-          setFPhotoServerUrl(serverUrl);
-        };
-        testImg.src = serverUrl;
-      } else toast("업로드 실패", "err");
+      const data = (await r.json()) as { url?: string; path?: string; error?: string };
+      if (!r.ok || (!data.path && !data.url)) {
+        toast(data.error || "업로드 실패", "err");
+        URL.revokeObjectURL(localPreview);
+        setFPhoto("");
+        return;
+      }
+      URL.revokeObjectURL(localPreview);
+      setFPhoto(data.url || localPreview);
+      setFPhotoServerUrl(data.path || data.url || "");
     } catch {
       toast("사진 압축 또는 업로드 실패", "err");
+      URL.revokeObjectURL(localPreview);
+      setFPhoto("");
+      setFPhotoServerUrl("");
+    } finally {
+      setPhotoUploading(false);
+      e.target.value = "";
     }
-    e.target.value = "";
   };
 
   const topAdd = () => {
@@ -4069,12 +4083,19 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               }}
               aria-label="프로필 사진 선택"
             />
-            {fPhoto ? (
+            {fPhoto && isEphemeralMemberPhotoUrl(fPhoto) ? (
               <img
                 src={fPhoto}
                 alt="프로필 미리보기"
-                onError={() => {}}
-                onLoad={() => {}}
+                style={{
+                  position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
+                  objectFit: "cover", borderRadius: "50%", display: "block", zIndex: 0,
+                }}
+              />
+            ) : (fPhoto || fPhotoServerUrl) ? (
+              <MemberPhoto
+                photo={fPhotoServerUrl || fPhoto}
+                name={fName || "?"}
                 style={{
                   position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
                   objectFit: "cover", borderRadius: "50%", display: "block", zIndex: 0,
@@ -4138,7 +4159,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         )}
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
           <Btn variant="ghost" onClick={closeMemberModal}>취소</Btn>
-          <Btn onClick={saveMember}>저장</Btn>
+          <Btn onClick={saveMember} disabled={photoUploading}>{photoUploading ? "사진 업로드 중…" : "저장"}</Btn>
         </div>
       </Modal>
 

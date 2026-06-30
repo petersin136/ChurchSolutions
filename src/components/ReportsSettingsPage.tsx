@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback, useContext } from "react";
 import type { DB, Attendance, Income, Expense, Settings, Member } from "@/types/db";
-import { DEFAULT_DB } from "@/types/db";
+import { DEFAULT_DB, DEFAULT_SETTINGS } from "@/types/db";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useTheme, type ThemeColor } from "@/contexts/ThemeContext";
 import { getChurchId } from "@/lib/tenant";
@@ -141,6 +141,19 @@ interface ReportsSettingsPageProps {
   mode?: "both" | "reports" | "settings";
 }
 
+function normalizeRestoredDb(parsed: Partial<DB>): DB {
+  return {
+    ...DEFAULT_DB,
+    ...parsed,
+    settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
+    attendance: parsed.attendance ?? {},
+    attendanceReasons: parsed.attendanceReasons ?? {},
+    notes: parsed.notes ?? {},
+    budget: parsed.budget ?? {},
+    checklist: parsed.checklist ?? {},
+  };
+}
+
 function DataBackupPanel({
   db,
   setDb,
@@ -151,6 +164,7 @@ function DataBackupPanel({
   const mob = useIsMobile();
   const importRef = useRef<HTMLInputElement>(null);
   const [resetLoading, setResetLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
 
   const exportBackup = useCallback(() => {
     const json = JSON.stringify(db);
@@ -168,25 +182,68 @@ function DataBackupPanel({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+      const input = e.target;
       const reader = new FileReader();
       reader.onload = () => {
-        try {
-          const parsed = JSON.parse(reader.result as string) as Partial<DB>;
-          const merged = { ...db, ...parsed };
-          setDb(() => merged);
-          if (saveDb) saveDb(merged).then(() => toast("복원 완료", "ok")).catch(() => toast("저장 실패", "err"));
-          else {
-            save();
+        void (async () => {
+          try {
+            let parsed: Partial<DB>;
+            try {
+              parsed = JSON.parse(reader.result as string) as Partial<DB>;
+            } catch {
+              toast("잘못된 백업 파일입니다", "err");
+              return;
+            }
+            if (
+              !window.confirm(
+                "복원하면 현재 교회의 모든 데이터가 백업 파일 내용으로 교체됩니다. 기존 데이터는 삭제됩니다. 계속할까요?",
+              )
+            ) {
+              return;
+            }
+            if (!saveDb) {
+              toast("복원을 위해 로그인 후 다시 시도하세요.", "err");
+              return;
+            }
+            let cid: string;
+            try {
+              cid = getChurchId();
+            } catch {
+              toast("교회 정보가 없습니다. 로그인 후 다시 시도하세요.", "err");
+              return;
+            }
+            setRestoreLoading(true);
+            const res = await fetch("/api/reset", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ scope: "all", churchId: cid }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data?.ok) {
+              throw new Error(data?.message || res.statusText || "데이터 삭제 실패");
+            }
+            const restored = normalizeRestoredDb(parsed);
+            setDb(() => restored);
+            await saveDb(restored);
+            await saveSettingsToSupabase(restored.settings);
             toast("복원 완료", "ok");
+            window.location.reload();
+          } catch (err) {
+            console.error("복원 오류:", err);
+            toast(err instanceof Error ? err.message : "복원 중 오류가 발생했습니다", "err");
+          } finally {
+            setRestoreLoading(false);
+            input.value = "";
           }
-        } catch {
-          toast("잘못된 백업 파일입니다", "err");
-        }
+        })();
+      };
+      reader.onerror = () => {
+        toast("백업 파일을 읽을 수 없습니다", "err");
+        input.value = "";
       };
       reader.readAsText(file);
-      e.target.value = "";
     },
-    [db, setDb, save, saveDb, toast]
+    [setDb, saveDb, toast],
   );
 
   const clearAllData = useCallback(async () => {
@@ -211,9 +268,13 @@ function DataBackupPanel({
         if (!res.ok || !data?.ok) {
           throw new Error(data?.message || res.statusText || "전체 초기화 요청 실패");
         }
+        const resetSettings = { ...DEFAULT_SETTINGS, churchName: db.settings.churchName ?? "" };
+        await saveSettingsToSupabase(resetSettings);
+        setDb({ ...DEFAULT_DB, settings: resetSettings });
+      } else {
+        const resetSettings = { ...DEFAULT_SETTINGS, churchName: db.settings.churchName ?? "" };
+        setDb({ ...DEFAULT_DB, settings: resetSettings });
       }
-      setDb({ ...DEFAULT_DB });
-      save();
       toast("전체 초기화 완료", "warn");
       window.location.reload();
     } catch (err) {
@@ -222,7 +283,7 @@ function DataBackupPanel({
     } finally {
       setResetLoading(false);
     }
-  }, [setDb, save, saveDb, toast]);
+  }, [db.settings.churchName, setDb, saveDb, toast]);
 
   return (
     <PcCard padding="lg" elevation="sm" className={settingsStyles.settingCard}>
@@ -243,11 +304,17 @@ function DataBackupPanel({
         <PcButton type="button" variant="secondary" fullWidth onClick={exportBackup}>
           데이터 백업
         </PcButton>
-        <PcButton type="button" variant="secondary" fullWidth onClick={() => importRef.current?.click()}>
-          데이터 복원
+        <PcButton
+          type="button"
+          variant="secondary"
+          fullWidth
+          onClick={() => importRef.current?.click()}
+          disabled={restoreLoading || resetLoading}
+        >
+          {restoreLoading ? "복원 중…" : "데이터 복원"}
         </PcButton>
         <input ref={importRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={importBackup} />
-        <PcButton type="button" variant="danger" fullWidth onClick={clearAllData} disabled={resetLoading}>
+        <PcButton type="button" variant="danger" fullWidth onClick={clearAllData} disabled={resetLoading || restoreLoading}>
           {resetLoading ? "처리 중…" : "전체 초기화"}
         </PcButton>
       </div>

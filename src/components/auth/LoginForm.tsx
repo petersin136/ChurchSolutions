@@ -1,20 +1,39 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthCardShell, AuthPageLoading } from "@/components/auth/AuthCardShell";
 import { GoogleLogo, KakaoLogo } from "@/components/auth/SocialBrandIcons";
+import {
+  clearPendingLoginEmail,
+  getInitialLoginEmail,
+  loadPendingLoginEmail,
+} from "@/lib/pending-login";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
-export default function LoginForm() {
+function LoginFormInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(getInitialLoginEmail);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const emailFromQuery = searchParams.get("email")?.trim();
+    const pendingEmail = loadPendingLoginEmail();
+
+    if (emailFromQuery) {
+      setEmail(emailFromQuery);
+      return;
+    }
+
+    if (pendingEmail) setEmail(pendingEmail);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!authLoading && user) router.replace("/");
@@ -46,6 +65,7 @@ export default function LoginForm() {
       return;
     }
 
+    clearPendingLoginEmail();
     router.replace("/");
   };
 
@@ -107,9 +127,7 @@ export default function LoginForm() {
             style={inputStyle}
           />
           <div style={{ height: 12 }} />
-          <input
-            className="cu-input"
-            type="password"
+          <PasswordInput
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
@@ -118,7 +136,6 @@ export default function LoginForm() {
             placeholder="비밀번호"
             required
             autoComplete="new-password"
-            style={inputStyle}
           />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
@@ -252,6 +269,14 @@ export default function LoginForm() {
           Google로 시작하기
         </button>
     </AuthCardShell>
+  );
+}
+
+export default function LoginForm() {
+  return (
+    <Suspense fallback={<AuthPageLoading />}>
+      <LoginFormInner />
+    </Suspense>
   );
 }
 

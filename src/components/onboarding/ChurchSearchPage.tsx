@@ -13,6 +13,7 @@ import styles from "./ChurchSearchPage.module.css";
 export interface ChurchSearchItem {
   id: string;
   name: string;
+  pastor_name: string | null;
 }
 
 export default function ChurchSearchPage() {
@@ -29,8 +30,11 @@ export default function ChurchSearchPage() {
   const [modalSelectedId, setModalSelectedId] = useState<string | null>(null);
   const [createMode, setCreateMode] = useState(false);
   const [newChurchName, setNewChurchName] = useState("");
+  const [newPastorName, setNewPastorName] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   const selectedChurch = useMemo(
     () => results.find((church) => church.id === selectedId) ?? null,
@@ -57,8 +61,8 @@ export default function ChurchSearchPage() {
     setSearchError(null);
 
     const { data, error } = await supabase
-      .from("churches")
-      .select("id, name")
+      .from("churches_public")
+      .select("id, name, pastor_name")
       .ilike("name", `%${trimmed}%`)
       .limit(20);
 
@@ -115,9 +119,41 @@ export default function ChurchSearchPage() {
     setModalOpen(false);
   };
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!selectedChurch) return;
-    console.log("교회 신청:", selectedChurch);
+
+    if (!session?.access_token) {
+      setApplyError("로그인이 필요합니다.");
+      return;
+    }
+
+    setApplyError(null);
+    setApplyLoading(true);
+
+    try {
+      const res = await fetch("/api/church/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ churchId: selectedChurch.id }),
+      });
+
+      const result = (await res.json()) as { ok?: boolean; error?: string };
+
+      if (!res.ok || !result.ok) {
+        setApplyError(result.error || "교회 신청에 실패했습니다. 다시 시도해 주세요.");
+        setApplyLoading(false);
+        return;
+      }
+
+      await refreshChurch();
+      router.push("/");
+    } catch {
+      setApplyError("교회 신청 중 오류가 발생했습니다. 다시 시도해 주세요.");
+      setApplyLoading(false);
+    }
   };
 
   const handleCreateChurch = () => {
@@ -127,6 +163,7 @@ export default function ChurchSearchPage() {
     }
     setCreateMode(true);
     setCreateError(null);
+    setModalOpen(false);
   };
 
   const handleLogout = async () => {
@@ -137,6 +174,7 @@ export default function ChurchSearchPage() {
   const handleCancelCreate = () => {
     setCreateMode(false);
     setNewChurchName("");
+    setNewPastorName("");
     setCreateError(null);
     setCreating(false);
   };
@@ -158,7 +196,10 @@ export default function ChurchSearchPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token ?? ""}`,
         },
-        body: JSON.stringify({ churchName: trimmed }),
+        body: JSON.stringify({
+          churchName: trimmed,
+          pastorName: newPastorName.trim() || null,
+        }),
       });
 
       const result = (await res.json()) as { ok?: boolean; error?: string };
@@ -236,7 +277,9 @@ export default function ChurchSearchPage() {
 
         {createMode ? (
           <div className={styles.pickSection}>
-            <p className={styles.pickHint}>새로 개설할 교회 이름을 입력해 주세요.</p>
+            <p className={styles.pickHint}>
+              같은 이름의 교회가 이미 있어도 새로 개설할 수 있어요. 개설할 교회 이름을 확인해 주세요.
+            </p>
             <input
               className={styles.input}
               type="text"
@@ -245,6 +288,15 @@ export default function ChurchSearchPage() {
               onChange={(e) => setNewChurchName(e.target.value)}
               disabled={creating}
               aria-label="개설할 교회 이름"
+            />
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="담임목사 이름 (선택)"
+              value={newPastorName}
+              onChange={(e) => setNewPastorName(e.target.value)}
+              disabled={creating}
+              aria-label="담임목사 이름"
             />
             {createError ? (
               <p className={styles.emptyDesc} role="alert">
@@ -308,23 +360,37 @@ export default function ChurchSearchPage() {
               <div className={styles.selectedCard}>
                 <p className={styles.selectedLabel}>선택한 교회</p>
                 <p className={styles.selectedName}>{selectedChurch.name}</p>
+                {selectedChurch.pastor_name ? (
+                  <p className={styles.selectedMeta}>담임목사 {selectedChurch.pastor_name}</p>
+                ) : null}
               </div>
             ) : (
-              <p className={styles.pickHint}>검색 결과에서 교회를 선택해 주세요.</p>
+              <p className={styles.pickHint}>
+                같은 이름의 교회가 여러 개일 수 있어요. 담임목사를 확인해 선택하거나, 새로 개설할 수 있어요.
+              </p>
             )}
 
             <button type="button" className={styles.btnOutline} onClick={openListModal}>
               {`검색 결과 ${results.length}건 보기`}
             </button>
 
+            <button type="button" className={styles.createLink} onClick={handleCreateChurch}>
+              검색 결과에 우리 교회가 없나요? 새 교회 개설하기
+            </button>
+
             <div className={styles.applyBar}>
+              {applyError ? (
+                <p className={styles.emptyDesc} role="alert">
+                  {applyError}
+                </p>
+              ) : null}
               <button
                 type="button"
                 className={styles.btnPrimary}
-                disabled={!selectedChurch}
-                onClick={handleApply}
+                disabled={!selectedChurch || applyLoading}
+                onClick={() => void handleApply()}
               >
-                이 교회로 신청하기
+                {applyLoading ? "신청 중..." : "이 교회로 신청하기"}
               </button>
             </div>
           </div>
@@ -335,21 +401,26 @@ export default function ChurchSearchPage() {
         open={modalOpen && showList}
         onClose={handleModalClose}
         title="검색 결과"
-        description="소속 교회를 선택해 주세요."
+        description="같은 이름의 교회가 여러 개일 수 있어요. 담임목사를 확인해 선택하거나, 새로 개설할 수 있어요."
         size="md"
         footer={
-          <div className={styles.modalFooter}>
-            <button type="button" className={styles.btnModalSecondary} onClick={handleModalClose}>
-              취소
+          <div className={styles.modalFooterStack}>
+            <button type="button" className={styles.createLinkModal} onClick={handleCreateChurch}>
+              우리 교회가 목록에 없어요 · 새 교회 개설하기
             </button>
-            <button
-              type="button"
-              className={styles.btnPrimary}
-              disabled={!modalSelectedId}
-              onClick={handleModalConfirm}
-            >
-              선택 완료
-            </button>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.btnModalSecondary} onClick={handleModalClose}>
+                취소
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                disabled={!modalSelectedId}
+                onClick={handleModalConfirm}
+              >
+                선택 완료
+              </button>
+            </div>
           </div>
         }
       >
@@ -368,6 +439,11 @@ export default function ChurchSearchPage() {
                 onClick={() => setModalSelectedId(church.id)}
               >
                 <h2 className={styles.churchName}>{church.name}</h2>
+                {church.pastor_name ? (
+                  <p className={styles.meta}>담임목사 {church.pastor_name}</p>
+                ) : (
+                  <p className={styles.metaMuted}>담임목사 정보 없음</p>
+                )}
               </button>
             );
           })}

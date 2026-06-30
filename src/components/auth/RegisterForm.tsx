@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthCardShell, AuthPageLoading } from "@/components/auth/AuthCardShell";
+import { savePendingLoginEmail } from "@/lib/pending-login";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 type SuccessPhase = "sent" | "verified" | null;
 
@@ -27,6 +30,7 @@ const toKoreanResendError = (raw?: string): string => {
 };
 
 export default function RegisterForm() {
+  const router = useRouter();
   const isRegistering = useRef(false);
   const { loading: authLoading, setRegistering } = useAuth();
   const [email, setEmail] = useState("");
@@ -49,6 +53,37 @@ export default function RegisterForm() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [resendCooldown]);
+
+  useEffect(() => {
+    if (successPhase !== "sent" || !registeredEmail) return;
+
+    let cancelled = false;
+
+    const checkVerified = async () => {
+      try {
+        const res = await fetch("/api/auth/check-verification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: registeredEmail }),
+        });
+        const result = (await res.json()) as { verified?: boolean };
+        if (cancelled || !result.verified) return;
+
+        savePendingLoginEmail(registeredEmail);
+        router.replace("/login");
+      } catch {
+        // 폴링 실패는 무시하고 다음 주기에 재시도
+      }
+    };
+
+    void checkVerified();
+    const timer = window.setInterval(() => void checkVerified(), 4000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [successPhase, registeredEmail, router]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +131,7 @@ export default function RegisterForm() {
       }
 
       setRegisteredEmail(trimmedEmail);
+      savePendingLoginEmail(trimmedEmail);
       setSuccessPhase("sent");
       setVerifyMessage("");
       setInfoMessage("");
@@ -130,9 +166,8 @@ export default function RegisterForm() {
       }
 
       if (result.verified) {
-        setSuccessPhase("verified");
-        setVerifyMessage("");
-        setInfoMessage("");
+        savePendingLoginEmail(registeredEmail);
+        router.replace("/login");
         return;
       }
 
@@ -242,7 +277,9 @@ export default function RegisterForm() {
             <strong style={{ color: "var(--color-black)", fontWeight: 600 }}>{registeredEmail}</strong>
             {" "}주소로 인증 메일을 보냈습니다.
             <br />
-            메일함에서 인증을 완료한 뒤 아래 버튼을 눌러주세요.
+            메일함에서 인증을 완료하면 이 화면이 자동으로 로그인 페이지로 이동해요.
+            <br />
+            (메일 링크는 새 탭에서 열릴 수 있어요. 이 탭을 닫지 않고 기다려 주세요.)
           </div>
 
           {verifyMessage ? (
@@ -355,9 +392,7 @@ export default function RegisterForm() {
             style={inputStyle}
           />
           <div style={{ height: 12 }} />
-          <input
-            className="cu-input"
-            type="password"
+          <PasswordInput
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
@@ -366,12 +401,9 @@ export default function RegisterForm() {
             placeholder="비밀번호 (영문·숫자 포함 8자 이상)"
             required
             autoComplete="new-password"
-            style={inputStyle}
           />
           <div style={{ height: 12 }} />
-          <input
-            className="cu-input"
-            type="password"
+          <PasswordInput
             value={confirmPassword}
             onChange={(e) => {
               setConfirmPassword(e.target.value);
@@ -380,7 +412,6 @@ export default function RegisterForm() {
             placeholder="비밀번호 확인"
             required
             autoComplete="new-password"
-            style={inputStyle}
           />
 
           {error ? (

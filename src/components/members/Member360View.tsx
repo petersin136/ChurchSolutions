@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { getChurchId, filterByChurch } from "@/lib/tenant";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import LazyChart from "../common/LazyChart";
+import { MemberPhoto } from "@/components/common/MemberPhoto";
 
 const STATUS_BADGE_COLOR: Record<string, string> = {
   활동: "#10B981",
@@ -169,11 +170,16 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
       {/* 프로필 헤더 */}
       <div className="bg-gradient-to-r from-[#1e40af] to-[#2d5a8e] text-white p-6 flex flex-wrap items-center gap-4">
         <div className="w-[100px] h-[100px] rounded-full border-4 border-white/30 overflow-hidden bg-white/20 flex items-center justify-center shrink-0">
-          {member.photo ? (
-            <img src={member.photo} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span className="font-bold text-white/90" style={{ fontSize: avatarNameDisplay.fontSize }}>{avatarNameDisplay.text}</span>
-          )}
+          <MemberPhoto
+            photo={member.photo}
+            name={member.name}
+            className="w-full h-full object-cover"
+            fallback={
+              <span className="font-bold text-white/90" style={{ fontSize: avatarNameDisplay.fontSize }}>
+                {avatarNameDisplay.text}
+              </span>
+            }
+          />
         </div>
         <div className="flex-1 min-w-[200px]">
           <h2 className="text-2xl font-bold truncate">{member.name}</h2>

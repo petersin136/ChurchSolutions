@@ -8,6 +8,7 @@ import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAppData } from "@/contexts/AppDataContext";
+import { MemberPhoto } from "@/components/common/MemberPhoto";
 
 const STATUS_MAP: Record<string, string> = {
   새가족: "badge-blue",
@@ -944,10 +945,10 @@ export function Modals({
               const present = Object.values(att).filter((v) => v === "p").length;
               const rate =
                 weeks > 0 ? Math.round((present / weeks) * 100) : 0;
-              const photo = m.photo ? (
-                <img
-                  src={m.photo}
-                  alt=""
+              const photo = (
+                <MemberPhoto
+                  photo={m.photo}
+                  name={m.name}
                   style={{
                     width: 72,
                     height: 72,
@@ -955,25 +956,26 @@ export function Modals({
                     objectFit: "cover",
                     boxShadow: "var(--shadow-md)",
                   }}
+                  fallback={
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: "var(--radius-full)",
+                        background:
+                          "linear-gradient(135deg,var(--blue-light),var(--teal-light))",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 28,
+                        fontWeight: 700,
+                        color: "var(--blue)",
+                      }}
+                    >
+                      {m.name[0]}
+                    </div>
+                  }
                 />
-              ) : (
-                <div
-                  style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: "var(--radius-full)",
-                    background:
-                      "linear-gradient(135deg,var(--blue-light),var(--teal-light))",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 28,
-                    fontWeight: 700,
-                    color: "var(--blue)",
-                  }}
-                >
-                  {m.name[0]}
-                </div>
               );
               const memberNotesList = (db.notes[m.id] || [])
                 .slice(-5)

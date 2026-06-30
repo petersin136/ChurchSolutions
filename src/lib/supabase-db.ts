@@ -1,9 +1,29 @@
 import { supabase } from "@/lib/supabase";
 import { getChurchId, filterByChurch } from "@/lib/tenant";
 import type { DB, Member, Note, NewFamilyProgram, Plan, Sermon, Visit, Income, Expense, AttStatus, WeekChecks } from "@/types/db";
-import { DEFAULT_DB } from "@/types/db";
+import { CATS_INCOME, DEFAULT_DB } from "@/types/db";
 
 const CURRENT_YEAR = new Date().getFullYear();
+const MEMBER_UUID_RE = /^[0-9a-f-]{36}$/i;
+const INCOME_CATEGORY_NAMES = new Set(CATS_INCOME.map((c) => c.name));
+
+function isMemberUuid(memberId: string): boolean {
+  return MEMBER_UUID_RE.test(memberId);
+}
+
+function parseBudgetKey(key: string): { category_type: string; category: string } {
+  const colonIdx = key.indexOf(":");
+  if (colonIdx >= 0) {
+    return {
+      category_type: key.slice(0, colonIdx),
+      category: key.slice(colonIdx + 1),
+    };
+  }
+  return {
+    category_type: INCOME_CATEGORY_NAMES.has(key) ? "수입" : "지출",
+    category: key,
+  };
+}
 
 /** 전체 삭제용 조건 (PostgREST는 조건 없이 delete 불가일 수 있음) */
 const MATCH_ALL_ID = "00000000-0000-0000-0000-000000000000";
@@ -151,7 +171,7 @@ export function toMember(r: Record<string, unknown>): Member {
     memo: r.memo as string | undefined,
     group: (r.mokjang ?? r.group) as string | undefined,
     mokjang: (r.mokjang ?? r.group) as string | undefined,
-    photo: r.photo as string | undefined,
+    photo: typeof r.photo === "string" && r.photo.trim() ? r.photo.trim() : undefined,
     created_at: created,
     updated_at: r.updated_at as string | undefined,
     createdAt: created ? new Date(created).toISOString().slice(0, 10) : undefined,
@@ -275,7 +295,7 @@ export function toExpense(r: Record<string, unknown>): Expense {
   };
 }
 
-/** 전체 초기화: FK 의존 순서대로 자식 테이블 먼저 삭제. settings 제외. (권장: 서버 POST /api/reset { scope: "all" }) */
+/** 전체 초기화: FK 의존 순서대로 자식 테이블 먼저 삭제 후 settings/church_settings 초기화. (권장: 서버 POST /api/reset { scope: "all" }) */
 const ALL_RESET_TABLES = [
   "school_attendance",
   "school_transfer_history",
@@ -306,6 +326,10 @@ const ALL_RESET_TABLES = [
   "sermons",
   "checklist",
   "service_types",
+  "events",
+  "church_calendar",
+  "departments",
+  "places",
   "members",
 ];
 
@@ -407,11 +431,8 @@ export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<
 /**
  * DB 전체를 Supabase에 저장 (insert/upsert만 수행).
  * 삭제는 이 함수에서 절대 하지 않음 — 사용자가 UI에서 명시적으로 삭제 버튼을 누를 때만 해당 컴포넌트에서 수행.
- * 설정(settings)은 /api/settings 또는 saveSettingsToSupabase에서 별도 저장.
- * 출석(attendance)은 AttendanceCheck.tsx에서 직접 upsert.
- * 노트(notes)는 PastoralPage에서 개별 저장.
- * 예산(budget)은 BudgetManagement에서 개별 저장.
- * 체크리스트(checklist)는 개별 저장.
+ * settings는 saveSettingsToSupabase에서 별도 저장.
+ * attendance / notes / budget / checklist 포함 (복원·일괄 저장용).
  */
 export async function saveDBToSupabase(db: DB): Promise<void> {
   if (!supabase) return;
@@ -557,6 +578,81 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
         { date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null, church_id: churchId }
       );
     }
+  }
+
+  const attendanceRows: Record<string, unknown>[] = [];
+  for (const [memberId, weeks] of Object.entries(db.attendance)) {
+    if (!isMemberUuid(memberId)) continue;
+    for (const [weekStr, status] of Object.entries(weeks)) {
+      const week_num = Number(weekStr);
+      if (!Number.isFinite(week_num)) continue;
+      const reason = db.attendanceReasons?.[memberId]?.[week_num];
+      const note = reason?.trim() || null;
+      attendanceRows.push({
+        member_id: memberId,
+        week_num,
+        year: CURRENT_YEAR,
+        status,
+        note,
+        church_id: churchId,
+      });
+    }
+  }
+  if (attendanceRows.length > 0) {
+    const { error } = await supabase.from("attendance").insert(attendanceRows);
+    if (error) throw new Error(`attendance 저장 실패: ${error.message}`);
+  }
+
+  const noteRows: Record<string, unknown>[] = [];
+  for (const [memberId, noteList] of Object.entries(db.notes)) {
+    if (!isMemberUuid(memberId)) continue;
+    for (const note of noteList) {
+      noteRows.push({
+        member_id: memberId,
+        date: note.date || "",
+        type: note.type || "memo",
+        content: note.content || "",
+        church_id: churchId,
+      });
+    }
+  }
+  if (noteRows.length > 0) {
+    const { error } = await supabase.from("notes").insert(noteRows);
+    if (error) throw new Error(`notes 저장 실패: ${error.message}`);
+  }
+
+  const fiscal_year = String(CURRENT_YEAR);
+  const budgetRows: Record<string, unknown>[] = [];
+  for (const [key, value] of Object.entries(db.budget)) {
+    const { category_type, category } = parseBudgetKey(key);
+    budgetRows.push({
+      church_id: churchId,
+      fiscal_year,
+      category_type,
+      category,
+      annual_total: Number(value) || 0,
+    });
+  }
+  if (budgetRows.length > 0) {
+    const { error } = await supabase.from("budget").insert(budgetRows);
+    if (error) throw new Error(`budget 저장 실패: ${error.message}`);
+  }
+
+  const checklistRows: Record<string, unknown>[] = [];
+  for (const [week_key, items] of Object.entries(db.checklist)) {
+    items.forEach((item, sort_order) => {
+      checklistRows.push({
+        week_key,
+        text: item.text || "",
+        done: Boolean(item.done),
+        sort_order,
+        church_id: churchId,
+      });
+    });
+  }
+  if (checklistRows.length > 0) {
+    const { error } = await supabase.from("checklist").insert(checklistRows);
+    if (error) throw new Error(`checklist 저장 실패: ${error.message}`);
   }
 }
 
