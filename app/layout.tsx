@@ -11,9 +11,56 @@ const pretendard = localFont({
   display: "swap",
 });
 
+const SITE_URL = "https://www.churchup.kr";
+const SITE_TITLE = "처치업 - 교회 관리 솔루션";
+const SITE_DESCRIPTION =
+  "처치업(church up) — 행정은 가볍게, 시선은 목양에. 교인·출석·심방·재정에 더해 캘린더와 일정관리까지 한 번에 관리하는 교회 솔루션";
+const OG_IMAGE = {
+  url: "/churchup-logo.png",
+  width: 1200,
+  height: 630,
+  alt: "처치업",
+};
+
 export const metadata: Metadata = {
-  title: "church up",
-  description: "목양노트 · 교역자 플래너 · 재정관리",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: "%s | 처치업",
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "교회 관리 프로그램",
+    "교인 관리",
+    "교회 행정",
+    "목양 노트",
+    "교회 재정 관리",
+    "교회 일정관리",
+    "교회 캘린더",
+    "교역자 플래너",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    siteName: "처치업",
+    url: SITE_URL,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE.url],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.svg",
