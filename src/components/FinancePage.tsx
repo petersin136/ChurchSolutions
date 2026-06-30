@@ -4219,7 +4219,7 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
                             const lastDay = getLastDay(year, m);
                             const dateStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
                             const amt = receiptData.monthly[m - 1];
-                            return (<tr key={m}><td className="text-left-r">"</td><td>{cfg.donationCode}</td><td>{cfg.donationCategory}</td><td>{dateStr}</td><td className="text-left-r">헌금</td><td className={`text-right-r ${amt > 0 ? "has-value-r" : ""}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td></tr>);
+                            return (<tr key={m}><td className="text-left-r">&quot;</td><td>{cfg.donationCode}</td><td>{cfg.donationCategory}</td><td>{dateStr}</td><td className="text-left-r">헌금</td><td className={`text-right-r ${amt > 0 ? "has-value-r" : ""}`}>{amt > 0 ? amt.toLocaleString("ko-KR") : "0"}</td></tr>);
                           })}
                         </tbody>
                         <tfoot><tr><td colSpan={5} className="total-label-r">계</td><td className="total-amount-r">₩ {receiptData.total.toLocaleString("ko-KR")}</td></tr></tfoot>

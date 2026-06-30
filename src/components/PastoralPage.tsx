@@ -2809,7 +2809,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
         </div>
 
         {filteredList.length === 0 ? (
-          <Card style={{ padding: mob ? 24 : 48, textAlign: "center", color: C.textMuted }}>새가족이 없습니다. 상단 "+ 새가족 등록"으로 등록하세요.</Card>
+          <Card style={{ padding: mob ? 24 : 48, textAlign: "center", color: C.textMuted }}>새가족이 없습니다. 상단 + 새가족 등록으로 등록하세요.</Card>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 12, ...(mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const } : {}) }}>
             {paginated.map(({ member, program }) => {

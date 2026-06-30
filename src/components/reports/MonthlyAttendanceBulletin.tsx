@@ -571,19 +571,22 @@ export function MonthlyAttendanceBulletin() {
 
   /** 동적 import 안정화 — html2canvas-pro는 oklch()/color() 같은 모던 CSS 색 함수를 지원
    *  (기본 html2canvas 1.4.1은 Tailwind v4의 oklch에서 파싱 실패 → "unsupported color function" 에러) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  type Html2CanvasFn = (el: HTMLElement, opts?: any) => Promise<HTMLCanvasElement>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  type JsPdfCtor = any;
+  type Html2CanvasFn = (el: HTMLElement, opts?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
+  type JsPdfInstance = {
+    addPage: () => void;
+    addImage: (data: string, format: string, x: number, y: number, w: number, h: number) => void;
+    output: (type: string) => Blob;
+  };
+  type JsPdfCtor = new (orientation: string, unit: string, format: string) => JsPdfInstance;
 
   const loadDeps = async (): Promise<{ html2canvas: Html2CanvasFn; JsPDF: JsPdfCtor }> => {
     const [h2cMod, pdfMod] = await Promise.all([import("html2canvas-pro"), import("jspdf")]);
     const h2cAny = h2cMod as { default?: Html2CanvasFn };
     const html2canvas = (h2cAny.default ?? (h2cMod as unknown as Html2CanvasFn)) as Html2CanvasFn;
     const pdfModAny = pdfMod as { default?: JsPdfCtor; jsPDF?: JsPdfCtor };
-    const JsPDF: JsPdfCtor = pdfModAny.default ?? pdfModAny.jsPDF;
-    if (!html2canvas || !JsPDF) throw new Error("PDF 라이브러리를 불러오지 못했습니다.");
-    return { html2canvas, JsPDF };
+    const JsPDFRaw = pdfModAny.default ?? pdfModAny.jsPDF;
+    if (!html2canvas || !JsPDFRaw) throw new Error("PDF 라이브러리를 불러오지 못했습니다.");
+    return { html2canvas, JsPDF: JsPDFRaw as JsPdfCtor };
   };
 
   const renderPdfToBlob = async (): Promise<Blob> => {
