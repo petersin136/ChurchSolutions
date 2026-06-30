@@ -59,8 +59,12 @@ export default function RegisterForm() {
       setError("이메일을 입력해주세요.");
       return;
     }
-    if (password.length < 6) {
-      setError("비밀번호는 6자 이상이어야 합니다.");
+    if (password.length < 8) {
+      setError("비밀번호는 8자 이상이어야 합니다.");
+      return;
+    }
+    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setError("비밀번호는 영문과 숫자를 모두 포함해야 합니다.");
       return;
     }
     if (password !== confirmPassword) {
@@ -359,7 +363,7 @@ export default function RegisterForm() {
               setPassword(e.target.value);
               if (error) setError("");
             }}
-            placeholder="비밀번호 (6자 이상)"
+            placeholder="비밀번호 (영문·숫자 포함 8자 이상)"
             required
             autoComplete="new-password"
             style={inputStyle}
