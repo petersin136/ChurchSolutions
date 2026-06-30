@@ -76,6 +76,7 @@ export default function LoginForm() {
       provider: "kakao",
       options: {
         redirectTo: `${window.location.origin}/`,
+        scopes: "profile_nickname profile_image",
       },
     });
     if (oauthError) {
