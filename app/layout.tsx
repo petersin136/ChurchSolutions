@@ -15,12 +15,6 @@ const SITE_URL = "https://www.churchup.kr";
 const SITE_TITLE = "처치업 - 교회 관리 솔루션";
 const SITE_DESCRIPTION =
   "처치업(church up) — 행정은 가볍게, 시선은 목양에. 교인·출석·심방·재정에 더해 캘린더와 일정관리까지 한 번에 관리하는 교회 솔루션";
-const OG_IMAGE = {
-  url: "/churchup-logo.png",
-  width: 1200,
-  height: 630,
-  alt: "처치업",
-};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -46,13 +40,11 @@ export const metadata: Metadata = {
     url: SITE_URL,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: [OG_IMAGE.url],
   },
   robots: {
     index: true,
