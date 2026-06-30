@@ -49,6 +49,40 @@ export default function LoginForm() {
     router.replace("/");
   };
 
+  const handleGoogleLogin = async () => {
+    if (!supabase) {
+      setError("서버 연결에 실패했습니다.");
+      return;
+    }
+    setError("");
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+    if (oauthError) {
+      setError("구글 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  };
+
+  const handleKakaoLogin = async () => {
+    if (!supabase) {
+      setError("서버 연결에 실패했습니다.");
+      return;
+    }
+    setError("");
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+    if (oauthError) {
+      setError("카카오 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  };
+
   if (authLoading) {
     return <AuthPageLoading />;
   }
@@ -68,7 +102,7 @@ export default function LoginForm() {
             }}
             placeholder="이메일 주소"
             required
-            autoComplete="email"
+            autoComplete="off"
             style={inputStyle}
           />
           <div style={{ height: 12 }} />
@@ -82,7 +116,7 @@ export default function LoginForm() {
             }}
             placeholder="비밀번호"
             required
-            autoComplete="current-password"
+            autoComplete="new-password"
             style={inputStyle}
           />
 
@@ -194,7 +228,7 @@ export default function LoginForm() {
         <button
           type="button"
           className="cu-social"
-          onClick={() => alert("카카오 로그인은 준비 중입니다")}
+          onClick={handleKakaoLogin}
           style={{ ...socialBtnBase, background: "#FEE500", color: "var(--color-black)" }}
         >
           <span style={socialIconStyle}>
@@ -208,7 +242,7 @@ export default function LoginForm() {
         <button
           type="button"
           className="cu-social"
-          onClick={() => alert("구글 로그인은 준비 중입니다")}
+          onClick={handleGoogleLogin}
           style={{ ...socialBtnBase, background: "#ebebeb", color: "var(--color-black)" }}
         >
           <span style={socialIconStyle}>
