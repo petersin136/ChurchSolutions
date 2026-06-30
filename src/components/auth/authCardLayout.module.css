@@ -34,11 +34,9 @@
 }
 
 .brandWordmark {
-  color: var(--color-black);
-  font-weight: 800;
-  font-size: 40px;
-  letter-spacing: -1px;
-  line-height: 1.2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .brandUp {

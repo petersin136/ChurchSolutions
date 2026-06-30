@@ -274,10 +274,12 @@ export default function RegisterForm() {
             인증 메일을 보냈어요
           </div>
           <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "var(--color-text-muted)" }}>
-            <strong style={{ color: "var(--color-black)", fontWeight: 600 }}>{registeredEmail}</strong>
-            {" "}주소로 인증 메일을 보냈습니다.
+            <strong style={{ color: "var(--color-black)", fontWeight: 600, display: "block" }}>
+              {registeredEmail}
+            </strong>
+            주소로 인증 메일을 보냈습니다. 메일함에서 인증을 완료하면
             <br />
-            메일함에서 인증을 완료하면 이 화면이 자동으로 로그인 페이지로 이동해요.
+            이 화면이 자동으로 로그인 페이지로 이동해요.
             <br />
             (메일 링크는 새 탭에서 열릴 수 있어요. 이 탭을 닫지 않고 기다려 주세요.)
           </div>

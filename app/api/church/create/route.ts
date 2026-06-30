@@ -22,6 +22,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!pastorName) {
+      return NextResponse.json(
+        { error: "담임목사 이름을 입력해주세요." },
+        { status: 400 },
+      );
+    }
+
     const authHeader = request.headers.get("Authorization");
     const token = authHeader?.startsWith("Bearer ")
       ? authHeader.slice("Bearer ".length).trim()
