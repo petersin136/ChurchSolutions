@@ -12,7 +12,7 @@ import {
   loadPendingLoginEmail,
 } from "@/lib/pending-login";
 import { PasswordInput } from "@/components/auth/PasswordInput";
-import { getOAuthRedirectUrl } from "@/lib/auth-redirect";
+import { getOAuthRedirectUrl, isValidHttpUrl } from "@/lib/auth-redirect";
 
 function LoginFormInner() {
   const router = useRouter();
@@ -26,8 +26,11 @@ function LoginFormInner() {
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("error") === "oauth") {
+    const err = searchParams.get("error");
+    if (err === "oauth") {
       setError("소셜 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    } else if (err === "oauth_config") {
+      setError("로그인 설정이 올바르지 않습니다. 관리자에게 문의해 주세요.");
     }
   }, [searchParams]);
 
@@ -86,6 +89,12 @@ function LoginFormInner() {
     setOauthLoading(provider);
 
     const redirectTo = getOAuthRedirectUrl("/");
+    if (!isValidHttpUrl(redirectTo)) {
+      setOauthLoading(null);
+      setError("로그인 리다이렉트 주소를 확인할 수 없습니다. NEXT_PUBLIC_SITE_URL 설정을 확인해 주세요.");
+      return;
+    }
+
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -105,13 +114,13 @@ function LoginFormInner() {
       return;
     }
 
-    if (!data?.url) {
+    if (!isValidHttpUrl(data?.url)) {
       setOauthLoading(null);
-      setError("소셜 로그인 URL을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      setError("소셜 로그인 URL을 가져오지 못했습니다. Supabase Google OAuth 설정을 확인해 주세요.");
       return;
     }
 
-    window.location.assign(data.url);
+    window.location.href = data.url!;
   };
 
   const handleGoogleLogin = () => void startOAuth("google");
