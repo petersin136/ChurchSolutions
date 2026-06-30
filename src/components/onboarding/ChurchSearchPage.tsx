@@ -7,51 +7,12 @@ import { AuthCardShell } from "@/components/auth/AuthCardShell";
 import { PcModal } from "@/components/ui/PcModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { CreatingSplash } from "@/components/common/CreatingSplash";
+import { supabase } from "@/lib/supabase";
 import styles from "./ChurchSearchPage.module.css";
 
 export interface ChurchSearchItem {
   id: string;
   name: string;
-  pastor: string;
-  address: string;
-}
-
-const DUMMY_CHURCHES: ChurchSearchItem[] = [
-  {
-    id: "1",
-    name: "샘플교회",
-    pastor: "김은혜",
-    address: "서울특별시 강남구 테헤란로 123",
-  },
-  {
-    id: "2",
-    name: "은혜교회",
-    pastor: "이요한",
-    address: "경기도 성남시 분당구 정자로 45",
-  },
-  {
-    id: "3",
-    name: "사랑의교회",
-    pastor: "박믿음",
-    address: "인천광역시 남동구 구월로 78",
-  },
-  {
-    id: "4",
-    name: "새벽별교회",
-    pastor: "최소망",
-    address: "부산광역시 해운대구 센텀로 210",
-  },
-];
-
-function filterChurches(query: string): ChurchSearchItem[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  return DUMMY_CHURCHES.filter(
-    (church) =>
-      church.name.toLowerCase().includes(q) ||
-      church.pastor.toLowerCase().includes(q) ||
-      church.address.toLowerCase().includes(q),
-  );
 }
 
 export default function ChurchSearchPage() {
@@ -60,6 +21,9 @@ export default function ChurchSearchPage() {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const [results, setResults] = useState<ChurchSearchItem[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSelectedId, setModalSelectedId] = useState<string | null>(null);
@@ -68,19 +32,9 @@ export default function ChurchSearchPage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const isExampleMode = !hasSearched;
-
-  const listItems = useMemo(
-    () => (isExampleMode ? DUMMY_CHURCHES : filterChurches(submittedQuery)),
-    [isExampleMode, submittedQuery],
-  );
-
   const selectedChurch = useMemo(
-    () =>
-      DUMMY_CHURCHES.find((church) => church.id === selectedId) ??
-      listItems.find((church) => church.id === selectedId) ??
-      null,
-    [listItems, selectedId],
+    () => results.find((church) => church.id === selectedId) ?? null,
+    [results, selectedId],
   );
 
   useEffect(() => {
@@ -88,11 +42,35 @@ export default function ChurchSearchPage() {
     setModalSelectedId(null);
   }, [submittedQuery, hasSearched]);
 
-  const runSearch = useCallback(() => {
+  const runSearch = useCallback(async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
+
+    if (!supabase) {
+      setSearchError("서버 연결에 실패했습니다.");
+      return;
+    }
+
     setSubmittedQuery(trimmed);
     setHasSearched(true);
+    setSearchLoading(true);
+    setSearchError(null);
+
+    const { data, error } = await supabase
+      .from("churches")
+      .select("id, name")
+      .ilike("name", `%${trimmed}%`)
+      .limit(20);
+
+    setSearchLoading(false);
+
+    if (error) {
+      setResults([]);
+      setSearchError("검색에 실패했습니다. 다시 시도해 주세요.");
+      return;
+    }
+
+    setResults((data as ChurchSearchItem[]) ?? []);
   }, [query]);
 
   const handleQueryChange = (value: string) => {
@@ -100,6 +78,9 @@ export default function ChurchSearchPage() {
     if (!value.trim()) {
       setHasSearched(false);
       setSubmittedQuery("");
+      setResults([]);
+      setSearchLoading(false);
+      setSearchError(null);
       setSelectedId(null);
       setModalSelectedId(null);
       setModalOpen(false);
@@ -108,15 +89,15 @@ export default function ChurchSearchPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    runSearch();
+    void runSearch();
   };
 
   useEffect(() => {
-    if (hasSearched && listItems.length > 0) {
+    if (hasSearched && !searchLoading && results.length > 0) {
       setModalOpen(true);
       setModalSelectedId(null);
     }
-  }, [hasSearched, submittedQuery, listItems.length]);
+  }, [hasSearched, submittedQuery, searchLoading, results.length]);
 
   const openListModal = () => {
     setModalSelectedId(selectedId);
@@ -196,11 +177,9 @@ export default function ChurchSearchPage() {
     }
   };
 
-  const showEmpty = hasSearched && listItems.length === 0;
-  const showList = !showEmpty && listItems.length > 0;
+  const showEmpty = hasSearched && !searchLoading && results.length === 0;
+  const showList = hasSearched && !searchLoading && results.length > 0;
   const step = selectedChurch ? 3 : hasSearched || selectedId ? 2 : 1;
-
-  const modalTitle = isExampleMode ? "등록된 교회 예시" : "검색 결과";
 
   const footer = (
     <footer className={styles.footer}>
@@ -249,8 +228,8 @@ export default function ChurchSearchPage() {
                 aria-label="교회명 검색"
               />
             </div>
-            <button type="submit" className={styles.btnSearch}>
-              검색
+            <button type="submit" className={styles.btnSearch} disabled={searchLoading}>
+              {searchLoading ? "검색 중..." : "검색"}
             </button>
           </div>
         </form>
@@ -295,6 +274,20 @@ export default function ChurchSearchPage() {
           </div>
         ) : null}
 
+        {!hasSearched && !searchLoading ? (
+          <p className={styles.pickHint}>교회명을 검색해 주세요.</p>
+        ) : null}
+
+        {searchLoading ? (
+          <p className={styles.pickHint}>검색 중...</p>
+        ) : null}
+
+        {searchError ? (
+          <p className={styles.emptyDesc} role="alert">
+            {searchError}
+          </p>
+        ) : null}
+
         {showEmpty ? (
           <div className={styles.empty}>
             <h2 className={styles.emptyTitle}>검색 결과가 없어요</h2>
@@ -315,22 +308,13 @@ export default function ChurchSearchPage() {
               <div className={styles.selectedCard}>
                 <p className={styles.selectedLabel}>선택한 교회</p>
                 <p className={styles.selectedName}>{selectedChurch.name}</p>
-                <p className={styles.selectedMeta}>
-                  담임목사 {selectedChurch.pastor}
-                </p>
               </div>
             ) : (
-              <p className={styles.pickHint}>
-                {isExampleMode
-                  ? "교회명을 검색하거나, 등록된 교회 예시에서 선택할 수 있어요."
-                  : "검색 결과에서 교회를 선택해 주세요."}
-              </p>
+              <p className={styles.pickHint}>검색 결과에서 교회를 선택해 주세요.</p>
             )}
 
             <button type="button" className={styles.btnOutline} onClick={openListModal}>
-              {isExampleMode
-                ? "등록된 교회 예시 보기"
-                : `검색 결과 ${listItems.length}건 보기`}
+              {`검색 결과 ${results.length}건 보기`}
             </button>
 
             <div className={styles.applyBar}>
@@ -350,7 +334,7 @@ export default function ChurchSearchPage() {
       <PcModal
         open={modalOpen && showList}
         onClose={handleModalClose}
-        title={modalTitle}
+        title="검색 결과"
         description="소속 교회를 선택해 주세요."
         size="md"
         footer={
@@ -369,8 +353,8 @@ export default function ChurchSearchPage() {
           </div>
         }
       >
-        <div className={styles.modalList} role="listbox" aria-label={modalTitle}>
-          {listItems.map((church) => {
+        <div className={styles.modalList} role="listbox" aria-label="검색 결과">
+          {results.map((church) => {
             const selected = church.id === modalSelectedId;
             return (
               <button
@@ -384,8 +368,6 @@ export default function ChurchSearchPage() {
                 onClick={() => setModalSelectedId(church.id)}
               >
                 <h2 className={styles.churchName}>{church.name}</h2>
-                <p className={styles.meta}>담임목사 {church.pastor}</p>
-                <p className={styles.meta}>{church.address}</p>
               </button>
             );
           })}

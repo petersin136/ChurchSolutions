@@ -1284,6 +1284,9 @@ input[type="date"]::-webkit-date-and-time-value {
 .visible {
   visibility: visible;
 }
+.\!visible {
+  visibility: visible !important;
+}
 .collapse {
   visibility: collapse;
 }

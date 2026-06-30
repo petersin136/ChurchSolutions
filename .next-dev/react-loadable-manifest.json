@@ -6,13 +6,6 @@
       "static/chunks/_app-pages-browser_src_components_auth_EmailConfirmedForm_tsx.js"
     ]
   },
-  "app/(auth)/forgot-password/page.tsx -> @/components/auth/ForgotPasswordForm": {
-    "id": "app/(auth)/forgot-password/page.tsx -> @/components/auth/ForgotPasswordForm",
-    "files": [
-      "static/css/_app-pages-browser_src_components_auth_ForgotPasswordForm_tsx.css",
-      "static/chunks/_app-pages-browser_src_components_auth_ForgotPasswordForm_tsx.js"
-    ]
-  },
   "app/(auth)/login/page.tsx -> @/components/auth/LoginForm": {
     "id": "app/(auth)/login/page.tsx -> @/components/auth/LoginForm",
     "files": [
@@ -25,13 +18,6 @@
     "files": [
       "static/css/_app-pages-browser_src_components_auth_RegisterForm_tsx.css",
       "static/chunks/_app-pages-browser_src_components_auth_RegisterForm_tsx.js"
-    ]
-  },
-  "app/(auth)/reset-password/page.tsx -> @/components/auth/ResetPasswordForm": {
-    "id": "app/(auth)/reset-password/page.tsx -> @/components/auth/ResetPasswordForm",
-    "files": [
-      "static/css/_app-pages-browser_src_components_auth_ResetPasswordForm_tsx.css",
-      "static/chunks/_app-pages-browser_src_components_auth_ResetPasswordForm_tsx.js"
     ]
   },
   "app/(main)/page.tsx -> @/components/MainPageClient": {
