@@ -61,6 +61,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: SITE_URL,
   },
+  verification: {
+    google: "E4u-l8xqMIqk_aXMaikyoaqhCCBUZZktDKkgSACkHx4",
+  },
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.svg",
