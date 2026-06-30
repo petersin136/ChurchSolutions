@@ -1,14 +1,14 @@
 {
   "pages": {
-    "/(auth)/login/page": [
+    "/(main)/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(auth)/login/page.js"
+      "static/chunks/app/(main)/page.js"
     ],
-    "/(auth)/layout": [
+    "/(main)/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(auth)/layout.js"
+      "static/chunks/app/(main)/layout.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -21,15 +21,21 @@
       "static/chunks/main-app.js",
       "static/chunks/app/not-found.js"
     ],
-    "/(main)/page": [
+    "/(auth)/church-search/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(main)/page.js"
+      "static/css/app/(auth)/church-search/page.css",
+      "static/chunks/app/(auth)/church-search/page.js"
     ],
-    "/(main)/layout": [
+    "/(auth)/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(main)/layout.js"
+      "static/chunks/app/(auth)/layout.js"
+    ],
+    "/(auth)/login/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(auth)/login/page.js"
     ],
     "/(auth)/register/page": [
       "static/chunks/webpack.js",
@@ -41,11 +47,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(auth)/auth/confirmed/page.js"
     ],
-    "/(auth)/church-search/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/(auth)/church-search/page.css",
-      "static/chunks/app/(auth)/church-search/page.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

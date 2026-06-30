@@ -1,15 +1,23 @@
 import { NextResponse } from "next/server";
+import { DEFAULT_SETTINGS } from "@/types/db";
 import { getServiceSupabase } from "@/lib/supabase";
 
 const MATCH_ALL_ID = "00000000-0000-0000-0000-000000000000";
 
-/** 전체 초기화 시 삭제할 테이블 순서 (FK 의존성: 자식 먼저). settings 제외. */
+/** 전체 초기화 시 삭제할 테이블 순서 (FK 의존성: 자식 먼저). */
 const ALL_TABLES_IN_ORDER = [
   "school_attendance",
   "school_transfer_history",
   "school_enrollments",
   "school_classes",
   "school_departments",
+  "workflow_card_notes",
+  "workflow_cards",
+  "workflow_steps",
+  "workflows",
+  "donation_receipt_log",
+  "donation_receipts",
+  "counsels",
   "attendance",
   "notes",
   "visits",
@@ -34,8 +42,28 @@ const ALL_TABLES_IN_ORDER = [
   "sermons",
   "checklist",
   "service_types",
+  "events",
+  "church_calendar",
+  "departments",
+  "places",
+  "bulletins",
   "members",
 ];
+
+/** 배포 환경마다 없을 수 있는 테이블 — 없으면 건너뜀 */
+const OPTIONAL_RESET_TABLES = new Set([
+  "workflow_card_notes",
+  "workflow_cards",
+  "workflow_steps",
+  "workflows",
+  "donation_receipt_log",
+  "donation_receipts",
+  "counsels",
+  "events",
+  "church_calendar",
+  "departments",
+  "places",
+]);
 
 /** 테이블별 삭제 조건 (id 없거나 다른 키 쓰는 테이블). 나머지는 .neq("id", MATCH_ALL_ID) */
 const TABLE_DELETE_SPECIAL: Record<string, { column: string; value: string | number }> = {
@@ -52,7 +80,70 @@ function deleteAllFromTable(sb: ReturnType<typeof getServiceSupabase>, table: st
   return base.neq("id", MATCH_ALL_ID);
 }
 
-/** 서버에서 Service Role로 초기화 실행 (418/RLS 회피). settings 테이블은 제외. */
+function isMissingTableError(error: { message?: string; code?: string }) {
+  const msg = (error.message ?? "").toLowerCase();
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    msg.includes("does not exist") ||
+    msg.includes("schema cache")
+  );
+}
+
+async function resetChurchMetadata(sb: ReturnType<typeof getServiceSupabase>, churchId: string) {
+  const { data: church, error: churchError } = await sb
+    .from("churches")
+    .select("name")
+    .eq("id", churchId)
+    .maybeSingle();
+  if (churchError) {
+    throw new Error(`churches 조회 실패: ${churchError.message}`);
+  }
+
+  const churchName = (church?.name ?? "").trim();
+  const { data: existingSettings, error: settingsSelectError } = await sb
+    .from("settings")
+    .select("id")
+    .eq("church_id", churchId)
+    .maybeSingle();
+  if (settingsSelectError) {
+    throw new Error(`settings 조회 실패: ${settingsSelectError.message}`);
+  }
+
+  const settingsPayload = {
+    church_name: churchName,
+    depts: DEFAULT_SETTINGS.depts,
+    fiscal_start: DEFAULT_SETTINGS.fiscalStart,
+    denomination: null,
+    address: null,
+    pastor: null,
+    business_number: null,
+  };
+
+  if (existingSettings?.id) {
+    const { error } = await sb
+      .from("settings")
+      .update(settingsPayload)
+      .eq("id", existingSettings.id)
+      .eq("church_id", churchId);
+    if (error) throw new Error(`settings 초기화 실패: ${error.message}`);
+  } else {
+    const { error } = await sb.from("settings").insert({ ...settingsPayload, church_id: churchId });
+    if (error) throw new Error(`settings 초기화 실패: ${error.message}`);
+  }
+
+  const { error: churchSettingsError } = await sb.from("church_settings").delete().eq("church_id", churchId);
+  if (churchSettingsError && !isMissingTableError(churchSettingsError)) {
+    throw new Error(`church_settings 초기화 실패: ${churchSettingsError.message}`);
+  }
+
+  const { error: pastorResetError } = await sb.from("churches").update({ pastor_name: null }).eq("id", churchId);
+  if (pastorResetError) {
+    throw new Error(`churches 담임목사 초기화 실패: ${pastorResetError.message}`);
+  }
+}
+
+/** 서버에서 Service Role로 초기화 실행 (418/RLS 회피). */
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -76,11 +167,18 @@ export async function POST(request: Request) {
       for (const table of ALL_TABLES_IN_ORDER) {
         const { error } = await deleteAllFromTable(sb, table, churchId);
         if (error) {
+          if (OPTIONAL_RESET_TABLES.has(table) && isMissingTableError(error)) continue;
           return NextResponse.json(
             { ok: false, message: `${table} 초기화 실패: ${error.message}` },
             { status: 500 }
           );
         }
+      }
+      try {
+        await resetChurchMetadata(sb, churchId);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return NextResponse.json({ ok: false, message }, { status: 500 });
       }
       return NextResponse.json({ ok: true, scope: "all" });
     }
@@ -148,6 +246,14 @@ export async function POST(request: Request) {
 
     if (scope === "planner") {
       const eq = (t: string) => sb.from(t).delete().eq("church_id", churchId);
+      const { error: e0 } = await eq("events").neq("id", MATCH_ALL_ID);
+      if (e0 && !isMissingTableError(e0)) return NextResponse.json({ ok: false, message: `events: ${e0.message}` }, { status: 500 });
+      const { error: e0b } = await eq("church_calendar").neq("id", MATCH_ALL_ID);
+      if (e0b && !isMissingTableError(e0b)) return NextResponse.json({ ok: false, message: `church_calendar: ${e0b.message}` }, { status: 500 });
+      const { error: e0c } = await eq("departments").neq("id", MATCH_ALL_ID);
+      if (e0c && !isMissingTableError(e0c)) return NextResponse.json({ ok: false, message: `departments: ${e0c.message}` }, { status: 500 });
+      const { error: e0d } = await eq("places").neq("id", MATCH_ALL_ID);
+      if (e0d && !isMissingTableError(e0d)) return NextResponse.json({ ok: false, message: `places: ${e0d.message}` }, { status: 500 });
       const { error: e1 } = await eq("plans").neq("id", MATCH_ALL_ID);
       if (e1) return NextResponse.json({ ok: false, message: `plans: ${e1.message}` }, { status: 500 });
       const { error: e2 } = await eq("sermons").neq("id", MATCH_ALL_ID);

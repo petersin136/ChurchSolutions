@@ -527,6 +527,58 @@
   line-height: 1.45;
 }
 
+.ChurchSearchPage_metaMuted__LXiD1 {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-text-faint);
+  line-height: 1.45;
+}
+
+.ChurchSearchPage_createLink__BrPdy {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-black);
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ChurchSearchPage_createLink__BrPdy:hover {
+  opacity: 0.65;
+}
+
+.ChurchSearchPage_modalFooterStack__zfAUf {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.ChurchSearchPage_createLinkModal__072_M {
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-black);
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ChurchSearchPage_createLinkModal__072_M:hover {
+  opacity: 0.65;
+}
+
 .ChurchSearchPage_empty__5Wave {
   display: flex;
   flex-direction: column;

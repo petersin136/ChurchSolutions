@@ -8,6 +8,7 @@ import type { Attendance } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import LazyChart from "../common/LazyChart";
+import { MemberPhotoCircle } from "@/components/common/MemberPhoto";
 import { getSundayForWeekNum } from "@/lib/store";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
@@ -484,16 +485,13 @@ export function AttendanceStatistics({
                     >
                       <span className="text-center tabular-nums text-gray-500">{num}</span>
                       <div className="flex min-w-0 items-center gap-1">
-                        {r.member.photo ? (
-                          <div
-                            className="h-4 w-4 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
-                            style={{ backgroundImage: `url(${r.member.photo})` }}
-                          />
-                        ) : (
-                          <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 text-[8px] font-semibold text-gray-600">
-                            {memberSurnameInitial(r.member.name)}
-                          </div>
-                        )}
+                        <MemberPhotoCircle
+                          photo={r.member.photo}
+                          name={r.member.name}
+                          getInitial={memberSurnameInitial}
+                          imageClassName="h-4 w-4 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
+                          fallbackClassName="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 text-[8px] font-semibold text-gray-600"
+                        />
                         <span className="min-w-0 truncate font-medium text-gray-900">{r.member.name}</span>
                       </div>
                       <span className="min-w-0 truncate text-gray-600">{r.member.dept || "-"}</span>
@@ -566,16 +564,13 @@ export function AttendanceStatistics({
                         <td className="px-2 py-3 text-center align-middle tabular-nums text-gray-500">{num}</td>
                         <td className="overflow-hidden px-3 py-3 align-middle font-medium">
                           <div className="flex min-w-0 items-center gap-2">
-                            {r.member.photo ? (
-                              <div
-                                className="h-7 w-7 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
-                                style={{ backgroundImage: `url(${r.member.photo})` }}
-                              />
-                            ) : (
-                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-semibold text-gray-600">
-                                {memberSurnameInitial(r.member.name)}
-                              </div>
-                            )}
+                            <MemberPhotoCircle
+                              photo={r.member.photo}
+                              name={r.member.name}
+                              getInitial={memberSurnameInitial}
+                              imageClassName="h-7 w-7 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
+                              fallbackClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-semibold text-gray-600"
+                            />
                             <div className="min-w-0 truncate" title={r.member.name}>
                               {r.member.name}
                             </div>

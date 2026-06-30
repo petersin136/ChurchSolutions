@@ -1,17 +1,55 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { AuthCardShell } from "@/components/auth/AuthCardShell";
+import { loadPendingLoginEmail, savePendingLoginEmail } from "@/lib/pending-login";
 
-export default function EmailConfirmedForm() {
+function EmailConfirmedFormInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const emailFromQuery = searchParams.get("email")?.trim() ?? "";
 
   useEffect(() => {
     if (!supabase) return;
-    void supabase.auth.signOut();
-  }, []);
+
+    let cancelled = false;
+
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+
+      const sessionEmail = session?.user?.email?.trim() ?? "";
+      const pendingEmail = loadPendingLoginEmail();
+      const emailToSave = emailFromQuery || sessionEmail || pendingEmail || "";
+
+      if (emailToSave) {
+        savePendingLoginEmail(emailToSave);
+      }
+
+      await supabase.auth.signOut();
+
+      if (typeof window === "undefined" || cancelled) return;
+      const { pathname, search } = window.location;
+      if (window.location.hash) {
+        window.history.replaceState(null, "", `${pathname}${search}`);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [emailFromQuery]);
+
+  const handleGoLogin = () => {
+    const pendingEmail = loadPendingLoginEmail();
+    const email = emailFromQuery || pendingEmail || "";
+    if (email) {
+      savePendingLoginEmail(email);
+    }
+    router.replace("/login");
+  };
 
   return (
     <AuthCardShell styleTag={styleTag}>
@@ -19,6 +57,8 @@ export default function EmailConfirmedForm() {
         <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-black)" }}>이메일 인증이 완료됐어요</div>
         <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: "var(--color-text-muted)" }}>
           이제 로그인 페이지에서 로그인해 주세요.
+          <br />
+          회원가입 탭을 열어 두셨다면 그쪽에서 자동으로 로그인 화면으로 이동할 수도 있어요.
         </div>
       </div>
 
@@ -45,7 +85,7 @@ export default function EmailConfirmedForm() {
 
       <button
         type="button"
-        onClick={() => router.push("/login")}
+        onClick={handleGoLogin}
         style={{
           width: "100%",
           height: 52,
@@ -61,6 +101,14 @@ export default function EmailConfirmedForm() {
         로그인하러 가기
       </button>
     </AuthCardShell>
+  );
+}
+
+export default function EmailConfirmedForm() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh" }} />}>
+      <EmailConfirmedFormInner />
+    </Suspense>
   );
 }
 

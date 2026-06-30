@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { AuthCardShell } from "@/components/auth/AuthCardShell";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -110,22 +111,19 @@ export default function ResetPasswordForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} noValidate>
-          <input
-            className="cu-input"
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              if (error) setError("");
-            }}
-            placeholder="새 비밀번호"
-            required
-            autoComplete="new-password"
-            style={{ ...inputStyle, marginBottom: 10 }}
-          />
-          <input
-            className="cu-input"
-            type="password"
+          <div style={{ marginBottom: 10 }}>
+            <PasswordInput
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError("");
+              }}
+              placeholder="새 비밀번호"
+              required
+              autoComplete="new-password"
+            />
+          </div>
+          <PasswordInput
             value={confirmPassword}
             onChange={(e) => {
               setConfirmPassword(e.target.value);
@@ -134,7 +132,6 @@ export default function ResetPasswordForm() {
             placeholder="비밀번호 확인"
             required
             autoComplete="new-password"
-            style={inputStyle}
           />
 
           {error ? (

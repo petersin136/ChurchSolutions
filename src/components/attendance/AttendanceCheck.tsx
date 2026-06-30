@@ -7,6 +7,7 @@ import { getChurchId } from "@/lib/tenant";
 import type { Member } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
+import { MemberPhotoCircle } from "@/components/common/MemberPhoto";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
@@ -516,16 +517,13 @@ export function AttendanceCheck({
                   <div key={m.id} className="grid h-9 grid-cols-[24px_minmax(0,1fr)_100px_80px] items-center border-b border-gray-50 px-2">
                     <span className="text-center text-[10px] tabular-nums text-gray-500">{num}</span>
                     <div className="flex min-w-0 items-center gap-1.5">
-                      {m.photo ? (
-                        <div
-                          className="h-5 w-5 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
-                          style={{ backgroundImage: `url(${m.photo})` }}
-                        />
-                      ) : (
-                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-300 text-[9px] font-semibold text-gray-600">
-                          {memberSurnameInitial(m.name)}
-                        </div>
-                      )}
+                      <MemberPhotoCircle
+                        photo={m.photo}
+                        name={m.name}
+                        getInitial={memberSurnameInitial}
+                        imageClassName="h-5 w-5 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
+                        fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-300 text-[9px] font-semibold text-gray-600"
+                      />
                       <span className="min-w-0 truncate text-[11px] font-medium text-gray-900">{m.name}</span>
                     </div>
                     <div className="flex w-[100px] shrink-0 justify-center gap-1">
@@ -613,16 +611,13 @@ export function AttendanceCheck({
                       <td className="px-2 py-3 text-center align-middle tabular-nums text-gray-500">{num}</td>
                       <td className="overflow-hidden px-3 py-3 align-middle font-medium">
                         <div className="flex min-w-0 items-center gap-2">
-                          {m.photo ? (
-                            <div
-                              className="h-7 w-7 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
-                              style={{ backgroundImage: `url(${m.photo})` }}
-                            />
-                          ) : (
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-semibold text-gray-600">
-                              {memberSurnameInitial(m.name)}
-                            </div>
-                          )}
+                          <MemberPhotoCircle
+                            photo={m.photo}
+                            name={m.name}
+                            getInitial={memberSurnameInitial}
+                            imageClassName="h-7 w-7 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
+                            fallbackClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-semibold text-gray-600"
+                          />
                           <div className="min-w-0 truncate" title={m.name}>{m.name}</div>
                         </div>
                       </td>
