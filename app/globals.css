@@ -1597,12 +1597,14 @@ html, body {
   background: none;
 }
 
-/* 오른쪽 유저 영역 */
+/* 오른쪽 유저 영역 — 모바일 전용 (데스크톱은 pc-right-bar 사용) */
 .pc-top-nav-right {
-  display: flex;
+  display: none;
   align-items: center;
   margin-left: auto;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-left: 8px;
 }
 
 .pc-user-email {
@@ -1729,6 +1731,10 @@ html, body {
 @media (max-width: 768px) {
   .pc-right-bar {
     display: none;
+  }
+
+  .pc-top-nav-right {
+    display: flex;
   }
 }
 

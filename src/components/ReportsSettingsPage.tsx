@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback, useContext } 
 import type { DB, Attendance, Income, Expense, Settings, Member } from "@/types/db";
 import { DEFAULT_DB, DEFAULT_SETTINGS } from "@/types/db";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, type ThemeColor } from "@/contexts/ThemeContext";
 import { getChurchId } from "@/lib/tenant";
 import { StatisticsDashboard } from "@/components/statistics/StatisticsDashboard";
@@ -14,7 +15,7 @@ import { DepartmentReport } from "@/components/reports/DepartmentReport";
 import { VisitPlanReport } from "@/components/reports/VisitPlanReport";
 import { UpcomingEvents } from "@/components/reports/UpcomingEvents";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { BarChart3, Banknote, Bell, Building2, CalendarDays, CalendarRange, ChevronRight, ClipboardList, Database, FileBarChart, FileText, Home, LayoutDashboard, MessageCircle, Moon, Palette, Receipt, Sprout, UserCheck, UserX, Users, Wallet } from "lucide-react";
+import { BarChart3, Banknote, Bell, Building2, CalendarDays, CalendarRange, ChevronRight, ClipboardList, Database, FileBarChart, FileText, Home, LayoutDashboard, LogOut, MessageCircle, Moon, Palette, Receipt, Sprout, UserCheck, UserX, Users, Wallet } from "lucide-react";
 import { PcButton, PcCard, PcInput, PcSegmented, PcTabs } from "@/components/ui";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
@@ -152,6 +153,37 @@ function normalizeRestoredDb(parsed: Partial<DB>): DB {
     budget: parsed.budget ?? {},
     checklist: parsed.checklist ?? {},
   };
+}
+
+function AccountLogoutPanel() {
+  const { user, signOut } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  const handleLogout = async () => {
+    if (typeof window !== "undefined" && !window.confirm("로그아웃 하시겠습니까?")) return;
+    setLoading(true);
+    await signOut();
+  };
+
+  return (
+    <PcCard padding="lg" elevation="sm" className={settingsStyles.settingCard}>
+      <div className={settingsStyles.settingsCardHead}>
+        <div className={settingsStyles.settingsIconBox}>
+          <LogOut size={24} aria-hidden />
+        </div>
+        <div className={settingsStyles.settingsHeadText}>
+          <h3 className={settingsStyles.settingsHeadTitle}>계정</h3>
+          <p className={settingsStyles.settingsHeadDesc}>
+            {user?.email ? `${user.email}으로 로그인 중` : "로그인된 계정"}
+          </p>
+        </div>
+      </div>
+      <hr className={settingsStyles.settingsDivider} />
+      <PcButton type="button" variant="danger" fullWidth onClick={handleLogout} disabled={loading}>
+        {loading ? "로그아웃 중…" : "로그아웃"}
+      </PcButton>
+    </PcCard>
+  );
 }
 
 function DataBackupPanel({
@@ -2023,6 +2055,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
             <ChurchInfoSettingsCard db={db} setDb={setDb} save={save} toast={toast} />
             <NotificationSettingsCard db={db} setDb={setDb} save={save} />
             <DataBackupPanel db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
+            <AccountLogoutPanel />
           </section>
           ) : null}
       </div>
