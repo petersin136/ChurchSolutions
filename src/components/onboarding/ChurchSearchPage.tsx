@@ -186,6 +186,12 @@ export default function ChurchSearchPage() {
       return;
     }
 
+    const trimmedPastor = newPastorName.trim();
+    if (!trimmedPastor) {
+      setCreateError("담임목사 이름을 입력해주세요.");
+      return;
+    }
+
     setCreateError(null);
     setCreating(true);
 
@@ -198,7 +204,7 @@ export default function ChurchSearchPage() {
         },
         body: JSON.stringify({
           churchName: trimmed,
-          pastorName: newPastorName.trim() || null,
+          pastorName: trimmedPastor,
         }),
       });
 
@@ -292,7 +298,7 @@ export default function ChurchSearchPage() {
             <input
               className={styles.input}
               type="text"
-              placeholder="담임목사 이름 (선택)"
+              placeholder="담임목사 이름"
               value={newPastorName}
               onChange={(e) => setNewPastorName(e.target.value)}
               disabled={creating}
@@ -317,7 +323,7 @@ export default function ChurchSearchPage() {
                 type="button"
                 className={styles.btnPrimary}
                 onClick={() => void handleSubmitCreate()}
-                disabled={creating}
+                disabled={creating || !newChurchName.trim() || !newPastorName.trim()}
               >
                 {creating ? "개설 중..." : "개설하기"}
               </button>
