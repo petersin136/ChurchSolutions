@@ -63,12 +63,16 @@ async function fetchChurchForUser(userId: string): Promise<{ churchId: string; c
       const { data, error } = churchUsersResult;
       console.log("[Auth] church_users 쿼리 완료:", { data, error: error?.message });
 
-      if (error || !data) {
-        console.warn("[Auth] church_users 조회 실패:", error?.message ?? "no data");
+      if (error) {
+        console.warn("[Auth] church_users 조회 에러:", error.message);
         if (attempt < MAX_RETRIES) {
           await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
           continue;
         }
+        return null;
+      }
+      if (!data) {
+        console.log("[Auth] church_users 미등록 사용자 — 즉시 null 반환 (재시도 없음)");
         return null;
       }
 

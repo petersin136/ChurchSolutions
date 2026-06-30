@@ -55,7 +55,7 @@ function filterChurches(query: string): ChurchSearchItem[] {
 }
 
 export default function ChurchSearchPage() {
-  const { session, refreshChurch } = useAuth();
+  const { session, refreshChurch, signOut } = useAuth();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
@@ -148,6 +148,11 @@ export default function ChurchSearchPage() {
     setCreateError(null);
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/login");
+  };
+
   const handleCancelCreate = () => {
     setCreateMode(false);
     setNewChurchName("");
@@ -202,6 +207,9 @@ export default function ChurchSearchPage() {
       <p className={styles.footerText}>찾으시는 교회가 없나요?</p>
       <button type="button" className={styles.footerLink} onClick={handleCreateChurch}>
         교회 개설하기
+      </button>
+      <button type="button" className={styles.footerLink} onClick={handleLogout}>
+        다른 계정으로 로그인
       </button>
     </footer>
   );
