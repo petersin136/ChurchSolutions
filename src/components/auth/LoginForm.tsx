@@ -12,6 +12,7 @@ import {
   loadPendingLoginEmail,
 } from "@/lib/pending-login";
 import { PasswordInput } from "@/components/auth/PasswordInput";
+import { getOAuthRedirectUrl } from "@/lib/auth-redirect";
 
 function LoginFormInner() {
   const router = useRouter();
@@ -21,7 +22,14 @@ function LoginFormInner() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "kakao" | null>(null);
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("error") === "oauth") {
+      setError("소셜 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const emailFromQuery = searchParams.get("email")?.trim();
@@ -69,40 +77,46 @@ function LoginFormInner() {
     router.replace("/");
   };
 
-  const handleGoogleLogin = async () => {
+  const startOAuth = async (provider: "google" | "kakao") => {
     if (!supabase) {
       setError("서버 연결에 실패했습니다.");
       return;
     }
     setError("");
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+    setOauthLoading(provider);
+
+    const redirectTo = getOAuthRedirectUrl("/");
+    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider,
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo,
+        skipBrowserRedirect: true,
+        ...(provider === "kakao" ? { scopes: "profile_nickname profile_image" } : {}),
       },
     });
+
     if (oauthError) {
-      setError("구글 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.");
+      setOauthLoading(null);
+      setError(
+        provider === "google"
+          ? "구글 로그인에 실패했어요. 잠시 후 다시 시도해 주세요."
+          : "카카오 로그인에 실패했어요. 잠시 후 다시 시도해 주세요."
+      );
+      return;
     }
+
+    if (!data?.url) {
+      setOauthLoading(null);
+      setError("소셜 로그인 URL을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+
+    window.location.assign(data.url);
   };
 
-  const handleKakaoLogin = async () => {
-    if (!supabase) {
-      setError("서버 연결에 실패했습니다.");
-      return;
-    }
-    setError("");
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "kakao",
-      options: {
-        redirectTo: `${window.location.origin}/`,
-        scopes: "profile_nickname profile_image",
-      },
-    });
-    if (oauthError) {
-      setError("카카오 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.");
-    }
-  };
+  const handleGoogleLogin = () => void startOAuth("google");
+
+  const handleKakaoLogin = () => void startOAuth("kakao");
 
   if (authLoading) {
     return <AuthPageLoading />;
@@ -247,12 +261,13 @@ function LoginFormInner() {
           type="button"
           className="cu-social"
           onClick={handleKakaoLogin}
-          style={{ ...socialBtnBase, background: "#FEE500", color: "var(--color-black)" }}
+          disabled={oauthLoading !== null}
+          style={{ ...socialBtnBase, background: "#FEE500", color: "var(--color-black)", opacity: oauthLoading ? 0.7 : 1 }}
         >
           <span style={socialIconStyle}>
             <KakaoLogo size={20} />
           </span>
-          Kakao로 시작하기
+          {oauthLoading === "kakao" ? "연결 중..." : "Kakao로 시작하기"}
         </button>
 
         <div style={{ height: 10 }} />
@@ -261,12 +276,13 @@ function LoginFormInner() {
           type="button"
           className="cu-social"
           onClick={handleGoogleLogin}
-          style={{ ...socialBtnBase, background: "#ebebeb", color: "var(--color-black)" }}
+          disabled={oauthLoading !== null}
+          style={{ ...socialBtnBase, background: "#ebebeb", color: "var(--color-black)", opacity: oauthLoading ? 0.7 : 1 }}
         >
           <span style={socialIconStyle}>
             <GoogleLogo size={20} />
           </span>
-          Google로 시작하기
+          {oauthLoading === "google" ? "연결 중..." : "Google로 시작하기"}
         </button>
     </AuthCardShell>
   );

@@ -237,6 +237,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
+      if (typeof window !== "undefined" && window.location.pathname === "/auth/callback") {
+        console.log("[AuthContext] /auth/callback 페이지에서는 자동 로드 스킵");
+        setLoading(false);
+        return;
+      }
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
