@@ -1,29 +1,22 @@
+import { createBrowserClient } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { extractMemberPhotoStoragePath } from "@/lib/member-photo";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 let supabaseInstance: SupabaseClient | null = null;
 
-function getSupabase(): SupabaseClient | null {
-  if (!supabaseUrl || !supabaseAnonKey) return null;
+function initSupabase(): SupabaseClient | null {
+  if (!supabaseUrl || !supabaseAnonKey || typeof window === "undefined") return null;
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        storageKey: "church-solution-auth",
-        storage: typeof window !== "undefined" ? window.localStorage : undefined,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        flowType: "pkce",
-      },
-    });
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
   }
   return supabaseInstance;
 }
 
-/** 브라우저/클라이언트용 싱글턴. auth lock 충돌 방지. */
-export const supabase = getSupabase();
+/** 브라우저/클라이언트용 싱글턴 (쿠키 기반 세션 — OAuth PKCE·모바일 대응) */
+export const supabase = initSupabase();
 
 /** 서버 전용 (API Route). env 없으면 throw. anon 클라이언트와 별도 인스턴스. */
 export function getServiceSupabase(): SupabaseClient {
@@ -43,13 +36,11 @@ export function getAnonSupabase(): SupabaseClient {
   });
 }
 
-import { extractMemberPhotoStoragePath } from "@/lib/member-photo";
-
 /**
  * Supabase Storage에 저장된 성도 프로필 이미지(URL 또는 storage path) 삭제.
  */
 export async function deleteMemberPhotoFromStorage(imageUrl: string | undefined): Promise<void> {
-  const client = getSupabase();
+  const client = initSupabase();
   if (!client || !imageUrl || typeof imageUrl !== "string") return;
   const filePath = extractMemberPhotoStoragePath(imageUrl);
   if (!filePath) return;
