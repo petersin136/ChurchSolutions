@@ -45,6 +45,12 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(auth)/reset-password/page.js"
+    ],
+    "/(auth)/church-search/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/(auth)/church-search/page.css",
+      "static/chunks/app/(auth)/church-search/page.js"
     ]
   }
 }

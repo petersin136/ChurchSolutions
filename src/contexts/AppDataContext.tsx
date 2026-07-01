@@ -483,14 +483,26 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (!cid) return;
     setBgLoading(true);
     try {
-      await Promise.all([refreshAttendance(), refreshNotes()]);
-      await Promise.all([refreshVisits(), refreshPlans()]);
-      await Promise.all([refreshSermons(), refreshNewFamilyPrograms()]);
-      await Promise.all([refreshIncome(), refreshExpense()]);
-      await refreshBudget();
-      await Promise.all([refreshSchoolDepartments(), refreshSchoolClasses(), refreshSchoolEnrollments()]);
-      await Promise.all([refreshWorkflows(), refreshWorkflowSteps(), refreshWorkflowCards()]);
-      await Promise.all([refreshCeremonyTemplates(), refreshCeremonySteps(), refreshCeremonySessions()]);
+      await Promise.all([
+        refreshAttendance(),
+        refreshNotes(),
+        refreshVisits(),
+        refreshPlans(),
+        refreshSermons(),
+        refreshNewFamilyPrograms(),
+        refreshIncome(),
+        refreshExpense(),
+        refreshBudget(),
+        refreshSchoolDepartments(),
+        refreshSchoolClasses(),
+        refreshSchoolEnrollments(),
+        refreshWorkflows(),
+        refreshWorkflowSteps(),
+        refreshWorkflowCards(),
+        refreshCeremonyTemplates(),
+        refreshCeremonySteps(),
+        refreshCeremonySessions(),
+      ]);
     } catch (e) {
       console.error("[AppData] background load error:", e);
     } finally {
@@ -548,11 +560,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     const WATCHED_TABLES = [
       "members", "attendance", "notes", "visits",
-      "income", "expense", "new_family_program",
-      "plans", "sermons", "settings", "budget",
-      "school_departments", "school_classes", "school_enrollments",
-      "workflows", "workflow_steps", "workflow_cards",
-      "ceremony_templates", "ceremony_steps", "ceremony_sessions",
+      "income", "expense", "settings", "budget",
     ];
 
     let channel = supabase.channel(`app-data-${churchId}`);
