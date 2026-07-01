@@ -20,7 +20,7 @@ const SITE_DESCRIPTION =
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: SITE_TITLE,
+    default: "처치업",
     template: "%s | 처치업",
   },
   description: SITE_DESCRIPTION,
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
       "naver-site-verification": "9c477ec400747b6cb9392a584016ec5bd20ca0a3",
     },
   },
-  manifest: "/manifest.json",
+  manifest: "/manifest.json?v=4",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
       { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     shortcut: "/favicon.svg",
-    apple: "/icons/apple-touch-icon.png",
+    apple: "/icons/apple-touch-icon.png?v=4",
   },
   appleWebApp: {
     capable: true,
@@ -82,7 +82,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#3B5998",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0b0c0e" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0c0e" },
+  ],
 };
 
 export const dynamic = "force-dynamic";
@@ -95,6 +98,16 @@ export default function RootLayout({
   return (
     <html lang="ko" className={pretendard.variable} data-theme="orange" data-mode="light">
       <head>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: "html,body{background-color:#0b0c0e}",
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.style.backgroundColor='#0b0c0e';",
+          }}
+        />
         {process.env.NODE_ENV === "development" && (
           <script
             dangerouslySetInnerHTML={{
@@ -127,13 +140,14 @@ export default function RootLayout({
             `,
           }}
         />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#3B5998" />
+        <link rel="manifest" href="/manifest.json?v=4" />
+        <meta name="application-name" content="처치업" />
+        <meta name="theme-color" content="#0b0c0e" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="처치업" />
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=4" />
         <AppleSplashHead />
       </head>
       <body className="antialiased" suppressHydrationWarning={true}>
