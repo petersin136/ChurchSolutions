@@ -48,14 +48,24 @@ export function BrandSplash({ fading = false }: BrandSplashProps) {
   );
 }
 
+function isStandalonePwa(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
 /** 앱 최초 진입 시 브랜드 스플래시 오버레이 (인증 로딩·최소 1.2초 중 더 긴 쪽까지 표시) */
 export function BrandSplashGate() {
   const { loading } = useAuth();
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => !isStandalonePwa());
   const [fading, setFading] = useState(false);
   const mountTimeRef = useRef(Date.now());
 
   useEffect(() => {
+    if (!visible) return;
+
     // 스플래시 동안 PWA 상태바를 다크 톤으로 맞춤.
     // 네이티브 상태바 글씨색(흰색) 강제는 웹/PWA에서 불가 — OS/브라우저 정책에 따름.
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -65,9 +75,10 @@ export function BrandSplashGate() {
     return () => {
       if (meta && previous) meta.setAttribute("content", previous);
     };
-  }, []);
+  }, [visible]);
 
   useEffect(() => {
+    if (!visible) return;
     if (loading) return;
 
     const elapsed = Date.now() - mountTimeRef.current;
@@ -84,7 +95,7 @@ export function BrandSplashGate() {
       clearTimeout(fadeTimer);
       if (removeTimer) clearTimeout(removeTimer);
     };
-  }, [loading]);
+  }, [loading, visible]);
 
   if (!visible) return null;
 

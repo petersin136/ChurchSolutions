@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import "@/styles/print.css";
 import { Providers } from "@/components/Providers";
+import { AppleSplashHead } from "@/components/pwa/AppleSplashHead";
 
 const pretendard = localFont({
   src: "../public/fonts/PretendardVariable.woff2",
@@ -61,14 +62,18 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
     shortcut: "/favicon.svg",
-    apple: "/icons/icon-192x192.png",
+    apple: "/icons/apple-touch-icon.png",
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "교회솔루션",
+    statusBarStyle: "black-translucent",
+    title: "처치업",
   },
 };
 
@@ -126,8 +131,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#3B5998" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="처치업" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <AppleSplashHead />
       </head>
       <body className="antialiased" suppressHydrationWarning={true}>
         <Script
