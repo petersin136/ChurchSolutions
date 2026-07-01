@@ -1,7 +1,8 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
+  "/(main)/page": "app/(main)/page.js",
   "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/(auth)/church-search/page": "app/(auth)/church-search/page.js",
   "/(auth)/forgot-password/page": "app/(auth)/forgot-password/page.js",
   "/(auth)/reset-password/page": "app/(auth)/reset-password/page.js",
-  "/(main)/page": "app/(main)/page.js"
+  "/(auth)/church-search/page": "app/(auth)/church-search/page.js"
 }
