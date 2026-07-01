@@ -1,30 +1,9 @@
 {
-  "app/(auth)/auth/confirmed/page.tsx -> @/components/auth/EmailConfirmedForm": {
-    "id": "app/(auth)/auth/confirmed/page.tsx -> @/components/auth/EmailConfirmedForm",
-    "files": [
-      "static/css/_app-pages-browser_src_components_auth_EmailConfirmedForm_tsx.css",
-      "static/chunks/_app-pages-browser_src_components_auth_EmailConfirmedForm_tsx.js"
-    ]
-  },
-  "app/(auth)/forgot-password/page.tsx -> @/components/auth/ForgotPasswordForm": {
-    "id": "app/(auth)/forgot-password/page.tsx -> @/components/auth/ForgotPasswordForm",
-    "files": [
-      "static/css/_app-pages-browser_src_components_auth_ForgotPasswordForm_tsx.css",
-      "static/chunks/_app-pages-browser_src_components_auth_ForgotPasswordForm_tsx.js"
-    ]
-  },
   "app/(auth)/login/page.tsx -> @/components/auth/LoginForm": {
     "id": "app/(auth)/login/page.tsx -> @/components/auth/LoginForm",
     "files": [
       "static/css/_app-pages-browser_src_components_auth_LoginForm_tsx.css",
       "static/chunks/_app-pages-browser_src_components_auth_LoginForm_tsx.js"
-    ]
-  },
-  "app/(auth)/register/page.tsx -> @/components/auth/RegisterForm": {
-    "id": "app/(auth)/register/page.tsx -> @/components/auth/RegisterForm",
-    "files": [
-      "static/css/_app-pages-browser_src_components_auth_RegisterForm_tsx.css",
-      "static/chunks/_app-pages-browser_src_components_auth_RegisterForm_tsx.js"
     ]
   },
   "app/(main)/page.tsx -> @/components/MainPageClient": {
