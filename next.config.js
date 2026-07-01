@@ -14,14 +14,20 @@ const createNextConfig = (phase) => ({
   },
 
   async rewrites() {
-    return [{ source: "/favicon.ico", destination: "/api/favicon" }];
+    return [{ source: "/favicon.ico", destination: "/favicon.svg" }];
   },
 
   async headers() {
     return [
       {
+        source: "/manifest.json",
+        headers: [
+          { key: "Cache-Control", value: "no-store, no-cache, must-revalidate" },
+        ],
+      },
+      {
         // _next/static, _next/image, _next/data, api, favicon은 캐시 제어 예외
-        source: "/((?!_next/static|_next/image|_next/data|api|favicon.ico).*)",
+        source: "/((?!_next/static|_next/image|_next/data|api|favicon.ico|manifest.json).*)",
         headers: [
           { key: "Cache-Control", value: "no-store, no-cache, must-revalidate" },
         ],

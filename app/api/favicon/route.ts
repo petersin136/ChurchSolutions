@@ -1,13 +1,15 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { NextResponse } from "next/server";
 
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⛪</text></svg>`;
+const faviconSvg = readFileSync(join(process.cwd(), "public/favicon.svg"), "utf8");
 
-/** /favicon.ico 요청 시 SVG 파비콘 반환 (404 방지) */
+/** /favicon.ico 요청 시 public/favicon.svg 내용 반환 */
 export function GET() {
-  return new NextResponse(svg, {
+  return new NextResponse(faviconSvg, {
     headers: {
       "Content-Type": "image/svg+xml",
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "public, max-age=3600, must-revalidate",
     },
   });
 }
