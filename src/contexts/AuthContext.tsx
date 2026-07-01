@@ -40,9 +40,9 @@ async function fetchChurchForUser(userId: string): Promise<{ churchId: string; c
     return null;
   }
 
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 2;
   /** Vercel 등 느린 네트워크 대비 — church_users / churches 각 단계당 동일 적용 */
-  const TIMEOUT_MS = 15000;
+  const TIMEOUT_MS = 6000;
   const RETRY_DELAY_MS = 1000;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -112,61 +112,103 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isRegistering, setIsRegistering] = useState(false);
   const isRegisteringRef = useRef(false);
+  /** loadChurch 중복 호출 방지 — 현재 로딩 중인 userId */
+  const loadingChurchUserIdRef = useRef<string | null>(null);
+  /** loadChurch 중복 호출 방지 — 마지막으로 fetch 완료한 userId */
+  const loadedChurchUserIdRef = useRef<string | null>(null);
+  /** 동일 userId에 대한 진행 중 Promise (getSession + onAuthStateChange 합류용) */
+  const loadChurchInflightRef = useRef<Promise<void> | null>(null);
+  /** onAuthStateChange — user.id 변경 감지용 */
+  const lastAuthUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     isRegisteringRef.current = isRegistering;
   }, [isRegistering]);
 
-  const loadChurch = useCallback(async (userId: string) => {
-    const cachedId =
-      typeof window !== "undefined" ? localStorage.getItem(CHURCH_ID_KEY) : null;
-    const hasValidCache = !!(
-      cachedId &&
-      cachedId !== "null" &&
-      cachedId !== "undefined"
-    );
+  const loadChurch = useCallback(async (userId: string, options?: { force?: boolean }) => {
+    const force = options?.force ?? false;
 
-    if (hasValidCache && typeof window !== "undefined") {
-      const cachedName = localStorage.getItem(CHURCH_NAME_KEY);
-      setChurchId(cachedId);
-      setChurchName(cachedName ?? "");
-      console.log("[Auth] 캐시로 즉시 표시, 백그라운드에서 DB 동기화:", cachedId);
+    if (!force) {
+      if (loadedChurchUserIdRef.current === userId) {
+        console.log("[Auth] loadChurch 스킵 — 이미 로드 완료:", userId);
+        return;
+      }
+      if (loadingChurchUserIdRef.current === userId && loadChurchInflightRef.current) {
+        console.log("[Auth] loadChurch 스킵 — 로딩 중, 기존 Promise 대기:", userId);
+        return loadChurchInflightRef.current;
+      }
+    } else {
+      loadedChurchUserIdRef.current = null;
     }
 
-    const syncFromDb = async () => {
-      const result = await fetchChurchForUser(userId);
-      if (result && result.churchId) {
-        console.log("[AuthContext] church_users 조회 결과:", result);
-        console.log("[AuthContext] churchId DB 동기화 (localStorage 덮어쓰기):", result.churchId);
-        setChurchId(result.churchId);
-        setChurchName(result.churchName);
-        if (typeof window !== "undefined") {
-          localStorage.setItem(CHURCH_ID_KEY, result.churchId);
-          if (result.churchName) localStorage.setItem(CHURCH_NAME_KEY, result.churchName);
+    loadingChurchUserIdRef.current = userId;
+
+    const run = async () => {
+      const cachedId =
+        typeof window !== "undefined" ? localStorage.getItem(CHURCH_ID_KEY) : null;
+      const hasValidCache = !!(
+        cachedId &&
+        cachedId !== "null" &&
+        cachedId !== "undefined"
+      );
+
+      if (hasValidCache && typeof window !== "undefined") {
+        const cachedName = localStorage.getItem(CHURCH_NAME_KEY);
+        setChurchId(cachedId);
+        setChurchName(cachedName ?? "");
+        console.log("[Auth] 캐시로 즉시 표시, 백그라운드에서 DB 동기화:", cachedId);
+      }
+
+      const syncFromDb = async () => {
+        const result = await fetchChurchForUser(userId);
+        if (result && result.churchId) {
+          console.log("[AuthContext] church_users 조회 결과:", result);
+          console.log("[AuthContext] churchId DB 동기화 (localStorage 덮어쓰기):", result.churchId);
+          setChurchId(result.churchId);
+          setChurchName(result.churchName);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(CHURCH_ID_KEY, result.churchId);
+            if (result.churchName) localStorage.setItem(CHURCH_NAME_KEY, result.churchName);
+          }
+        } else if (!hasValidCache) {
+          console.warn("[AuthContext] church_users 조회 실패 (캐시 없음) — localStorage 정리");
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(CHURCH_ID_KEY);
+            localStorage.removeItem(CHURCH_NAME_KEY);
+          }
+          setChurchId(null);
+          setChurchName(null);
+          console.log("[AuthContext] church_users 미등록 유저 — churchId null 유지");
+        } else {
+          console.warn("[AuthContext] DB 조회 실패 — 캐시된 churchId 유지");
         }
-      } else if (!hasValidCache) {
-        console.warn("[AuthContext] church_users 조회 실패 (캐시 없음) — localStorage 정리");
-        if (typeof window !== "undefined") {
-          localStorage.removeItem(CHURCH_ID_KEY);
-          localStorage.removeItem(CHURCH_NAME_KEY);
-        }
-        setChurchId(null);
-        setChurchName(null);
-        console.log("[AuthContext] church_users 미등록 유저 — churchId null 유지");
+      };
+
+      if (hasValidCache) {
+        loadedChurchUserIdRef.current = userId;
+        void syncFromDb();
       } else {
-        console.warn("[AuthContext] DB 조회 실패 — 캐시된 churchId 유지");
+        await syncFromDb();
+        loadedChurchUserIdRef.current = userId;
       }
     };
 
-    if (hasValidCache) {
-      void syncFromDb();
-    } else {
-      await syncFromDb();
-    }
+    const inflight = run().finally(() => {
+      if (loadingChurchUserIdRef.current === userId) {
+        loadingChurchUserIdRef.current = null;
+      }
+      if (loadChurchInflightRef.current === inflight) {
+        loadChurchInflightRef.current = null;
+      }
+    });
+
+    loadChurchInflightRef.current = inflight;
+    return inflight;
   }, []);
 
   const refreshChurch = useCallback(async () => {
     if (user?.id) {
-      await loadChurch(user.id);
+      await loadChurch(user.id, { force: true });
     }
   }, [user, loadChurch]);
 
@@ -198,8 +240,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(s?.user ?? null);
         if (s?.user) {
           console.log("[Auth] loadChurch 호출:", s.user.id);
+          lastAuthUserIdRef.current = s.user.id;
           await loadChurch(s.user.id);
         } else {
+          lastAuthUserIdRef.current = null;
+          loadedChurchUserIdRef.current = null;
           setChurchId(null);
           setChurchName(null);
           console.log("[AuthContext] 세션 없음 — churchId null 유지");
@@ -221,7 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    } = supabase.auth.onAuthStateChange(async (event, s) => {
       if (cancelled) return;
       if (isRegisteringRef.current) {
         console.log("[AuthContext] 회원가입 중 - onAuthStateChange 무시");
@@ -237,11 +282,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
+
+      const newUserId = s?.user?.id ?? null;
+      const userIdUnchanged = newUserId !== null && newUserId === lastAuthUserIdRef.current;
+      const skipChurchReload =
+        event === "TOKEN_REFRESHED" ||
+        event === "INITIAL_SESSION" ||
+        userIdUnchanged;
+
+      if (skipChurchReload) {
+        console.log("[Auth] onAuthStateChange — church 재조회 스킵:", event, newUserId);
+        setSession(s);
+        setUser(s?.user ?? null);
+        return;
+      }
+
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
+        lastAuthUserIdRef.current = s.user.id;
         await loadChurch(s.user.id);
       } else {
+        lastAuthUserIdRef.current = null;
+        loadedChurchUserIdRef.current = null;
         setChurchId(null);
         setChurchName(null);
         localStorage.removeItem(CHURCH_ID_KEY);
@@ -282,6 +345,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setChurchId(null);
     setChurchName(null);
+    lastAuthUserIdRef.current = null;
+    loadedChurchUserIdRef.current = null;
+    loadingChurchUserIdRef.current = null;
+    loadChurchInflightRef.current = null;
 
     if (typeof window !== "undefined") {
       try { localStorage.clear(); } catch {}
