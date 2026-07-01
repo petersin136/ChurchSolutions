@@ -1,4 +1,11 @@
 {
+  "app/(auth)/login/page.tsx -> @/components/auth/LoginForm": {
+    "id": "app/(auth)/login/page.tsx -> @/components/auth/LoginForm",
+    "files": [
+      "static/css/_app-pages-browser_src_components_auth_LoginForm_tsx.css",
+      "static/chunks/_app-pages-browser_src_components_auth_LoginForm_tsx.js"
+    ]
+  },
   "app/(main)/page.tsx -> @/components/MainPageClient": {
     "id": "app/(main)/page.tsx -> @/components/MainPageClient",
     "files": [

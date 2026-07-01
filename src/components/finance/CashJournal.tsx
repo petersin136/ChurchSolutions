@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect, useCallback, type CSSProperties } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 import type { CashJournalEntry } from "@/types/db";
 import type { Income } from "@/types/db";
 import type { Expense } from "@/types/db";
@@ -95,6 +96,7 @@ const selStyle = (mob: boolean): CSSProperties => ({
 });
 
 export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: CashJournalProps) {
+  const { churchId } = useAuth();
   const mob = useIsMobile();
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -109,7 +111,7 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    if (!supabase) {
+    if (!supabase || !churchId) {
       setEntries([]);
       setLoading(false);
       return;
@@ -118,6 +120,7 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
     const { data: viewData, error: viewError } = await supabase
       .from("cash_journal")
       .select("*")
+      .eq("church_id", churchId)
       .gte("date", startDate)
       .lte("date", endDate)
       .order("date", { ascending: true });
@@ -140,11 +143,13 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
     const { data: incomes, error: incErr } = await supabase
       .from("income")
       .select("*")
+      .eq("church_id", churchId)
       .gte("date", startDate)
       .lte("date", endDate);
     const { data: expenses, error: expErr } = await supabase
       .from("expense")
       .select("*")
+      .eq("church_id", churchId)
       .gte("date", startDate)
       .lte("date", endDate);
 
@@ -166,7 +171,7 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
     });
     setEntries(list);
     setLoading(false);
-  }, [startDate, endDate, toast]);
+  }, [startDate, endDate, toast, churchId]);
 
   useEffect(() => {
     loadData();
