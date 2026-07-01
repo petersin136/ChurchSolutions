@@ -1,1 +1,5 @@
-{}
+{
+  "/(main)/page": "app/(main)/page.js",
+  "/(auth)/auth/callback/route": "app/(auth)/auth/callback/route.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js"
+}
