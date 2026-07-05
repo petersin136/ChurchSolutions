@@ -12,6 +12,10 @@ export interface ShellNavValue {
   currentPage: string;
   setCurrentPage: (id: string) => void;
   tabs: ShellNavTab[];
+  /** 상단바 우측 로그아웃 */
+  onLogout?: () => void;
+  /** 상단바 우측 검색 실행(Enter). 미전달 시 검색 입력창만 표시 */
+  onSearch?: (query: string) => void;
 }
 
 const ShellNavContext = createContext<ShellNavValue | null>(null);

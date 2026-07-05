@@ -125,6 +125,8 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
     currentPage: currentPage as string,
     setCurrentPage: (id: string) => setCurrentPage(id as PageId),
     tabs: TAB_CONFIG.map(({ id, label }) => ({ id: id as string, label })),
+    onLogout: handleLogout,
+    onSearch: handleQuickSearch,
   };
 
   return (

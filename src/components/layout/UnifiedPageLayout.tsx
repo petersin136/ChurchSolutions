@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useContext, createContext, type R
 import Image from "next/image";
 import { Home, type LucideIcon } from "lucide-react";
 import { GlobalTopBar } from "./GlobalTopBar";
+import { SidebarProfile } from "./SidebarProfile";
 
 /**
  * 레이아웃 중첩 깊이. 최상위(0)에서만 상단 메인 메뉴바를 그려
@@ -145,6 +146,10 @@ export interface UnifiedPageLayoutProps {
   contentBg?: string;
   /** 데스크톱 콘텐츠 좌우 패딩(px). 미지정 시 24 */
   contentPaddingX?: number;
+  /** true면 데스크톱에서 페이지 제목 헤더(제목+설명)를 숨김(표시만, 컴포넌트 유지). 모바일은 햄버거 때문에 항상 표시 */
+  hideHeader?: boolean;
+  /** 데스크톱 상단 메뉴바(GlobalTopBar) 우측(검색창 옆)에 렌더할 페이지 액션(예: +새가족) */
+  topbarActions?: ReactNode;
 }
 
 export function UnifiedPageLayout({
@@ -155,7 +160,7 @@ export function UnifiedPageLayout({
   navSections,
   activeId,
   onNav,
-  versionText = "v1.0",
+  versionText: _versionText = "v1.0",
   headerTitle,
   headerDesc,
   headerActions,
@@ -166,6 +171,8 @@ export function UnifiedPageLayout({
   contentTopGap,
   contentBg,
   contentPaddingX,
+  hideHeader = false,
+  topbarActions,
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
   const [sideOpen, setSideOpen] = useState(false);
@@ -226,6 +233,8 @@ export function UnifiedPageLayout({
   const sidebarExpanded = mob || sideOpen;
   const contentMarginTop = contentTopGap !== undefined ? contentTopGap : mob ? 16 : 20;
   const compactMainChrome = contentTopGap === 0;
+  /** 데스크톱에서만 페이지 제목 헤더를 숨김(모바일은 햄버거 버튼이 헤더에 있어 유지) */
+  const hideDesktopHeader = hideHeader && !mob;
 
   return (
     <UnifiedLayoutDepthContext.Provider value={layoutDepth + 1}>
@@ -442,14 +451,13 @@ export function UnifiedPageLayout({
 
         <div
           style={{
-            padding: LAYOUT.sidebarFooterPadding,
+            padding: "12px 16px",
             borderTop: LAYOUT.sidebarHeaderBorder,
-            fontSize: LAYOUT.sidebarFooterFontSize,
-            color: "var(--color-text-faint)",
-            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          {versionText}
+          <SidebarProfile expanded={sidebarExpanded} churchNameFallback={_churchName} />
         </div>
       </aside>
 
@@ -477,7 +485,8 @@ export function UnifiedPageLayout({
             overflow: "hidden",
           }}
         >
-            {showGlobalTopBar && <GlobalTopBar />}
+            {showGlobalTopBar && <GlobalTopBar actions={topbarActions} />}
+            {!hideDesktopHeader && (
             <header
               style={
                 mob
@@ -573,6 +582,7 @@ export function UnifiedPageLayout({
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, alignSelf: "center" }}>{headerActions}</div>
         </header>
+        )}
 
         {mob && navSections.length > 0 && !hideMobileSubTabs && (
           <div

@@ -3905,7 +3905,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       headerDesc={info.desc}
       headerActions={
         <>
-          {!mob && <SBadge variant="success">● 정상 운영중</SBadge>}
           {info.addLabel && activeSub !== "notes" && <Btn variant="primary" size="sm" onClick={topAdd}>{mob ? "+" : info.addLabel}</Btn>}
         </>
       }
@@ -3914,6 +3913,12 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       contentBg={activeSub === "dashboard" ? DASH_GLOBAL.bg : undefined}
       contentPaddingX={activeSub === "dashboard" ? DASH_CARD.gap + 8 : undefined}
       contentTopGap={activeSub === "dashboard" ? DASH_CARD.topGap : undefined}
+      hideHeader={activeSub === "dashboard"}
+      topbarActions={
+        activeSub === "dashboard"
+          ? <Btn variant="primary" size="sm" onClick={() => openMemberModal()}>+ 새가족</Btn>
+          : undefined
+      }
     >
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} rawAttendance={rawAttendance} />}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} churchId={churchId} />}
