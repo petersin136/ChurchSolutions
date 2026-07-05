@@ -1557,44 +1557,89 @@ html, body {
   white-space: nowrap;
 }
 
-/* 탭 영역 — 파일철(folder tab) 스타일 */
+/* 탭 영역 — 디자이너 시안: 메뉴 텍스트 + 566px 1px 기준선 */
 .pc-top-nav-tabs {
   display: flex;
   align-items: flex-end;
-  gap: 0;
-  flex: 1;
+  gap: 56px; /* 메뉴 간 간격 56px 고정 */
+  flex: none;
   height: 100%;
   padding-left: 4px;
+  position: relative;
+}
+
+/* 메뉴 전체를 받치는 가로 기준선: 1px, #D2D4DB, 566px */
+.pc-top-nav-tabs::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  bottom: 0;
+  width: 566px;
+  max-width: 100%;
+  height: 1px;
+  background: #d2d4db;
+  pointer-events: none;
 }
 
 .pc-nav-tab {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
+  gap: 0;
+  padding: 0 0 12px 0;
   border: none;
   background: none;
+  font-family: 'Pretendard', 'Inter', system-ui, sans-serif;
   font-size: 14px;
-  font-weight: 500;
-  color: var(--pc-nav-text);
+  font-weight: 400; /* Pretendard Regular */
+  color: #0b0c0e;
+  letter-spacing: 0.35px; /* 포토샵 자간 5 */
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: font-weight 0.12s ease, border-color 0.12s ease;
   white-space: nowrap;
   position: relative;
   height: 100%;
+  align-items: flex-end;
+  /* 인디케이터: 텍스트 폭에 100% 일치하도록 각 버튼 border-bottom (2px) */
   border-bottom: 2px solid transparent;
+  z-index: 1; /* 566px 기준선 위에 얹힘 */
+}
+
+/* 아이콘은 상단 메뉴바에서 숨김 (시안: 텍스트만) */
+.pc-nav-tab svg {
+  display: none;
 }
 
 .pc-nav-tab:hover {
-  color: var(--text1);
-  background: var(--pc-nav-hover-bg);
+  color: #0b0c0e;
+  font-weight: 600; /* hover 시 SemiBold */
+  background: none;
+  border-bottom: 2px solid #0b0c0e;
 }
 
 .pc-nav-tab.active {
-  color: var(--color-text);
+  color: #0b0c0e;
   font-weight: 600;
-  border-bottom: 2px solid var(--color-primary);
+  border-bottom: 2px solid #0b0c0e;
   background: none;
+}
+
+/* ── 구조 재배치: 데스크톱은 전폭 상단바를 숨기고, 사이드바 오른쪽 콘텐츠 위에 메뉴바를 얹는다 ── */
+@media (min-width: 1025px) {
+  .pc-top-nav {
+    display: none !important;
+  }
+}
+
+/* 콘텐츠 영역 상단 메뉴바 (사이드바 오른쪽). 내부 .pc-top-nav-tabs·.pc-nav-tab 스펙 재사용 */
+.pc-content-topbar {
+  display: flex;
+  align-items: stretch;
+  height: 52px;
+  min-height: 52px;
+  flex-shrink: 0;
+  padding: 0 24px;
+  background: transparent;
+  box-sizing: border-box;
 }
 
 /* 오른쪽 유저 영역 — 모바일 전용 (데스크톱은 pc-right-bar 사용) */

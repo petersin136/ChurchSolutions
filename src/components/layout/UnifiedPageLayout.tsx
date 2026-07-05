@@ -1,14 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, type ReactNode, type ComponentType, type TouchEvent } from "react";
+import { useState, useEffect, useMemo, useRef, useContext, createContext, type ReactNode, type ComponentType, type TouchEvent } from "react";
+import Image from "next/image";
 import { Home, type LucideIcon } from "lucide-react";
+import { GlobalTopBar } from "./GlobalTopBar";
+
+/**
+ * 레이아웃 중첩 깊이. 최상위(0)에서만 상단 메인 메뉴바를 그려
+ * 중첩된 UnifiedPageLayout(예: 문자/통계 서브)에서 메뉴바가 중복 렌더되는 것을 막는다.
+ */
+const UnifiedLayoutDepthContext = createContext(0);
 
 /** 사이드바 메뉴 아이콘 (LucideIcon, ComponentType<any> 등 모두 허용) */
 export type NavItemIcon = ComponentType<any>;
 
 /* ---------- 레이아웃 토큰 (심방·상담 등 서브페이지와 맞춤) ---------- */
 const LAYOUT = {
-  sidebarWidth: 260,
+  sidebarWidth: 240,
   sidebarWidthCollapsed: 64,
   sidebarBg: "var(--color-surface-sidebar)",
   sidebarBorder: "var(--color-border)",
@@ -63,16 +71,25 @@ const SIDEBAR_NAV_AREA = {
   padding: "8px 10px 12px 10px",
 } as const;
 
-/** 사이드바 메뉴 항목 — 페이지·뷰포트와 무관하게 동일 */
+/** 사이드바 메뉴 항목 — 디자이너 시안(목양 대시보드) 기준 */
 const SIDEBAR_MENU_ITEM = {
   fontSize: 15,
-  fontWeight: 600,
-  padding: "12px 16px",
-  gap: 9,
+  /** 기본 Regular, hover/active만 SemiBold */
+  fontWeight: 400,
+  fontWeightActive: 600,
+  /** [아이콘 18][여백 10][글씨] */
+  gap: 10,
+  iconSize: 18,
   lineHeight: "1.4",
   letterSpacing: "0",
-  iconSize: 22,
-  transition: "background-color 0.15s ease",
+  /** hover/active 흰색 라운드 박스 = 200x40, radius 8 (240px 사이드바 안 가운데 정렬) */
+  boxWidth: 200,
+  boxHeight: 40,
+  boxRadius: 8,
+  boxBg: "#ffffff",
+  /** 글씨색은 상태 무관 #0b0c0e */
+  color: "#0b0c0e",
+  transition: "background-color 0.15s ease, font-weight 0.12s ease",
 } as const;
 
 function useIsMobile(bp = 1024) {
@@ -124,13 +141,17 @@ export interface UnifiedPageLayoutProps {
   hideMobileSubTabs?: boolean;
   /** 메인 콘텐츠 상단 여백(px) — `children` 래퍼 `marginTop`. 미지정 시 모바일 16·데스크톱 20 */
   contentTopGap?: number;
+  /** 콘텐츠 스크롤 영역 배경색. 미지정 시 기존 값(var(--color-surface-muted)) */
+  contentBg?: string;
+  /** 데스크톱 콘텐츠 좌우 패딩(px). 미지정 시 24 */
+  contentPaddingX?: number;
 }
 
 export function UnifiedPageLayout({
-  pageTitle,
+  pageTitle: _pageTitle,
   pageSubtitle: _pageSubtitle,
-  churchName,
-  sidebarTitle,
+  churchName: _churchName,
+  sidebarTitle: _sidebarTitle,
   navSections,
   activeId,
   onNav,
@@ -143,6 +164,8 @@ export function UnifiedPageLayout({
   accentColor: _accentColor,
   hideMobileSubTabs = false,
   contentTopGap,
+  contentBg,
+  contentPaddingX,
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
   const [sideOpen, setSideOpen] = useState(false);
@@ -186,20 +209,26 @@ export function UnifiedPageLayout({
   }, [mob]);
 
   const IconComp = SidebarIcon ?? Home;
+  const layoutDepth = useContext(UnifiedLayoutDepthContext);
+  const isOutermost = layoutDepth === 0;
+  /** 데스크톱 + 최상위 레이아웃에서만 상단 메인 메뉴바를 콘텐츠 영역 위에 렌더 */
+  const showGlobalTopBar = isOutermost && !mob;
 
-  const sidebarChurchLine =
-    (churchName && churchName.trim()) || (pageTitle && pageTitle.trim()) || "교회 이름";
-  const sidebarDateLine = new Date().toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const sidebarContextLine = (sidebarTitle && sidebarTitle.trim()) || headerTitle;
+  /** 시안: "2026. 07. 01. WED" (Inter) */
+  const sidebarDateLine = (() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const wd = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][d.getDay()];
+    return `${y}. ${m}. ${day}. ${wd}`;
+  })();
   const sidebarExpanded = mob || sideOpen;
   const contentMarginTop = contentTopGap !== undefined ? contentTopGap : mob ? 16 : 20;
   const compactMainChrome = contentTopGap === 0;
 
   return (
+    <UnifiedLayoutDepthContext.Provider value={layoutDepth + 1}>
     <div
       style={{
         fontFamily: "var(--font-sans)",
@@ -254,42 +283,27 @@ export function UnifiedPageLayout({
               boxSizing: "border-box",
             }}
           >
+            {/* church up 로고 — 사이드바 최상단 (기존 상단바 로고에서 이동) */}
+            <div style={{ marginBottom: 10 }}>
+              <Image
+                src="/churchup-logo-black.png"
+                alt="church up"
+                width={1000}
+                height={167}
+                priority
+                style={{ width: 120, height: "auto", display: "block" }}
+              />
+            </div>
             <div
               style={{
-                fontSize: 20,
-                fontWeight: 800,
-                color: "var(--color-text)",
-                letterSpacing: "-0.3px",
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: 14,
+                letterSpacing: "-0.28px", // 자간 -20
                 lineHeight: 1.3,
-                marginBottom: 4,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
               }}
             >
-              {sidebarChurchLine}
-            </div>
-            <div
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: "var(--color-text-muted)",
-                marginBottom: 6,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {sidebarContextLine}
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 400,
-                color: "var(--color-text-faint)",
-              }}
-            >
-              {sidebarDateLine}
+              <span style={{ fontWeight: 400, color: "#c2c5cd" }}>Today </span>
+              <span style={{ fontWeight: 500, color: "#9fa4b0" }}>{sidebarDateLine}</span>
             </div>
           </div>
         ) : (
@@ -351,22 +365,27 @@ export function UnifiedPageLayout({
                   display: "flex" as const,
                   alignItems: "center" as const,
                   gap: SIDEBAR_MENU_ITEM.gap,
-                  padding: SIDEBAR_MENU_ITEM.padding,
+                  padding: "0 16px",
+                  height: SIDEBAR_MENU_ITEM.boxHeight,
                   fontSize: SIDEBAR_MENU_ITEM.fontSize,
-                  fontWeight: SIDEBAR_MENU_ITEM.fontWeight,
+                  fontWeight: isActive ? SIDEBAR_MENU_ITEM.fontWeightActive : SIDEBAR_MENU_ITEM.fontWeight,
                   lineHeight: SIDEBAR_MENU_ITEM.lineHeight,
                   letterSpacing: SIDEBAR_MENU_ITEM.letterSpacing,
                   transition: SIDEBAR_MENU_ITEM.transition,
-                  borderRadius: 8,
+                  borderRadius: SIDEBAR_MENU_ITEM.boxRadius,
                   border: "none",
-                  backgroundColor: isActive ? "var(--color-primary-soft)" : "transparent",
-                  color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+                  backgroundColor: isActive ? SIDEBAR_MENU_ITEM.boxBg : "transparent",
+                  boxShadow: isActive ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+                  color: SIDEBAR_MENU_ITEM.color,
                   cursor: "pointer" as const,
                   fontFamily: "inherit",
                   textAlign: "left" as const,
                   whiteSpace: "nowrap" as const,
                   position: "relative" as const,
-                  width: "100%",
+                  /* 200px 박스를 240px 사이드바 안에서 가운데 정렬 */
+                  width: sidebarExpanded ? SIDEBAR_MENU_ITEM.boxWidth : "100%",
+                  marginLeft: sidebarExpanded ? "auto" : undefined,
+                  marginRight: sidebarExpanded ? "auto" : undefined,
                   boxSizing: "border-box" as const,
                 };
                 return (
@@ -377,17 +396,21 @@ export function UnifiedPageLayout({
                     style={navBtnStyle}
                     onMouseEnter={(e) => {
                       if (mob || isActive) return;
-                      e.currentTarget.style.backgroundColor = "var(--color-primary-soft)";
+                      e.currentTarget.style.backgroundColor = SIDEBAR_MENU_ITEM.boxBg;
+                      e.currentTarget.style.fontWeight = String(SIDEBAR_MENU_ITEM.fontWeightActive);
+                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)";
                     }}
                     onMouseLeave={(e) => {
                       if (mob || isActive) return;
                       e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.fontWeight = String(SIDEBAR_MENU_ITEM.fontWeight);
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
                     <Icon
                       size={SIDEBAR_MENU_ITEM.iconSize}
-                      strokeWidth={1.5}
-                      color={isActive ? "var(--color-primary)" : "var(--color-text-faint)"}
+                      strokeWidth={1.75}
+                      color={SIDEBAR_MENU_ITEM.color}
                       style={{
                         width: SIDEBAR_MENU_ITEM.iconSize,
                         height: SIDEBAR_MENU_ITEM.iconSize,
@@ -454,6 +477,7 @@ export function UnifiedPageLayout({
             overflow: "hidden",
           }}
         >
+            {showGlobalTopBar && <GlobalTopBar />}
             <header
               style={
                 mob
@@ -619,11 +643,11 @@ export function UnifiedPageLayout({
             minHeight: 0,
             width: "100%",
             overflowY: "auto",
-            background: LAYOUT.contentAreaBg,
+            background: contentBg ?? LAYOUT.contentAreaBg,
             WebkitOverflowScrolling: "touch",
             paddingTop: 0,
-            paddingLeft: mob ? LAYOUT.mainContentPaddingMob : LAYOUT.mainContentPadding,
-            paddingRight: mob ? LAYOUT.mainContentPaddingMob : LAYOUT.mainContentPadding,
+            paddingLeft: mob ? LAYOUT.mainContentPaddingMob : (contentPaddingX ?? LAYOUT.mainContentPadding),
+            paddingRight: mob ? LAYOUT.mainContentPaddingMob : (contentPaddingX ?? LAYOUT.mainContentPadding),
             paddingBottom: 120,
             fontSize: mob ? 14 : 15,
             lineHeight: 1.55,
@@ -634,5 +658,6 @@ export function UnifiedPageLayout({
         </div>
       </main>
     </div>
+    </UnifiedLayoutDepthContext.Provider>
   );
 }

@@ -18,6 +18,7 @@ import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, Sparkles, Fi
 import { WorkflowBoard } from "@/components/workflow";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
+import { DASH_CARD, DASH_GLOBAL } from "@/styles/pastoralDashboardTokens";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
@@ -987,8 +988,8 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
           const noteTotal = recentNotes.length;
 
           const cardBase: CSSProperties = {
-            background: C.card,
-            border: `1px solid ${C.border}`,
+            background: DASH_CARD.bg,
+            border: DASH_CARD.border, // 1px solid rgba(0,0,0,0.03) — 시안 카드 공통
             borderRadius: 16,
             padding: 20,
             boxShadow: "0 1px 2px rgba(60,40,20,0.04), 0 4px 12px rgba(60,40,20,0.06)",
@@ -1149,7 +1150,7 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
         {/* minWidth: 0으로 그리드 셀이 주별 차트 너비에 의해 늘어나 옆 칸(상태별 현황)을 침범하지 않도록 함 */}
         <div style={{ minWidth: 0 }}>
         {/* overflow: visible so 연도 선택 드롭다운이 카드에 잘리지 않음 */}
-        <Card style={{ padding: 0, overflow: "visible", minWidth: 0 }}>
+        <Card style={{ padding: 0, overflow: "visible", minWidth: 0, border: DASH_CARD.border }}>
           {mob ? (
             <div style={{ padding: "8px 12px", borderBottom: `1px solid ${C.border}` }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text)", marginBottom: 8 }}>
@@ -1281,7 +1282,7 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
         </Card>
         </div>
 
-        <Card style={{ padding: 0, overflow: "hidden" }}>
+        <Card style={{ padding: 0, overflow: "hidden", border: DASH_CARD.border }}>
           <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
             <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>상태별 현황</h4>
           </div>
@@ -1299,7 +1300,7 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
           </div>
         </Card>
 
-        <Card style={{ padding: 0, overflow: "hidden" }}>
+        <Card style={{ padding: 0, overflow: "hidden", border: DASH_CARD.border }}>
           <div style={{ padding: mob ? "12px 16px" : "16px 24px", borderBottom: `1px solid ${C.border}` }}>
             <h4 style={{ margin: 0, fontSize: mob ? 14 : 16, fontWeight: 700, color: C.text }}>부서별 인원</h4>
           </div>
@@ -1322,8 +1323,8 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
 
         <div
           style={{
-            background: C.card,
-            border: `1px solid ${C.border}`,
+            background: DASH_CARD.bg,
+            border: DASH_CARD.border, // 현황 보고 — 시안 카드 공통 테두리
             borderRadius: 16,
             padding: 24,
             boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
@@ -3910,6 +3911,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       }
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
+      contentBg={activeSub === "dashboard" ? DASH_GLOBAL.bg : undefined}
+      contentPaddingX={activeSub === "dashboard" ? DASH_CARD.gap + 8 : undefined}
+      contentTopGap={activeSub === "dashboard" ? DASH_CARD.topGap : undefined}
     >
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} rawAttendance={rawAttendance} />}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} churchId={churchId} />}

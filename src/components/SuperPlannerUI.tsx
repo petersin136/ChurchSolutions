@@ -14,6 +14,7 @@ import { SchoolPage } from "./school/SchoolPage";
 import { ReportsPage } from "./ReportsPage";
 import { SettingsPage } from "./SettingsPage";
 import { useAuth } from "@/contexts/AuthContext";
+import { ShellNavProvider } from "@/contexts/ShellNavContext";
 
 const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[] = [
   { id: "pastoral", label: "목양", Icon: Users },
@@ -120,7 +121,14 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
   const noop = () => {};
   const noopStr = (_: string | null) => {};
 
+  const shellNavValue = {
+    currentPage: currentPage as string,
+    setCurrentPage: (id: string) => setCurrentPage(id as PageId),
+    tabs: TAB_CONFIG.map(({ id, label }) => ({ id: id as string, label })),
+  };
+
   return (
+    <ShellNavProvider value={shellNavValue}>
     <div className="superplanner-root">
       <div className="pc-app-frame">
       <header className="pc-top-nav">
@@ -278,5 +286,6 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
 
       <Toast toasts={toasts} />
     </div>
+    </ShellNavProvider>
   );
 }
