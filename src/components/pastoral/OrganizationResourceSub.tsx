@@ -59,6 +59,8 @@ const INPUT_PLACEHOLDERS: Record<OrgTab, string> = {
   place: "장소 이름을 입력하세요",
 };
 
+const PLACE_CAPACITY_PLACEHOLDER = "수용 인원 (명)";
+
 function parseDeptList(depts: string): string[] {
   return depts.split(",").map((d) => d.trim()).filter(Boolean);
 }
@@ -316,6 +318,9 @@ function OrgFormModal({
   onClose,
   onSubmit,
   submitLabel = "등록",
+  capacityValue,
+  onCapacityChange,
+  capacityPlaceholder,
 }: {
   open: boolean;
   title: string;
@@ -325,8 +330,24 @@ function OrgFormModal({
   onClose: () => void;
   onSubmit: () => void;
   submitLabel?: string;
+  capacityValue?: string;
+  onCapacityChange?: (v: string) => void;
+  capacityPlaceholder?: string;
 }) {
   if (!open) return null;
+  const fieldStyle: CSSProperties = {
+    width: "100%",
+    height: ORG_RESOURCE.modalInputHeight,
+    padding: "0 16px",
+    boxSizing: "border-box",
+    border: "none",
+    borderRadius: ORG_RESOURCE.modalInputRadius,
+    background: ORG_RESOURCE.modalInputBg,
+    fontSize: ORG_RESOURCE.modalInputFontSize,
+    fontFamily: ORG_RESOURCE.fontKR,
+    color: "#0b0c0e",
+    outline: "none",
+  };
   return (
     <div
       className="modal-bg open"
@@ -350,22 +371,19 @@ function OrgFormModal({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
-          style={{
-            width: "100%",
-            height: ORG_RESOURCE.modalInputHeight,
-            padding: "0 16px",
-            boxSizing: "border-box",
-            border: "none",
-            borderRadius: ORG_RESOURCE.modalInputRadius,
-            background: ORG_RESOURCE.modalInputBg,
-            fontSize: ORG_RESOURCE.modalInputFontSize,
-            fontFamily: ORG_RESOURCE.fontKR,
-            color: "#0b0c0e",
-            outline: "none",
-            marginBottom: 20,
-          }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !onCapacityChange) onSubmit(); }}
+          style={{ ...fieldStyle, marginBottom: onCapacityChange ? 12 : 20 }}
         />
+        {onCapacityChange && (
+          <input
+            value={capacityValue ?? ""}
+            onChange={(e) => onCapacityChange(e.target.value.replace(/\D/g, ""))}
+            placeholder={capacityPlaceholder ?? PLACE_CAPACITY_PLACEHOLDER}
+            inputMode="numeric"
+            onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
+            style={{ ...fieldStyle, marginBottom: 20 }}
+          />
+        )}
         <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap }}>
           <button type="button" onClick={onClose} style={modalBtnCancel}>취소</button>
           <button type="button" onClick={onSubmit} style={modalBtnSubmit}>{submitLabel}</button>
@@ -494,6 +512,7 @@ export function OrganizationResourceSub({
   const [editName, setEditName] = useState("");
   const [editOldName, setEditOldName] = useState<string | null>(null);
   const [editPlaceId, setEditPlaceId] = useState<string | null>(null);
+  const [editCapacity, setEditCapacity] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState<{ type: OrgTab; name: string; id?: string } | null>(null);
   const [mokjangManage, setMokjangManage] = useState<string | null>(null);
@@ -563,6 +582,7 @@ export function OrganizationResourceSub({
     setEditOldName(null);
     setEditPlaceId(null);
     setEditName("");
+    setEditCapacity("");
     setFormOpen(true);
   };
 
@@ -577,6 +597,7 @@ export function OrganizationResourceSub({
     setEditOldName(null);
     setEditPlaceId(p.id);
     setEditName(p.name);
+    setEditCapacity(p.capacity != null && p.capacity > 0 ? String(p.capacity) : "");
     setFormOpen(true);
   };
 
@@ -660,20 +681,26 @@ export function OrganizationResourceSub({
       toast(editOldName ? "목장이 수정되었습니다" : "목장이 추가되었습니다", "ok");
     } else if (tab === "place") {
       if (!supabase || !churchId) return;
+      const cap = editCapacity.trim() ? Number(editCapacity) : null;
+      if (editCapacity.trim() && (Number.isNaN(cap) || cap! <= 0)) {
+        toast("수용 인원을 올바르게 입력하세요", "err");
+        return;
+      }
       try {
         if (editPlaceId) {
-          const { error } = await supabase.from(TB_PLACES).update({ name: trimmed }).eq("id", editPlaceId);
+          const { error } = await supabase.from(TB_PLACES).update({ name: trimmed, capacity: cap }).eq("id", editPlaceId);
           if (error) throw error;
         } else {
           const { error } = await supabase.from(TB_PLACES).insert({
             church_id: churchId,
             name: trimmed,
+            capacity: cap,
             equipment: [],
             sort_order: places.length,
             is_active: true,
           });
           if (error) throw error;
-          assignSlotColor(trimmed, places.length);
+          assignSlotColor(`place:new-${trimmed}`, places.length);
         }
         await loadPlaces();
         toast(editPlaceId ? "장소가 수정되었습니다" : "장소가 추가되었습니다", "ok");
@@ -820,6 +847,9 @@ export function OrganizationResourceSub({
         onClose={() => setFormOpen(false)}
         onSubmit={() => void handleSaveForm()}
         submitLabel={editOldName || editPlaceId ? "저장" : "등록"}
+        capacityValue={tab === "place" ? editCapacity : undefined}
+        onCapacityChange={tab === "place" ? setEditCapacity : undefined}
+        capacityPlaceholder={PLACE_CAPACITY_PLACEHOLDER}
       />
 
       <OrgDeleteModal
