@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useContext, createContext, type ReactNode, type ComponentType, type TouchEvent } from "react";
-import Image from "next/image";
 import { Home, type LucideIcon } from "lucide-react";
 import { GlobalTopBar } from "./GlobalTopBar";
 import { SidebarProfile } from "./SidebarProfile";
+import { SidebarBrandMark } from "./SidebarBrandMark";
+import { DASH_COLOR, DASH_GLOBAL, DASH_SIDEBAR } from "@/styles/pastoralDashboardTokens";
 
 /**
  * 레이아웃 중첩 깊이. 최상위(0)에서만 상단 메인 메뉴바를 그려
@@ -17,7 +18,7 @@ export type NavItemIcon = ComponentType<any>;
 
 /* ---------- 레이아웃 토큰 (심방·상담 등 서브페이지와 맞춤) ---------- */
 const LAYOUT = {
-  sidebarWidth: 240,
+  sidebarWidth: DASH_SIDEBAR.width,
   sidebarWidthCollapsed: 64,
   sidebarBg: "var(--color-surface-sidebar)",
   sidebarBorder: "var(--color-border)",
@@ -42,8 +43,10 @@ const LAYOUT = {
   mainHeaderPaddingMob: "8px 12px",
   mainContentPadding: 24,
   mainContentPaddingMob: 10,
-  mainBg: "transparent",
-  contentAreaBg: "var(--color-surface-muted)",
+  mainBg: DASH_GLOBAL.bg,
+  /** 사이드바·콘텐츠·상단바 동일 배경 — 시안 #f4f4f6 */
+  contentAreaBg: DASH_GLOBAL.bg,
+  shellPageBg: DASH_GLOBAL.bg,
   headerTitleFontSize: 24,
   headerTitleFontSizeMob: 18,
   headerDescFontSize: 14,
@@ -67,29 +70,28 @@ const SIDEBAR_HEADER_FIXED = {
   subtitleFontSize: 14,
 } as const;
 
-/** 사이드바 메뉴 리스트 영역 */
+/** 사이드바 메뉴 리스트 영역 — 좌우 inset은 DASH_SIDEBAR.insetX와 동일 */
 const SIDEBAR_NAV_AREA = {
-  padding: "8px 10px 12px 10px",
+  padding: `${DASH_SIDEBAR.dateToMenuGap}px ${DASH_SIDEBAR.insetX}px 12px`,
 } as const;
 
 /** 사이드바 메뉴 항목 — 디자이너 시안(목양 대시보드) 기준 */
 const SIDEBAR_MENU_ITEM = {
-  fontSize: 15,
+  fontSize: DASH_SIDEBAR.menuFontSize,
   /** 기본 Regular, hover/active만 SemiBold */
   fontWeight: 400,
   fontWeightActive: 600,
-  /** [아이콘 18][여백 10][글씨] */
-  gap: 10,
-  iconSize: 18,
+  gap: DASH_SIDEBAR.iconGap,
+  iconSize: DASH_SIDEBAR.iconSize,
   lineHeight: "1.4",
   letterSpacing: "0",
-  /** hover/active 흰색 라운드 박스 = 200x40, radius 8 (240px 사이드바 안 가운데 정렬) */
-  boxWidth: 200,
-  boxHeight: 40,
-  boxRadius: 8,
-  boxBg: "#ffffff",
-  /** 글씨색은 상태 무관 #0b0c0e */
-  color: "#0b0c0e",
+  boxWidth: DASH_SIDEBAR.hoverBoxWidth,
+  boxHeight: DASH_SIDEBAR.hoverBoxHeight,
+  boxRadius: DASH_SIDEBAR.hoverBoxRadius,
+  boxPaddingX: DASH_SIDEBAR.hoverBoxPaddingX,
+  rowGap: DASH_SIDEBAR.itemRowGap,
+  boxBg: DASH_COLOR.cardBg,
+  color: DASH_SIDEBAR.itemColor,
   transition: "background-color 0.15s ease, font-weight 0.12s ease",
 } as const;
 
@@ -144,8 +146,16 @@ export interface UnifiedPageLayoutProps {
   contentTopGap?: number;
   /** 콘텐츠 스크롤 영역 배경색. 미지정 시 기존 값(var(--color-surface-muted)) */
   contentBg?: string;
-  /** 데스크톱 콘텐츠 좌우 패딩(px). 미지정 시 24 */
+  /** 데스크톱 콘텐츠 좌우 패딩(px) — 좌·우 동일. 미지정 시 24 */
   contentPaddingX?: number;
+  /** 데스크톱 콘텐츠 좌측 패딩(px) — contentPaddingX 보다 우선 */
+  contentPaddingLeft?: number;
+  /** 데스크톱 콘텐츠 우측 패딩(px) — contentPaddingX 보다 우선 */
+  contentPaddingRight?: number;
+  /** 데스크톱 콘텐츠 하단 패딩(px). 미지정 시 120(스크롤 여유) */
+  contentPaddingBottom?: number;
+  /** 콘텐츠 영역 기본 서체 — 미지정 시 var(--font-sans) */
+  contentFontFamily?: string;
   /** true면 데스크톱에서 페이지 제목 헤더(제목+설명)를 숨김(표시만, 컴포넌트 유지). 모바일은 햄버거 때문에 항상 표시 */
   hideHeader?: boolean;
   /** 데스크톱 상단 메뉴바(GlobalTopBar) 우측(검색창 옆)에 렌더할 페이지 액션(예: +새가족) */
@@ -171,6 +181,10 @@ export function UnifiedPageLayout({
   contentTopGap,
   contentBg,
   contentPaddingX,
+  contentPaddingLeft,
+  contentPaddingRight,
+  contentPaddingBottom,
+  contentFontFamily,
   hideHeader = false,
   topbarActions,
 }: UnifiedPageLayoutProps) {
@@ -231,6 +245,9 @@ export function UnifiedPageLayout({
     return `${y}. ${m}. ${day}. ${wd}`;
   })();
   const sidebarExpanded = mob || sideOpen;
+  const contentPadLeft = mob ? LAYOUT.mainContentPaddingMob : (contentPaddingLeft ?? contentPaddingX ?? LAYOUT.mainContentPadding);
+  const contentPadRight = mob ? LAYOUT.mainContentPaddingMob : (contentPaddingRight ?? contentPaddingX ?? LAYOUT.mainContentPadding);
+  const contentPadBottom = contentPaddingBottom ?? 120;
   const contentMarginTop = contentTopGap !== undefined ? contentTopGap : mob ? 16 : 20;
   const compactMainChrome = contentTopGap === 0;
   /** 데스크톱에서만 페이지 제목 헤더를 숨김(모바일은 햄버거 버튼이 헤더에 있어 유지) */
@@ -269,8 +286,9 @@ export function UnifiedPageLayout({
       <aside
         style={{
           width: mob ? LAYOUT.sidebarWidth : sideOpen ? LAYOUT.sidebarWidth : LAYOUT.sidebarWidthCollapsed,
-          background: LAYOUT.sidebarBg,
-          borderRight: `1px solid ${LAYOUT.sidebarBorder}`,
+          /* 데스크톱: 사이드바·콘텐츠 동일 #f4f4f6 — 메뉴 경계 없음. 모바일 드로어는 기존 유지 */
+          background: mob ? LAYOUT.sidebarBg : LAYOUT.shellPageBg,
+          borderRight: mob ? `1px solid ${LAYOUT.sidebarBorder}` : "none",
           color: "var(--color-text)",
           display: "flex",
           flexDirection: "column",
@@ -286,40 +304,51 @@ export function UnifiedPageLayout({
         {sidebarExpanded ? (
           <div
             style={{
-              padding: "24px 20px 20px 20px",
-              borderBottom: LAYOUT.sidebarHeaderBorder,
+              padding: `${DASH_SIDEBAR.headerPaddingTop}px ${DASH_SIDEBAR.insetX}px 0`,
+              borderBottom: mob ? LAYOUT.sidebarHeaderBorder : "none",
               background: "transparent",
               boxSizing: "border-box",
+              display: "flex",
+              justifyContent: "center",
             }}
           >
-            {/* church up 로고 — 사이드바 최상단 (기존 상단바 로고에서 이동) */}
-            <div style={{ marginBottom: 10 }}>
-              <Image
-                src="/churchup-logo-black.png"
-                alt="church up"
-                width={1000}
-                height={167}
-                priority
-                style={{ width: 120, height: "auto", display: "block" }}
-              />
-            </div>
+            {/* church + Garb 워드마크 + 날짜 — 로고 폭에 맞춰 Today·날짜 양끝 정렬 */}
             <div
               style={{
-                fontFamily: "'Inter', system-ui, sans-serif",
-                fontSize: 14,
-                letterSpacing: "-0.28px", // 자간 -20
-                lineHeight: 1.3,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "stretch",
+                width: "fit-content",
+                maxWidth: DASH_SIDEBAR.brandWidth,
+                boxSizing: "border-box",
               }}
             >
-              <span style={{ fontWeight: 400, color: "#c2c5cd" }}>Today </span>
-              <span style={{ fontWeight: 500, color: "#9fa4b0" }}>{sidebarDateLine}</span>
+              <SidebarBrandMark />
+              <div
+                style={{
+                  marginTop: DASH_SIDEBAR.logoToDateGap,
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  fontFamily: DASH_GLOBAL.fontLatin,
+                  fontSize: DASH_SIDEBAR.dateFontSize,
+                  letterSpacing: `${DASH_SIDEBAR.dateLetterSpacing}px`,
+                  lineHeight: DASH_SIDEBAR.dateLineHeight,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span style={{ fontWeight: 500, color: DASH_COLOR.sidebarDateToday }}>Today</span>
+                <span style={{ fontWeight: 600, color: DASH_COLOR.sidebarDateValue }}>{sidebarDateLine}</span>
+              </div>
             </div>
           </div>
         ) : (
           <div
             style={{
               padding: "16px 10px",
-              borderBottom: SIDEBAR_HEADER_FIXED.borderBottom,
+              borderBottom: mob ? SIDEBAR_HEADER_FIXED.borderBottom : "none",
               marginBottom: 8,
               display: "flex",
               alignItems: "center",
@@ -354,19 +383,27 @@ export function UnifiedPageLayout({
           }}
         >
           {navSections.map((sec) => (
-            <div key={sec.sectionLabel}>
-              <div
-                style={{
-                  fontSize: LAYOUT.sidebarSectionFontSize,
-                  textTransform: "uppercase",
-                  color: "var(--color-text-faint)",
-                  padding: LAYOUT.sidebarSectionPadding,
-                  letterSpacing: "0.05em",
-                  fontWeight: 600,
-                }}
-              >
-                {sec.sectionLabel}
-              </div>
+            <div
+              key={sec.sectionLabel}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: SIDEBAR_MENU_ITEM.rowGap,
+              }}
+            >
+              {navSections.length > 1 && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: DASH_COLOR.dateValue,
+                    padding: "0 0 8px 0",
+                    fontWeight: 500,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {sec.sectionLabel}
+                </div>
+              )}
               {sec.items.map((n) => {
                 const isActive = activeId === n.id;
                 const Icon = n.Icon;
@@ -374,7 +411,8 @@ export function UnifiedPageLayout({
                   display: "flex" as const,
                   alignItems: "center" as const,
                   gap: SIDEBAR_MENU_ITEM.gap,
-                  padding: "0 16px",
+                  padding: `0 ${SIDEBAR_MENU_ITEM.boxPaddingX}px`,
+                  minHeight: SIDEBAR_MENU_ITEM.boxHeight,
                   height: SIDEBAR_MENU_ITEM.boxHeight,
                   fontSize: SIDEBAR_MENU_ITEM.fontSize,
                   fontWeight: isActive ? SIDEBAR_MENU_ITEM.fontWeightActive : SIDEBAR_MENU_ITEM.fontWeight,
@@ -391,10 +429,7 @@ export function UnifiedPageLayout({
                   textAlign: "left" as const,
                   whiteSpace: "nowrap" as const,
                   position: "relative" as const,
-                  /* 200px 박스를 240px 사이드바 안에서 가운데 정렬 */
                   width: sidebarExpanded ? SIDEBAR_MENU_ITEM.boxWidth : "100%",
-                  marginLeft: sidebarExpanded ? "auto" : undefined,
-                  marginRight: sidebarExpanded ? "auto" : undefined,
                   boxSizing: "border-box" as const,
                 };
                 return (
@@ -452,7 +487,7 @@ export function UnifiedPageLayout({
         <div
           style={{
             padding: "12px 16px",
-            borderTop: LAYOUT.sidebarHeaderBorder,
+            borderTop: mob ? LAYOUT.sidebarHeaderBorder : "none",
             display: "flex",
             flexDirection: "column",
           }}
@@ -485,7 +520,13 @@ export function UnifiedPageLayout({
             overflow: "hidden",
           }}
         >
-            {showGlobalTopBar && <GlobalTopBar actions={topbarActions} />}
+            {showGlobalTopBar && (
+              <GlobalTopBar
+                actions={topbarActions}
+                padLeft={contentPadLeft}
+                padRight={contentPadRight}
+              />
+            )}
             {!hideDesktopHeader && (
             <header
               style={
@@ -656,9 +697,10 @@ export function UnifiedPageLayout({
             background: contentBg ?? LAYOUT.contentAreaBg,
             WebkitOverflowScrolling: "touch",
             paddingTop: 0,
-            paddingLeft: mob ? LAYOUT.mainContentPaddingMob : (contentPaddingX ?? LAYOUT.mainContentPadding),
-            paddingRight: mob ? LAYOUT.mainContentPaddingMob : (contentPaddingX ?? LAYOUT.mainContentPadding),
-            paddingBottom: 120,
+            paddingLeft: contentPadLeft,
+            paddingRight: contentPadRight,
+            paddingBottom: contentPadBottom,
+            fontFamily: contentFontFamily ?? "var(--font-sans)",
             fontSize: mob ? 14 : 15,
             lineHeight: 1.55,
           }}

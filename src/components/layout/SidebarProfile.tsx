@@ -79,7 +79,19 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
           justifyContent: "center",
         }}
       >
-        <Image src={src} alt="프로필" width={36} height={36} style={{ width: 36, height: 36, objectFit: "cover" }} />
+        <Image
+          src={src}
+          alt="프로필"
+          width={36}
+          height={36}
+          style={{
+            width: 36,
+            height: 36,
+            objectFit: "cover",
+            /* 기본 앱 아이콘일 때만 시안처럼 연한 회색 톤으로 (사용자 지정 아바타는 원본 유지) */
+            ...(src === DEFAULT_APP_ICON ? { filter: "grayscale(1) brightness(1.65) opacity(0.55)" } : {}),
+          }}
+        />
       </span>
       {expanded && (
         <div style={{ minWidth: 0, flex: 1, textAlign: "left" }}>

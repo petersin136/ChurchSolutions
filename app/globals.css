@@ -78,7 +78,7 @@ html, body {
   --color-primary-on: #ffffff;
   --color-surface: #ffffff;
   --color-surface-muted: #ffffff;
-  --color-surface-sidebar: #F9FAFB;
+  --color-surface-sidebar: #f4f4f6;
   --color-surface-elevated: #ffffff;
   --color-border: #E5E7EB;
   --color-border-strong: #D1D5DB;
@@ -124,7 +124,7 @@ html, body {
   --color-surface: #ffffff;
   /* Step 1.6: 베이지(primary-soft 혼합) → 뉴트럴 화이트/그레이. 테마(orange/blue/green/purple) 무관하게 사이드바·보더 동일 톤. */
   --color-surface-muted: #ffffff;
-  --color-surface-sidebar: #F9FAFB;
+  --color-surface-sidebar: #f4f4f6;
   --color-surface-elevated: #ffffff;
   --color-border: #E5E7EB;
   --color-border-strong: #D1D5DB;
@@ -1496,6 +1496,29 @@ html, body {
   z-index: 10;
 }
 
+/* 데스크톱: 외부 프레임 제거 + 전체 배경 #f4f4f6 통일(사이드바·메뉴·콘텐츠 경계 없음) */
+@media (min-width: 1025px) {
+  .superplanner-root {
+    background: #f4f4f6 !important;
+  }
+  .pc-app-frame {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: #f4f4f6;
+  }
+  .pc-app-body {
+    background: #f4f4f6;
+  }
+  .pc-app-body > main {
+    background: #f4f4f6;
+  }
+}
+
 /* 상단 바 아래 = 콘텐츠 + 오른쪽 바 가로 배치 */
 .pc-app-body {
   display: flex;
@@ -1564,19 +1587,19 @@ html, body {
   gap: 56px; /* 메뉴 간 간격 56px 고정 */
   flex: none;
   height: 100%;
-  padding-left: 4px;
+  padding-left: 0;
   position: relative;
 }
 
-/* 메뉴 전체를 받치는 가로 기준선: 1px, #D2D4DB, 566px */
+/* 메뉴 전체를 받치는 가로 기준선: 2px, #D2D4DB. 시안처럼 첫 탭·마지막 탭 밖으로 ~32px(≈1cm) 더 연장 */
 .pc-top-nav-tabs::after {
   content: "";
   position: absolute;
-  left: 4px;
+  left: -32px;
+  right: -32px;
   bottom: 0;
-  width: 566px;
-  max-width: 100%;
-  height: 1px;
+  width: auto;
+  height: 2px;
   background: #d2d4db;
   pointer-events: none;
 }
@@ -1585,23 +1608,38 @@ html, body {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 0 0 12px 0;
+  padding: 0 0 11px 0;
   border: none;
   background: none;
   font-family: 'Pretendard', 'Inter', system-ui, sans-serif;
   font-size: 14px;
-  font-weight: 400; /* Pretendard Regular */
+  font-weight: 500; /* 시안: 비활성도 Regular(400)보다 약간 굵은 Medium */
   color: #0b0c0e;
   letter-spacing: 0.35px; /* 포토샵 자간 5 */
   cursor: pointer;
-  transition: font-weight 0.12s ease, border-color 0.12s ease;
+  transition: font-weight 0.12s ease, color 0.12s ease;
   white-space: nowrap;
   position: relative;
   height: 100%;
   align-items: flex-end;
-  /* 인디케이터: 텍스트 폭에 100% 일치하도록 각 버튼 border-bottom (2px) */
-  border-bottom: 2px solid transparent;
-  z-index: 1; /* 566px 기준선 위에 얹힘 */
+  border-bottom: none;
+  z-index: 1; /* 기준선 위에 얹힘 */
+}
+
+/* 활성/hover 인디케이터: 글씨보다 좌우 6px 더 길고, 끝에 살짝 둥근 막대 */
+.pc-nav-tab::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: calc(100% + 12px);
+  height: 3px;
+  background: transparent;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 2;
+  transition: background-color 0.12s ease;
 }
 
 /* 아이콘은 상단 메뉴바에서 숨김 (시안: 텍스트만) */
@@ -1613,14 +1651,17 @@ html, body {
   color: #0b0c0e;
   font-weight: 600; /* hover 시 SemiBold */
   background: none;
-  border-bottom: 2px solid #0b0c0e;
 }
 
 .pc-nav-tab.active {
   color: #0b0c0e;
   font-weight: 600;
-  border-bottom: 2px solid #0b0c0e;
   background: none;
+}
+
+.pc-nav-tab:hover::after,
+.pc-nav-tab.active::after {
+  background: #4e5159;
 }
 
 /* ── 구조 재배치: 데스크톱은 전폭 상단바를 숨기고, 사이드바 오른쪽 콘텐츠 위에 메뉴바를 얹는다 ── */
@@ -1638,10 +1679,10 @@ html, body {
 .pc-content-topbar {
   display: flex;
   align-items: stretch;
-  height: 52px;
-  min-height: 52px;
+  height: 64px;
+  min-height: 64px;
   flex-shrink: 0;
-  padding: 0 24px;
+  padding: 12px 24px 0 40px;
   /* 콘텐츠 배경색과 동일하게 맞춤 (시안) */
   background: #f4f4f6;
   box-sizing: border-box;
@@ -1731,7 +1772,7 @@ html, body {
   border: 1px solid var(--topbar-search-underline);
   background: #eff0f2;
   border-radius: 8px;
-  color: var(--color-text-muted);
+  color: #171719;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -1944,6 +1985,11 @@ html, body {
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     padding-left: 0;
+  }
+
+  .pc-top-nav-tabs::after {
+    left: 0;
+    right: 0;
   }
 
   .pc-top-nav-tabs::-webkit-scrollbar {

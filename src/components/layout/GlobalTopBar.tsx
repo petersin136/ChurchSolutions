@@ -9,13 +9,29 @@ import { useShellNav } from "@/contexts/ShellNavContext";
  * globals.css의 .pc-top-nav-tabs · .pc-nav-tab 규칙을 재사용한다.
  * 우측에는 (페이지 액션) + 검색 입력창(밑줄형, 돋보기 우측) + 로그아웃 아이콘.
  */
-export function GlobalTopBar({ actions }: { actions?: ReactNode }) {
+export function GlobalTopBar({
+  actions,
+  padLeft,
+  padRight,
+}: {
+  actions?: ReactNode;
+  /** 콘텐츠 좌측 여백과 맞춤 (시안 40px) */
+  padLeft?: number;
+  /** 콘텐츠 우측 여백과 맞춤 (시안 24px) */
+  padRight?: number;
+}) {
   const nav = useShellNav();
   const [q, setQ] = useState("");
   if (!nav) return null;
 
   return (
-    <div className="pc-content-topbar">
+    <div
+      className="pc-content-topbar"
+      style={{
+        ...(padLeft != null ? { paddingLeft: padLeft } : {}),
+        ...(padRight != null ? { paddingRight: padRight } : {}),
+      }}
+    >
       <nav className="pc-top-nav-tabs" aria-label="주 메뉴">
         {nav.tabs.map((t) => {
           const isActive = nav.currentPage === t.id;
@@ -61,7 +77,7 @@ export function GlobalTopBar({ actions }: { actions?: ReactNode }) {
           aria-label="로그아웃"
           onClick={() => nav.onLogout?.()}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />

@@ -14,11 +14,11 @@ import {
   isEphemeralMemberPhotoUrl,
 } from "@/lib/member-photo";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
-import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, GitBranch, BookOpenCheck } from "lucide-react";
-import { WorkflowBoard } from "@/components/workflow";
+import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, BookOpenCheck, ArrowUpRight, Plus } from "lucide-react";
+import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT } from "@/styles/pastoralDashboardTokens";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
@@ -32,6 +32,7 @@ import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNot
 import { PcModalShell } from "@/components/common/PcModalShell";
 import SegmentedControl from "@/components/common/SegmentedControl";
 import { tokens } from "@/styles/tokens";
+import { useShellNav } from "@/contexts/ShellNavContext";
 
 const MOB_PANEL_MIN_H = tokens.layout.mobPastoralPanelMinHeight;
 
@@ -131,10 +132,6 @@ const C = {
   orange: "#ea580c",
 } as const;
 
-const statusColors: Record<string, string> = {
-  "새가족": C.accent, "정착중": C.teal, "정착": C.success,
-  "간헐": C.orange, "위험": C.danger, "휴면": C.textMuted,
-};
 const badgeBg: Record<string, [string, string]> = {
   accent: [C.accent, C.accentBg], teal: [C.teal, C.tealBg], success: [C.success, C.successBg],
   warning: [C.warningText, C.warningBg], danger: [C.danger, C.dangerBg], gray: [C.textMuted, C.grayBadgeMuted],
@@ -522,10 +519,6 @@ function StatCard({ label, value, sub, color = C.accent, compact, dense }: { lab
   );
 }
 
-function Progress({ pct, color }: { pct: number; color: string }) {
-  return <div style={{ height: 6, borderRadius: 3, background: C.bg, overflow: "hidden" }}><div style={{ height: "100%", borderRadius: 3, width: `${pct}%`, background: color, transition: "width 0.5s ease" }} /></div>;
-}
-
 function AttDot({ status, onClick, small }: { status: string; onClick: () => void; small?: boolean }) {
   const colors: Record<string, string> = { p: C.success, a: C.danger, n: C.border };
   const s = status === "l" ? "n" : status;
@@ -752,13 +745,14 @@ type PastoralFeedItem = {
   memberName?: string;
 };
 
-function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek: number; rawAttendance: RawAttendanceRow[] }) {
+function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; currentWeek: number; rawAttendance: RawAttendanceRow[]; onNavSub?: (id: SubPage) => void }) {
   const mob = useIsMobile();
+  const shellNav = useShellNav();
   const periodSegmentItems = useMemo(
     () => [
-      { id: "year", label: "연간" },
-      { id: "month", label: "월별" },
-      { id: "week", label: "주별" },
+      { id: "week", label: "W" },
+      { id: "month", label: "M" },
+      { id: "year", label: "Y" },
     ],
     [],
   );
@@ -766,8 +760,8 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
   const attChartYearOptions = useMemo(() => Array.from({ length: 6 }, (_, i) => currentYear - i), [currentYear]);
   const [attChartView, setAttChartView] = useState<AttChartView>("month");
   const [attChartYear, setAttChartYear] = useState(currentYear);
-  const leftColumnRef = useRef<HTMLDivElement>(null);
-  const [leftColumnHeight, setLeftColumnHeight] = useState<number | null>(null);
+  const statsCardRef = useRef<HTMLDivElement>(null);
+  const [statsCardHeight, setStatsCardHeight] = useState<number | null>(null);
 
   const m = db.members.filter(x => x.status !== "졸업/전출");
   const total = m.length;
@@ -799,31 +793,63 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
     return data;
   }, [rawAttendance, attChartYear]);
 
-  const monthlyAtt = useMemo(() => {
-    const data = new Array(12).fill(0);
+  const currentMonthIdx = new Date().getMonth();
+  const isCurrentYearSel = attChartYear === currentYear;
+
+  /** 주별(W): 최근 5주, 각 주 present/total·%, 현재 주 주황 하이라이트 */
+  const weekly5 = useMemo(() => {
+    const start = Math.max(1, Math.min(currentWeek - 4, 48));
+    const weeks: { wk: number; label: string; present: number; total: number; rate: number; isCurrent: boolean }[] = [];
+    for (let wk = start; wk <= start + 4; wk++) {
+      const present = weeklyAtt[wk - 1] ?? 0;
+      const d = new Date(attChartYear, 0, 1 + (wk - 1) * 7);
+      const wom = Math.ceil(d.getDate() / 7);
+      weeks.push({
+        wk,
+        label: `${d.getMonth() + 1}월 ${wom}주차`,
+        present,
+        total,
+        rate: total > 0 ? Math.round((present / total) * 100) : 0,
+        isCurrent: isCurrentYearSel && wk === currentWeek,
+      });
+    }
+    return weeks;
+  }, [weeklyAtt, currentWeek, total, attChartYear, isCurrentYearSel]);
+
+  /** 월별(M): 12개월 평균 출석 명수(주 단위 평균), 현재 월 주황 하이라이트 */
+  const monthlyAvg = useMemo(() => {
+    const sum = new Array(12).fill(0);
+    const svc: Set<number>[] = new Array(12).fill(0).map(() => new Set<number>());
     rawAttendance.filter(r => r.year === attChartYear).forEach(r => {
       if (r.status !== "p" && r.status !== "o") return;
-      const mn = r.date
-        ? new Date(r.date).getMonth()
-        : Math.min(11, Math.floor(((r.week_num ?? 1) - 1) / 4.33));
-      if (mn >= 0 && mn <= 11) data[mn]++;
+      const mn = r.date ? new Date(r.date).getMonth() : Math.min(11, Math.floor(((r.week_num ?? 1) - 1) / 4.33));
+      if (mn < 0 || mn > 11) return;
+      sum[mn]++;
+      svc[mn].add(r.week_num ?? (r.date ? new Date(r.date).getTime() : mn));
     });
-    return data;
-  }, [rawAttendance, attChartYear]);
+    return sum.map((s, i) => ({
+      avg: svc[i].size > 0 ? Math.round(s / svc[i].size) : 0,
+      isCurrent: isCurrentYearSel && i === currentMonthIdx,
+    }));
+  }, [rawAttendance, attChartYear, isCurrentYearSel, currentMonthIdx]);
 
-  const annualSummary = useMemo(() => {
-    const totalPresent = weeklyAtt.reduce((s, v) => s + v, 0);
-    const weeksWithData = weeklyAtt.filter(v => v > 0).length;
-    const avgPerWeek = weeksWithData > 0 ? Math.round(totalPresent / weeksWithData) : 0;
-    const avgRate = total > 0 && weeksWithData > 0 ? Math.round((totalPresent / (weeksWithData * total)) * 100) : 0;
-    return { totalPresent, weeksWithData, avgPerWeek, avgRate };
-  }, [weeklyAtt, total]);
-
-  const statusCounts = useMemo(() => {
-    const r: Record<string, number> = {};
-    m.forEach(s => { r[s.status || ""] = (r[s.status || ""] || 0) + 1; });
-    return r;
-  }, [m]);
+  /** 연간(Y): 최근 3년, 연 평균 출석/총원 %, 최신 연도 주황 하이라이트 */
+  const yearly3 = useMemo(() => {
+    const years = [currentYear - 2, currentYear - 1, currentYear];
+    return years.map(y => {
+      const rows = rawAttendance.filter(r => r.year === y && (r.status === "p" || r.status === "o"));
+      const weeks = new Set<number>();
+      rows.forEach(r => weeks.add(r.week_num ?? 0));
+      const present = weeks.size > 0 ? Math.round(rows.length / weeks.size) : 0;
+      return {
+        year: y,
+        present,
+        total,
+        rate: total > 0 ? Math.round((present / total) * 100) : 0,
+        isCurrent: y === currentYear,
+      };
+    });
+  }, [rawAttendance, currentYear, total]);
 
   const deptCounts = useMemo(() => {
     const r: Record<string, number> = {};
@@ -833,17 +859,17 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
 
   useEffect(() => {
     if (mob) {
-      setLeftColumnHeight(null);
+      setStatsCardHeight(null);
       return;
     }
-    const el = leftColumnRef.current;
+    const el = statsCardRef.current;
     if (!el) return;
 
     let frame = 0;
     const update = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        setLeftColumnHeight(Math.ceil(el.getBoundingClientRect().height));
+        setStatsCardHeight(Math.ceil(el.getBoundingClientRect().height));
       });
     };
 
@@ -937,8 +963,6 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
       .slice(0, 15);
   }, [recentNotes, db.members]);
 
-  const deptColors = [C.accent, C.pink, C.purple, C.success, C.teal, C.orange, C.danger, C.warning];
-
   const summaryCards = useMemo(
     () => [
       { label: "전체 성도", value: `${total}명`, sub: "활성 등록", color: C.primary },
@@ -956,7 +980,7 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 24 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : DASH_LAYOUT.gridGap }}>
       {mob ? (
         <div
           style={{
@@ -994,201 +1018,117 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
       ) : (
         (() => {
           const visitCount = recentNotes.filter((n) => n.type === "visit").length;
-          const noteTotal = recentNotes.length;
 
           const cardBase: CSSProperties = {
             background: DASH_CARD.bg,
-            border: DASH_CARD.border, // 1px solid rgba(0,0,0,0.03) — 시안 카드 공통
-            borderRadius: 16,
-            padding: 20,
-            boxShadow: "0 1px 2px rgba(60,40,20,0.04), 0 4px 12px rgba(60,40,20,0.06)",
+            border: "none",
+            borderRadius: DASH_RADIUS.card,
+            padding: DASH_LAYOUT.topCardPadding,
+            boxShadow: DASH_CARD.floatShadow,
             display: "flex",
             flexDirection: "column",
-            gap: 12,
+            height: DASH_LAYOUT.topCardHeight,
+            boxSizing: "border-box",
+            overflow: "hidden",
           };
-          const labelStyle: CSSProperties = {
-            fontSize: 13, fontWeight: 500, color: C.textMuted, letterSpacing: "-0.01em",
-          };
+          const labelStyle: CSSProperties = { fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: "-0.01em" };
           const subStyle: CSSProperties = { fontSize: 12, color: C.textMuted };
-          const iconBox = (bg: string, fg: string, big = false): CSSProperties => ({
-            width: big ? 36 : 32,
-            height: big ? 36 : 32,
-            borderRadius: big ? 10 : 9,
-            background: bg,
-            color: fg,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          });
+          const splitNum = (v: string): [string, string] => {
+            const m = v.match(/^([\d,]+)(.*)$/);
+            return m ? [m[1], m[2]] : [v, ""];
+          };
+
+          // 2행 4카드: 새가족 / 위험·휴면 / 심방 / 기도
+          const midCards = [
+            { key: "newfamily", label: "새가족", sub: newF > 0 ? "정착 진행 중" : "정착 진행 성도 없음", value: `${newF}명`, has: newF > 0, fill: newF > 0 ? DASH_MID.newFamilyFill : DASH_MID.emptyFill, nav: () => onNavSub?.("newfamily") },
+            { key: "risk", label: "위험/휴면", sub: risk > 0 ? "관심 필요" : "관심 필요 성도 없음", value: `${risk}명`, has: risk > 0, fill: risk > 0 ? DASH_MID.riskFill : DASH_MID.emptyFill, nav: () => onNavSub?.("members") },
+            { key: "visit", label: "심방", sub: "최근 기록", value: `${visitCount}건`, has: false, fill: DASH_MID.visitFill, nav: () => shellNav?.setCurrentPage("visit") },
+            { key: "prayer", label: "기도", sub: prayers > 0 ? "함께 기도합니다" : "함께 기도합니다", value: `${prayers}건`, has: prayers > 0, fill: prayers > 0 ? DASH_MID.prayerFill : DASH_MID.emptyFill, nav: () => onNavSub?.("notes") },
+          ];
 
           return (
+            /* 4열 단일 그리드: 1행 카드는 각 2칸(50:50), 2행 카드는 각 1칸 → 세로·가로 갭이 십자로 정확히 맞음 */
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gridAutoRows: "minmax(120px, auto)",
-                gap: 16,
+                gridTemplateColumns: `repeat(${DASH_LAYOUT.gridColumns}, 1fr)`,
+                gap: DASH_LAYOUT.gridGap,
                 marginTop: 8,
               }}
             >
-              {/* 1. 금주 출석률 (2x2 메인) */}
-              <div style={{ ...cardBase, gridColumn: "span 2", gridRow: "span 2", padding: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={iconBox("color-mix(in srgb, var(--color-success) 16%, var(--color-surface-elevated))", "var(--color-success)", true)}>
-                    <Users size={18} />
-                  </div>
-                  <span style={labelStyle}>{summaryCards[1].label}</span>
+              {/* 1행 좌: 금주 출석률 (2칸 = 50%) */}
+              <div style={{ ...cardBase, gridColumn: "span 2" }}>
+                <span style={labelStyle}>금주 출석률</span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
+                  <span style={{ fontSize: 48, fontWeight: 800, color: C.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{rate}%</span>
+                  <span style={{ fontSize: 13, color: C.textMuted }}>{attTotal}/{total}명 출석</span>
                 </div>
-                <div style={{ fontSize: 44, fontWeight: 700, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.05, marginTop: 4 }}>
-                  {summaryCards[1].value}
-                </div>
-                {summaryCards[1].sub && (
-                  <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>
-                    {summaryCards[1].sub}
-                  </div>
-                )}
-                {/* 출석률 bar 미터 — 항상 20개, %비례 채움 (시안 추출: 채움 #33473b / 빈 #e4e5e9) */}
-                <div style={{ display: "flex", alignItems: "stretch", gap: 6, height: 96, marginTop: "auto" }}>
+                <div style={{ display: "flex", alignItems: "stretch", gap: 4, height: DASH_LAYOUT.attendanceBarHeight, marginTop: "auto" }}>
                   {Array.from({ length: ATT_BAR_COUNT }).map((_, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        flex: 1,
-                        borderRadius: 3,
-                        background: i < attFilledBars ? DASH_CHART.attendanceBarFill : DASH_CHART.attendanceBarEmpty,
-                      }}
-                    />
+                    <div key={i} style={{ flex: 1, borderRadius: 3, background: i < attFilledBars ? DASH_CHART.attendanceBarFill : DASH_CHART.attendanceBarEmpty }} />
                   ))}
                 </div>
               </div>
-
-              {/* 2. 전체 성도 (2x1) */}
+              {/* 1행 우: 전체 성도 (2칸 = 50%) */}
               <div style={{ ...cardBase, gridColumn: "span 2" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={iconBox("color-mix(in srgb, var(--color-primary) 18%, var(--color-surface-elevated))", "var(--color-primary)", true)}>
-                    <Users size={18} />
-                  </div>
-                  <span style={labelStyle}>{summaryCards[0].label}</span>
+                <span style={labelStyle}>전체 성도</span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
+                  <span style={{ fontSize: 40, fontWeight: 800, color: C.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{total}<span style={{ fontSize: 18, fontWeight: 700 }}>명</span></span>
+                  <span style={{ fontSize: 13, color: C.textMuted }}>활동 {activeCount} / 비활동 {inactiveCount}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-                    {summaryCards[0].value}
-                  </div>
-                  <span style={{ ...subStyle, marginLeft: "auto" }}>활동 {activeCount} / 비활동 {inactiveCount}</span>
-                </div>
-                {/* 전체 성도 원 그리드 — 항상 100개, 활성 비율 채움 (시안 추출: 채움 #c8b1ff / 빈 #e3e4e9) */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 4 }}>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${DASH_LAYOUT.memberDotCols}, ${DASH_LAYOUT.memberDotSize}px)`, gridAutoRows: `${DASH_LAYOUT.memberDotSize}px`, columnGap: DASH_LAYOUT.memberDotGap, rowGap: DASH_LAYOUT.memberDotGap, marginTop: "auto", justifyContent: "start" }}>
                   {Array.from({ length: MEMBER_DOT_COUNT }).map((_, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        width: 16,
-                        height: 16,
-                        borderRadius: "50%",
-                        background: i < memberFilledDots ? DASH_CHART.memberDotFill : DASH_CHART.memberDotEmpty,
-                      }}
-                    />
+                    <span key={i} style={{ width: DASH_LAYOUT.memberDotSize, height: DASH_LAYOUT.memberDotSize, borderRadius: "50%", background: i < memberFilledDots ? DASH_CHART.memberDotFill : DASH_CHART.memberDotEmpty }} />
                   ))}
                 </div>
               </div>
-
-              {/* 3. 새가족 (1x1) */}
-              <div style={cardBase}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={iconBox("color-mix(in srgb, var(--color-warning) 18%, var(--color-surface-elevated))", "var(--color-warning)")}>
-                    <Sparkles size={16} />
+              {/* 2행: 새가족 / 위험·휴면 / 심방 / 기도 — 각 1칸 */}
+              {midCards.map((c) => {
+                const [num, suf] = splitNum(c.value);
+                return (
+                  <div key={c.key} style={{ position: "relative", background: c.fill, border: "none", borderRadius: DASH_RADIUS.mid, boxShadow: DASH_CARD.floatShadow, padding: DASH_LAYOUT.midCardPadding, aspectRatio: DASH_LAYOUT.midCardAspectRatio, boxSizing: "border-box", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                    <div style={{ paddingRight: 24 }}>
+                      <div style={labelStyle}>{c.label}</div>
+                      <div style={{ ...subStyle, marginTop: 4 }}>{c.sub}</div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={`${c.label} 바로가기`}
+                      onClick={c.nav}
+                      style={{ position: "absolute", top: 16, right: 16, border: "none", background: "transparent", padding: 0, cursor: "pointer", color: "#1a1a1c", lineHeight: 0 }}
+                    >
+                      <ArrowUpRight size={18} strokeWidth={2} />
+                    </button>
+                    <div style={{ marginTop: "auto", alignSelf: "flex-end", display: "flex", alignItems: "baseline" }}>
+                      <span style={{ fontSize: 30, fontWeight: 800, color: C.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{num}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: C.text, marginLeft: 2 }}>{suf}</span>
+                    </div>
                   </div>
-                  <span style={labelStyle}>{summaryCards[2].label}</span>
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-                  {summaryCards[2].value}
-                </div>
-                {summaryCards[2].sub && <span style={subStyle}>{summaryCards[2].sub}</span>}
-              </div>
-
-              {/* 4. 최근 기록 (1x1) */}
-              <div style={cardBase}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={iconBox("var(--color-border-soft)", "var(--color-text-muted)")}>
-                    <FileText size={16} />
-                  </div>
-                  <span style={labelStyle}>최근 기록</span>
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-                  {noteTotal}건
-                </div>
-                <span style={subStyle}>전체 메모/기도/심방</span>
-              </div>
-
-              {/* 5. 심방 (1x1) */}
-              <div style={cardBase}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={iconBox("color-mix(in srgb, #db2777 18%, var(--color-surface-elevated))", "#db2777")}>
-                    <Heart size={16} />
-                  </div>
-                  <span style={labelStyle}>심방</span>
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-                  {visitCount}건
-                </div>
-                <span style={subStyle}>최근 기록</span>
-              </div>
-
-              {/* 6. 기도제목 (1x1) */}
-              <div style={cardBase}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={iconBox("color-mix(in srgb, var(--color-primary) 18%, var(--color-surface-elevated))", "var(--color-primary)")}>
-                    <TrendingUp size={16} />
-                  </div>
-                  <span style={labelStyle}>{summaryCards[4].label}</span>
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-                  {summaryCards[4].value}
-                </div>
-                {summaryCards[4].sub && <span style={subStyle}>{summaryCards[4].sub}</span>}
-              </div>
-
-              {/* 7. 위험/휴면 (2x1) */}
-              <div style={{ ...cardBase, gridColumn: "span 2" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={iconBox("color-mix(in srgb, var(--color-danger) 16%, var(--color-surface-elevated))", "var(--color-danger)", true)}>
-                    <Users size={18} />
-                  </div>
-                  <span style={labelStyle}>{summaryCards[3].label}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-                    {summaryCards[3].value}
-                  </div>
-                  {summaryCards[3].sub && (
-                    <span style={{ ...subStyle, marginLeft: "auto" }}>{summaryCards[3].sub}</span>
-                  )}
-                </div>
-              </div>
+                );
+              })}
             </div>
           );
         })()
       )}
 
       <div
-        style={{
-          display: mob ? "flex" : "grid",
-          flexDirection: mob ? "column" : undefined,
-          gridTemplateColumns: mob ? undefined : "1fr 1.2fr",
-          gap: mob ? 12 : 16,
-          ...(!mob ? { marginTop: 16, alignItems: "stretch" } : {}),
-        }}
+        style={
+          mob
+            ? { display: "flex", flexDirection: "column", gap: 12 }
+            : {
+                display: "grid",
+                gridTemplateColumns: `${DASH_LAYOUT.bottomLeftFr}fr ${DASH_LAYOUT.bottomRightFr}fr`,
+                gap: DASH_LAYOUT.gridGap,
+              }
+        }
       >
-        <div ref={leftColumnRef} style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 16, minWidth: 0, ...(!mob ? { alignSelf: "start" } : {}) }}>
-        {/* minWidth: 0으로 그리드 셀이 주별 차트 너비에 의해 늘어나 옆 칸(상태별 현황)을 침범하지 않도록 함 */}
-        <div style={{ minWidth: 0 }}>
-        {/* overflow: visible so 연도 선택 드롭다운이 카드에 잘리지 않음 */}
-        <Card style={{ padding: 0, overflow: "visible", minWidth: 0, border: DASH_CARD.border }}>
+        {/* 출석 통계 — 시안: 현황보고와 같은 행, 부서별 인원은 그 아래(스크롤) */}
+        <div ref={statsCardRef} style={{ minWidth: 0, ...(mob ? {} : { gridColumn: 1, gridRow: 1 }) }}>
+        <Card style={{ padding: 0, overflow: "visible", minWidth: 0, border: "none", boxShadow: DASH_CARD.floatShadow, borderRadius: DASH_RADIUS.card }}>
           {mob ? (
             <div style={{ padding: "8px 12px", borderBottom: `1px solid ${C.border}` }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text)", marginBottom: 8 }}>
-                출석 추이
+                출석 통계
               </div>
               <div
                 style={{
@@ -1241,8 +1181,8 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
               </div>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
-              <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>출석 추이</h4>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "16px 24px" }}>
+              <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>출석 통계</h4>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
                 <select value={attChartYear} onChange={e => setAttChartYear(Number(e.target.value))} className="select-modern" style={{ height: 36, minHeight: 36, padding: "8px 36px 8px 12px", width: "auto", minWidth: 80, fontSize: 14, lineHeight: 1.35, boxSizing: "border-box" }}>
                   {attChartYearOptions.map(y => <option key={y} value={y}>{y}년</option>)}
@@ -1256,101 +1196,85 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
               </div>
             </div>
           )}
-          {/* 고정 높이: 연간/월별/주별 전환 시 카드 크기 변하지 않음 */}
-          <div style={{ padding: mob ? "8px 10px" : "16px 20px", height: mob ? tokens.height.mobileChart : tokens.height.desktopChart, minHeight: mob ? tokens.height.mobileChart : tokens.height.desktopChart, boxSizing: "border-box", overflow: mob ? "auto" : "hidden" }}>
-            {attChartView === "year" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", justifyContent: "center" }}>
-                <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
-                  <div style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 18%, var(--color-surface-elevated)) 0%, var(--color-surface) 100%)", borderRadius: 14, padding: "16px 20px", border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 72 }}>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: C.text, letterSpacing: "-0.02em" }}>{annualSummary.totalPresent}</div>
-                    <div style={{ fontSize: 12, color: C.textSub, marginTop: 4, fontWeight: 500 }}>총 출석 인원·주</div>
-                  </div>
-                  <div style={{ background: "linear-gradient(135deg, color-mix(in srgb, var(--color-success) 18%, var(--color-surface-elevated)) 0%, var(--color-surface) 100%)", borderRadius: 14, padding: "16px 20px", border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 72 }}>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: C.success, letterSpacing: "-0.02em" }}>{annualSummary.avgRate}%</div>
-                    <div style={{ fontSize: 12, color: C.textSub, marginTop: 4, fontWeight: 500 }}>평균 출석률 (기록된 주)</div>
-                  </div>
+          <div style={{ padding: mob ? "8px 10px" : "16px 20px", height: mob ? tokens.height.mobileChart : DASH_LAYOUT.attendanceChartHeight, minHeight: mob ? tokens.height.mobileChart : DASH_LAYOUT.attendanceChartHeight, boxSizing: "border-box", overflow: mob ? "auto" : "hidden" }}>
+            {(() => {
+              const emptyMsg = (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: C.textMuted, fontSize: 13 }}>
+                  아직 출석 기록이 없습니다.
                 </div>
-                <div style={{ fontSize: 12, color: C.textSub, padding: "8px 12px", background: C.bg, borderRadius: 10, border: `1px solid ${C.border}` }}>
-                  기록된 주 <strong style={{ color: C.text }}>{annualSummary.weeksWithData}주</strong> · 주당 평균 출석 <strong style={{ color: C.text }}>{annualSummary.avgPerWeek}명</strong>
-                </div>
-              </div>
-            )}
-            {attChartView === "month" && (
-              <div style={{ display: "flex", alignItems: "end", gap: 6, height: mob ? 120 : 160 }}>
-                {monthlyAtt.map((v, i) => {
-                  const maxM = Math.max(...monthlyAtt, 1);
-                  const barMax = mob ? 100 : 140;
-                  const h = Math.max(4, (v / maxM) * barMax);
-                  return (
-                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                      <span style={{ fontSize: 10, color: C.textMuted }}>{v || ""}</span>
-                      <div style={{ width: "100%", height: h, minHeight: 4, background: "linear-gradient(to top, var(--color-primary), color-mix(in srgb, var(--color-primary) 62%, transparent))", borderRadius: "6px 6px 2px 2px", transition: "height 0.3s" }} />
-                      <span style={{ fontSize: 10, color: C.textMuted }}>{i + 1}월</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {attChartView === "week" && (
-              <div style={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
-                <div style={{ overflowX: "auto", overflowY: "hidden", paddingBottom: 6, height: mob ? 120 : 160, flexShrink: 0 }}>
-                  <div style={{ display: "flex", alignItems: "end", gap: 2, minWidth: mob ? 520 : 1040, height: mob ? 120 : 160 }}>
-                    {weeklyAtt.map((v, i) => {
-                      const maxW = Math.max(...weeklyAtt, 1);
-                      const barMaxW = mob ? 100 : 140;
-                      const h = Math.max(4, (v / maxW) * barMaxW);
+              );
+
+              if (attChartView === "week") {
+                const has = weekly5.some(w => w.present > 0);
+                if (!has) return emptyMsg;
+                const barMax = mob ? 116 : 176;
+                const barMin = 52;
+                const maxRate = Math.max(...weekly5.map(x => x.rate), 1);
+                return (
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: mob ? 8 : 16, height: "100%", paddingTop: 8, boxSizing: "border-box" }}>
+                    {weekly5.map((w) => {
+                      const hot = w.isCurrent;
+                      const h = barMin + (w.rate / maxRate) * (barMax - barMin);
                       return (
-                        <div key={i} style={{ flex: 1, minWidth: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                          <span style={{ fontSize: 9, color: C.textMuted }}>{v || ""}</span>
-                          <div style={{ width: "100%", height: h, minHeight: 4, background: "linear-gradient(to top, #0d9488, color-mix(in srgb, #0d9488 62%, transparent))", borderRadius: "4px 4px 0 0", transition: "height 0.3s" }} />
-                          <span style={{ fontSize: 9, color: C.textMuted }}>{i + 1}</span>
+                        <div key={w.wk} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 0 }}>
+                          <div style={{ width: "100%", height: h, borderRadius: "12px 12px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase, display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 4px 0", boxSizing: "border-box" }}>
+                            <span style={{ fontSize: mob ? 16 : 22, fontWeight: 800, color: hot ? "#fff" : DASH_CHART.statTextGray, letterSpacing: "-0.02em", lineHeight: 1 }}>{w.rate}%</span>
+                            <span style={{ fontSize: 11, color: hot ? "rgba(255,255,255,0.9)" : DASH_CHART.statSubGray, marginTop: 3 }}>{w.present}/{w.total}명</span>
+                          </div>
+                          <span style={{ fontSize: 11, color: hot ? C.text : C.textMuted, fontWeight: hot ? 700 : 500, whiteSpace: "nowrap" }}>{w.label}</span>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, flexShrink: 0 }}>1~52주 (가로 스크롤 가능)</div>
-              </div>
-            )}
-          </div>
-        </Card>
-        </div>
+                );
+              }
 
-        <Card style={{ padding: 0, overflow: "hidden", border: DASH_CARD.border }}>
-          <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
-            <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>상태별 현황</h4>
-          </div>
-          <div style={{ padding: "20px 24px" }}>
-            {Object.entries(statusCounts).map(([st, cnt]) => {
-              const pct = total > 0 ? (cnt / total * 100) : 0;
+              if (attChartView === "month") {
+                const MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                const has = monthlyAvg.some(x => x.avg > 0);
+                if (!has) return emptyMsg;
+                const maxM = Math.max(...monthlyAvg.map(x => x.avg), 1);
+                const barMax = mob ? 104 : 159;
+                return (
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: mob ? 4 : 8, height: "100%", paddingTop: 16, boxSizing: "border-box" }}>
+                    {monthlyAvg.map((mm, i) => {
+                      const hot = mm.isCurrent;
+                      const h = Math.max(4, (mm.avg / maxM) * barMax);
+                      return (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 0, justifyContent: "flex-end" }}>
+                          <span style={{ fontSize: 11, color: hot ? DASH_CHART.statBarHighlight : C.textMuted, fontWeight: hot ? 700 : 500 }}>{mm.avg || ""}</span>
+                          <div style={{ width: "100%", height: h, minHeight: 4, borderRadius: "6px 6px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase }} />
+                          <span style={{ fontSize: 10, color: hot ? DASH_CHART.statBarHighlight : C.textMuted, fontWeight: hot ? 700 : 500 }}>{MON[i]}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }
+
+              const has = yearly3.some(y => y.present > 0);
+              if (!has) return emptyMsg;
+              const barMax = mob ? 116 : 176;
+              const barMin = 56;
+              const maxRate = Math.max(...yearly3.map(x => x.rate), 1);
               return (
-                <div key={st} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: C.text, width: 60 }}>{st}</span>
-                  <div style={{ flex: 1 }}><Progress pct={pct} color={statusColors[st] || C.border} /></div>
-                  <span style={{ fontSize: 13, color: C.textMuted, minWidth: 80, textAlign: "right" }}>{cnt}명 ({pct.toFixed(0)}%)</span>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: mob ? 10 : 16, height: "100%", paddingTop: 8, boxSizing: "border-box" }}>
+                  {yearly3.map((y) => {
+                    const hot = y.isCurrent;
+                    const h = barMin + (y.rate / maxRate) * (barMax - barMin);
+                    return (
+                      <div key={y.year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 0 }}>
+                        <div style={{ width: "100%", height: h, borderRadius: "14px 14px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase, display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 4px 0", boxSizing: "border-box" }}>
+                          <span style={{ fontSize: mob ? 18 : 26, fontWeight: 800, color: hot ? "#fff" : DASH_CHART.statTextGray, letterSpacing: "-0.02em", lineHeight: 1 }}>{y.rate}%</span>
+                          <span style={{ fontSize: 11, color: hot ? "rgba(255,255,255,0.9)" : DASH_CHART.statSubGray, marginTop: 3 }}>{y.present}/{y.total}명</span>
+                        </div>
+                        <span style={{ fontSize: 12, color: hot ? C.text : C.textMuted, fontWeight: hot ? 700 : 500 }}>{y.year}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               );
-            })}
-          </div>
-        </Card>
-
-        <Card style={{ padding: 0, overflow: "hidden", border: DASH_CARD.border }}>
-          <div style={{ padding: mob ? "12px 16px" : "16px 24px", borderBottom: `1px solid ${C.border}` }}>
-            <h4 style={{ margin: 0, fontSize: mob ? 14 : 16, fontWeight: 700, color: C.text }}>부서별 인원</h4>
-          </div>
-          <div style={{ padding: "20px 24px" }}>
-            {deptCounts.map(([d, cnt], i) => {
-              const pct = total > 0 ? (cnt / total * 100) : 0;
-              const clr = deptColors[i % deptColors.length];
-              return (
-                <div key={d} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: `${clr}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: clr }}>{d[0]}</div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: C.text, width: 60 }}>{d}</span>
-                  <div style={{ flex: 1 }}><Progress pct={pct} color={clr} /></div>
-                  <span style={{ fontSize: 13, color: C.textMuted }}>{cnt}명</span>
-                </div>
-              );
-            })}
+            })()}
           </div>
         </Card>
         </div>
@@ -1358,13 +1282,22 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
         <div
           style={{
             background: DASH_CARD.bg,
-            border: DASH_CARD.border, // 현황 보고 — 시안 카드 공통 테두리
-            borderRadius: 16,
+            border: "none",
+            borderRadius: DASH_RADIUS.card,
             padding: 24,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            boxShadow: DASH_CARD.floatShadow,
             display: "flex",
             flexDirection: "column",
-            ...(mob ? { minHeight: 320 } : { height: leftColumnHeight ? leftColumnHeight : "100%", maxHeight: leftColumnHeight || undefined, minHeight: 0, overflow: "hidden" }),
+            ...(mob
+              ? { minHeight: 320 }
+              : {
+                  gridColumn: 2,
+                  gridRow: 1,
+                  height: statsCardHeight ?? undefined,
+                  maxHeight: statsCardHeight ?? undefined,
+                  minHeight: 0,
+                  overflow: "hidden",
+                }),
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -1376,76 +1309,96 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
             </span>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 0, overflowY: "auto", overflowX: "hidden", flex: 1, minHeight: 0 }}>
+          <div className="scrollbar-hide" style={{ display: "flex", flexDirection: "column", gap: 0, overflowY: "auto", overflowX: "hidden", flex: 1, minHeight: 0 }}>
             {pastoralFeed.length === 0 ? (
-              <div style={{ textAlign: "center", color: C.textMuted, padding: 40 }}>
-                최근 기록이 없습니다
+              <div style={{ textAlign: "center", color: C.textMuted, padding: "40px 12px", fontSize: 13, lineHeight: 1.7 }}>
+                최근 업데이트된 현황 보고가 없습니다.<br />
+                사역 기록이 등록되면 실시간으로 타임라인이 생성됩니다.
               </div>
             ) : (
-              pastoralFeed.map((item, idx) => (
-                <div
-                  key={item.id}
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    padding: "14px 0",
-                    borderBottom: idx < pastoralFeed.length - 1 ? "1px solid var(--color-border-soft)" : "none",
-                    alignItems: "flex-start",
-                  }}
-                >
+              pastoralFeed.map((item, idx) => {
+                const badge =
+                  item.kind === "newcomer" ? DASH_BADGE.newfamily :
+                  (item.kind === "prayer" || item.icon === "prayer") ? DASH_BADGE.prayer :
+                  item.icon === "visit" ? DASH_BADGE.visit :
+                  item.icon === "event" ? DASH_BADGE.ceremony :
+                  DASH_BADGE.memo;
+                const rawName = item.memberName || item.title || "";
+                const name = rawName === "교회 전체" || /님$/.test(rawName) ? rawName : `${rawName}님`;
+                return (
                   <div
+                    key={item.id}
                     style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 8,
-                      background:
-                        item.kind === "newcomer" ? "var(--color-primary-soft)" :
-                        item.kind === "prayer" || item.icon === "prayer" ? "#FDF4E9" :
-                        item.icon === "visit" ? "#EAF6EE" :
-                        item.icon === "event" ? "#FCEBED" :
-                        "#F4F4F6",
                       display: "flex",
+                      gap: 12,
+                      padding: "13px 0",
+                      borderBottom: idx < pastoralFeed.length - 1 ? "1px solid var(--color-border-soft)" : "none",
                       alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      color:
-                        item.kind === "newcomer" ? "var(--color-primary)" :
-                        item.kind === "prayer" || item.icon === "prayer" ? "#D4A24C" :
-                        item.icon === "visit" ? "#5BAA70" :
-                        item.icon === "event" ? "#D45B6E" :
-                        "#7a839e",
                     }}
                   >
-                    {item.kind === "newcomer" ? <Sparkles size={16} strokeWidth={1.8} /> :
-                     item.icon === "prayer" ? <Heart size={16} strokeWidth={1.8} /> :
-                     item.icon === "visit" ? <Users size={16} strokeWidth={1.8} /> :
-                     <FileText size={16} strokeWidth={1.8} />}
+                    <span style={{ flexShrink: 0, width: 68, textAlign: "center", fontSize: 11, fontWeight: 600, color: badge.fg, background: badge.bg, borderRadius: 6, padding: "5px 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {badge.label}
+                    </span>
+                    <span style={{ flexShrink: 0, width: 64, fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {name}
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {item.body}
+                    </span>
+                    <span style={{ fontSize: 11, color: C.textMuted, flexShrink: 0 }}>
+                      {(() => {
+                        const d = new Date(item.timestamp);
+                        const now = new Date();
+                        const diff = (now.getTime() - d.getTime()) / 1000 / 60;
+                        if (diff < 60) return `${Math.floor(diff)}분 전`;
+                        if (diff < 60 * 24) return `${Math.floor(diff / 60)}시간 전`;
+                        if (diff < 60 * 24 * 7) return `${Math.floor(diff / 60 / 24)}일 전`;
+                        return d.toISOString().slice(5, 10).replace("-", ".");
+                      })()}
+                    </span>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 2 }}>
-                      {item.title}
-                    </div>
-                    {item.body && (
-                      <div style={{ fontSize: 13, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {item.body}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 11, color: C.textMuted, flexShrink: 0, paddingTop: 2 }}>
-                    {(() => {
-                      const d = new Date(item.timestamp);
-                      const now = new Date();
-                      const diff = (now.getTime() - d.getTime()) / 1000 / 60;
-                      if (diff < 60) return `${Math.floor(diff)}분 전`;
-                      if (diff < 60 * 24) return `${Math.floor(diff / 60)}시간 전`;
-                      if (diff < 60 * 24 * 7) return `${Math.floor(diff / 60 / 24)}일 전`;
-                      return d.toISOString().slice(5, 10).replace("-", ".");
-                    })()}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
+        </div>
+
+        <div style={{ minWidth: 0, ...(mob ? {} : { gridColumn: 1, gridRow: 2 }) }}>
+        <Card style={{ padding: 0, overflow: "hidden", border: "none", boxShadow: DASH_CARD.floatShadow, borderRadius: DASH_RADIUS.card }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: mob ? "12px 16px 4px" : "16px 24px 4px" }}>
+            <h4 style={{ margin: 0, fontSize: mob ? 14 : 16, fontWeight: 700, color: C.text }}>부서별 인원</h4>
+            <button
+              type="button"
+              aria-label="성도 관리로 이동"
+              onClick={() => onNavSub?.("members")}
+              style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${C.border}`, background: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.text }}
+            >
+              <Plus size={16} strokeWidth={2} />
+            </button>
+          </div>
+          <div style={{ padding: "20px 24px" }}>
+            {deptCounts.length === 0 ? (
+              <div style={{ textAlign: "center", color: C.textMuted, padding: "24px 0", fontSize: 13, lineHeight: 1.6 }}>
+                등록된 부서가 없습니다.<br />우측 상단의 + 버튼을 눌러 부서를 추가해 주세요.
+              </div>
+            ) : (
+              deptCounts.map(([d, cnt], i) => {
+                const maxCnt = deptCounts[0]?.[1] || 1;
+                const pct = maxCnt > 0 ? (cnt / maxCnt * 100) : 0;
+                const isTop = i === 0;
+                return (
+                  <div key={d} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: i < deptCounts.length - 1 ? 10 : 0 }}>
+                    <div style={{ flex: 1, position: "relative", height: 36, borderRadius: 8, background: DASH_CHART.deptBarOther, overflow: "hidden" }}>
+                      <div style={{ position: "absolute", inset: 0, width: `${Math.max(pct, 12)}%`, background: isTop ? DASH_CHART.deptBarTop : DASH_CHART.deptBarOther, borderRadius: 8 }} />
+                      <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13, fontWeight: 600, color: C.text }}>{d}</span>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: C.text, minWidth: 44, textAlign: "right" }}>{cnt}명</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </Card>
         </div>
       </div>
     </div>
@@ -3382,15 +3335,14 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
 /* ============================================================
    MAIN COMPONENT
    ============================================================ */
-type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "workflow" | "ceremony" | "settings";
+type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | "ceremony" | "settings";
 
 const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dashboard", Icon: LayoutDashboard, label: "대시보드" },
   { id: "members", Icon: Users, label: "성도 관리" },
-  { id: "attendance", Icon: CalendarCheck, label: "출석부" },
-  { id: "notes", Icon: StickyNote, label: "기도/메모" },
+  { id: "attendance", Icon: ClipboardList, label: "출석부" },
+  { id: "notes", Icon: PrayingHandsIcon, label: "기도/메모" },
   { id: "newfamily", Icon: Sprout, label: "새가족 관리" },
-  { id: "workflow", Icon: GitBranch, label: "사역흐름" },
   { id: "ceremony", Icon: BookOpenCheck, label: "식순" },
   { id: "settings", Icon: Settings, label: "목장그룹관리" },
 ];
@@ -3401,12 +3353,11 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   attendance: { title: "출석부", desc: "주일예배 출석·통계를 관리합니다" },
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기도" },
   newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
-  workflow: { title: "사역흐름", desc: "새가족·결석회복·세례 등 자동화된 목양 트랙" },
   ceremony: { title: "식순 가이드", desc: "예배·예식·성례 모든 교회 순서를 단계별로 진행합니다" },
   settings: { title: "목장그룹관리", desc: "목장·소그룹 생성 및 그룹원 관리" },
 };
 
-const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "workflow", "ceremony", "settings"];
+const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "ceremony", "settings"];
 
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const { churchId } = useAuth();
@@ -3945,11 +3896,14 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
       contentBg={activeSub === "dashboard" ? DASH_GLOBAL.bg : undefined}
-      contentPaddingX={activeSub === "dashboard" ? DASH_CARD.gap + 8 : undefined}
-      contentTopGap={activeSub === "dashboard" ? DASH_CARD.topGap : undefined}
+      contentPaddingLeft={activeSub === "dashboard" ? DASH_GLOBAL.contentPadLeft : undefined}
+      contentPaddingRight={activeSub === "dashboard" ? DASH_GLOBAL.contentPadRight : undefined}
+      contentPaddingBottom={activeSub === "dashboard" ? DASH_GLOBAL.contentPadBottom : undefined}
+      contentTopGap={activeSub === "dashboard" ? DASH_GLOBAL.contentPadTop : undefined}
+      contentFontFamily={activeSub === "dashboard" ? DASH_GLOBAL.fontKR : undefined}
       hideHeader={activeSub === "dashboard"}
     >
-          {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} rawAttendance={rawAttendance} />}
+          {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} rawAttendance={rawAttendance} onNavSub={setActiveSub} />}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>
@@ -4090,7 +4044,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           )}
           {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openPrayerModal={openPrayerModal} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
-          {activeSub === "workflow" && <WorkflowBoard toast={toast} />}
           {activeSub === "ceremony" && <CeremonyBoard toast={toast} />}
           {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} mokjangOnly />}
     </UnifiedPageLayout>
