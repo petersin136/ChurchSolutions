@@ -18,7 +18,7 @@ import { LayoutDashboard, Users, CalendarCheck, StickyNote, Sprout, Sparkles, Fi
 import { WorkflowBoard } from "@/components/workflow";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART } from "@/styles/pastoralDashboardTokens";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
@@ -778,6 +778,15 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
   const risk = m.filter(s => s.status === "위험" || s.status === "휴면").length;
   const prayers = m.filter(s => s.prayer && s.prayer.trim()).length;
   const rate = total > 0 ? Math.round(attTotal / total * 100) : 0;
+  /** 활동/비활동 (전체 성도 카드) — status "활동" 만 활성 */
+  const activeCount = m.filter(s => s.status === "활동").length;
+  const inactiveCount = total - activeCount;
+  /** 금주 출석률 bar: 항상 20개, %비례 채움 (round) */
+  const ATT_BAR_COUNT = 20;
+  const attFilledBars = Math.round((rate / 100) * ATT_BAR_COUNT);
+  /** 전체 성도 원: 항상 100개(10x10), 활성 비율 채움 (round) */
+  const MEMBER_DOT_COUNT = 100;
+  const memberFilledDots = total > 0 ? Math.round((activeCount / total) * MEMBER_DOT_COUNT) : 0;
 
   const weeklyAtt = useMemo(() => {
     const data = new Array(52).fill(0);
@@ -1039,6 +1048,19 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
                     {summaryCards[1].sub}
                   </div>
                 )}
+                {/* 출석률 bar 미터 — 항상 20개, %비례 채움 (시안 추출: 채움 #33473b / 빈 #e4e5e9) */}
+                <div style={{ display: "flex", alignItems: "stretch", gap: 6, height: 96, marginTop: "auto" }}>
+                  {Array.from({ length: ATT_BAR_COUNT }).map((_, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        flex: 1,
+                        borderRadius: 3,
+                        background: i < attFilledBars ? DASH_CHART.attendanceBarFill : DASH_CHART.attendanceBarEmpty,
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
 
               {/* 2. 전체 성도 (2x1) */}
@@ -1053,9 +1075,21 @@ function DashboardSub({ db, currentWeek, rawAttendance }: { db: DB; currentWeek:
                   <div style={{ fontSize: 32, fontWeight: 700, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
                     {summaryCards[0].value}
                   </div>
-                  {summaryCards[0].sub && (
-                    <span style={{ ...subStyle, marginLeft: "auto" }}>{summaryCards[0].sub}</span>
-                  )}
+                  <span style={{ ...subStyle, marginLeft: "auto" }}>활동 {activeCount} / 비활동 {inactiveCount}</span>
+                </div>
+                {/* 전체 성도 원 그리드 — 항상 100개, 활성 비율 채움 (시안 추출: 채움 #c8b1ff / 빈 #e3e4e9) */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 4 }}>
+                  {Array.from({ length: MEMBER_DOT_COUNT }).map((_, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: "50%",
+                        background: i < memberFilledDots ? DASH_CHART.memberDotFill : DASH_CHART.memberDotEmpty,
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
 

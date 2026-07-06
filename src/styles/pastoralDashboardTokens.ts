@@ -64,6 +64,18 @@ export const DASH_MENUBAR = {
   indicatorColor: "#0B0C0E",
 } as const;
 
+/** 카드 차트 색상 — 디자이너 시안 PNG에서 픽셀 추출 (추측값 아님) */
+export const DASH_CHART = {
+  /** 금주 출석률 bar — 채워진 진초록 */
+  attendanceBarFill: "#33473b",
+  /** 금주 출석률 bar — 빈 회색 */
+  attendanceBarEmpty: "#e4e5e9",
+  /** 전체 성도 원 — 채워진 보라(라벤더) */
+  memberDotFill: "#c8b1ff",
+  /** 전체 성도 원 — 빈 회색 */
+  memberDotEmpty: "#e3e4e9",
+} as const;
+
 /** 모듈(카드) 공통 */
 export const DASH_CARD = {
   /** 상단 메뉴바와 첫 모듈 사이 */
