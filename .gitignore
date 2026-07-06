@@ -46,3 +46,6 @@ public/sw.js.map
 public/workbox-*.js
 public/worker-*.js
 public/fallback-*.js
+
+.next/
+.next-dev/
