@@ -420,7 +420,7 @@ export const DASH_SECTION = {
   chartYearEmptyMinH: 52,
   feedBadgeWidth: 92,
   feedNameWidth: 96,
-  feedTimeMinWidth: 56,
+  feedTimeMinWidth: 84,
 } as const;
 
 /** 부서별 인원 카드 — 막대·간격 (시안 2번) */

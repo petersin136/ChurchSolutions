@@ -549,9 +549,26 @@ function fmtNoteDate(s: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function parseFeedTimestamp(raw: string | number | Date): Date | null {
+  if (raw == null || raw === "") return null;
+  if (raw instanceof Date) return Number.isNaN(raw.getTime()) ? null : raw;
+  const s = String(raw).trim();
+  const ymd = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (ymd) {
+    return new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+  }
+  const dotted = /^(\d{4})\.(\d{1,2})\.(\d{1,2})/.exec(s);
+  if (dotted) {
+    return new Date(Number(dotted[1]), Number(dotted[2]) - 1, Number(dotted[3]));
+  }
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** 현황 보고 — 항상 YYYY.MM.DD (상대 시간 미사용) */
 function fmtFeedDate(timestamp: string | number | Date): string {
-  const d = new Date(timestamp);
-  if (Number.isNaN(d.getTime())) return "";
+  const d = parseFeedTimestamp(timestamp);
+  if (!d) return "";
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
