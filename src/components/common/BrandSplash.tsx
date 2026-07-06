@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const MIN_DISPLAY_MS = 1200;
 const FADE_OUT_MS = 300;
-const SPLASH_THEME_COLOR = "#0b0c0e";
+const SPLASH_THEME_COLOR = "#f4f4f6";
 
 interface BrandSplashProps {
   fading?: boolean;
@@ -63,7 +63,7 @@ export function BrandSplashGate() {
     meta?.setAttribute("content", SPLASH_THEME_COLOR);
 
     return () => {
-      if (meta && previous) meta.setAttribute("content", previous);
+      if (meta) meta.setAttribute("content", "#f4f4f6");
     };
   }, [visible]);
 

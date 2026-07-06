@@ -20,7 +20,7 @@ export const DASH_GLOBAL = {
   /** 콘텐츠 여백 (상 / 우 / 하 / 좌) */
   contentPadTop: 32,
   contentPadRight: 24,
-  contentPadBottom: 24,
+  contentPadBottom: 0,
   contentPadLeft: 40,
   /** 영문·숫자·기호는 Inter, 한글은 Pretendard */
   fontLatin: "'Inter', 'Pretendard', system-ui, -apple-system, sans-serif",
@@ -79,6 +79,10 @@ export const DASH_SIDEBAR = {
   menuFontSize: 15,
   /** 날짜 아래 → 첫 메뉴(대시보드)까지 */
   dateToMenuGap: 56,
+  /** 하단 프로필 기본 앱 아이콘 배경 — 시안 픽셀 #c2c5cc */
+  profileIconBg: "#c2c5cc",
+  profileIconRadius: 10,
+  profileIconSize: 36,
 } as const;
 
 /** 상단 메인 메뉴바 */
@@ -107,10 +111,10 @@ export const DASH_CHART = {
   attendanceBarFill: "#33473b",
   /** 금주 출석률 bar — 빈 회색 */
   attendanceBarEmpty: "#e4e5e9",
-  /** 전체 성도 원 — 채워진 보라(라벤더) */
-  memberDotFill: "#c8b1ff",
-  /** 전체 성도 원 — 빈 회색 */
-  memberDotEmpty: "#e3e4e9",
+  /** 전체 성도 원 — 채워진 보라(라벤더) — 시안 픽셀 #c3b1fa */
+  memberDotFill: "#c3b1fa",
+  /** 전체 성도 원 — 빈 회색 — 시안 픽셀 #e3e4e8 */
+  memberDotEmpty: "#e3e4e8",
   /** 출석 통계 막대 — 현재/최신 기간 하이라이트(주황) */
   statBarHighlight: "#ff7044",
   /** 출석 통계 막대 — 기본 회색 */
@@ -123,6 +127,108 @@ export const DASH_CHART = {
   statTextGray: "#6f7480",
   /** 출석 통계 — 일반(회색) 막대 위 n/n명 색 (시안 픽셀 추출 #b1b5c0) */
   statSubGray: "#b1b5c0",
+  /** 연간(Y) 겹침 블록 — 뒤쪽 연도(예: 2024) */
+  statBarYearBack: "#b2b8c2",
+  /** 연간(Y) 겹침 블록 — 중간 연도(예: 2025) */
+  statBarYearMid: "#e5e7eb",
+  /** 연간(Y) 겹침 블록 — 뒤쪽 % 텍스트 */
+  statTextYearBack: "#7a8290",
+  statSubYearBack: "#959dab",
+  /** 연간(Y) 겹침 블록 — 중간 % 텍스트 */
+  statTextYearMid: "#9ca3af",
+  statSubYearMid: "#b1b5c0",
+  /** 연간(Y) 겹침 블록 — 최신 연도(주황) 위 텍스트 */
+  statTextYearHighlight: "#c45a3a",
+  statSubYearHighlight: "#d4714f",
+} as const;
+
+/** 출석 통계 카드 헤더 — 연도·W/M/Y (시안 2번) */
+export const DASH_ATT_CHART_CTRL = {
+  yearFontSize: 14,
+  yearFontWeight: 600,
+  yearChevron: "#8b909a",
+  periodBtnSize: 32,
+  periodBtnSizeMob: 28,
+  periodBtnRadius: 8,
+  periodBtnGap: 6,
+  periodActiveBg: "#d8dce3",
+  periodInactiveBg: "#ffffff",
+  periodText: "#0b0c0e",
+  controlsGap: 14,
+  controlsGapMob: 10,
+} as const;
+
+/** 출석 통계 차트 본문 — 패딩·높이(헤더 제외, 하단 라벨 여백 포함) */
+export const DASH_ATT_CHART_LAYOUT = {
+  headerPadding: "14px 24px 8px",
+  bodyHeight: 352,
+  bodyPaddingTop: 6,
+  bodyPaddingX: 20,
+  bodyPaddingBottom: 26,
+  bodyPaddingBottomMob: 16,
+  monthBarMax: 196,
+  monthLabelGap: 8,
+} as const;
+
+/** 출석 통계 W(주별) — 시안 1번 */
+export const DASH_ATT_CHART_W = {
+  barGap: 12,
+  barGapMob: 8,
+  barRadius: 12,
+  barMin: 52,
+  barMax: 168,
+  barMaxMob: 116,
+  columnGap: 10,
+  labelSize: 11,
+  labelMinHeight: 16,
+  labelWeight: 500,
+  labelWeightHot: 700,
+  pctSize: 22,
+  pctSizeMob: 16,
+  pctWeight: 800,
+  subSize: 11,
+  subWeight: 500,
+  barPaddingTop: 8,
+  hotText: "#c45a3a",
+  hotSub: "#d4714f",
+  coldText: "#6f7480",
+  coldSub: "#b1b5c0",
+} as const;
+
+/** 출석 통계 M(월별) — 시안 2번 */
+export const DASH_ATT_CHART_M = {
+  barGap: 6,
+  barGapMob: 4,
+  barRadius: 6,
+  barMin: 4,
+  valueSize: 11,
+  valueWeight: 500,
+  valueWeightHot: 600,
+  valueBarGap: 4,
+  labelSize: 10,
+  labelWeight: 500,
+  labelWeightHot: 700,
+  labelColor: "#9fa4b0",
+  labelColorHot: "#0b0c0e",
+  valueColor: "#9fa4b0",
+  valueColorHot: "#9fa4b0",
+} as const;
+
+/** 출석 통계 Y(연간) — 겹침 블록 */
+export const DASH_ATT_CHART_Y = {
+  blockRadius: 16,
+  blockWidth: "48%",
+  blockWidthMob: "50%",
+  blockOverlap: "-22%",
+  blockOverlapMob: "-24%",
+  barMin: 92,
+  barMinMob: 72,
+  barMax: 200,
+  barMaxMob: 168,
+  bodyPaddingTop: 10,
+  bodyPaddingTopMob: 8,
+  blockPadding: "18px 18px 20px",
+  blockPaddingMob: "14px 14px 18px",
 } as const;
 
 /** 대시보드 카드 공통 radius — 시안 픽셀 추출(각진 편, 12~14px) */
@@ -130,21 +236,23 @@ export const DASH_RADIUS = {
   /** 큰 카드(금주출석률/전체성도/출석통계/부서별/현황보고) */
   card: 14,
   /** 중간 4카드 */
-  mid: 14,
+  mid: 18,
 } as const;
 
 /** 중간 4카드(새가족/위험휴면/심방/기도) 배경 — 시안 픽셀 추출 */
 export const DASH_MID = {
-  /** 새가족 — 연블루 그라디언트 */
-  newFamilyFill: "linear-gradient(135deg, #dce8fe 0%, #ffffff 72%)",
+  /** 새가족 — 시안: 연한 라벤더 → 흰색 그라디언트 */
+  newFamilyFill: "linear-gradient(152deg, #e8efff 0%, #f6f8ff 42%, #ffffff 78%)",
   /** 위험/휴면 — 시안 픽셀 #fbebe1·#f8eee7·#f7efe9 (살구/베이지, 회색 아님) */
-  riskFill: "linear-gradient(135deg, #fbebe1 0%, #ffffff 72%)",
+  riskFill: "linear-gradient(152deg, #fbebe1 0%, #fdf6f1 42%, #ffffff 78%)",
   /** 심방 — 항상 회색(변화 없음) */
   visitFill: "#e9e8ed",
   /** 기도 — 흰색 */
   prayerFill: "#ffffff",
   /** 데이터 없을 때(빈 상태) — 새가족·기도만 */
   emptyFill: "#f2f1f6",
+  /** 카드 흰 테두리 — 시안 픽셀 추출 */
+  cardBorder: "1px solid #ffffff",
 } as const;
 
 /** 현황 보고 태그 배지 — 시안 픽셀 추출 (bg / fg) */
@@ -175,23 +283,216 @@ export const DASH_CARD = {
 export const DASH_LAYOUT = {
   gridColumns: 4,
   gridGap: 16,
-  /** 1행(금주 출석률·전체 성도) — 시안: 가로 2:1보다 세로 여유 */
+  /** 1·2행 공통 높이 — 2행 aspect 기준(ResizeObserver로 1행과 동기화) */
   topCardHeight: 232,
   topCardPadding: 24,
-  attendanceBarHeight: 60,
-  /** 2행(새가족·위험·심방·기도) — 정사각에 가깝게(열 너비 = 높이) */
-  midCardAspectRatio: "1 / 1",
-  midCardPadding: 18,
-  /** 우상단 ↗ 아이콘 — 시안 대비 카드 폭 ~5% */
-  midCardArrowSize: 14,
-  midCardArrowStroke: 2,
-  midCardArrowInset: 18,
+  /** 금주 출석률 세그먼트 막대 높이 — 시안 300px 카드 기준 100px → 232px 카드에 77px */
+  attendanceBarHeight: 77,
+  /** 금주 출석률 세그먼트 간격·모서리 — 시안 픽셀 추출 */
+  attendanceBarGap: 6,
+  attendanceBarRadius: 2,
+  /** 2행(새가족·위험·심방·기도) — 1행과 같은 높이. 값↑ = 카드↓ (짧아짐) */
+  midCardAspectRatio: "1.52 / 1",
+  midCardPadding: 22,
+  /** 우상단 ↗ 아이콘 */
+  midCardArrowSize: 28,
+  midCardArrowStroke: 1.75,
+  midCardArrowInset: 20,
   /** 출석통계(좌) : 현황보고(우). 부서별 인원은 출석통계 아래 별도 행 */
   bottomLeftFr: 1.63,
   bottomRightFr: 1,
-  /** 출석 통계 차트 본문 높이 — 시안: 첫 화면에 출석통계까지만 보이도록 충분히 큼 */
-  attendanceChartHeight: 272,
-  memberDotSize: 10,
-  memberDotGap: 2,
+  /** @deprecated DASH_ATT_CHART_LAYOUT.bodyHeight 사용 */
+  attendanceChartHeight: 352,
+  /** 전체 성도 dot — 시안 300px 카드 기준 ~16.5px → 232px 카드에 13px */
+  memberDotSize: 13,
+  /** 전체 성도 dot 간격 — 시안 ~10.6px → 232px 카드에 8px */
+  memberDotGap: 8,
   memberDotCols: 25,
 } as const;
+
+/** 금주 출석률 카드 타이포·간격 — 시안 PNG 픽셀 추출(300px 카드 → 232px 스케일) */
+export const DASH_ATTENDANCE_CARD = {
+  labelSize: 16,
+  labelWeight: 700,
+  labelValueGap: 10,
+  valueSize: 52,
+  valueWeight: 800,
+  valueLetterSpacing: "-0.03em",
+  subSize: 14,
+  subWeight: 400,
+  valueSubGap: 12,
+} as const;
+
+/** 전체 성도 카드 타이포·간격 — 시안 PNG 픽셀 추출(300px 카드 → 232px 스케일) */
+export const DASH_MEMBER_CARD = {
+  labelSize: 16,
+  labelWeight: 700,
+  labelValueGap: 10,
+  valueSize: 52,
+  valueWeight: 800,
+  valueLetterSpacing: "-0.03em",
+  unitSize: 20,
+  unitWeight: 700,
+  subSize: 14,
+  subWeight: 400,
+  valueSubGap: 12,
+  /** 숫자 ↔ dot 그리드 간격 */
+  dotMarginTop: 18,
+} as const;
+
+/** 2행 중간 카드(새가족/위험·휴면/심방/기도) — 시안 PNG 픽셀 추출 */
+export const DASH_MID_CARD = {
+  labelSize: 19,
+  labelWeight: 700,
+  labelSubGap: 5,
+  subSize: 14,
+  subWeight: 400,
+  subColor: "#8e8e8e",
+  valueSize: 50,
+  valueWeight: 800,
+  valueLetterSpacing: "-0.03em",
+  unitSize: 20,
+  unitWeight: 700,
+  titleReserveRight: 36,
+} as const;
+
+/** 전체 성도 dot — ≤10: 10칸 1행 / 11~20: 1명1칸 2행 / 21~100: 1명1칸 / 100↑: 10단위 */
+export type MemberDotScale = {
+  /** 화면에 그릴 칸 수 */
+  slotCount: number;
+  /** 보라 칸 수 (활동) */
+  activeDots: number;
+  peoplePerDot: number;
+};
+
+const MEMBER_DOT_MIN_SLOTS = 10;
+
+export function getMemberDotScale(total: number, activeCount: number): MemberDotScale {
+  const maxDots = 100;
+
+  if (total <= 0) {
+    return { slotCount: 0, activeDots: 0, peoplePerDot: 1 };
+  }
+
+  let peoplePerDot = 1;
+  let memberSlots = total;
+
+  if (total > maxDots) {
+    peoplePerDot = 10;
+    memberSlots = Math.ceil(total / peoplePerDot);
+    if (memberSlots > maxDots) {
+      peoplePerDot = Math.ceil(total / maxDots);
+      memberSlots = Math.ceil(total / peoplePerDot);
+    }
+  }
+
+  const activeDots = Math.min(Math.round(activeCount / peoplePerDot), memberSlots);
+  const slotCount = total <= MEMBER_DOT_MIN_SLOTS ? MEMBER_DOT_MIN_SLOTS : memberSlots;
+
+  return { slotCount, activeDots, peoplePerDot };
+}
+
+export type MemberDotLayout = {
+  cols: number;
+  rows: number;
+  dotSize: number;
+  gap: number;
+};
+
+const MEMBER_DOT_MIN = 8;
+const MEMBER_DOT_MAX = 24;
+const MEMBER_DOT_GAP_RATIO = 0.55;
+
+/** 카드 dot 영역(너비·높이)과 개수에 맞춰 열 수·원 크기·간격을 계산 */
+export function layoutMemberDotGrid(
+  slotCount: number,
+  width: number,
+  height: number,
+  options?: { maxDotSize?: number },
+): MemberDotLayout {
+  const maxCols = DASH_LAYOUT.memberDotCols;
+  const maxRows = 4;
+  const maxDot = options?.maxDotSize ?? MEMBER_DOT_MAX;
+  const fallback = {
+    cols: maxCols,
+    rows: slotCount > 0 ? Math.ceil(slotCount / maxCols) : 0,
+    dotSize: DASH_LAYOUT.memberDotSize,
+    gap: DASH_LAYOUT.memberDotGap,
+  };
+
+  if (slotCount <= 0 || width <= 0) return fallback;
+
+  /** 10칸 이하: 한 줄로 카드 너비에 꽉 차게 */
+  if (slotCount <= 10) {
+    const cols = slotCount;
+    const rows = 1;
+    const gapRatio = 0.36;
+    let gap = Math.max(5, Math.round((width / (cols + (cols - 1) * gapRatio)) * gapRatio));
+    let dotSize = Math.floor((width - (cols - 1) * gap) / cols);
+    if (height > 0) dotSize = Math.min(dotSize, Math.floor(height));
+    dotSize = Math.max(MEMBER_DOT_MIN, dotSize);
+    gap = Math.max(5, Math.round(dotSize * gapRatio));
+    dotSize = Math.floor((width - (cols - 1) * gap) / cols);
+    return { cols, rows, dotSize, gap };
+  }
+
+  /** 11~20명: 10열 × 2행, 원은 작아지며 너비·높이에 맞춤 */
+  if (slotCount <= 20) {
+    const cols = 10;
+    const rows = 2;
+    const gapRatio = 0.36;
+    let gap = Math.max(4, Math.round((width / (cols + (cols - 1) * gapRatio)) * gapRatio));
+    let dotFromWidth = Math.floor((width - (cols - 1) * gap) / cols);
+    let dotFromHeight = height > 0
+      ? Math.floor((height - gap) / rows)
+      : dotFromWidth;
+    let dotSize = Math.max(MEMBER_DOT_MIN, Math.min(dotFromWidth, dotFromHeight));
+    gap = Math.max(4, Math.round(dotSize * gapRatio));
+    dotFromWidth = Math.floor((width - (cols - 1) * gap) / cols);
+    dotFromHeight = height > 0 ? Math.floor((height - gap) / rows) : dotFromWidth;
+    dotSize = Math.max(MEMBER_DOT_MIN, Math.min(dotFromWidth, dotFromHeight));
+    return { cols, rows, dotSize, gap };
+  }
+
+  if (height <= 0) return fallback;
+
+  let bestCols = 1;
+  let bestSize = MEMBER_DOT_MIN;
+  let bestGap = DASH_LAYOUT.memberDotGap;
+
+  const colLimit = Math.min(maxCols, slotCount);
+  for (let cols = colLimit; cols >= 1; cols--) {
+    const rows = Math.ceil(slotCount / cols);
+    if (rows > maxRows) continue;
+
+    const denomW = cols + (cols - 1) * MEMBER_DOT_GAP_RATIO;
+    const denomH = rows + (rows - 1) * MEMBER_DOT_GAP_RATIO;
+    const raw = Math.min(width / denomW, height / denomH);
+    const dotSize = Math.floor(Math.min(raw, maxDot));
+    if (dotSize < MEMBER_DOT_MIN) continue;
+
+    if (dotSize > bestSize) {
+      bestSize = dotSize;
+      bestCols = cols;
+      bestGap = Math.max(4, Math.round(dotSize * MEMBER_DOT_GAP_RATIO));
+    }
+  }
+
+  return {
+    cols: bestCols,
+    rows: Math.ceil(slotCount / bestCols),
+    dotSize: bestSize,
+    gap: bestGap,
+  };
+}
+
+/** 4열 그리드에서 2행 카드 높이(=1행 카드 높이) — 넓은 화면에서 과도하게 커지지 않도록 상한 */
+export function dashStatRowHeight(gridWidth: number): number {
+  const cols = DASH_LAYOUT.gridColumns;
+  const gap = DASH_LAYOUT.gridGap;
+  const colW = (gridWidth - (cols - 1) * gap) / cols;
+  const [aw, ah] = DASH_LAYOUT.midCardAspectRatio.split("/").map((s) => parseFloat(s.trim()));
+  if (!aw || !ah || colW <= 0) return DASH_LAYOUT.topCardHeight;
+  const h = Math.round(colW * (ah / aw));
+  return Math.min(h, DASH_LAYOUT.topCardHeight);
+}

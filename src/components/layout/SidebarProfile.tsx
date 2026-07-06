@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { supabase } from "@/lib/supabase";
+import { DASH_SIDEBAR } from "@/styles/pastoralDashboardTokens";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 /** 사용자 지정 이미지가 없을 때 기본 처치업 앱 아이콘 */
 const DEFAULT_APP_ICON = "/icons/icon-192x192.png";
@@ -54,6 +55,8 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
 
   const displayChurch = (churchName || churchNameFallback || "교회 이름").trim();
   const src = avatarUrl || DEFAULT_APP_ICON;
+  const isDefaultIcon = src === DEFAULT_APP_ICON;
+  const iconBox = DASH_SIDEBAR.profileIconSize;
 
   return (
     <div
@@ -67,13 +70,13 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
     >
       <span
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
+          width: iconBox,
+          height: iconBox,
+          borderRadius: isDefaultIcon ? DASH_SIDEBAR.profileIconRadius : 10,
           overflow: "hidden",
           flexShrink: 0,
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
+          background: isDefaultIcon ? DASH_SIDEBAR.profileIconBg : "var(--color-surface)",
+          border: isDefaultIcon ? "none" : "1px solid var(--color-border)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -82,14 +85,18 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
         <Image
           src={src}
           alt="프로필"
-          width={36}
-          height={36}
+          width={iconBox}
+          height={iconBox}
           style={{
-            width: 36,
-            height: 36,
+            width: isDefaultIcon ? Math.round(iconBox * 0.78) : iconBox,
+            height: isDefaultIcon ? Math.round(iconBox * 0.78) : iconBox,
             objectFit: "cover",
-            /* 기본 앱 아이콘일 때만 시안처럼 연한 회색 톤으로 (사용자 지정 아바타는 원본 유지) */
-            ...(src === DEFAULT_APP_ICON ? { filter: "grayscale(1) brightness(1.65) opacity(0.55)" } : {}),
+            ...(isDefaultIcon
+              ? {
+                  transform: `rotate(${DASH_SIDEBAR.appIconRotateDeg}deg)`,
+                  mixBlendMode: "lighten",
+                }
+              : {}),
           }}
         />
       </span>

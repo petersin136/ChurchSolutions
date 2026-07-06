@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "처치업",
   },
 };
@@ -83,8 +83,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#0b0c0e" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0c0e" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f4f6" },
+    { media: "(prefers-color-scheme: dark)", color: "#f4f4f6" },
   ],
 };
 
@@ -100,12 +100,12 @@ export default function RootLayout({
       <head>
         <style
           dangerouslySetInnerHTML={{
-            __html: "html,body{background-color:#0b0c0e}",
+            __html: "html,body{margin:0;padding:0;overflow:hidden;background-color:#f4f4f6;color-scheme:light only}",
           }}
         />
         <script
           dangerouslySetInnerHTML={{
-            __html: "document.documentElement.style.backgroundColor='#0b0c0e';",
+            __html: `(function(){var d=document.documentElement,b=document.body;function a(){var h=window.innerHeight+'px';d.style.setProperty('--app-height',h);d.style.backgroundColor='#f4f4f6';d.style.colorScheme='light';if(b){b.style.backgroundColor='#f4f4f6';b.style.height=h;b.style.maxHeight=h;}}a();window.addEventListener('resize',a);window.visualViewport&&window.visualViewport.addEventListener('resize',a);})();`,
           }}
         />
         {process.env.NODE_ENV === "development" && (
@@ -142,10 +142,11 @@ export default function RootLayout({
         />
         <link rel="manifest" href="/manifest.json?v=4" />
         <meta name="application-name" content="처치업" />
-        <meta name="theme-color" content="#0b0c0e" />
+        <meta name="theme-color" content="#f4f4f6" />
+        <meta name="color-scheme" content="light only" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="처치업" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=4" />
         <AppleSplashHead />

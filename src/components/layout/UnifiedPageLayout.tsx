@@ -5,6 +5,7 @@ import { Home, type LucideIcon } from "lucide-react";
 import { GlobalTopBar } from "./GlobalTopBar";
 import { SidebarProfile } from "./SidebarProfile";
 import { SidebarBrandMark } from "./SidebarBrandMark";
+import { useShellNav, CHURCHUP_GO_HOME_EVENT } from "@/contexts/ShellNavContext";
 import { DASH_COLOR, DASH_GLOBAL, DASH_SIDEBAR } from "@/styles/pastoralDashboardTokens";
 
 /**
@@ -189,7 +190,11 @@ export function UnifiedPageLayout({
   topbarActions,
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
-  const [sideOpen, setSideOpen] = useState(false);
+  const shellNav = useShellNav();
+  const [sideOpen, setSideOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth > 1024;
+  });
 
   const flatTabs = useMemo(() => navSections.flatMap((sec) => sec.items), [navSections]);
   const touchStartX = useRef(0);
@@ -227,6 +232,16 @@ export function UnifiedPageLayout({
   useEffect(() => {
     if (!mob) setSideOpen(true);
     else setSideOpen(false);
+  }, [mob]);
+
+  /** 로고 → 홈: 데스크톱에서는 사이드바 펼침 유지(접힘 상태로 고착되는 버그 방지) */
+  useEffect(() => {
+    const onHome = () => {
+      if (mob) setSideOpen(false);
+      else setSideOpen(true);
+    };
+    window.addEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
+    return () => window.removeEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
   }, [mob]);
 
   const IconComp = SidebarIcon ?? Home;
@@ -323,7 +338,17 @@ export function UnifiedPageLayout({
                 boxSizing: "border-box",
               }}
             >
-              <SidebarBrandMark />
+              <SidebarBrandMark
+                onClick={
+                  shellNav?.goHome
+                    ? () => {
+                        shellNav.goHome();
+                        if (mob) setSideOpen(false);
+                        else setSideOpen(true);
+                      }
+                    : undefined
+                }
+              />
               <div
                 style={{
                   marginTop: DASH_SIDEBAR.logoToDateGap,

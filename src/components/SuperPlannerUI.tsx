@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import type { DB } from "@/types/db";
 import type { PageId, ToastItem } from "./SuperPlanner";
 import { PastoralPage } from "./PastoralPage";
@@ -14,7 +15,8 @@ import { SchoolPage } from "./school/SchoolPage";
 import { ReportsPage } from "./ReportsPage";
 import { SettingsPage } from "./SettingsPage";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShellNavProvider } from "@/contexts/ShellNavContext";
+import { ShellNavProvider, CHURCHUP_GO_HOME_EVENT } from "@/contexts/ShellNavContext";
+import { AppShellBackdrop } from "@/components/layout/AppShellBackdrop";
 
 const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[] = [
   { id: "pastoral", label: "목양", Icon: Users },
@@ -121,10 +123,17 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
   const noop = () => {};
   const noopStr = (_: string | null) => {};
 
+  const goHome = () => {
+    sessionStorage.setItem("pastoralSubTab", "dashboard");
+    window.dispatchEvent(new CustomEvent(CHURCHUP_GO_HOME_EVENT));
+    setCurrentPage("pastoral");
+  };
+
   const shellNavValue = {
     currentPage: currentPage as string,
     setCurrentPage: (id: string) => setCurrentPage(id as PageId),
     tabs: TAB_CONFIG.map(({ id, label }) => ({ id: id as string, label })),
+    goHome,
     onLogout: handleLogout,
     onSearch: handleQuickSearch,
   };
@@ -132,6 +141,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
   return (
     <ShellNavProvider value={shellNavValue}>
     <div className="superplanner-root">
+      <AppShellBackdrop />
       <div className="pc-app-frame">
       <header className="pc-top-nav">
         <div className="pc-top-nav-left">
@@ -247,46 +257,51 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
       </div>
       </div>
 
-      <Modals
-        db={db}
-        setDb={setDb}
-        save={save}
-        toast={toast}
-        editMemberId={null}
-        detailMemberId={null}
-        noteTargetId={null}
-        editPlanId={null}
-        editSermonId={null}
-        editIncId={editIncId}
-        editExpId={editExpId}
-        openMemberModal={false}
-        openDetailModal={false}
-        openNoteModal={false}
-        openPlanModal={false}
-        openSermonModal={false}
-        openVisitModal={false}
-        openIncomeModal={openIncomeModal}
-        openExpenseModal={openExpenseModal}
-        openBudgetModal={openBudgetModal}
-        setOpenMemberModal={noop}
-        setOpenDetailModal={noop}
-        setOpenNoteModal={noop}
-        setOpenPlanModal={noop}
-        setOpenSermonModal={noop}
-        setOpenVisitModal={noop}
-        setOpenIncomeModal={setOpenIncomeModal}
-        setOpenExpenseModal={setOpenExpenseModal}
-        setOpenBudgetModal={setOpenBudgetModal}
-        setEditMemberId={noopStr}
-        setDetailMemberId={noopStr}
-        setNoteTargetId={noopStr}
-        setEditPlanId={noopStr}
-        setEditSermonId={noopStr}
-        setEditIncId={setEditIncId}
-        setEditExpId={setEditExpId}
-      />
-
-      <Toast toasts={toasts} />
+      {typeof document !== "undefined" &&
+        createPortal(
+          <>
+            <Modals
+              db={db}
+              setDb={setDb}
+              save={save}
+              toast={toast}
+              editMemberId={null}
+              detailMemberId={null}
+              noteTargetId={null}
+              editPlanId={null}
+              editSermonId={null}
+              editIncId={editIncId}
+              editExpId={editExpId}
+              openMemberModal={false}
+              openDetailModal={false}
+              openNoteModal={false}
+              openPlanModal={false}
+              openSermonModal={false}
+              openVisitModal={false}
+              openIncomeModal={openIncomeModal}
+              openExpenseModal={openExpenseModal}
+              openBudgetModal={openBudgetModal}
+              setOpenMemberModal={noop}
+              setOpenDetailModal={noop}
+              setOpenNoteModal={noop}
+              setOpenPlanModal={noop}
+              setOpenSermonModal={noop}
+              setOpenVisitModal={noop}
+              setOpenIncomeModal={setOpenIncomeModal}
+              setOpenExpenseModal={setOpenExpenseModal}
+              setOpenBudgetModal={setOpenBudgetModal}
+              setEditMemberId={noopStr}
+              setDetailMemberId={noopStr}
+              setNoteTargetId={noopStr}
+              setEditPlanId={noopStr}
+              setEditSermonId={noopStr}
+              setEditIncId={setEditIncId}
+              setEditExpId={setEditExpId}
+            />
+            <Toast toasts={toasts} />
+          </>,
+          document.body,
+        )}
     </div>
     </ShellNavProvider>
   );

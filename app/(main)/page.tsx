@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 const MainPageClient = dynamic(() => import("@/components/MainPageClient"), {
   ssr: false,
-  loading: () => <div style={{ minHeight: "100vh" }} />,
+  loading: () => <div style={{ minHeight: "100vh", background: "#f4f4f6" }} />,
 });
 
 export default function Home() {

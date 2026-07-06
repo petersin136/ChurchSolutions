@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { tokens } from "@/styles/tokens";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
+import { isChurchActiveMember } from "@/lib/attendance-utils";
 import type { Member } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
@@ -110,7 +111,7 @@ export interface AttendanceCheckProps {
 }
 
 function getActiveMembers(members: Member[]) {
-  return members.filter((m) => (m.member_status || m.status) === "활동" || !m.member_status);
+  return members.filter(isChurchActiveMember);
 }
 
 function useIsMobile(bp = 768) {
@@ -248,8 +249,8 @@ export function AttendanceCheck({
     loadAttendance(selectedDate, SERVICE_TYPE);
   }, [selectedDate, SERVICE_TYPE, loadAttendance]);
 
-  const getStatus = useCallback((memberId: string): AttStatusUI => {
-    return statusMap[memberId] ?? "출석";
+  const getStatus = useCallback((memberId: string): AttStatusUI | undefined => {
+    return statusMap[memberId];
   }, [statusMap]);
 
   const setStatus = useCallback((memberId: string, status: AttStatusUI) => {
@@ -302,7 +303,8 @@ export function AttendanceCheck({
     setNoteMap((prev) => ({ ...prev, [memberId]: value }));
     if (noteTimersRef.current[memberId]) clearTimeout(noteTimersRef.current[memberId]);
     noteTimersRef.current[memberId] = setTimeout(() => {
-      saveOneAttendance(memberId, statusMapRef.current[memberId] ?? "출석", value);
+      const current = statusMapRef.current[memberId];
+      if (current) saveOneAttendance(memberId, current, value);
     }, 800);
   }, [saveOneAttendance]);
 
@@ -311,16 +313,19 @@ export function AttendanceCheck({
   }, []);
 
   const count출석 = useMemo(
-    () => filteredMembers.filter((m) => (statusMap[m.id] ?? "출석") === "출석").length,
+    () => filteredMembers.filter((m) => statusMap[m.id] === "출석").length,
     [filteredMembers, statusMap]
   );
-  const count결석 = filteredMembers.length - count출석;
+  const count결석 = useMemo(
+    () => filteredMembers.filter((m) => statusMap[m.id] === "결석").length,
+    [filteredMembers, statusMap]
+  );
   const statsCards = useMemo(() => {
     const total = filteredMembers.length;
     const rate = total > 0 ? Math.round((count출석 / total) * 100) : 0;
     return [
       { label: "대상 인원", value: `${fmt(total)}명`, sub: "필터 적용" },
-      { label: "출석률", value: `${rate}%`, sub: "현재 체크 기준" },
+      { label: "출석률", value: `${rate}%`, sub: "저장된 체크 기준" },
       { label: "출석", value: `${fmt(count출석)}명`, sub: "주일예배" },
       { label: "결석", value: `${fmt(count결석)}명`, sub: "사유 입력 가능" },
     ];
@@ -338,8 +343,10 @@ export function AttendanceCheck({
     setSaved(false);
     const year = new Date(selectedDate + "T12:00:00").getFullYear();
     const week_num = getWeekNumForDate(selectedDate);
-    const records = filteredMembers.map((m) => {
-      const uiStatus = statusMap[m.id] ?? "출석";
+    const records = filteredMembers
+      .filter((m) => statusMap[m.id] != null)
+      .map((m) => {
+      const uiStatus = statusMap[m.id] as AttStatusUI;
       const note = uiStatus === "결석" ? (noteMap[m.id]?.trim() || null) : null;
       return {
         member_id: m.id,
@@ -354,6 +361,11 @@ export function AttendanceCheck({
         checked_by: getCurrentUserId?.() ?? null,
       };
     });
+    if (records.length === 0) {
+      toast("출석 또는 결석을 선택한 후 저장해 주세요.", "warn");
+      setSaving(false);
+      return;
+    }
     const churchId = getChurchId();
     const recordsWithChurch = records.map((r) => ({ ...r, church_id: churchId }));
     console.log("[출석 저장 요청]", { count: records.length, sample: records[0], year, week_num });

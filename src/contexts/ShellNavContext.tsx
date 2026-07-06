@@ -12,11 +12,16 @@ export interface ShellNavValue {
   currentPage: string;
   setCurrentPage: (id: string) => void;
   tabs: ShellNavTab[];
+  /** 사이드바 church up 로고 → 목양 대시보드(앱 첫 화면) */
+  goHome?: () => void;
   /** 상단바 우측 로그아웃 */
   onLogout?: () => void;
   /** 상단바 우측 검색 실행(Enter). 미전달 시 검색 입력창만 표시 */
   onSearch?: (query: string) => void;
 }
+
+/** `goHome` 호출 시 목양 서브탭을 대시보드로 맞추기 위한 이벤트 */
+export const CHURCHUP_GO_HOME_EVENT = "churchup-go-home";
 
 const ShellNavContext = createContext<ShellNavValue | null>(null);
 

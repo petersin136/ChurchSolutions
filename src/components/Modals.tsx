@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
 import type { DB, Member, Note } from "@/types/db";
 import { getDepts } from "@/lib/store";
@@ -9,6 +10,15 @@ import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAppData } from "@/contexts/AppDataContext";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
+
+function ModalOverlay({ open, id, children }: { open: boolean; id: string; children: ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="modal-bg open" id={id}>
+      {children}
+    </div>
+  );
+}
 
 const STATUS_MAP: Record<string, string> = {
   새가족: "badge-blue",
@@ -719,10 +729,7 @@ export function Modals({
   return (
     <>
       {/* Member Modal */}
-      <div
-        className={`modal-bg ${openMemberModal ? "open" : ""}`}
-        id="memberModal"
-      >
+      <ModalOverlay open={openMemberModal} id="memberModal">
         <div className="modal">
           <div className="modal-handle" />
           <div className="modal-head">
@@ -915,13 +922,10 @@ export function Modals({
             </button>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
 
       {/* Detail Modal */}
-      <div
-        className={`modal-bg ${openDetailModal ? "open" : ""}`}
-        id="detailModal"
-      >
+      <ModalOverlay open={openDetailModal} id="detailModal">
         <div className="modal">
           <div className="modal-handle" />
           <div className="modal-head">
@@ -1156,13 +1160,10 @@ export function Modals({
             )}
           </div>
         </div>
-      </div>
+      </ModalOverlay>
 
       {/* Note Modal */}
-      <div
-        className={`modal-bg ${openNoteModal ? "open" : ""}`}
-        id="noteModal"
-      >
+      <ModalOverlay open={openNoteModal} id="noteModal">
         <div className="modal">
           <div className="modal-handle" />
           <div className="modal-head">
@@ -1265,13 +1266,10 @@ export function Modals({
             </button>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
 
       {/* Plan Modal */}
-      <div
-        className={`modal-bg ${openPlanModal ? "open" : ""}`}
-        id="planModal"
-      >
+      <ModalOverlay open={openPlanModal} id="planModal">
         <div className="modal">
           <div className="modal-handle" />
           <div className="modal-head">
@@ -1354,13 +1352,10 @@ export function Modals({
             </button>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
 
       {/* Sermon Modal */}
-      <div
-        className={`modal-bg ${openSermonModal ? "open" : ""}`}
-        id="sermonModal"
-      >
+      <ModalOverlay open={openSermonModal} id="sermonModal">
         <div className="modal">
           <div className="modal-handle" />
           <div className="modal-head">
@@ -1465,13 +1460,10 @@ export function Modals({
             </button>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
 
       {/* Visit Modal */}
-      <div
-        className={`modal-bg ${openVisitModal ? "open" : ""}`}
-        id="visitModal"
-      >
+      <ModalOverlay open={openVisitModal} id="visitModal">
         <div className="modal">
           <div className="modal-handle" />
           <div className="modal-head">
@@ -1540,13 +1532,10 @@ export function Modals({
             </button>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
 
       {/* Income Modal */}
-      <div
-        className={`modal-bg ${openIncomeModal ? "open" : ""}`}
-        id="incomeModal"
-      >
+      <ModalOverlay open={openIncomeModal} id="incomeModal">
         <div className="modal">
           <div className="modal-handle" />
           <div className="modal-head">
@@ -1639,13 +1628,10 @@ export function Modals({
             </button>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
 
       {/* Expense Modal */}
-      <div
-        className={`modal-bg ${openExpenseModal ? "open" : ""}`}
-        id="expenseModal"
-      >
+      <ModalOverlay open={openExpenseModal} id="expenseModal">
         <div className="modal">
           <div className="modal-handle" />
           <div className="modal-head">
@@ -1754,13 +1740,10 @@ export function Modals({
             </button>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
 
       {/* Budget Modal */}
-      <div
-        className={`modal-bg ${openBudgetModal ? "open" : ""}`}
-        id="budgetModal"
-      >
+      <ModalOverlay open={openBudgetModal} id="budgetModal">
         <div className="modal">
           <div className="modal-handle" />
           <div className="modal-head">
@@ -1800,7 +1783,7 @@ export function Modals({
             </button>
           </div>
         </div>
-      </div>
+      </ModalOverlay>
     </>
   );
 }

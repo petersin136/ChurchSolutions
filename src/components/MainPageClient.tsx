@@ -34,7 +34,7 @@ export default function MainPageClient() {
   }, [loading, user, churchId, graceOver, router]);
 
   if (loading || !user) {
-    return <div style={{ minHeight: "100vh" }} />;
+    return <div style={{ minHeight: "100vh", background: "#f4f4f6" }} />;
   }
 
   if (!churchId) {

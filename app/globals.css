@@ -69,6 +69,37 @@ html, body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f4f4f6 !important;
+  color-scheme: light;
+}
+
+/* Chrome: 100dvh와 innerHeight 차이·다크 캔버스로 하단 검정 띠가 생기는 것 방지 */
+html:has(.superplanner-root) {
+  color-scheme: light only;
+  height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  overscroll-behavior: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:has(.superplanner-root),
+  html:has(.superplanner-root) body {
+    color-scheme: light only;
+    background-color: #f4f4f6 !important;
+  }
+}
+
+/* 하단 검정(#0b0c0e) 비침 방지 — 뷰포트 전체를 항상 밝은 배경으로 덮음 */
+html::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--app-height, 100vh) + 4px);
+  background: #f4f4f6;
+  z-index: -2147483647;
+  pointer-events: none;
 }
 
 :root {
@@ -266,7 +297,17 @@ html, body {
     min-height: 100vh;
     min-height: 100dvh;
     overflow-x: hidden;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: 0;
+  }
+
+  html:has(.superplanner-root) body {
+    min-height: 0 !important;
+    max-height: var(--app-height, 100dvh) !important;
+    height: var(--app-height, 100dvh) !important;
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+    background: #f4f4f6 !important;
+    background-color: #f4f4f6 !important;
   }
   .wheel-column-scroll::-webkit-scrollbar { display: none; }
   /* 스크롤은 되지만 스크롤바 비표시 (연도 선택 등) */
@@ -859,20 +900,24 @@ html, body {
   }
   .week-cell.active { background: var(--blue); color: #FFF; box-shadow: 0 1px 4px rgba(0,122,255,0.3); }
   .modal-bg {
+    display: none;
     position: fixed;
     inset: 0;
     z-index: 1000;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     visibility: hidden;
     transition: all 0.2s ease;
   }
-  .modal-bg.open { opacity: 1; visibility: visible; }
+  .modal-bg.open {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+  }
   .modal {
     width: 100%; max-width: 520px;
     max-height: 88vh;
@@ -1145,7 +1190,7 @@ html, body {
   html { -webkit-text-size-adjust: 100%; }
   body {
     -webkit-text-size-adjust: 100%;
-    padding-bottom: max(12px, env(safe-area-inset-bottom, 0));
+    padding-bottom: 0;
   }
   input,
   select:not(.compact-select),
@@ -1470,30 +1515,51 @@ html, body {
 /* ── Planning Center 스타일 상단 네비게이션 ── */
 
 .superplanner-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100vw;
+  height: var(--app-height, 100dvh);
+  min-height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: #000 !important;
+  overflow: hidden;
+  background: #f4f4f6 !important;
+}
+
+/* 앱 로드 시 문서 스크롤·하단 배경 비침 방지 */
+html:has(.superplanner-root),
+html:has(.superplanner-root) body {
+  margin: 0;
+  padding: 0 !important;
+  width: 100%;
+  height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #f4f4f6 !important;
+  background-color: #f4f4f6 !important;
 }
 
 /* ── Planning Center 상단 네비게이션 (파일철 탭 스타일) ── */
 
 /* ========== Planning Center 통합 프레임 ========== */
 .pc-app-frame {
-  position: fixed;
-  top: 8px;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  border-radius: 18px;
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface-muted);
-  box-shadow: 0 1px 8px rgba(140, 150, 190, 0.08);
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  background: #f4f4f6;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 10;
 }
 
 /* 데스크톱: 외부 프레임 제거 + 전체 배경 #f4f4f6 통일(사이드바·메뉴·콘텐츠 경계 없음) */
@@ -1833,8 +1899,17 @@ html, body {
 
 /* 통합 프레임 안에서 풀 높이(레이아웃 relative + height 100% 연결) */
 .pc-app-body > main > .page.active {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
+  overflow: hidden;
+}
+
+.pc-app-body > main > .page.active > *:first-child {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
 }
 
 /* ========== 오른쪽 유틸리티 바 (프레임 내부) ========== */

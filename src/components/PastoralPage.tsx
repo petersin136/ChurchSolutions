@@ -3,9 +3,11 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
+import { aggregateMonthlyAverages, aggregateWeeklyByWeekNum, aggregateYearlyAverage, countSundayPresent, getThisSundayStr, isChurchActiveMember, isMemberStatusActive } from "@/lib/attendance-utils";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAuth } from "@/contexts/AuthContext";
+import { CHURCHUP_GO_HOME_EVENT } from "@/contexts/ShellNavContext";
 import { useAppData, type RawAttendanceRow } from "@/contexts/AppDataContext";
 import { toMember } from "@/lib/supabase-db";
 import { compressImage } from "@/utils/imageCompressor";
@@ -18,7 +20,8 @@ import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Sett
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_LAYOUT, DASH_ATT_CHART_W, DASH_ATT_CHART_M, DASH_ATT_CHART_Y, dashStatRowHeight } from "@/styles/pastoralDashboardTokens";
+import { MemberDotGrid } from "@/components/pastoral/MemberDotGrid";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
@@ -30,7 +33,6 @@ import { ModernSelect } from "@/components/common/ModernSelect";
 import { ServantSchoolManager } from "@/components/settling/ServantSchoolManager";
 import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNoteModal";
 import { PcModalShell } from "@/components/common/PcModalShell";
-import SegmentedControl from "@/components/common/SegmentedControl";
 import { tokens } from "@/styles/tokens";
 import { useShellNav } from "@/contexts/ShellNavContext";
 
@@ -735,6 +737,105 @@ function compressPhoto(src: string, cb: (r: string) => void) {
 /* ====== Dashboard ====== */
 type AttChartView = "year" | "month" | "week";
 
+const ATT_CHART_YEAR_CHEVRON =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b909a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")";
+
+function AttChartControls({
+  mob,
+  attChartYear,
+  setAttChartYear,
+  attChartYearOptions,
+  attChartView,
+  setAttChartView,
+  periodSegmentItems,
+}: {
+  mob: boolean;
+  attChartYear: number;
+  setAttChartYear: (y: number) => void;
+  attChartYearOptions: number[];
+  attChartView: AttChartView;
+  setAttChartView: (v: AttChartView) => void;
+  periodSegmentItems: { id: string; label: string }[];
+}) {
+  const btnSize = mob ? DASH_ATT_CHART_CTRL.periodBtnSizeMob : DASH_ATT_CHART_CTRL.periodBtnSize;
+  const periodBtnStyle = (active: boolean): CSSProperties => ({
+    width: btnSize,
+    height: btnSize,
+    minWidth: btnSize,
+    borderRadius: DASH_ATT_CHART_CTRL.periodBtnRadius,
+    border: "none",
+    fontSize: mob ? 12 : 13,
+    fontWeight: 600,
+    fontFamily: DASH_GLOBAL.fontLatin,
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
+    boxSizing: "border-box",
+    background: active ? DASH_ATT_CHART_CTRL.periodActiveBg : DASH_ATT_CHART_CTRL.periodInactiveBg,
+    color: DASH_ATT_CHART_CTRL.periodText,
+    flexShrink: 0,
+    transition: "background 0.15s ease",
+  });
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: mob ? DASH_ATT_CHART_CTRL.controlsGapMob : DASH_ATT_CHART_CTRL.controlsGap,
+        flexShrink: 0,
+      }}
+    >
+      <select
+        value={attChartYear}
+        onChange={(e) => setAttChartYear(Number(e.target.value))}
+        aria-label="출석 통계 연도"
+        style={{
+          appearance: "none",
+          WebkitAppearance: "none",
+          MozAppearance: "none",
+          border: "none",
+          background: `transparent ${ATT_CHART_YEAR_CHEVRON} no-repeat right center`,
+          backgroundSize: "12px 12px",
+          fontFamily: DASH_GLOBAL.fontLatin,
+          fontSize: DASH_ATT_CHART_CTRL.yearFontSize,
+          fontWeight: DASH_ATT_CHART_CTRL.yearFontWeight,
+          color: DASH_ATT_CHART_CTRL.periodText,
+          padding: "0 18px 0 0",
+          margin: 0,
+          cursor: "pointer",
+          lineHeight: 1.2,
+          boxSizing: "border-box",
+        }}
+      >
+        {attChartYearOptions.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+      <div style={{ display: "flex", alignItems: "center", gap: DASH_ATT_CHART_CTRL.periodBtnGap }}>
+        {periodSegmentItems.map((item) => {
+          const active = attChartView === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setAttChartView(item.id as AttChartView)}
+              style={periodBtnStyle(active)}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 type PastoralFeedItem = {
   id: string;
   kind: "note" | "newcomer" | "prayer";
@@ -760,38 +861,39 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
   const attChartYearOptions = useMemo(() => Array.from({ length: 6 }, (_, i) => currentYear - i), [currentYear]);
   const [attChartView, setAttChartView] = useState<AttChartView>("month");
   const [attChartYear, setAttChartYear] = useState(currentYear);
-  const statsCardRef = useRef<HTMLDivElement>(null);
-  const [statsCardHeight, setStatsCardHeight] = useState<number | null>(null);
+  const statGridRef = useRef<HTMLDivElement>(null);
+  const [statRowHeight, setStatRowHeight] = useState<number | null>(null);
 
   const m = db.members.filter(x => x.status !== "졸업/전출");
   const total = m.length;
-  const attInPerson = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "p").length;
-  const attOnline = m.filter(s => (db.attendance[s.id] || {})[currentWeek] === "o").length;
+  const activeMembers = useMemo(() => m.filter(isChurchActiveMember), [m]);
+  const thisSunday = useMemo(() => getThisSundayStr(), []);
+
+  const thisWeekPresent = useMemo(
+    () => countSundayPresent(rawAttendance, thisSunday, activeMembers.map((s) => s.id)),
+    [rawAttendance, thisSunday, activeMembers],
+  );
+  const attInPerson = thisWeekPresent;
+  const attOnline = 0;
   const attTotal = attInPerson + attOnline;
   const newF = m.filter(s => s.is_new_family === true).length;
   const risk = m.filter(s => s.status === "위험" || s.status === "휴면").length;
   const prayers = m.filter(s => s.prayer && s.prayer.trim()).length;
-  const rate = total > 0 ? Math.round(attTotal / total * 100) : 0;
-  /** 활동/비활동 (전체 성도 카드) — status "활동" 만 활성 */
-  const activeCount = m.filter(s => s.status === "활동").length;
+  const rateDenominator = activeMembers.length;
+  const rate = rateDenominator > 0 ? Math.round(attTotal / rateDenominator * 100) : 0;
+  /** 활동/비활동 (전체 성도 카드) — member_status 기준 */
+  const activeCount = m.filter(isMemberStatusActive).length;
   const inactiveCount = total - activeCount;
   /** 금주 출석률 bar: 항상 20개, %비례 채움 (round) */
   const ATT_BAR_COUNT = 20;
   const attFilledBars = Math.round((rate / 100) * ATT_BAR_COUNT);
-  /** 전체 성도 원: 항상 100개(10x10), 활성 비율 채움 (round) */
-  const MEMBER_DOT_COUNT = 100;
-  const memberFilledDots = total > 0 ? Math.round((activeCount / total) * MEMBER_DOT_COUNT) : 0;
 
-  const weeklyAtt = useMemo(() => {
-    const data = new Array(52).fill(0);
-    rawAttendance.filter(r => r.year === attChartYear).forEach(r => {
-      const wn = r.week_num ?? 0;
-      if ((r.status === "p" || r.status === "o") && wn >= 1 && wn <= 52) {
-        data[wn - 1]++;
-      }
-    });
-    return data;
-  }, [rawAttendance, attChartYear]);
+  const activeMemberIds = useMemo(() => activeMembers.map((s) => s.id), [activeMembers]);
+
+  const weeklyAtt = useMemo(
+    () => aggregateWeeklyByWeekNum(rawAttendance, attChartYear, activeMemberIds),
+    [rawAttendance, attChartYear, activeMemberIds],
+  );
 
   const currentMonthIdx = new Date().getMonth();
   const isCurrentYearSel = attChartYear === currentYear;
@@ -808,48 +910,43 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
         wk,
         label: `${d.getMonth() + 1}월 ${wom}주차`,
         present,
-        total,
-        rate: total > 0 ? Math.round((present / total) * 100) : 0,
+        total: activeMembers.length,
+        rate: activeMembers.length > 0 ? Math.round((present / activeMembers.length) * 100) : 0,
         isCurrent: isCurrentYearSel && wk === currentWeek,
       });
     }
     return weeks;
-  }, [weeklyAtt, currentWeek, total, attChartYear, isCurrentYearSel]);
+  }, [weeklyAtt, currentWeek, activeMembers.length, attChartYear, isCurrentYearSel]);
 
   /** 월별(M): 12개월 평균 출석 명수(주 단위 평균), 현재 월 주황 하이라이트 */
   const monthlyAvg = useMemo(() => {
-    const sum = new Array(12).fill(0);
-    const svc: Set<number>[] = new Array(12).fill(0).map(() => new Set<number>());
-    rawAttendance.filter(r => r.year === attChartYear).forEach(r => {
-      if (r.status !== "p" && r.status !== "o") return;
-      const mn = r.date ? new Date(r.date).getMonth() : Math.min(11, Math.floor(((r.week_num ?? 1) - 1) / 4.33));
-      if (mn < 0 || mn > 11) return;
-      sum[mn]++;
-      svc[mn].add(r.week_num ?? (r.date ? new Date(r.date).getTime() : mn));
-    });
-    return sum.map((s, i) => ({
-      avg: svc[i].size > 0 ? Math.round(s / svc[i].size) : 0,
+    const avgs = aggregateMonthlyAverages(rawAttendance, attChartYear, activeMemberIds);
+    const cap = activeMembers.length;
+    return avgs.map((avg, i) => ({
+      avg: cap > 0 ? Math.min(avg, cap) : 0,
       isCurrent: isCurrentYearSel && i === currentMonthIdx,
     }));
-  }, [rawAttendance, attChartYear, isCurrentYearSel, currentMonthIdx]);
+  }, [rawAttendance, attChartYear, activeMemberIds, activeMembers.length, isCurrentYearSel, currentMonthIdx]);
 
   /** 연간(Y): 최근 3년, 연 평균 출석/총원 %, 최신 연도 주황 하이라이트 */
   const yearly3 = useMemo(() => {
     const years = [currentYear - 2, currentYear - 1, currentYear];
-    return years.map(y => {
-      const rows = rawAttendance.filter(r => r.year === y && (r.status === "p" || r.status === "o"));
-      const weeks = new Set<number>();
-      rows.forEach(r => weeks.add(r.week_num ?? 0));
-      const present = weeks.size > 0 ? Math.round(rows.length / weeks.size) : 0;
+    return years.map((y) => {
+      const { present, total, rate } = aggregateYearlyAverage(
+        rawAttendance,
+        y,
+        activeMembers.length,
+        activeMemberIds,
+      );
       return {
         year: y,
         present,
         total,
-        rate: total > 0 ? Math.round((present / total) * 100) : 0,
+        rate,
         isCurrent: y === currentYear,
       };
     });
-  }, [rawAttendance, currentYear, total]);
+  }, [rawAttendance, currentYear, activeMembers.length, activeMemberIds]);
 
   const deptCounts = useMemo(() => {
     const r: Record<string, number> = {};
@@ -859,31 +956,35 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
 
   useEffect(() => {
     if (mob) {
-      setStatsCardHeight(null);
+      setStatRowHeight(null);
       return;
     }
-    const el = statsCardRef.current;
+    const el = statGridRef.current;
     if (!el) return;
 
-    let frame = 0;
-    const update = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        setStatsCardHeight(Math.ceil(el.getBoundingClientRect().height));
-      });
-    };
-
+    const update = () => setStatRowHeight(dashStatRowHeight(el.clientWidth));
     update();
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
     ro?.observe(el);
     window.addEventListener("resize", update);
-
     return () => {
-      cancelAnimationFrame(frame);
       ro?.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, [mob, attChartView, attChartYear]);
+  }, [mob]);
+
+  /** 로고 → 홈 후 사이드바 펼침 시 그리드 높이 재계산 */
+  useEffect(() => {
+    if (mob) return;
+    const onHome = () => {
+      requestAnimationFrame(() => {
+        const el = statGridRef.current;
+        if (el) setStatRowHeight(dashStatRowHeight(el.clientWidth));
+      });
+    };
+    window.addEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
+    return () => window.removeEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
+  }, [mob]);
 
   const recentNotes = useMemo(() => {
     const all: (Note & { mbrName: string; mbrId: string; mbrDept: string })[] = [];
@@ -965,18 +1066,19 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
 
   const summaryCards = useMemo(
     () => [
-      { label: "전체 성도", value: `${total}명`, sub: "활성 등록", color: C.primary },
+      { label: "전체 성도", value: `${total}명`, sub: "활성 등록", color: C.primary, nav: () => onNavSub?.("members") },
       {
         label: "금주 출석률",
         value: `${rate}%`,
-        sub: attOnline > 0 ? `${attInPerson}명 출석 · ${attOnline}명 온라인 / 총 ${total}명` : `${attTotal}/${total}명 출석`,
+        sub: attOnline > 0 ? `${attInPerson}명 출석 · ${attOnline}명 온라인 / 총 ${rateDenominator}명` : `${attTotal}/${rateDenominator}명 출석`,
         color: C.purple,
+        nav: () => onNavSub?.("attendance"),
       },
-      { label: "새가족", value: `${newF}명`, sub: "정착 진행중", color: C.success },
-      { label: "위험/휴면", value: `${risk}명`, sub: "관심 필요", color: C.danger },
-      { label: "기도제목", value: `${prayers}건`, sub: "함께 기도합니다", color: C.warning },
+      { label: "새가족", value: `${newF}명`, sub: "정착 진행중", color: C.success, nav: () => onNavSub?.("newfamily") },
+      { label: "위험/휴면", value: `${risk}명`, sub: "관심 필요", color: C.danger, nav: () => { sessionStorage.setItem("pastoral_members_risk_dormant", "1"); onNavSub?.("members"); } },
+      { label: "기도제목", value: `${prayers}건`, sub: "함께 기도합니다", color: C.warning, nav: () => { sessionStorage.setItem("pastoral_notes_type", "prayer"); onNavSub?.("notes"); } },
     ],
-    [total, rate, attOnline, attInPerson, attTotal, newF, risk, prayers],
+    [total, rate, attOnline, attInPerson, attTotal, rateDenominator, newF, risk, prayers, onNavSub],
   );
 
   return (
@@ -993,8 +1095,10 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
           }}
         >
           {summaryCards.map((card) => (
-            <div
+            <button
               key={card.label}
+              type="button"
+              onClick={card.nav}
               style={{
                 background: "var(--color-surface-muted)",
                 borderRadius: 10,
@@ -1007,17 +1111,23 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                 gap: 3,
                 boxSizing: "border-box",
                 minWidth: 0,
+                cursor: "pointer",
+                textAlign: "left",
+                fontFamily: "inherit",
+                width: "100%",
               }}
             >
               <span style={{ fontSize: 10, color: C.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{card.label}</span>
               <span style={{ fontSize: 20, fontWeight: 800, color: C.text, lineHeight: 1.1 }}>{card.value}</span>
               {card.sub && <span style={{ fontSize: 9, color: C.textFaint }}>{card.sub}</span>}
-            </div>
+            </button>
           ))}
         </div>
       ) : (
         (() => {
           const visitCount = recentNotes.filter((n) => n.type === "visit").length;
+
+          const sharedRowH = statRowHeight ?? DASH_LAYOUT.topCardHeight;
 
           const cardBase: CSSProperties = {
             background: DASH_CARD.bg,
@@ -1027,12 +1137,10 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
             boxShadow: DASH_CARD.floatShadow,
             display: "flex",
             flexDirection: "column",
-            height: DASH_LAYOUT.topCardHeight,
+            height: sharedRowH,
             boxSizing: "border-box",
             overflow: "hidden",
           };
-          const labelStyle: CSSProperties = { fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: "-0.01em" };
-          const subStyle: CSSProperties = { fontSize: 12, color: C.textMuted };
           const splitNum = (v: string): [string, string] => {
             const m = v.match(/^([\d,]+)(.*)$/);
             return m ? [m[1], m[2]] : [v, ""];
@@ -1041,71 +1149,247 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
           // 2행 4카드: 새가족 / 위험·휴면 / 심방 / 기도
           const midCards = [
             { key: "newfamily", label: "새가족", sub: newF > 0 ? "정착 진행 중" : "정착 진행 성도 없음", value: `${newF}명`, has: newF > 0, fill: newF > 0 ? DASH_MID.newFamilyFill : DASH_MID.emptyFill, nav: () => onNavSub?.("newfamily") },
-            { key: "risk", label: "위험/휴면", sub: risk > 0 ? "관심 필요" : "관심 필요 성도 없음", value: `${risk}명`, has: risk > 0, fill: DASH_MID.riskFill, nav: () => onNavSub?.("members") },
+            { key: "risk", label: "위험/휴면", sub: risk > 0 ? "관심 필요" : "관심 필요 성도 없음", value: `${risk}명`, has: risk > 0, fill: DASH_MID.riskFill, nav: () => { sessionStorage.setItem("pastoral_members_risk_dormant", "1"); onNavSub?.("members"); } },
             { key: "visit", label: "심방", sub: "최근 기록", value: `${visitCount}건`, has: false, fill: DASH_MID.visitFill, nav: () => shellNav?.setCurrentPage("visit") },
-            { key: "prayer", label: "기도", sub: prayers > 0 ? "함께 기도합니다" : "함께 기도합니다", value: `${prayers}건`, has: prayers > 0, fill: prayers > 0 ? DASH_MID.prayerFill : DASH_MID.emptyFill, nav: () => onNavSub?.("notes") },
+            { key: "prayer", label: "기도", sub: prayers > 0 ? "함께 기도합니다" : "함께 기도합니다", value: `${prayers}건`, has: prayers > 0, fill: prayers > 0 ? DASH_MID.prayerFill : DASH_MID.emptyFill, nav: () => { sessionStorage.setItem("pastoral_notes_type", "prayer"); onNavSub?.("notes"); } },
           ];
 
           return (
             /* 4열 단일 그리드: 1행 카드는 각 2칸(50:50), 2행 카드는 각 1칸 → 세로·가로 갭이 십자로 정확히 맞음 */
             <div
+              ref={statGridRef}
               style={{
                 display: "grid",
                 gridTemplateColumns: `repeat(${DASH_LAYOUT.gridColumns}, 1fr)`,
-                gridAutoRows: "auto",
-                alignItems: "start",
+                gridTemplateRows: `repeat(2, ${sharedRowH}px)`,
+                alignItems: "stretch",
                 gap: DASH_LAYOUT.gridGap,
-                marginTop: 8,
+                marginTop: 0,
               }}
             >
               {/* 1행 좌: 금주 출석률 (2칸 = 50%) */}
-              <div style={{ ...cardBase, gridColumn: "span 2" }}>
-                <span style={labelStyle}>금주 출석률</span>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
-                  <span style={{ fontSize: 48, fontWeight: 800, color: C.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{rate}%</span>
-                  <span style={{ fontSize: 13, color: C.textMuted }}>{attTotal}/{total}명 출석</span>
+              <div style={{ ...cardBase, gridColumn: "span 2", fontFamily: DASH_GLOBAL.fontKR }}>
+                <span
+                  style={{
+                    fontSize: DASH_ATTENDANCE_CARD.labelSize,
+                    fontWeight: DASH_ATTENDANCE_CARD.labelWeight,
+                    color: DASH_COLOR.ink,
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  금주 출석률
+                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: DASH_ATTENDANCE_CARD.valueSubGap,
+                    marginTop: DASH_ATTENDANCE_CARD.labelValueGap,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: DASH_ATTENDANCE_CARD.valueSize,
+                      fontWeight: DASH_ATTENDANCE_CARD.valueWeight,
+                      color: DASH_COLOR.ink,
+                      letterSpacing: DASH_ATTENDANCE_CARD.valueLetterSpacing,
+                      lineHeight: 1,
+                      fontFamily: DASH_GLOBAL.fontLatin,
+                    }}
+                  >
+                    {rate}%
+                  </span>
+                  <span
+                    style={{
+                      fontSize: DASH_ATTENDANCE_CARD.subSize,
+                      fontWeight: DASH_ATTENDANCE_CARD.subWeight,
+                      color: DASH_COLOR.dateValue,
+                      lineHeight: 1.2,
+                      fontFamily: DASH_GLOBAL.fontKR,
+                    }}
+                  >
+                    {attTotal}/{rateDenominator}명 출석
+                  </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "stretch", gap: 4, height: DASH_LAYOUT.attendanceBarHeight, marginTop: "auto" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "stretch",
+                    gap: DASH_LAYOUT.attendanceBarGap,
+                    height: DASH_LAYOUT.attendanceBarHeight,
+                    marginTop: "auto",
+                  }}
+                >
                   {Array.from({ length: ATT_BAR_COUNT }).map((_, i) => (
-                    <div key={i} style={{ flex: 1, borderRadius: 3, background: i < attFilledBars ? DASH_CHART.attendanceBarFill : DASH_CHART.attendanceBarEmpty }} />
+                    <div
+                      key={i}
+                      style={{
+                        flex: 1,
+                        borderRadius: DASH_LAYOUT.attendanceBarRadius,
+                        background: i < attFilledBars ? DASH_CHART.attendanceBarFill : DASH_CHART.attendanceBarEmpty,
+                      }}
+                    />
                   ))}
                 </div>
               </div>
               {/* 1행 우: 전체 성도 (2칸 = 50%) */}
-              <div style={{ ...cardBase, gridColumn: "span 2" }}>
-                <span style={labelStyle}>전체 성도</span>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
-                  <span style={{ fontSize: 40, fontWeight: 800, color: C.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{total}<span style={{ fontSize: 18, fontWeight: 700 }}>명</span></span>
-                  <span style={{ fontSize: 13, color: C.textMuted }}>활동 {activeCount} / 비활동 {inactiveCount}</span>
+              <div style={{ ...cardBase, gridColumn: "span 2", fontFamily: DASH_GLOBAL.fontKR }}>
+                <span
+                  style={{
+                    fontSize: DASH_MEMBER_CARD.labelSize,
+                    fontWeight: DASH_MEMBER_CARD.labelWeight,
+                    color: DASH_COLOR.ink,
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  전체 성도
+                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: DASH_MEMBER_CARD.valueSubGap,
+                    marginTop: DASH_MEMBER_CARD.labelValueGap,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: DASH_MEMBER_CARD.valueSize,
+                      fontWeight: DASH_MEMBER_CARD.valueWeight,
+                      color: DASH_COLOR.ink,
+                      letterSpacing: DASH_MEMBER_CARD.valueLetterSpacing,
+                      lineHeight: 1,
+                      fontFamily: DASH_GLOBAL.fontLatin,
+                    }}
+                  >
+                    {total}
+                    <span
+                      style={{
+                        fontSize: DASH_MEMBER_CARD.unitSize,
+                        fontWeight: DASH_MEMBER_CARD.unitWeight,
+                        fontFamily: DASH_GLOBAL.fontKR,
+                      }}
+                    >
+                      명
+                    </span>
+                  </span>
+                  <span
+                    style={{
+                      fontSize: DASH_MEMBER_CARD.subSize,
+                      fontWeight: DASH_MEMBER_CARD.subWeight,
+                      color: DASH_COLOR.dateValue,
+                      lineHeight: 1.2,
+                      fontFamily: DASH_GLOBAL.fontKR,
+                    }}
+                  >
+                    활동 {activeCount} / 비활동 {inactiveCount}
+                  </span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${DASH_LAYOUT.memberDotCols}, ${DASH_LAYOUT.memberDotSize}px)`, gridAutoRows: `${DASH_LAYOUT.memberDotSize}px`, columnGap: DASH_LAYOUT.memberDotGap, rowGap: DASH_LAYOUT.memberDotGap, marginTop: "auto", justifyContent: "start" }}>
-                  {Array.from({ length: MEMBER_DOT_COUNT }).map((_, i) => (
-                    <span key={i} style={{ width: DASH_LAYOUT.memberDotSize, height: DASH_LAYOUT.memberDotSize, borderRadius: "50%", background: i < memberFilledDots ? DASH_CHART.memberDotFill : DASH_CHART.memberDotEmpty }} />
-                  ))}
-                </div>
+                <MemberDotGrid total={total} activeCount={activeCount} />
               </div>
               {/* 2행: 새가족 / 위험·휴면 / 심방 / 기도 — 각 1칸 */}
               {midCards.map((c) => {
                 const [num, suf] = splitNum(c.value);
                 return (
-                  <div key={c.key} style={{ position: "relative", width: "100%", background: c.fill, border: "none", borderRadius: DASH_RADIUS.mid, boxShadow: DASH_CARD.floatShadow, padding: DASH_LAYOUT.midCardPadding, aspectRatio: DASH_LAYOUT.midCardAspectRatio, boxSizing: "border-box", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                    <div style={{ paddingRight: 28 }}>
-                      <div style={labelStyle}>{c.label}</div>
-                      <div style={{ ...subStyle, marginTop: 4 }}>{c.sub}</div>
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={c.nav}
+                    aria-label={`${c.label} — ${c.sub}`}
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: sharedRowH,
+                      background: c.fill,
+                      border: DASH_MID.cardBorder,
+                      borderRadius: DASH_RADIUS.mid,
+                      boxShadow: DASH_CARD.floatShadow,
+                      padding: DASH_LAYOUT.midCardPadding,
+                      boxSizing: "border-box",
+                      display: "flex",
+                      flexDirection: "column",
+                      overflow: "hidden",
+                      fontFamily: DASH_GLOBAL.fontKR,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      transition: "box-shadow 0.15s ease, transform 0.12s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = "0 4px 18px rgba(17,17,26,0.09)";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = DASH_CARD.floatShadow;
+                      e.currentTarget.style.transform = "translateY(0)";
+                    }}
+                  >
+                    <div style={{ paddingRight: DASH_MID_CARD.titleReserveRight }}>
+                      <div
+                        style={{
+                          fontSize: DASH_MID_CARD.labelSize,
+                          fontWeight: DASH_MID_CARD.labelWeight,
+                          color: DASH_COLOR.ink,
+                          letterSpacing: "-0.01em",
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {c.label}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: DASH_MID_CARD.subSize,
+                          fontWeight: DASH_MID_CARD.subWeight,
+                          color: DASH_MID_CARD.subColor,
+                          marginTop: DASH_MID_CARD.labelSubGap,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {c.sub}
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      aria-label={`${c.label} 바로가기`}
-                      onClick={c.nav}
-                      style={{ position: "absolute", top: DASH_LAYOUT.midCardArrowInset, right: DASH_LAYOUT.midCardArrowInset, border: "none", background: "transparent", padding: 0, cursor: "pointer", color: "#1a1a1c", lineHeight: 0 }}
+                    <span
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        top: DASH_LAYOUT.midCardArrowInset,
+                        right: DASH_LAYOUT.midCardArrowInset,
+                        color: DASH_COLOR.ink,
+                        lineHeight: 0,
+                        pointerEvents: "none",
+                      }}
                     >
                       <ArrowUpRight size={DASH_LAYOUT.midCardArrowSize} strokeWidth={DASH_LAYOUT.midCardArrowStroke} />
-                    </button>
-                    <div style={{ marginTop: "auto", alignSelf: "flex-end", display: "flex", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 30, fontWeight: 800, color: C.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{num}</span>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: C.text, marginLeft: 2 }}>{suf}</span>
+                    </span>
+                    <div style={{ marginTop: "auto", alignSelf: "flex-end", display: "flex", alignItems: "baseline", gap: 1 }}>
+                      <span
+                        style={{
+                          fontSize: DASH_MID_CARD.valueSize,
+                          fontWeight: DASH_MID_CARD.valueWeight,
+                          color: DASH_COLOR.ink,
+                          letterSpacing: DASH_MID_CARD.valueLetterSpacing,
+                          lineHeight: 1,
+                          fontFamily: DASH_GLOBAL.fontLatin,
+                        }}
+                      >
+                        {num}
+                      </span>
+                      {suf ? (
+                        <span
+                          style={{
+                            fontSize: DASH_MID_CARD.unitSize,
+                            fontWeight: DASH_MID_CARD.unitWeight,
+                            color: DASH_COLOR.ink,
+                            lineHeight: 1,
+                            fontFamily: DASH_GLOBAL.fontKR,
+                          }}
+                        >
+                          {suf}
+                        </span>
+                      ) : null}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -1119,14 +1403,15 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
             ? { display: "flex", flexDirection: "column", gap: 12 }
             : {
                 display: "grid",
-                gridTemplateColumns: `${DASH_LAYOUT.bottomLeftFr}fr ${DASH_LAYOUT.bottomRightFr}fr`,
+                gridTemplateColumns: `repeat(${DASH_LAYOUT.gridColumns}, 1fr)`,
                 gap: DASH_LAYOUT.gridGap,
+                alignItems: "stretch",
               }
         }
       >
         {/* 출석 통계 — 시안: 현황보고와 같은 행, 부서별 인원은 그 아래(스크롤) */}
-        <div ref={statsCardRef} style={{ minWidth: 0, ...(mob ? {} : { gridColumn: 1, gridRow: 1 }) }}>
-        <Card style={{ padding: 0, overflow: "visible", minWidth: 0, border: "none", boxShadow: DASH_CARD.floatShadow, borderRadius: DASH_RADIUS.card }}>
+        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", ...(mob ? {} : { gridColumn: "1 / span 2", gridRow: 1, alignSelf: "stretch" }) }}>
+        <Card style={{ padding: 0, overflow: "hidden", minWidth: 0, border: "none", boxShadow: DASH_CARD.floatShadow, borderRadius: DASH_RADIUS.card, display: "flex", flexDirection: "column", flex: 1 }}>
           {mob ? (
             <div style={{ padding: "8px 12px", borderBottom: `1px solid ${C.border}` }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text)", marginBottom: 8 }}>
@@ -1136,69 +1421,51 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
+                  justifyContent: "flex-end",
                   marginBottom: 12,
                   minWidth: 0,
                 }}
               >
-                <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", border: `1px solid ${C.border}`, flexShrink: 0 }}>
-                  {attChartYearOptions.map((y, i, arr) => {
-                    const active = attChartYear === y;
-                    return (
-                      <button key={y} type="button" onClick={() => setAttChartYear(y)} style={{ height: 28, padding: "0 8px", fontSize: 11, fontWeight: 600, border: "none", borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : undefined, fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box", background: active ? "var(--color-primary)" : "var(--color-surface)", color: active ? "var(--color-primary-on)" : C.textMuted, whiteSpace: "nowrap" }}>
-                        {y}년
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ display: "flex", borderRadius: 6, overflow: "hidden", border: `1px solid ${C.border}`, flexShrink: 0 }}>
-                  {periodSegmentItems.map((item, i) => {
-                    const active = attChartView === item.id;
-                    const isLast = i === periodSegmentItems.length - 1;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setAttChartView(item.id as AttChartView)}
-                        style={{
-                          height: 28,
-                          padding: "0 10px",
-                          fontSize: 11,
-                          fontWeight: 600,
-                          border: "none",
-                          borderRight: !isLast ? `1px solid ${C.border}` : undefined,
-                          fontFamily: "inherit",
-                          cursor: "pointer",
-                          boxSizing: "border-box",
-                          background: active ? "var(--color-primary)" : "var(--color-surface)",
-                          color: active ? "var(--color-primary-on)" : C.textMuted,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <AttChartControls
+                  mob={mob}
+                  attChartYear={attChartYear}
+                  setAttChartYear={setAttChartYear}
+                  attChartYearOptions={attChartYearOptions}
+                  attChartView={attChartView}
+                  setAttChartView={setAttChartView}
+                  periodSegmentItems={periodSegmentItems}
+                />
               </div>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "16px 24px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: DASH_ATT_CHART_LAYOUT.headerPadding, flexShrink: 0 }}>
               <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>출석 통계</h4>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
-                <select value={attChartYear} onChange={e => setAttChartYear(Number(e.target.value))} className="select-modern" style={{ height: 36, minHeight: 36, padding: "8px 36px 8px 12px", width: "auto", minWidth: 80, fontSize: 14, lineHeight: 1.35, boxSizing: "border-box" }}>
-                  {attChartYearOptions.map(y => <option key={y} value={y}>{y}년</option>)}
-                </select>
-                <SegmentedControl
-                  items={periodSegmentItems}
-                  value={attChartView}
-                  onChange={(id) => setAttChartView(id as AttChartView)}
-                  size="md"
+              <div style={{ display: "flex", alignItems: "center", gap: mob ? 10 : 14, flexWrap: "wrap", position: "relative", zIndex: 1, marginLeft: "auto" }}>
+                <AttChartControls
+                  mob={mob}
+                  attChartYear={attChartYear}
+                  setAttChartYear={setAttChartYear}
+                  attChartYearOptions={attChartYearOptions}
+                  attChartView={attChartView}
+                  setAttChartView={setAttChartView}
+                  periodSegmentItems={periodSegmentItems}
                 />
               </div>
             </div>
           )}
-          <div style={{ padding: mob ? "8px 10px" : "16px 20px", height: mob ? tokens.height.mobileChart : DASH_LAYOUT.attendanceChartHeight, minHeight: mob ? tokens.height.mobileChart : DASH_LAYOUT.attendanceChartHeight, boxSizing: "border-box", overflow: mob ? "auto" : "hidden" }}>
+          <div
+            style={{
+              padding: mob
+                ? `8px 10px ${DASH_ATT_CHART_LAYOUT.bodyPaddingBottomMob}px`
+                : `${DASH_ATT_CHART_LAYOUT.bodyPaddingTop}px ${DASH_ATT_CHART_LAYOUT.bodyPaddingX}px ${DASH_ATT_CHART_LAYOUT.bodyPaddingBottom}px`,
+              minHeight: mob ? tokens.height.mobileChart : DASH_ATT_CHART_LAYOUT.bodyHeight,
+              boxSizing: "border-box",
+              overflow: mob ? "auto" : "visible",
+              flex: mob ? undefined : 1,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             {(() => {
               const emptyMsg = (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: C.textMuted, fontSize: 13 }}>
@@ -1207,23 +1474,53 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
               );
 
               if (attChartView === "week") {
-                const has = weekly5.some(w => w.present > 0);
-                if (!has) return emptyMsg;
-                const barMax = mob ? 116 : 176;
-                const barMin = 52;
+                if (activeMembers.length === 0) return emptyMsg;
+                const W = DASH_ATT_CHART_W;
+                const barMax = mob ? W.barMaxMob : W.barMax;
                 const maxRate = Math.max(...weekly5.map(x => x.rate), 1);
                 return (
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: mob ? 8 : 16, height: "100%", paddingTop: 8, boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? W.barGapMob : W.barGap, flex: 1, minHeight: 0, boxSizing: "border-box" }}>
                     {weekly5.map((w) => {
                       const hot = w.isCurrent;
-                      const h = barMin + (w.rate / maxRate) * (barMax - barMin);
+                      const h = W.barMin + (w.rate / maxRate) * (barMax - W.barMin);
+                      const pctColor = hot ? W.hotText : W.coldText;
+                      const subColor = hot ? W.hotSub : W.coldSub;
                       return (
-                        <div key={w.wk} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 0 }}>
-                          <div style={{ width: "100%", height: h, borderRadius: "12px 12px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase, display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 4px 0", boxSizing: "border-box" }}>
-                            <span style={{ fontSize: mob ? 16 : 22, fontWeight: 800, color: hot ? "#fff" : DASH_CHART.statTextGray, letterSpacing: "-0.02em", lineHeight: 1 }}>{w.rate}%</span>
-                            <span style={{ fontSize: 11, color: hot ? "rgba(255,255,255,0.9)" : DASH_CHART.statSubGray, marginTop: 3 }}>{w.present}/{w.total}명</span>
+                        <div key={w.wk} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0, minHeight: 0 }}>
+                          <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", justifyContent: "flex-end", minHeight: 0 }}>
+                            <div
+                              style={{
+                                width: "100%",
+                                height: h,
+                                borderRadius: `${W.barRadius}px ${W.barRadius}px 0 0`,
+                                background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                padding: `${W.barPaddingTop}px 6px 0`,
+                                boxSizing: "border-box",
+                              }}
+                            >
+                              <span style={{ fontSize: mob ? W.pctSizeMob : W.pctSize, fontWeight: W.pctWeight, color: pctColor, letterSpacing: "-0.02em", lineHeight: 1 }}>{w.rate}%</span>
+                              <span style={{ fontSize: W.subSize, fontWeight: W.subWeight, color: subColor, marginTop: 4, lineHeight: 1.2 }}>{w.present}/{w.total}명</span>
+                            </div>
                           </div>
-                          <span style={{ fontSize: 11, color: hot ? C.text : C.textMuted, fontWeight: hot ? 700 : 500, whiteSpace: "nowrap" }}>{w.label}</span>
+                          <span
+                            style={{
+                              fontSize: W.labelSize,
+                              color: hot ? DASH_COLOR.ink : DASH_COLOR.dateValue,
+                              fontWeight: hot ? W.labelWeightHot : W.labelWeight,
+                              whiteSpace: "nowrap",
+                              lineHeight: 1.2,
+                              marginTop: W.columnGap,
+                              flexShrink: 0,
+                              minHeight: W.labelMinHeight,
+                              textAlign: "center",
+                              width: "100%",
+                            }}
+                          >
+                            {w.label}
+                          </span>
                         </div>
                       );
                     })}
@@ -1235,18 +1532,55 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                 const MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
                 const has = monthlyAvg.some(x => x.avg > 0);
                 if (!has) return emptyMsg;
+                const M = DASH_ATT_CHART_M;
                 const maxM = Math.max(...monthlyAvg.map(x => x.avg), 1);
-                const barMax = mob ? 104 : 159;
+                const barMax = mob ? 100 : DASH_ATT_CHART_LAYOUT.monthBarMax;
                 return (
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: mob ? 4 : 8, height: "100%", paddingTop: 16, boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? M.barGapMob : M.barGap, flex: 1, minHeight: 0, boxSizing: "border-box" }}>
                     {monthlyAvg.map((mm, i) => {
                       const hot = mm.isCurrent;
-                      const h = Math.max(4, (mm.avg / maxM) * barMax);
+                      const h = mm.avg > 0 ? Math.max(M.barMin, (mm.avg / maxM) * barMax) : 0;
                       return (
-                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 0, justifyContent: "flex-end" }}>
-                          <span style={{ fontSize: 11, color: hot ? DASH_CHART.statBarHighlight : C.textMuted, fontWeight: hot ? 700 : 500 }}>{mm.avg || ""}</span>
-                          <div style={{ width: "100%", height: h, minHeight: 4, borderRadius: "6px 6px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase }} />
-                          <span style={{ fontSize: 10, color: hot ? DASH_CHART.statBarHighlight : C.textMuted, fontWeight: hot ? 700 : 500 }}>{MON[i]}</span>
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, height: "100%" }}>
+                          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", minHeight: 0 }}>
+                            {mm.avg > 0 ? (
+                              <span
+                                style={{
+                                  fontSize: M.valueSize,
+                                  fontWeight: hot ? M.valueWeightHot : M.valueWeight,
+                                  color: hot ? M.valueColorHot : M.valueColor,
+                                  marginBottom: M.valueBarGap,
+                                  lineHeight: 1,
+                                }}
+                              >
+                                {mm.avg}
+                              </span>
+                            ) : null}
+                            {h > 0 ? (
+                              <div
+                                style={{
+                                  width: "100%",
+                                  height: h,
+                                  borderRadius: `${M.barRadius}px ${M.barRadius}px 0 0`,
+                                  background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase,
+                                }}
+                              />
+                            ) : null}
+                          </div>
+                          <span
+                            style={{
+                              fontSize: M.labelSize,
+                              color: hot ? M.labelColorHot : M.labelColor,
+                              fontWeight: hot ? M.labelWeightHot : M.labelWeight,
+                              flexShrink: 0,
+                              lineHeight: 1.2,
+                              marginTop: DASH_ATT_CHART_LAYOUT.monthLabelGap,
+                              textAlign: "center",
+                              width: "100%",
+                            }}
+                          >
+                            {MON[i]}
+                          </span>
                         </div>
                       );
                     })}
@@ -1254,23 +1588,48 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                 );
               }
 
-              const has = yearly3.some(y => y.present > 0);
-              if (!has) return emptyMsg;
-              const barMax = mob ? 116 : 176;
-              const barMin = 56;
-              const maxRate = Math.max(...yearly3.map(x => x.rate), 1);
+              const Y = DASH_ATT_CHART_Y;
+              const barMax = mob ? Y.barMaxMob : Y.barMax;
+              const barMin = mob ? Y.barMinMob : Y.barMin;
+              const maxRate = Math.max(...yearly3.map(x => Math.min(x.rate, 100)), 1);
+              const yearBlockStyles = [
+                { bg: DASH_CHART.statBarYearBack, text: DASH_CHART.statTextYearBack, sub: DASH_CHART.statSubYearBack },
+                { bg: DASH_CHART.statBarYearMid, text: DASH_CHART.statTextYearMid, sub: DASH_CHART.statSubYearMid },
+                { bg: DASH_CHART.statBarHighlight, text: DASH_CHART.statTextYearHighlight, sub: DASH_CHART.statSubYearHighlight },
+              ] as const;
+              const yearBlockWidth = mob ? Y.blockWidthMob : Y.blockWidth;
+              const yearBlockOverlap = mob ? Y.blockOverlapMob : Y.blockOverlap;
               return (
-                <div style={{ display: "flex", alignItems: "flex-end", gap: mob ? 10 : 16, height: "100%", paddingTop: 8, boxSizing: "border-box" }}>
-                  {yearly3.map((y) => {
-                    const hot = y.isCurrent;
-                    const h = barMin + (y.rate / maxRate) * (barMax - barMin);
+                <div style={{ display: "flex", alignItems: "flex-end", width: "100%", flex: 1, minHeight: 0, paddingTop: mob ? Y.bodyPaddingTopMob : Y.bodyPaddingTop, boxSizing: "border-box" }}>
+                  {yearly3.map((y, i) => {
+                    const palette = yearBlockStyles[i] ?? yearBlockStyles[yearBlockStyles.length - 1];
+                    const isFront = i === yearly3.length - 1;
+                    const visualRate = Math.min(y.rate, 100);
+                    const h = barMin + (visualRate / maxRate) * (barMax - barMin);
                     return (
-                      <div key={y.year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 0 }}>
-                        <div style={{ width: "100%", height: h, borderRadius: "14px 14px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase, display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 4px 0", boxSizing: "border-box" }}>
-                          <span style={{ fontSize: mob ? 18 : 26, fontWeight: 800, color: hot ? "#fff" : DASH_CHART.statTextGray, letterSpacing: "-0.02em", lineHeight: 1 }}>{y.rate}%</span>
-                          <span style={{ fontSize: 11, color: hot ? "rgba(255,255,255,0.9)" : DASH_CHART.statSubGray, marginTop: 3 }}>{y.present}/{y.total}명</span>
+                      <div
+                        key={y.year}
+                        style={{
+                          flex: `0 0 ${yearBlockWidth}`,
+                          width: yearBlockWidth,
+                          height: h,
+                          marginLeft: i > 0 ? yearBlockOverlap : 0,
+                          zIndex: i + 1,
+                          position: "relative",
+                          borderRadius: Y.blockRadius,
+                          background: palette.bg,
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "space-between",
+                          padding: mob ? Y.blockPaddingMob : Y.blockPadding,
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: mob ? 28 : 34, fontWeight: 800, color: palette.text, letterSpacing: "-0.03em", lineHeight: 1 }}>{visualRate}%</div>
+                          <div style={{ fontSize: mob ? 11 : 12, color: palette.sub, marginTop: 6, fontWeight: 500 }}>{y.present}/{y.total}명</div>
                         </div>
-                        <span style={{ fontSize: 12, color: hot ? C.text : C.textMuted, fontWeight: hot ? 700 : 500 }}>{y.year}</span>
+                        <div style={{ fontSize: mob ? 11 : 12, color: palette.sub, fontWeight: isFront ? 700 : 500, lineHeight: 1.2 }}>{y.year}</div>
                       </div>
                     );
                   })}
@@ -1293,10 +1652,9 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
             ...(mob
               ? { minHeight: 320 }
               : {
-                  gridColumn: 2,
-                  gridRow: 1,
-                  height: statsCardHeight ?? undefined,
-                  maxHeight: statsCardHeight ?? undefined,
+                  gridColumn: "3 / span 2",
+                  gridRow: "1 / 3",
+                  alignSelf: "stretch",
                   minHeight: 0,
                   overflow: "hidden",
                 }),
@@ -1365,7 +1723,7 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
           </div>
         </div>
 
-        <div style={{ minWidth: 0, ...(mob ? {} : { gridColumn: 1, gridRow: 2 }) }}>
+        <div style={{ minWidth: 0, ...(mob ? {} : { gridColumn: "1 / span 2", gridRow: 2 }) }}>
         <Card style={{ padding: 0, overflow: "hidden", border: "none", boxShadow: DASH_CARD.floatShadow, borderRadius: DASH_RADIUS.card }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: mob ? "12px 16px 4px" : "16px 24px 4px" }}>
             <h4 style={{ margin: 0, fontSize: mob ? 14 : 16, fontWeight: 700, color: C.text }}>부서별 인원</h4>
@@ -1443,6 +1801,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const [roleF, setRoleF] = useState("all");
   const [mokjangF, setMokjangF] = useState("all");
   const [statusF, setStatusF] = useState("all");
+  const [riskDormantOnly, setRiskDormantOnly] = useState(false);
   const [newFamilyOnly, setNewFamilyOnly] = useState(false);
   const [prospectOnly, setProspectOnly] = useState(false);
   const [baptismF, setBaptismF] = useState("all");
@@ -1488,6 +1847,15 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
         setDbRef.current((prev) => ({ ...prev, members }));
       });
   }, [churchId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("pastoral_members_risk_dormant") === "1") {
+      setRiskDormantOnly(true);
+      setStatusF("all");
+      sessionStorage.removeItem("pastoral_members_risk_dormant");
+    }
+  }, []);
 
   const mokjangList = getMokjangList(db);
   const denom = db.settings.denomination?.trim();
@@ -1558,11 +1926,12 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
     if (roleF !== "all") r = r.filter(m => m.role === roleF);
     if (mokjangF !== "all") r = r.filter(m => ((m.mokjang ?? m.group) || "") === mokjangF);
     if (statusF !== "all") r = r.filter(m => (m.member_status ?? m.status) === statusF);
+    if (riskDormantOnly) r = r.filter(m => m.status === "위험" || m.status === "휴면");
     if (newFamilyOnly) r = r.filter(m => m.is_new_family === true);
     if (prospectOnly) r = r.filter(m => m.is_prospect === true);
     if (baptismF !== "all") r = r.filter(m => m.baptism_type === baptismF);
     return r;
-  }, [db.members, searchTerms, deptF, roleF, mokjangF, statusF, newFamilyOnly, prospectOnly, baptismF]);
+  }, [db.members, searchTerms, deptF, roleF, mokjangF, statusF, riskDormantOnly, newFamilyOnly, prospectOnly, baptismF]);
 
   const addSearchTerm = useCallback(() => {
     const v = searchInput.trim().replace(/[,\uFF0C]+$/g, "").trim();
@@ -2181,6 +2550,15 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
   const [search, setSearch] = useState("");
   const [typeF, setTypeF] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const preset = sessionStorage.getItem("pastoral_notes_type");
+    if (preset === "prayer" || preset === "memo" || preset === "visit" || preset === "event") {
+      setTypeF(preset);
+      sessionStorage.removeItem("pastoral_notes_type");
+    }
+  }, []);
 
   const answeredSet = useMemo(() => new Set(db.answeredPrayerKeys || []), [db.answeredPrayerKeys]);
 
@@ -3363,7 +3741,7 @@ const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", 
 
 export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; saveDb?: (d: DB) => Promise<void> }) {
   const { churchId } = useAuth();
-  const { rawAttendance, refreshMembers, refreshNotes, refreshVisits, refreshNewFamilyPrograms, schoolDepartments, schoolEnrollments } = useAppData();
+  const { rawAttendance, refreshMembers, refreshNotes, refreshVisits, refreshNewFamilyPrograms, refreshAttendance, schoolDepartments, schoolEnrollments } = useAppData();
   const mob = useIsMobile();
   const [activeSub, setActiveSubState] = useState<SubPage>(() => {
     if (typeof window === "undefined") return "dashboard";
@@ -3374,6 +3752,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   useEffect(() => {
     if (typeof window !== "undefined") sessionStorage.setItem("pastoralSubTab", activeSub);
   }, [activeSub]);
+  useEffect(() => {
+    const onHome = () => setActiveSubState("dashboard");
+    window.addEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
+    return () => window.removeEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
+  }, []);
   const [currentWeek, setCurrentWeek] = useState(getWeekNum);
   const [toasts, setToasts] = useState<{ id: number; msg: string; type: string }[]>([]);
 
@@ -3512,8 +3895,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         });
         setDb((prev) => ({ ...prev, attendance, attendanceReasons }));
         fetchDateBasedAttendance();
+        void refreshAttendance();
       });
-  }, [churchId, setDb, fetchDateBasedAttendance]);
+  }, [churchId, setDb, fetchDateBasedAttendance, refreshAttendance]);
 
   // Supabase 데이터가 없을 때 메인 대시보드와 동일한 db.attendance(주차별)를 날짜 기준으로 변환해 사용
   const attendanceListForDashboard = useMemo(() => {
@@ -3900,7 +4284,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       contentBg={activeSub === "dashboard" ? DASH_GLOBAL.bg : undefined}
       contentPaddingLeft={activeSub === "dashboard" ? DASH_GLOBAL.contentPadLeft : undefined}
       contentPaddingRight={activeSub === "dashboard" ? DASH_GLOBAL.contentPadRight : undefined}
-      contentPaddingBottom={activeSub === "dashboard" ? DASH_GLOBAL.contentPadBottom : undefined}
+      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : undefined}
       contentTopGap={activeSub === "dashboard" ? DASH_GLOBAL.contentPadTop : undefined}
       contentFontFamily={activeSub === "dashboard" ? DASH_GLOBAL.fontKR : undefined}
       hideHeader={activeSub === "dashboard"}
