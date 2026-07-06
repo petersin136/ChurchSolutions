@@ -1041,7 +1041,7 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
           // 2행 4카드: 새가족 / 위험·휴면 / 심방 / 기도
           const midCards = [
             { key: "newfamily", label: "새가족", sub: newF > 0 ? "정착 진행 중" : "정착 진행 성도 없음", value: `${newF}명`, has: newF > 0, fill: newF > 0 ? DASH_MID.newFamilyFill : DASH_MID.emptyFill, nav: () => onNavSub?.("newfamily") },
-            { key: "risk", label: "위험/휴면", sub: risk > 0 ? "관심 필요" : "관심 필요 성도 없음", value: `${risk}명`, has: risk > 0, fill: risk > 0 ? DASH_MID.riskFill : DASH_MID.emptyFill, nav: () => onNavSub?.("members") },
+            { key: "risk", label: "위험/휴면", sub: risk > 0 ? "관심 필요" : "관심 필요 성도 없음", value: `${risk}명`, has: risk > 0, fill: DASH_MID.riskFill, nav: () => onNavSub?.("members") },
             { key: "visit", label: "심방", sub: "최근 기록", value: `${visitCount}건`, has: false, fill: DASH_MID.visitFill, nav: () => shellNav?.setCurrentPage("visit") },
             { key: "prayer", label: "기도", sub: prayers > 0 ? "함께 기도합니다" : "함께 기도합니다", value: `${prayers}건`, has: prayers > 0, fill: prayers > 0 ? DASH_MID.prayerFill : DASH_MID.emptyFill, nav: () => onNavSub?.("notes") },
           ];
@@ -1052,6 +1052,8 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
               style={{
                 display: "grid",
                 gridTemplateColumns: `repeat(${DASH_LAYOUT.gridColumns}, 1fr)`,
+                gridAutoRows: "auto",
+                alignItems: "start",
                 gap: DASH_LAYOUT.gridGap,
                 marginTop: 8,
               }}
@@ -1086,8 +1088,8 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
               {midCards.map((c) => {
                 const [num, suf] = splitNum(c.value);
                 return (
-                  <div key={c.key} style={{ position: "relative", background: c.fill, border: "none", borderRadius: DASH_RADIUS.mid, boxShadow: DASH_CARD.floatShadow, padding: DASH_LAYOUT.midCardPadding, aspectRatio: DASH_LAYOUT.midCardAspectRatio, boxSizing: "border-box", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                    <div style={{ paddingRight: 24 }}>
+                  <div key={c.key} style={{ position: "relative", width: "100%", background: c.fill, border: "none", borderRadius: DASH_RADIUS.mid, boxShadow: DASH_CARD.floatShadow, padding: DASH_LAYOUT.midCardPadding, aspectRatio: DASH_LAYOUT.midCardAspectRatio, boxSizing: "border-box", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                    <div style={{ paddingRight: 28 }}>
                       <div style={labelStyle}>{c.label}</div>
                       <div style={{ ...subStyle, marginTop: 4 }}>{c.sub}</div>
                     </div>
@@ -1095,9 +1097,9 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                       type="button"
                       aria-label={`${c.label} 바로가기`}
                       onClick={c.nav}
-                      style={{ position: "absolute", top: 16, right: 16, border: "none", background: "transparent", padding: 0, cursor: "pointer", color: "#1a1a1c", lineHeight: 0 }}
+                      style={{ position: "absolute", top: DASH_LAYOUT.midCardArrowInset, right: DASH_LAYOUT.midCardArrowInset, border: "none", background: "transparent", padding: 0, cursor: "pointer", color: "#1a1a1c", lineHeight: 0 }}
                     >
-                      <ArrowUpRight size={18} strokeWidth={2} />
+                      <ArrowUpRight size={DASH_LAYOUT.midCardArrowSize} strokeWidth={DASH_LAYOUT.midCardArrowStroke} />
                     </button>
                     <div style={{ marginTop: "auto", alignSelf: "flex-end", display: "flex", alignItems: "baseline" }}>
                       <span style={{ fontSize: 30, fontWeight: 800, color: C.text, letterSpacing: "-0.02em", lineHeight: 1 }}>{num}</span>

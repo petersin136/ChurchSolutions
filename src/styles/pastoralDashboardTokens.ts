@@ -135,15 +135,15 @@ export const DASH_RADIUS = {
 
 /** 중간 4카드(새가족/위험휴면/심방/기도) 배경 — 시안 픽셀 추출 */
 export const DASH_MID = {
-  /** 새가족 — 데이터 있을 때 연블루 그라디언트 */
+  /** 새가족 — 연블루 그라디언트 */
   newFamilyFill: "linear-gradient(135deg, #dce8fe 0%, #ffffff 72%)",
-  /** 위험/휴면 — 데이터 있을 때 연아프리콧 그라디언트 */
-  riskFill: "linear-gradient(135deg, #faeee2 0%, #ffffff 72%)",
+  /** 위험/휴면 — 시안 픽셀 #fbebe1·#f8eee7·#f7efe9 (살구/베이지, 회색 아님) */
+  riskFill: "linear-gradient(135deg, #fbebe1 0%, #ffffff 72%)",
   /** 심방 — 항상 회색(변화 없음) */
   visitFill: "#e9e8ed",
-  /** 기도 — 데이터 있을 때 흰색 */
+  /** 기도 — 흰색 */
   prayerFill: "#ffffff",
-  /** 데이터 없을 때(빈 상태) 공통 회색 */
+  /** 데이터 없을 때(빈 상태) — 새가족·기도만 */
   emptyFill: "#f2f1f6",
 } as const;
 
@@ -175,13 +175,17 @@ export const DASH_CARD = {
 export const DASH_LAYOUT = {
   gridColumns: 4,
   gridGap: 16,
-  /** 1행(금주 출석률·전체 성도) — 시안: 넉넉한 세로 비율 */
-  topCardHeight: 200,
+  /** 1행(금주 출석률·전체 성도) — 시안: 가로 2:1보다 세로 여유 */
+  topCardHeight: 232,
   topCardPadding: 24,
-  attendanceBarHeight: 56,
-  /** 2행(새가족·위험·심방·기도) — 시안: 거의 정사각(열 너비 = 높이) */
+  attendanceBarHeight: 60,
+  /** 2행(새가족·위험·심방·기도) — 정사각에 가깝게(열 너비 = 높이) */
   midCardAspectRatio: "1 / 1",
   midCardPadding: 18,
+  /** 우상단 ↗ 아이콘 — 시안 대비 카드 폭 ~5% */
+  midCardArrowSize: 14,
+  midCardArrowStroke: 2,
+  midCardArrowInset: 18,
   /** 출석통계(좌) : 현황보고(우). 부서별 인원은 출석통계 아래 별도 행 */
   bottomLeftFr: 1.63,
   bottomRightFr: 1,
