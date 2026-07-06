@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
-import { Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from "react";
+import { Plus, Pencil, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
 import type { DB } from "@/types/db";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -28,34 +28,74 @@ type PlannerPlace = {
 
 const ORG_TAB_KEY = "pastoral_org_tab";
 const SLOT_COLORS_KEY = "pastoral_org_slot_colors";
+const MOKJANG_LEADERS_KEY = "pastoral_org_mokjang_leaders";
+const SMALL_GROUP_TERM_KEY = "pastoral_org_small_group_term";
+const DEFAULT_SMALL_GROUP_TERM = "소그룹";
+
+/** 한국 교회에서 쓰는 소그룹 명칭 예시 — 클릭 시 명칭·리더 호칭 자동 적용 */
+const SMALL_GROUP_TERM_PRESETS: { term: string; leader: string }[] = [
+  { term: "목장", leader: "목자" },
+  { term: "셀", leader: "셀 리더" },
+  { term: "구역", leader: "구역장" },
+  { term: "속", leader: "속장" },
+  { term: "전도회", leader: "회장" },
+  { term: "선교회", leader: "회장" },
+];
+
+function inferLeaderLabelFromTerm(term: string): string {
+  const trimmed = term.trim();
+  if (!trimmed || trimmed === "소그룹") return "리더";
+  const preset = SMALL_GROUP_TERM_PRESETS.find((p) => p.term === trimmed);
+  if (preset) return preset.leader;
+  if (trimmed.endsWith("회")) return "회장";
+  return `${trimmed} 리더`;
+}
+
+function mokjangUiLabels(term: string) {
+  const t = term.trim() || DEFAULT_SMALL_GROUP_TERM;
+  return {
+    tab: `${t} 관리`,
+    add: `${t} 추가하기`,
+    addModal: `새 ${t} 추가`,
+    editModal: `${t} 수정`,
+    placeholder: `${t} 이름을 입력하세요`,
+    memberAssign: `${t}원 배정`,
+    step1Desc: `${t} 이름을 입력한 뒤 다음 단계에서 성도를 배정합니다.`,
+    step2Desc: `먼저 ${inferLeaderLabelFromTerm(t)}를 지정한 뒤 ${t}원을 추가하세요.`,
+    memberAdd: `${t}원 추가`,
+    unassigned: `${t} 미배정`,
+    none: `${t} 없음`,
+    duplicate: `이미 있는 ${t}입니다`,
+    saved: `${t}이 저장되었습니다`,
+    added: `${t}이 추가되었습니다`,
+    deleted: `${t}이 삭제되었습니다`,
+    prefix: t,
+  };
+}
 
 const TAB_LABELS: Record<OrgTab, string> = {
   dept: "부서 관리",
-  mokjang: "목장 관리",
+  mokjang: "소그룹 관리",
   place: "장소 관리",
 };
 
-const ADD_LABELS: Record<OrgTab, string> = {
+const ADD_LABELS: Record<Exclude<OrgTab, "mokjang">, string> = {
   dept: "부서 추가하기",
-  mokjang: "목장 추가하기",
   place: "장소 추가하기",
 };
 
-const ADD_MODAL_TITLES: Record<OrgTab, string> = {
+const ADD_MODAL_TITLES: Record<Exclude<OrgTab, "mokjang">, string> = {
   dept: "새 부서 추가",
-  mokjang: "새 목장 추가",
   place: "새 장소 추가",
 };
 
-const EDIT_MODAL_TITLES: Record<OrgTab, string> = {
+const EDIT_MODAL_TITLES: Record<Exclude<OrgTab, "mokjang">, string> = {
   dept: "부서 수정",
-  mokjang: "목장 수정",
   place: "장소 수정",
 };
 
-const INPUT_PLACEHOLDERS: Record<OrgTab, string> = {
+const INPUT_PLACEHOLDERS: Record<Exclude<OrgTab, "mokjang">, string> = {
   dept: "부서 이름을 입력하세요",
-  mokjang: "목장 이름을 입력하세요",
   place: "장소 이름을 입력하세요",
 };
 
@@ -80,15 +120,53 @@ function saveColorMap(key: string, churchId: string, map: Record<string, string>
   localStorage.setItem(`${key}_${churchId}`, JSON.stringify(map));
 }
 
+function loadMokjangLeaders(churchId: string): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(`${MOKJANG_LEADERS_KEY}_${churchId}`);
+    return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveMokjangLeaders(churchId: string, map: Record<string, string>) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`${MOKJANG_LEADERS_KEY}_${churchId}`, JSON.stringify(map));
+}
+
+function loadSmallGroupTerm(churchId: string): string {
+  if (typeof window === "undefined") return DEFAULT_SMALL_GROUP_TERM;
+  try {
+    return localStorage.getItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`)?.trim() || DEFAULT_SMALL_GROUP_TERM;
+  } catch {
+    return DEFAULT_SMALL_GROUP_TERM;
+  }
+}
+
+function saveSmallGroupTerm(churchId: string, term: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`, term);
+}
+
 /* ── 세그먼트 탭 (회색 사각 컨테이너 + 흰 활성 탭) ── */
+/** 세 탭 동일 너비 (소그룹 명칭 변경 시에도 레이아웃 고정) */
+const ORG_SEG_TAB_EQUAL_WIDTH = 136;
+const ORG_SEG_TAB_PAD_X = 14;
+const ORG_GROUP_TERM_BAR_WIDTH = 480;
+
 function OrgSegTabButton({
   id,
   active,
   onClick,
+  label,
+  equalWidth,
 }: {
   id: OrgTab;
   active: boolean;
   onClick: () => void;
+  label?: string;
+  equalWidth?: number;
 }) {
   const [hover, setHover] = useState(false);
   const showHover = hover && !active;
@@ -102,7 +180,7 @@ function OrgSegTabButton({
       style={{
         border: "none",
         borderRadius: ORG_RESOURCE.segTabRadius,
-        padding: `${ORG_RESOURCE.segTabPadY}px ${ORG_RESOURCE.segTabPadX}px`,
+        padding: `${ORG_RESOURCE.segTabPadY}px ${equalWidth ? ORG_SEG_TAB_PAD_X : ORG_RESOURCE.segTabPadX}px`,
         fontSize: ORG_RESOURCE.segTabFontSize,
         fontWeight: active ? ORG_RESOURCE.segTabActiveFontWeight : ORG_RESOURCE.segTabFontWeight,
         fontFamily: ORG_RESOURCE.fontKR,
@@ -124,14 +202,35 @@ function OrgSegTabButton({
             : "none",
         whiteSpace: "nowrap",
         transition: "background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease",
+        ...(equalWidth
+          ? {
+              width: equalWidth,
+              minWidth: equalWidth,
+              maxWidth: equalWidth,
+              boxSizing: "border-box" as const,
+              textAlign: "center" as const,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }
+          : {}),
       }}
     >
-      {TAB_LABELS[id]}
+      {label ?? TAB_LABELS[id]}
     </button>
   );
 }
 
-function OrgSegmentTabs({ tab, onChange }: { tab: OrgTab; onChange: (t: OrgTab) => void }) {
+function OrgSegmentTabs({
+  tab,
+  onChange,
+  mokjangTabLabel,
+  inline,
+}: {
+  tab: OrgTab;
+  onChange: (t: OrgTab) => void;
+  mokjangTabLabel?: string;
+  inline?: boolean;
+}) {
   return (
     <div
       style={{
@@ -141,12 +240,137 @@ function OrgSegmentTabs({ tab, onChange }: { tab: OrgTab; onChange: (t: OrgTab) 
         padding: ORG_RESOURCE.segPad,
         borderRadius: ORG_RESOURCE.segRadius,
         background: ORG_RESOURCE.segBg,
-        marginBottom: ORG_RESOURCE.segToGridGap,
+        marginBottom: inline ? 0 : ORG_RESOURCE.segToGridGap,
+        flexShrink: 0,
       }}
     >
       {(["dept", "mokjang", "place"] as OrgTab[]).map((id) => (
-        <OrgSegTabButton key={id} id={id} active={tab === id} onClick={() => onChange(id)} />
+        <OrgSegTabButton
+          key={id}
+          id={id}
+          active={tab === id}
+          onClick={() => onChange(id)}
+          label={id === "mokjang" ? mokjangTabLabel : undefined}
+          equalWidth={ORG_SEG_TAB_EQUAL_WIDTH}
+        />
       ))}
+    </div>
+  );
+}
+
+const SMALL_GROUP_TERM_EXAMPLES = SMALL_GROUP_TERM_PRESETS.map((p) => p.term).join(", ");
+
+function SmallGroupTermCustomizer({
+  term,
+  onTermChange,
+}: {
+  term: string;
+  onTermChange: (term: string) => void;
+}) {
+  const [draft, setDraft] = useState(term);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const focusedRef = useRef(false);
+  const composingRef = useRef(false);
+  const skipBlurCommitRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current) {
+      setDraft(term);
+    }
+  }, [term]);
+
+  const commit = (value: string) => {
+    const trimmed = value.trim() || DEFAULT_SMALL_GROUP_TERM;
+    setDraft(trimmed);
+    if (trimmed !== term) {
+      onTermChange(trimmed);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        width: ORG_GROUP_TERM_BAR_WIDTH,
+        flexShrink: 0,
+        fontFamily: ORG_RESOURCE.fontKR,
+        boxSizing: "border-box",
+        paddingLeft: 4,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: "#6b7280",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+        }}
+      >
+        소그룹 형태
+      </span>
+      <input
+        ref={inputRef}
+        type="text"
+        value={draft}
+        onFocus={() => { focusedRef.current = true; }}
+        onChange={(e) => setDraft(e.target.value)}
+        onCompositionStart={() => { composingRef.current = true; }}
+        onCompositionEnd={(e) => {
+          composingRef.current = false;
+          setDraft(e.currentTarget.value);
+        }}
+        onBlur={() => {
+          focusedRef.current = false;
+          if (skipBlurCommitRef.current) {
+            skipBlurCommitRef.current = false;
+            return;
+          }
+          window.setTimeout(() => {
+            if (composingRef.current) return;
+            commit(inputRef.current?.value ?? draft);
+          }, 0);
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          if (e.nativeEvent.isComposing || composingRef.current) return;
+          e.preventDefault();
+          skipBlurCommitRef.current = true;
+          commit((e.currentTarget as HTMLInputElement).value);
+          (e.currentTarget as HTMLInputElement).blur();
+        }}
+        placeholder={DEFAULT_SMALL_GROUP_TERM}
+        aria-label="소그룹 형태"
+        style={{
+          width: 96,
+          height: 34,
+          padding: "0 12px",
+          boxSizing: "border-box",
+          border: "1px solid #e3e4e8",
+          borderRadius: 6,
+          background: "#ffffff",
+          fontSize: 15,
+          fontFamily: ORG_RESOURCE.fontKR,
+          color: "#0b0c0e",
+          outline: "none",
+          flexShrink: 0,
+        }}
+      />
+      <span
+        style={{
+          fontSize: 13,
+          color: "#b0b4bc",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
+        예 {SMALL_GROUP_TERM_EXAMPLES}
+      </span>
     </div>
   );
 }
@@ -230,7 +454,6 @@ function OrgResourceCard({
   color,
   onEdit,
   onDelete,
-  onBodyClick,
 }: {
   title: string;
   subtitle?: string;
@@ -240,7 +463,6 @@ function OrgResourceCard({
   color?: string;
   onEdit: () => void;
   onDelete: () => void;
-  onBodyClick?: () => void;
 }) {
   const [hover, setHover] = useState(false);
   const bg = colored && color ? color : ORG_RESOURCE.cardNeutralBg;
@@ -249,10 +471,6 @@ function OrgResourceCard({
 
   return (
     <div
-      role={onBodyClick ? "button" : undefined}
-      tabIndex={onBodyClick ? 0 : undefined}
-      onClick={onBodyClick}
-      onKeyDown={onBodyClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onBodyClick(); } } : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onFocus={() => setHover(true)}
@@ -264,7 +482,6 @@ function OrgResourceCard({
         background: bg,
         boxShadow: colored ? "none" : ORG_RESOURCE.cardNeutralShadow,
         border: "none",
-        cursor: onBodyClick ? "pointer" : "default",
       }}
     >
       <div
@@ -527,6 +744,415 @@ export function OrgDeleteModal({
   );
 }
 
+export type OrgMemberManageKind = "dept" | "mokjang";
+
+type ResourceWizardState = {
+  kind: OrgMemberManageKind;
+  mode: "add" | "edit";
+  step: 1 | 2;
+  name: string;
+  oldName: string | null;
+  draftMemberIds: string[];
+  leaderId: string | null;
+};
+
+const modalInputStyle: CSSProperties = {
+  width: "100%",
+  height: ORG_RESOURCE.modalInputHeight,
+  padding: "0 16px",
+  boxSizing: "border-box",
+  border: "none",
+  borderRadius: ORG_RESOURCE.modalInputRadius,
+  background: ORG_RESOURCE.modalInputBg,
+  fontSize: ORG_RESOURCE.modalInputFontSize,
+  fontFamily: ORG_RESOURCE.fontKR,
+  color: "#0b0c0e",
+  outline: "none",
+};
+
+const modalSelectStyle: CSSProperties = {
+  ...modalInputStyle,
+  padding: "0 44px 0 16px",
+};
+
+const modalFieldLabel: CSSProperties = {
+  display: "block",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#6b7280",
+  marginBottom: 8,
+  fontFamily: ORG_RESOURCE.fontKR,
+};
+
+function OrgModalSelect({
+  value,
+  onChange,
+  disabled,
+  placeholder,
+  "aria-label": ariaLabel,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  "aria-label"?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        style={{
+          ...modalSelectStyle,
+          appearance: "none",
+          WebkitAppearance: "none",
+          MozAppearance: "none",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+          color: value ? "#0b0c0e" : "#8b909a",
+        }}
+      >
+        {placeholder != null && <option value="">{placeholder}</option>}
+        {children}
+      </select>
+      <ChevronDown
+        size={18}
+        strokeWidth={2}
+        aria-hidden
+        style={{
+          position: "absolute",
+          right: 16,
+          top: "50%",
+          transform: "translateY(-50%)",
+          color: disabled ? "#c4c8d0" : "#8b909a",
+          pointerEvents: "none",
+        }}
+      />
+    </div>
+  );
+}
+
+const modalRowRemoveBtn: CSSProperties = {
+  padding: "6px 12px",
+  borderRadius: ORG_RESOURCE.modalBtnRadius,
+  border: "1px solid #e3e4e8",
+  background: "#ffffff",
+  color: "#6b7280",
+  fontSize: 13,
+  fontWeight: 600,
+  fontFamily: ORG_RESOURCE.fontKR,
+  cursor: "pointer",
+  flexShrink: 0,
+};
+
+function memberIdsInResource(db: DB, kind: OrgMemberManageKind, name: string): string[] {
+  return db.members
+    .filter((m) => {
+      if (m.status === "졸업/전출") return false;
+      if (kind === "dept") return m.dept === name;
+      return ((m.mokjang ?? m.group) || "") === name;
+    })
+    .map((m) => m.id);
+}
+
+/** 부서·목장 추가/편집 — 1단계 이름 → 2단계 인원 배정 */
+function OrgDeptMokWizardModal({
+  wizard,
+  db,
+  addSelect,
+  leaderLabel,
+  mokjangLabels,
+  groupTerm,
+  onAddSelectChange,
+  onNameChange,
+  onDraftChange,
+  onLeaderChange,
+  onStepChange,
+  onClose,
+  onNext,
+  onBack,
+  onFinish,
+}: {
+  wizard: ResourceWizardState;
+  db: DB;
+  addSelect: string;
+  leaderLabel: string;
+  mokjangLabels: ReturnType<typeof mokjangUiLabels>;
+  groupTerm: string;
+  onAddSelectChange: (v: string) => void;
+  onNameChange: (v: string) => void;
+  onDraftChange: (ids: string[]) => void;
+  onLeaderChange: (id: string | null, draftMemberIds?: string[]) => void;
+  onStepChange: (step: 1 | 2) => void;
+  onClose: () => void;
+  onNext: () => void;
+  onBack: () => void;
+  onFinish: () => void;
+}) {
+  const { kind, mode, step, name, draftMemberIds, leaderId } = wizard;
+  const isDept = kind === "dept";
+  const stepTitle =
+    step === 1
+      ? (mode === "add"
+          ? (isDept ? ADD_MODAL_TITLES.dept : mokjangLabels.addModal)
+          : (isDept ? EDIT_MODAL_TITLES.dept : mokjangLabels.editModal))
+      : (isDept ? "부서원 배정" : mokjangLabels.memberAssign);
+  const stepDesc =
+    step === 1
+      ? (isDept ? "부서 이름을 입력한 뒤 다음 단계에서 성도를 배정합니다." : mokjangLabels.step1Desc)
+      : (isDept ? "이 부서에 소속할 성도를 선택하세요." : mokjangLabels.step2Desc);
+
+  const draftMembers = db.members.filter((m) => draftMemberIds.includes(m.id));
+  const availableMembers = db.members.filter((m) => {
+    if (m.status === "졸업/전출") return false;
+    if (draftMemberIds.includes(m.id)) return false;
+    return true;
+  });
+
+  const addDraftMember = () => {
+    if (!addSelect) return;
+    onDraftChange([...draftMemberIds, addSelect]);
+    onAddSelectChange("");
+  };
+
+  const handleLeaderChange = (id: string | null) => {
+    if (id && !draftMemberIds.includes(id)) {
+      onLeaderChange(id, [...draftMemberIds, id]);
+      return;
+    }
+    onLeaderChange(id);
+  };
+
+  const removeDraftMember = (id: string) => {
+    onDraftChange(draftMemberIds.filter((x) => x !== id));
+    if (!isDept && leaderId === id) onLeaderChange(null);
+  };
+
+  const leaderCandidates = db.members.filter((m) => m.status !== "졸업/전출");
+
+  const memberListPanel = (
+    <div style={{ marginBottom: 20 }}>
+      <label style={modalFieldLabel}>
+        배정된 성도
+        {draftMembers.length > 0 && (
+          <span style={{ fontWeight: 500, color: "#b0b4bc", marginLeft: 6 }}>
+            {draftMembers.length}명
+          </span>
+        )}
+      </label>
+      <div
+        style={{
+          borderRadius: ORG_RESOURCE.modalInputRadius,
+          background: ORG_RESOURCE.modalInputBg,
+          padding: 8,
+          maxHeight: 220,
+          overflowY: "auto",
+        }}
+      >
+        {draftMembers.length === 0 ? (
+          <div
+            style={{
+              padding: "24px 16px",
+              textAlign: "center",
+              fontSize: 14,
+              color: "#8b909a",
+              fontFamily: ORG_RESOURCE.fontKR,
+              lineHeight: 1.55,
+            }}
+          >
+            아직 배정된 성도가 없습니다.
+            <br />
+            <span style={{ fontSize: 13, color: "#b0b4bc" }}>
+              {isDept
+                ? "위에서 성도를 선택해 추가하세요."
+                : `위에서 ${leaderLabel}를 지정하고 ${groupTerm}원을 추가하세요.`}
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {draftMembers.map((m) => (
+              <div
+                key={m.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "12px 14px",
+                  borderRadius: 6,
+                  background: "#ffffff",
+                  fontFamily: ORG_RESOURCE.fontKR,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "#0b0c0e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {m.name}
+                    {!isDept && leaderId === m.id && (
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: "#6b7280",
+                          background: "#f4f4f6",
+                          borderRadius: 4,
+                          padding: "2px 6px",
+                          verticalAlign: "middle",
+                        }}
+                      >
+                        {leaderLabel}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#8b909a", marginTop: 3 }}>
+                    {isDept
+                      ? ((m.mokjang ?? m.group) ? `${groupTerm} ${m.mokjang ?? m.group}` : mokjangLabels.unassigned)
+                      : (m.dept || "부서 미배정")}
+                  </div>
+                </div>
+                <button type="button" onClick={() => removeDraftMember(m.id)} style={modalRowRemoveBtn}>
+                  제거
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const addMemberPanel = (
+    <>
+      <div style={{ marginBottom: 12 }}>
+        <label style={modalFieldLabel}>{isDept ? "성도 추가" : mokjangLabels.memberAdd}</label>
+        <OrgModalSelect
+          value={addSelect}
+          onChange={onAddSelectChange}
+          placeholder="성도 선택"
+          aria-label="성도 선택"
+        >
+          {availableMembers.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+              {isDept
+                ? ` (${(m.mokjang ?? m.group) || mokjangLabels.none})`
+                : ` (${m.dept || "부서 없음"})`}
+            </option>
+          ))}
+        </OrgModalSelect>
+      </div>
+
+      <button
+        type="button"
+        disabled={!addSelect}
+        onClick={addDraftMember}
+        style={{
+          width: "100%",
+          height: ORG_RESOURCE.modalBtnHeight,
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          borderRadius: ORG_RESOURCE.modalBtnRadius,
+          border: `1px solid ${addSelect ? "#e3e4e8" : "transparent"}`,
+          background: addSelect ? "#ffffff" : ORG_RESOURCE.modalInputBg,
+          color: addSelect ? "#0b0c0e" : "#b0b4bc",
+          fontSize: 15,
+          fontWeight: 600,
+          fontFamily: ORG_RESOURCE.fontKR,
+          cursor: addSelect ? "pointer" : "not-allowed",
+          transition: "background 0.15s ease, border-color 0.15s ease, color 0.15s ease",
+        }}
+      >
+        <Plus size={16} strokeWidth={2} />
+        목록에 추가
+      </button>
+    </>
+  );
+
+  return (
+    <div
+      className="modal-bg open"
+      role="presentation"
+      style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={stepTitle}
+        style={{ maxWidth: ORG_RESOURCE.modalWidth, padding: ORG_RESOURCE.modalPad, borderRadius: ORG_RESOURCE.modalRadius }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <h2 style={{ margin: 0, fontSize: ORG_RESOURCE.modalTitleSize, fontWeight: ORG_RESOURCE.modalTitleWeight, color: "#0b0c0e", fontFamily: ORG_RESOURCE.fontKR }}>
+            {stepTitle}
+          </h2>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#8b909a", fontFamily: ORG_RESOURCE.fontLatin }}>
+            {step} / 2
+          </span>
+        </div>
+        <p style={{ margin: "0 0 20px", fontSize: 14, color: "#6b7280", lineHeight: 1.5, fontFamily: ORG_RESOURCE.fontKR }}>
+          {stepDesc}
+        </p>
+
+        {step === 1 ? (
+          <>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => onNameChange(e.target.value)}
+              placeholder={isDept ? INPUT_PLACEHOLDERS.dept : mokjangLabels.placeholder}
+              onKeyDown={(e) => { if (e.key === "Enter") onNext(); }}
+              style={{ ...modalInputStyle, marginBottom: 20 }}
+            />
+            <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap }}>
+              <button type="button" onClick={onClose} style={modalBtnCancel}>취소</button>
+              <button type="button" onClick={onNext} style={modalBtnSubmit}>다음</button>
+            </div>
+          </>
+        ) : (
+          <>
+            {!isDept && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={modalFieldLabel}>
+                  {leaderLabel} 지정 <span style={{ fontWeight: 500, color: "#b0b4bc" }}>(선택)</span>
+                </label>
+                <OrgModalSelect
+                  value={leaderId ?? ""}
+                  onChange={(v) => handleLeaderChange(v || null)}
+                  placeholder={`${leaderLabel} 없음`}
+                  aria-label={`${leaderLabel} 선택`}
+                >
+                  {leaderCandidates.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </OrgModalSelect>
+              </div>
+            )}
+
+            {addMemberPanel}
+            {memberListPanel}
+
+            <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap }}>
+              <button type="button" onClick={onBack} style={modalBtnCancel}>이전</button>
+              <button type="button" onClick={onFinish} style={modalBtnSubmit}>
+                {mode === "add" ? "등록" : "저장"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function OrganizationResourceSub({
   db,
   setDb,
@@ -552,6 +1178,8 @@ export function OrganizationResourceSub({
   });
 
   const [slotColors, setSlotColors] = useState<Record<string, string>>({});
+  const [mokjangLeaders, setMokjangLeaders] = useState<Record<string, string>>({});
+  const [smallGroupTerm, setSmallGroupTerm] = useState(DEFAULT_SMALL_GROUP_TERM);
   const [places, setPlaces] = useState<PlannerPlace[]>([]);
   const [placesLoading, setPlacesLoading] = useState(false);
 
@@ -562,8 +1190,8 @@ export function OrganizationResourceSub({
   const [editCapacity, setEditCapacity] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState<{ type: OrgTab; name: string; id?: string } | null>(null);
-  const [mokjangManage, setMokjangManage] = useState<string | null>(null);
-  const [addMemberSelect, setAddMemberSelect] = useState("");
+  const [resourceWizard, setResourceWizard] = useState<ResourceWizardState | null>(null);
+  const [wizardAddSelect, setWizardAddSelect] = useState("");
 
   useEffect(() => {
     sessionStorage.setItem(ORG_TAB_KEY, tab);
@@ -572,7 +1200,17 @@ export function OrganizationResourceSub({
   useEffect(() => {
     if (!churchId) return;
     setSlotColors(loadColorMap(SLOT_COLORS_KEY, churchId));
+    setMokjangLeaders(loadMokjangLeaders(churchId));
+    setSmallGroupTerm(loadSmallGroupTerm(churchId));
   }, [churchId]);
+
+  const mokjangLabels = useMemo(() => mokjangUiLabels(smallGroupTerm), [smallGroupTerm]);
+  const smallGroupLeaderLabel = useMemo(() => inferLeaderLabelFromTerm(smallGroupTerm), [smallGroupTerm]);
+
+  const handleSmallGroupTermChange = (term: string) => {
+    setSmallGroupTerm(term);
+    if (churchId) saveSmallGroupTerm(churchId, term);
+  };
 
   const deptNames = useMemo(() => parseDeptList(db.settings.depts || ""), [db.settings.depts]);
   const mokjangNames = useMemo(() => getMokjangList(db), [db, getMokjangList]);
@@ -605,11 +1243,41 @@ export function OrganizationResourceSub({
     return undefined;
   };
 
+  const persistMokjangLeader = (groupName: string, memberId: string | null) => {
+    const nc = { ...mokjangLeaders };
+    if (memberId) nc[groupName] = memberId;
+    else delete nc[groupName];
+    setMokjangLeaders(nc);
+    if (churchId) saveMokjangLeaders(churchId, nc);
+  };
+
+  const renameMokjangLeaderKey = (oldName: string, newName: string) => {
+    if (!mokjangLeaders[oldName]) return;
+    const nc = { ...mokjangLeaders };
+    nc[newName] = nc[oldName];
+    delete nc[oldName];
+    setMokjangLeaders(nc);
+    if (churchId) saveMokjangLeaders(churchId, nc);
+  };
+
+  const removeMokjangLeaderKey = (name: string) => {
+    if (!mokjangLeaders[name]) return;
+    const nc = { ...mokjangLeaders };
+    delete nc[name];
+    setMokjangLeaders(nc);
+    if (churchId) saveMokjangLeaders(churchId, nc);
+  };
+
   const getMokjangLeader = (name: string): string | undefined => {
+    const leaderId = mokjangLeaders[name];
+    if (leaderId) {
+      const assigned = db.members.find((m) => m.id === leaderId);
+      if (assigned) return assigned.name;
+    }
     const members = db.members.filter((m) => ((m.mokjang ?? m.group) || "") === name);
     const withRole = members.find((m) => (m.role || "").includes("목자") || (m.role || "").includes("목장"));
     if (withRole) return withRole.name;
-    return members[0]?.name;
+    return undefined;
   };
 
   const getSlotCardColor = (index: number, key: string): { colored: boolean; color?: string } => {
@@ -626,6 +1294,11 @@ export function OrganizationResourceSub({
   };
 
   const openAdd = () => {
+    if (tab === "dept" || tab === "mokjang") {
+      setWizardAddSelect("");
+      setResourceWizard({ kind: tab, mode: "add", step: 1, name: "", oldName: null, draftMemberIds: [], leaderId: null });
+      return;
+    }
     setEditOldName(null);
     setEditPlaceId(null);
     setEditName("");
@@ -634,6 +1307,11 @@ export function OrganizationResourceSub({
   };
 
   const openEdit = (name: string) => {
+    if (tab === "dept" || tab === "mokjang") {
+      setWizardAddSelect("");
+      setResourceWizard({ kind: tab, mode: "edit", step: 1, name, oldName: name, draftMemberIds: [], leaderId: null });
+      return;
+    }
     setEditOldName(name);
     setEditPlaceId(null);
     setEditName(name);
@@ -648,6 +1326,119 @@ export function OrganizationResourceSub({
     setFormOpen(true);
   };
 
+  const closeWizard = () => {
+    setResourceWizard(null);
+    setWizardAddSelect("");
+  };
+
+  const wizardNext = () => {
+    if (!resourceWizard) return;
+    const trimmed = resourceWizard.name.trim();
+    if (!trimmed) {
+      toast("이름을 입력하세요", "err");
+      return;
+    }
+    const names = resourceWizard.kind === "dept" ? deptNames : mokjangNames;
+    const dup =
+      resourceWizard.mode === "add"
+        ? names.includes(trimmed)
+        : resourceWizard.oldName !== trimmed && names.includes(trimmed);
+    if (dup) {
+      toast(resourceWizard.kind === "dept" ? "이미 있는 부서입니다" : mokjangLabels.duplicate, "err");
+      return;
+    }
+    const lookupName = resourceWizard.mode === "edit" ? (resourceWizard.oldName ?? trimmed) : trimmed;
+    const draftMemberIds =
+      resourceWizard.mode === "edit"
+        ? memberIdsInResource(db, resourceWizard.kind, lookupName)
+        : resourceWizard.draftMemberIds;
+    const leaderId =
+      resourceWizard.kind === "mokjang"
+        ? (resourceWizard.mode === "edit" ? (mokjangLeaders[lookupName] ?? null) : resourceWizard.leaderId)
+        : null;
+    setWizardAddSelect("");
+    setResourceWizard({ ...resourceWizard, name: trimmed, step: 2, draftMemberIds, leaderId });
+  };
+
+  const wizardFinish = () => {
+    if (!resourceWizard) return;
+    const trimmed = resourceWizard.name.trim();
+    if (!trimmed) {
+      toast("이름을 입력하세요", "err");
+      return;
+    }
+    const { kind, mode, oldName, draftMemberIds, leaderId } = resourceWizard;
+    const draftSet = new Set(draftMemberIds);
+
+    if (kind === "dept") {
+      let names = [...deptNames];
+      if (mode === "edit" && oldName) {
+        names = names.map((n) => (n === oldName ? trimmed : n));
+        if (oldName !== trimmed && slotColors[oldName]) {
+          const nc = { ...slotColors, [trimmed]: slotColors[oldName] };
+          delete nc[oldName];
+          setSlotColors(nc);
+          if (churchId) saveColorMap(SLOT_COLORS_KEY, churchId, nc);
+        }
+      } else {
+        names.push(trimmed);
+        assignSlotColor(trimmed, names.length - 1);
+      }
+      setDb((prev) => {
+        const next = {
+          ...prev,
+          settings: { ...prev.settings, depts: names.join(", ") },
+          members: prev.members.map((m) => {
+            if (draftSet.has(m.id)) return { ...m, dept: trimmed };
+            if (mode === "edit" && oldName && m.dept === oldName) return { ...m, dept: "" };
+            return m;
+          }),
+        };
+        persist();
+        void saveDb(next).catch(() => toast("저장 실패", "err"));
+        return next;
+      });
+      toast(mode === "edit" ? "부서가 저장되었습니다" : "부서가 추가되었습니다", "ok");
+    } else {
+      let list = [...mokjangNames];
+      if (mode === "edit" && oldName) {
+        list = list.map((g) => (g === oldName ? trimmed : g));
+        if (oldName !== trimmed) {
+          renameMokjangLeaderKey(oldName, trimmed);
+          if (slotColors[oldName]) {
+            const nc = { ...slotColors, [trimmed]: slotColors[oldName] };
+            delete nc[oldName];
+            setSlotColors(nc);
+            if (churchId) saveColorMap(SLOT_COLORS_KEY, churchId, nc);
+          }
+        }
+      } else {
+        list.push(trimmed);
+        assignSlotColor(trimmed, list.length - 1);
+      }
+      setDb((prev) => {
+        const next = {
+          ...prev,
+          settings: { ...prev.settings, mokjangList: list.join(", ") },
+          members: prev.members.map((m) => {
+            if (draftSet.has(m.id)) return { ...m, group: trimmed, mokjang: trimmed };
+            if (mode === "edit" && oldName && ((m.mokjang ?? m.group) || "") === oldName) {
+              return { ...m, group: "", mokjang: "" };
+            }
+            return m;
+          }),
+        };
+        persist();
+        void saveDb(next).catch(() => toast("저장 실패", "err"));
+        return next;
+      });
+      const validLeader = leaderId && draftSet.has(leaderId) ? leaderId : null;
+      persistMokjangLeader(trimmed, validLeader);
+      toast(mode === "edit" ? mokjangLabels.saved : mokjangLabels.added, "ok");
+    }
+    closeWizard();
+  };
+
   const handleSaveForm = async () => {
     const trimmed = editName.trim();
     if (!trimmed) {
@@ -655,78 +1446,7 @@ export function OrganizationResourceSub({
       return;
     }
 
-    if (tab === "dept") {
-      if (editOldName && editOldName !== trimmed && deptNames.includes(trimmed)) {
-        toast("이미 있는 부서입니다", "err");
-        return;
-      }
-      if (!editOldName && deptNames.includes(trimmed)) {
-        toast("이미 있는 부서입니다", "err");
-        return;
-      }
-      let names = [...deptNames];
-        if (editOldName) {
-        names = names.map((n) => (n === editOldName ? trimmed : n));
-        if (editOldName !== trimmed && slotColors[editOldName]) {
-          const nc = { ...slotColors, [trimmed]: slotColors[editOldName] };
-          delete nc[editOldName];
-          setSlotColors(nc);
-          if (churchId) saveColorMap(SLOT_COLORS_KEY, churchId, nc);
-        }
-        setDb((prev) => {
-          const next = {
-            ...prev,
-            settings: { ...prev.settings, depts: names.join(", ") },
-            members: prev.members.map((m) => (m.dept === editOldName ? { ...m, dept: trimmed } : m)),
-          };
-          persist();
-          void saveDb(next).catch(() => toast("저장 실패", "err"));
-          return next;
-        });
-      } else {
-        names.push(trimmed);
-        assignSlotColor(trimmed, names.length - 1);
-        setDb((prev) => {
-          const next = { ...prev, settings: { ...prev.settings, depts: names.join(", ") } };
-          persist();
-          void saveDb(next).catch(() => toast("저장 실패", "err"));
-          return next;
-        });
-      }
-      toast(editOldName ? "부서가 수정되었습니다" : "부서가 추가되었습니다", "ok");
-    } else if (tab === "mokjang") {
-      if (editOldName && editOldName !== trimmed && mokjangNames.includes(trimmed)) {
-        toast("이미 있는 목장입니다", "err");
-        return;
-      }
-      if (!editOldName && mokjangNames.includes(trimmed)) {
-        toast("이미 있는 목장입니다", "err");
-        return;
-      }
-      let list = [...mokjangNames];
-      if (editOldName) {
-        list = list.map((g) => (g === editOldName ? trimmed : g));
-        setDb((prev) => ({
-          ...prev,
-          settings: { ...prev.settings, mokjangList: list.join(", ") },
-          members: prev.members.map((m) =>
-            (m.mokjang ?? m.group) === editOldName ? { ...m, group: trimmed, mokjang: trimmed } : m,
-          ),
-        }));
-        if (editOldName !== trimmed && slotColors[editOldName]) {
-          const nc = { ...slotColors, [trimmed]: slotColors[editOldName] };
-          delete nc[editOldName];
-          setSlotColors(nc);
-          if (churchId) saveColorMap(SLOT_COLORS_KEY, churchId, nc);
-        }
-      } else {
-        list.push(trimmed);
-        assignSlotColor(trimmed, list.length - 1);
-        setDb((prev) => ({ ...prev, settings: { ...prev.settings, mokjangList: list.join(", ") } }));
-      }
-      persist();
-      toast(editOldName ? "목장이 수정되었습니다" : "목장이 추가되었습니다", "ok");
-    } else if (tab === "place") {
+    if (tab === "place") {
       if (!supabase || !churchId) return;
       const cap = editCapacity.trim() ? Number(editCapacity) : null;
       if (editCapacity.trim() && (Number.isNaN(cap) || cap! <= 0)) {
@@ -767,6 +1487,7 @@ export function OrganizationResourceSub({
 
     if (type === "dept") {
       const names = deptNames.filter((n) => n !== name);
+      if (resourceWizard?.kind === "dept" && (resourceWizard.oldName === name || resourceWizard.name === name)) closeWizard();
       setDb((prev) => ({
         ...prev,
         settings: { ...prev.settings, depts: names.join(", ") },
@@ -793,8 +1514,9 @@ export function OrganizationResourceSub({
       delete nc[name];
       setSlotColors(nc);
       if (churchId) saveColorMap(SLOT_COLORS_KEY, churchId, nc);
-      if (mokjangManage === name) setMokjangManage(null);
-      toast("목장이 삭제되었습니다", "ok");
+      if (resourceWizard?.kind === "mokjang" && (resourceWizard.oldName === name || resourceWizard.name === name)) closeWizard();
+      removeMokjangLeaderKey(name);
+      toast(mokjangLabels.deleted, "ok");
     } else if (type === "place" && id && supabase) {
       void supabase.from(TB_PLACES).delete().eq("id", id).then(({ error }) => {
         if (error) { toast("삭제 실패", "err"); return; }
@@ -809,13 +1531,41 @@ export function OrganizationResourceSub({
   const memberCountDept = (name: string) => db.members.filter((m) => m.dept === name && m.status !== "졸업/전출").length;
   const memberCountMok = (name: string) => db.members.filter((m) => ((m.mokjang ?? m.group) || "") === name).length;
 
-  const formTitle = editOldName || editPlaceId
-    ? EDIT_MODAL_TITLES[tab]
-    : ADD_MODAL_TITLES[tab];
+  const formTitle = editPlaceId
+    ? EDIT_MODAL_TITLES.place
+    : ADD_MODAL_TITLES.place;
 
   return (
     <div style={{ width: "100%", boxSizing: "border-box", textAlign: "left" }}>
-      <OrgSegmentTabs tab={tab} onChange={setTab} />
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 16,
+          marginBottom: ORG_RESOURCE.segToGridGap,
+          height: 44,
+          flexShrink: 0,
+        }}
+      >
+        <OrgSegmentTabs
+          tab={tab}
+          onChange={setTab}
+          mokjangTabLabel={mokjangLabels.tab}
+          inline
+        />
+        {tab === "mokjang" && (
+          <>
+            <div
+              aria-hidden
+              style={{ width: 1, height: 24, background: "#d5d6da", flexShrink: 0, margin: "0 4px" }}
+            />
+            <SmallGroupTermCustomizer
+              term={smallGroupTerm}
+              onTermChange={handleSmallGroupTermChange}
+            />
+          </>
+        )}
+      </div>
 
       {tab === "dept" && (
         <OrgCardGrid>
@@ -847,17 +1597,16 @@ export function OrganizationResourceSub({
               <OrgResourceCard
                 key={name}
                 title={name}
-                subtitle={leader ? `목자 ${leader}` : undefined}
+                subtitle={leader ? `${smallGroupLeaderLabel} ${leader}` : undefined}
                 count={memberCountMok(name)}
                 colored={colored}
                 color={color}
-                onBodyClick={() => { setMokjangManage(name); setAddMemberSelect(""); }}
                 onEdit={() => openEdit(name)}
                 onDelete={() => setDeleteTarget({ type: "mokjang", name })}
               />
             );
           })}
-          <OrgAddCard label={ADD_LABELS.mokjang} onClick={openAdd} />
+          <OrgAddCard label={mokjangLabels.add} onClick={openAdd} />
         </OrgCardGrid>
       )}
 
@@ -886,16 +1635,16 @@ export function OrganizationResourceSub({
       )}
 
       <OrgFormModal
-        open={formOpen}
+        open={formOpen && tab === "place"}
         title={formTitle}
         value={editName}
-        placeholder={INPUT_PLACEHOLDERS[tab]}
+        placeholder={INPUT_PLACEHOLDERS.place}
         onChange={setEditName}
         onClose={() => setFormOpen(false)}
         onSubmit={() => void handleSaveForm()}
-        submitLabel={editOldName || editPlaceId ? "저장" : "등록"}
-        capacityValue={tab === "place" ? editCapacity : undefined}
-        onCapacityChange={tab === "place" ? setEditCapacity : undefined}
+        submitLabel={editPlaceId ? "저장" : "등록"}
+        capacityValue={editCapacity}
+        onCapacityChange={setEditCapacity}
         capacityPlaceholder={PLACE_CAPACITY_PLACEHOLDER}
       />
 
@@ -907,68 +1656,45 @@ export function OrganizationResourceSub({
         onConfirm={confirmDelete}
       />
 
-      {/* 그룹원 관리 — 기능 유지 */}
-      {mokjangManage && (
-        <div
-          className="modal-bg open"
-          role="presentation"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) { setMokjangManage(null); setAddMemberSelect(""); } }}
-        >
-          <div className="modal" role="dialog" style={{ maxWidth: 480 }} onMouseDown={(e) => e.stopPropagation()}>
-            <h2 style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 700, fontFamily: ORG_RESOURCE.fontKR }}>
-              {mokjangManage} 그룹원 관리
-            </h2>
-            <p style={{ fontSize: 13, color: "#6b7280", marginTop: 0, fontFamily: ORG_RESOURCE.fontKR }}>성도를 목장에 배정하거나 제거합니다.</p>
-            <ul style={{ margin: "0 0 16px", padding: 0, listStyle: "none", maxHeight: 200, overflowY: "auto" }}>
-              {db.members.filter((m) => ((m.mokjang ?? m.group) || "") === mokjangManage).map((m) => (
-                <li key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f0f2f5", fontSize: 14, fontFamily: ORG_RESOURCE.fontKR }}>
-                  <span style={{ fontWeight: 600 }}>{m.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDb((prev) => ({
-                        ...prev,
-                        members: prev.members.map((x) => (x.id === m.id ? { ...x, group: "", mokjang: "" } : x)),
-                      }));
-                      persist();
-                      toast("목장에서 제거되었습니다", "ok");
-                    }}
-                    style={modalBtnCancel}
-                  >
-                    제거
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <select value={addMemberSelect} onChange={(e) => setAddMemberSelect(e.target.value)} className="select-modern" style={{ width: "100%", marginBottom: 8 }}>
-              <option value="">성도 선택</option>
-              {db.members
-                .filter((m) => ((m.mokjang ?? m.group) || "") !== mokjangManage && m.status !== "졸업/전출")
-                .map((m) => (
-                  <option key={m.id} value={m.id}>{m.name} ({m.dept || "부서 없음"})</option>
-                ))}
-            </select>
-            <button
-              type="button"
-              disabled={!addMemberSelect}
-              onClick={() => {
-                if (!mokjangManage || !addMemberSelect) return;
-                setDb((prev) => ({
-                  ...prev,
-                  members: prev.members.map((m) =>
-                    m.id === addMemberSelect ? { ...m, group: mokjangManage, mokjang: mokjangManage } : m,
-                  ),
-                }));
-                persist();
-                setAddMemberSelect("");
-                toast("목장에 추가되었습니다", "ok");
-              }}
-              style={{ ...modalBtnSubmit, width: "100%", opacity: addMemberSelect ? 1 : 0.5 }}
-            >
-              추가
-            </button>
-          </div>
-        </div>
+      {resourceWizard && (
+        <OrgDeptMokWizardModal
+          wizard={resourceWizard}
+          db={db}
+          addSelect={wizardAddSelect}
+          leaderLabel={smallGroupLeaderLabel}
+          mokjangLabels={mokjangLabels}
+          groupTerm={smallGroupTerm}
+          onAddSelectChange={setWizardAddSelect}
+          onNameChange={(v) => setResourceWizard({ ...resourceWizard, name: v })}
+          onDraftChange={(ids) => {
+            setResourceWizard((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                draftMemberIds: ids,
+                leaderId: prev.leaderId && !ids.includes(prev.leaderId) ? null : prev.leaderId,
+              };
+            });
+          }}
+          onLeaderChange={(id, draftMemberIds) => {
+            setResourceWizard((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                leaderId: id,
+                ...(draftMemberIds ? { draftMemberIds } : {}),
+              };
+            });
+          }}
+          onStepChange={(step) => setResourceWizard({ ...resourceWizard, step })}
+          onClose={closeWizard}
+          onNext={wizardNext}
+          onBack={() => {
+            setWizardAddSelect("");
+            setResourceWizard({ ...resourceWizard, step: 1 });
+          }}
+          onFinish={wizardFinish}
+        />
       )}
     </div>
   );

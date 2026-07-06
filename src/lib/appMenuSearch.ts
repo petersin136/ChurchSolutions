@@ -38,7 +38,7 @@ export const APP_MENU_ENTRIES: AppMenuEntry[] = [
   m("pastoral-notes", "pastoral", "기도/메모", "목양", "notes", ["기도", "메모", "기도제목"]),
   m("pastoral-newfamily", "pastoral", "새가족 관리", "목양", "newfamily", ["새가족"]),
   m("pastoral-ceremony", "pastoral", "식순", "목양", "ceremony", ["예배순서", "성례"]),
-  m("pastoral-org", "pastoral", "조직/자원관리", "목양", "settings", ["조직", "자원", "부서", "목장", "장소"]),
+  m("pastoral-org", "pastoral", "조직/자원관리", "목양", "settings", ["조직", "자원", "부서", "소그룹", "목장", "장소"]),
 
   m("visit-dash", "visit", "대시보드", "심방·상담", "dash"),
   m("visit-visits", "visit", "심방 기록", "심방·상담", "visits", ["심방"]),

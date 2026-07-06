@@ -2319,7 +2319,7 @@ function DashboardSub({
                       <button
                         type="button"
                         aria-label={`${d} 수정`}
-                        onClick={() => openDeptEdit(d)}
+                        onClick={(e) => { e.stopPropagation(); openDeptEdit(d); }}
                         style={dashPeriodBtnStyle(dashTypo.chart, mob, false)}
                       >
                         <Pencil size={actionIcon} strokeWidth={2.25} />
@@ -2327,7 +2327,7 @@ function DashboardSub({
                       <button
                         type="button"
                         aria-label={`${d} 삭제`}
-                        onClick={() => setDeptDeleteName(d)}
+                        onClick={(e) => { e.stopPropagation(); setDeptDeleteName(d); }}
                         style={dashPeriodBtnStyle(dashTypo.chart, mob, false)}
                       >
                         <Trash2 size={actionIcon} strokeWidth={2.25} />
@@ -4344,7 +4344,7 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기도" },
   newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
   ceremony: { title: "식순 가이드", desc: "예배·예식·성례 모든 교회 순서를 단계별로 진행합니다" },
-  settings: { title: "조직/자원관리", desc: "부서·목장·장소를 관리합니다" },
+  settings: { title: "조직/자원관리", desc: "부서·소그룹·장소를 관리합니다" },
 };
 
 const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "ceremony", "settings"];
