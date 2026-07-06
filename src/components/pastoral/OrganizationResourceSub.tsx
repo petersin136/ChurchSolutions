@@ -215,8 +215,10 @@ function OrgResourceCard({
   onDelete: () => void;
   onBodyClick?: () => void;
 }) {
+  const [hover, setHover] = useState(false);
   const bg = colored && color ? color : ORG_RESOURCE.cardNeutralBg;
   const iconBg = colored && color ? orgShadeHex(color, 0.82) : ORG_RESOURCE.cardIconBtnNeutralBg;
+  const actionReserve = ORG_RESOURCE.cardIconBtnSize * 2 + 10;
 
   return (
     <div
@@ -224,6 +226,12 @@ function OrgResourceCard({
       tabIndex={onBodyClick ? 0 : undefined}
       onClick={onBodyClick}
       onKeyDown={onBodyClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onBodyClick(); } } : undefined}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setHover(false);
+      }}
       style={{
         ...cardShell,
         background: bg,
@@ -237,8 +245,9 @@ function OrgResourceCard({
           position: "absolute",
           top: ORG_RESOURCE.cardPadY,
           left: ORG_RESOURCE.cardPadX,
-          right: ORG_RESOURCE.cardPadX + ORG_RESOURCE.cardIconBtnSize * 2 + 10,
+          right: hover ? ORG_RESOURCE.cardPadX + actionReserve : ORG_RESOURCE.cardPadX,
           minWidth: 0,
+          transition: "right 0.15s ease",
         }}
       >
         <div style={{ fontSize: ORG_RESOURCE.cardTitleSize, fontWeight: ORG_RESOURCE.cardTitleWeight, color: ORG_RESOURCE.cardInk, lineHeight: 1.2 }}>
@@ -250,7 +259,18 @@ function OrgResourceCard({
           </div>
         )}
       </div>
-      <div style={{ position: "absolute", top: ORG_RESOURCE.cardPadY, right: ORG_RESOURCE.cardPadX, display: "flex", gap: 5 }}>
+      <div
+        style={{
+          position: "absolute",
+          top: ORG_RESOURCE.cardPadY,
+          right: ORG_RESOURCE.cardPadX,
+          display: "flex",
+          gap: 5,
+          opacity: hover ? 1 : 0,
+          pointerEvents: hover ? "auto" : "none",
+          transition: "opacity 0.15s ease",
+        }}
+      >
         <button type="button" aria-label="수정" onClick={(e) => { e.stopPropagation(); onEdit(); }} style={{ ...cardIconBtn, background: iconBg }}>
           <Pencil size={ORG_RESOURCE.cardActionIconSize} strokeWidth={2} color={ORG_RESOURCE.cardInk} />
         </button>
