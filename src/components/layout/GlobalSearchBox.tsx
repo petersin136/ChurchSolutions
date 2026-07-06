@@ -131,8 +131,8 @@ export function GlobalSearchBox() {
               setActiveIndex((i) => (i <= 0 ? flatResults.length - 1 : i - 1));
             }
           }}
-          placeholder="성도·심방·헌금 검색"
-          aria-label="성도·심방·헌금 검색"
+          placeholder="검색어를 입력하세요"
+          aria-label="검색어를 입력하세요"
           aria-expanded={showPanel}
           aria-controls="global-search-results"
           aria-autocomplete="list"

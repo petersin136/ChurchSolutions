@@ -1,8 +1,13 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { Settings } from "lucide-react";
 import { useShellNav } from "@/contexts/ShellNavContext";
 import { GlobalSearchBox } from "@/components/layout/GlobalSearchBox";
+import { dashTopNavTabsWidthCss } from "@/styles/pastoralDashboardTokens";
+
+/** 금주 출석률 카드(4열 중 2칸) 폭 — 모든 페이지 상단 메뉴 기준선 통일 */
+const DEFAULT_TOPBAR_TABS_WIDTH = dashTopNavTabsWidthCss(2);
 
 /**
  * 상단 메인 메뉴바 — 사이드바 오른쪽 콘텐츠 영역 위에 얹힌다.
@@ -24,6 +29,8 @@ export function GlobalTopBar({
 }) {
   const nav = useShellNav();
   if (!nav) return null;
+
+  const resolvedTabsWidth = tabsWidth ?? DEFAULT_TOPBAR_TABS_WIDTH;
 
   const tabButtons = nav.tabs.map((t) => {
     const isActive = nav.currentPage === t.id;
@@ -47,21 +54,27 @@ export function GlobalTopBar({
         ...(padRight != null ? { paddingRight: padRight } : {}),
       }}
     >
-      {tabsWidth ? (
-        <div className="pc-topbar-tabs-slot" style={{ width: tabsWidth, maxWidth: tabsWidth }}>
-          <nav className="pc-top-nav-tabs pc-top-nav-tabs--content-span" aria-label="주 메뉴">
-            {tabButtons}
-          </nav>
-        </div>
-      ) : (
-        <nav className="pc-top-nav-tabs" aria-label="주 메뉴">
+      <div
+        className="pc-topbar-tabs-slot"
+        style={{ width: resolvedTabsWidth, maxWidth: resolvedTabsWidth }}
+      >
+        <nav className="pc-top-nav-tabs pc-top-nav-tabs--content-span" aria-label="주 메뉴">
           {tabButtons}
         </nav>
-      )}
+      </div>
 
       <div className="pc-topbar-right">
         {actions}
         <GlobalSearchBox />
+        <button
+          type="button"
+          className={`pc-topbar-settings${nav.currentPage === "settings" ? " active" : ""}`}
+          title="설정"
+          aria-label="설정"
+          onClick={() => nav.setCurrentPage("settings")}
+        >
+          <Settings size={18} strokeWidth={1.75} aria-hidden />
+        </button>
         <button
           type="button"
           className="pc-topbar-logout"

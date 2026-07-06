@@ -1758,6 +1758,14 @@ html:has(.superplanner-root) body {
 .pc-content-topbar .pc-topbar-tabs-slot {
   flex-shrink: 0;
   min-width: 0;
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+}
+
+.pc-content-topbar .pc-top-nav-tabs {
+  flex: 1;
+  min-width: 0;
 }
 
 .pc-content-topbar .pc-top-nav-tabs--content-span {
@@ -1781,10 +1789,11 @@ html:has(.superplanner-root) body {
   min-width: 0;
 }
 
-/* 상단바 우측: 검색 입력창 + 로그아웃 (기존 우측 유틸바에서 이동) */
+/* 상단바 우측: 검색 입력창 + 설정 + 로그아웃 */
 .pc-topbar-right {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  align-self: stretch;
   gap: 8px;
   margin-left: auto;
   padding-left: 16px;
@@ -1798,7 +1807,7 @@ html:has(.superplanner-root) body {
  *   높이      : ~22px(img) → 34px
  *   radius   : 0 (박스 없음)
  *   배경색    : transparent (페이지 #f4f4f6 위)
- *   밑줄(테두리): #e4e4e6
+ *   밑줄(테두리): #d2d4db — 좌측 메뉴 기준선과 동일
  *   placeholder: #b4b4b8
  *   돋보기 아이콘: #171719 (14px img → 20px)
  */
@@ -1807,7 +1816,8 @@ html:has(.superplanner-root) body {
   --topbar-search-h: 34px;
   --topbar-search-radius: 0px;
   --topbar-search-bg: transparent;
-  --topbar-search-underline: #e4e4e6;
+  --topbar-search-underline: #d2d4db;
+  --topbar-menu-underline-h: 2px;
   --topbar-search-placeholder: #b4b4b8;
   --topbar-search-icon: #171719;
 }
@@ -1827,7 +1837,7 @@ html:has(.superplanner-root) body {
   padding: 0;
   background: var(--topbar-search-bg);
   border: none;
-  border-bottom: 1px solid var(--topbar-search-underline);
+  border-bottom: var(--topbar-menu-underline-h) solid var(--topbar-search-underline);
   border-radius: var(--topbar-search-radius);
   transition: border-color 0.15s ease;
 }
@@ -1957,6 +1967,32 @@ html:has(.superplanner-root) body {
   color: #171719;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.pc-topbar-settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid var(--topbar-search-underline);
+  background: #eff0f2;
+  border-radius: 8px;
+  color: #171719;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pc-topbar-settings:hover {
+  background: #e8e9ec;
+  border-color: #c8cad0;
+}
+
+.pc-topbar-settings.active {
+  background: #e4e5e9;
+  border-color: #b8bbc2;
+  color: #0b0c0e;
 }
 
 .pc-topbar-logout:hover {

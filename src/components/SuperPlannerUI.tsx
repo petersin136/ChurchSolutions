@@ -27,8 +27,10 @@ const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[
   { id: "planner", label: "플래너", Icon: CalendarDays },
   { id: "bulletin", label: "주보", Icon: Newspaper },
   { id: "reports", label: "보고서", Icon: FileBarChart },
-  { id: "settings", label: "설정", Icon: Settings },
 ];
+
+/** 상단 메뉴바 탭 — 설정은 검색창 우측 톱니 아이콘으로 이동 */
+const MAIN_TAB_CONFIG = TAB_CONFIG;
 
 export interface SuperPlannerUIProps {
   currentPage: PageId;
@@ -137,7 +139,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
   const shellNavValue = {
     currentPage: currentPage as string,
     setCurrentPage: (id: string) => setCurrentPage(id as PageId),
-    tabs: TAB_CONFIG.map(({ id, label }) => ({ id: id as string, label })),
+    tabs: MAIN_TAB_CONFIG.map(({ id, label }) => ({ id: id as string, label })),
     goHome,
     onLogout: handleLogout,
     onSearch: handleGlobalSearch,
@@ -153,7 +155,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
           <span className="pc-top-nav-logo">목양노트</span>
         </div>
         <nav className="pc-top-nav-tabs" aria-label="주 메뉴">
-          {TAB_CONFIG.map(({ id, label, Icon }) => {
+          {MAIN_TAB_CONFIG.map(({ id, label, Icon }) => {
             const isActive = currentPage === id;
             return (
               <button

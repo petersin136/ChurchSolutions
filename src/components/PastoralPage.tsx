@@ -27,7 +27,7 @@ import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Sett
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopNavTabsWidthCss, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
 import { MemberDotGrid } from "@/components/pastoral/MemberDotGrid";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -42,6 +42,8 @@ import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNot
 import { PcModalShell } from "@/components/common/PcModalShell";
 import { tokens } from "@/styles/tokens";
 import { APP_HISTORY_KEYS, mergePushAppHistory, mergeReplaceAppHistory, readAppHistoryState } from "@/lib/appHistory";
+import { OrganizationResourceSub } from "@/components/pastoral/OrganizationResourceSub";
+import { ORG_RESOURCE } from "@/styles/orgResourceTokens";
 
 const MOB_PANEL_MIN_H = tokens.layout.mobPastoralPanelMinHeight;
 
@@ -4166,7 +4168,7 @@ const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[
   { id: "notes", Icon: PrayingHandsIcon, label: "기도/메모" },
   { id: "newfamily", Icon: Sprout, label: "새가족 관리" },
   { id: "ceremony", Icon: BookOpenCheck, label: "식순" },
-  { id: "settings", Icon: Settings, label: "목장그룹관리" },
+  { id: "settings", Icon: Settings, label: "조직/자원관리" },
 ];
 
 const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: string }> = {
@@ -4176,7 +4178,7 @@ const PAGE_INFO: Record<SubPage, { title: string; desc: string; addLabel?: strin
   notes: { title: "기도/메모", desc: "기도제목과 특이사항을 공유합니다", addLabel: "+ 기도" },
   newfamily: { title: "새가족 관리", desc: "새가족 4주 정착 트래킹", addLabel: "+ 새가족 등록" },
   ceremony: { title: "식순 가이드", desc: "예배·예식·성례 모든 교회 순서를 단계별로 진행합니다" },
-  settings: { title: "목장그룹관리", desc: "목장·소그룹 생성 및 그룹원 관리" },
+  settings: { title: "조직/자원관리", desc: "부서·목장·장소를 관리합니다" },
 };
 
 const SUB_PAGE_IDS: SubPage[] = ["dashboard", "members", "attendance", "notes", "newfamily", "ceremony", "settings"];
@@ -4751,6 +4753,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
   const info = PAGE_INFO[activeSub];
   const detailMember = detailId ? db.members.find(x => x.id === detailId) : null;
+  const orgResourceLayout = activeSub === "settings";
 
   const navSections = [{ sectionLabel: "목양", items: NAV_ITEMS.map((n) => ({ id: n.id, label: n.label, Icon: n.Icon })) }];
 
@@ -4772,14 +4775,13 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       }
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
-      contentBg={activeSub === "dashboard" ? DASH_GLOBAL.bg : undefined}
-      contentPaddingLeft={activeSub === "dashboard" ? DASH_GLOBAL.contentPadLeft : undefined}
-      contentPaddingRight={activeSub === "dashboard" ? DASH_GLOBAL.contentPadRight : undefined}
-      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : undefined}
-      contentTopGap={activeSub === "dashboard" ? DASH_GLOBAL.contentPadTop : undefined}
-      contentFontFamily={activeSub === "dashboard" ? DASH_GLOBAL.fontKR : undefined}
-      hideHeader={activeSub === "dashboard"}
-      topbarTabsWidth={activeSub === "dashboard" ? dashTopNavTabsWidthCss(2) : undefined}
+      contentBg={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.bg : undefined}
+      contentPaddingLeft={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadLeft : undefined}
+      contentPaddingRight={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadRight : undefined}
+      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : undefined}
+      contentTopGap={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadTop : undefined}
+      contentFontFamily={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.fontKR : undefined}
+      hideHeader={activeSub === "dashboard" || orgResourceLayout}
     >
           {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} rawAttendance={rawAttendance} onNavSub={navigateToSub} onOpenAttendanceStats={openAttendanceStatistics} />}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} churchId={churchId} />}
@@ -4923,7 +4925,16 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openPrayerModal={openPrayerModal} openNoteModal={openNoteModal} />}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
           {activeSub === "ceremony" && <CeremonyBoard toast={toast} />}
-          {activeSub === "settings" && <SettingsSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} saveDb={saveDBToSupabase} mokjangOnly />}
+          {activeSub === "settings" && (
+            <OrganizationResourceSub
+              db={db}
+              setDb={fn => setDb(fn)}
+              persist={persist}
+              toast={toast}
+              saveDb={saveDBToSupabase}
+              getMokjangList={getMokjangList}
+            />
+          )}
     </UnifiedPageLayout>
 
       {/* ===== MODALS ===== */}

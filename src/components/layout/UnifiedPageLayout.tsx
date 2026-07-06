@@ -7,7 +7,7 @@ import { SidebarProfile } from "./SidebarProfile";
 import { SidebarBrandMark } from "./SidebarBrandMark";
 import { ChurchUpAppIcon } from "./ChurchUpAppIcon";
 import { useShellNav } from "@/contexts/ShellNavContext";
-import { DASH_COLOR, DASH_GLOBAL, DASH_SIDEBAR } from "@/styles/pastoralDashboardTokens";
+import { DASH_COLOR, DASH_GLOBAL, DASH_SIDEBAR, dashTopNavTabsWidthCss } from "@/styles/pastoralDashboardTokens";
 
 /**
  * 레이아웃 중첩 깊이. 최상위(0)에서만 상단 메인 메뉴바를 그려
@@ -258,8 +258,13 @@ export function UnifiedPageLayout({
   })();
   const sidebarExpanded = !mob || sideOpen;
   const asideWidth = LAYOUT.sidebarWidth;
-  const contentPadLeft = mob ? LAYOUT.mainContentPaddingMob : (contentPaddingLeft ?? contentPaddingX ?? LAYOUT.mainContentPadding);
-  const contentPadRight = mob ? LAYOUT.mainContentPaddingMob : (contentPaddingRight ?? contentPaddingX ?? LAYOUT.mainContentPadding);
+  const contentPadLeft = mob
+    ? LAYOUT.mainContentPaddingMob
+    : (contentPaddingLeft ?? contentPaddingX ?? DASH_GLOBAL.contentPadLeft);
+  const contentPadRight = mob
+    ? LAYOUT.mainContentPaddingMob
+    : (contentPaddingRight ?? contentPaddingX ?? DASH_GLOBAL.contentPadRight);
+  const resolvedTopbarTabsWidth = topbarTabsWidth ?? dashTopNavTabsWidthCss(2);
   const contentPadBottom = contentPaddingBottom ?? 120;
   const contentMarginTop = contentTopGap !== undefined ? contentTopGap : mob ? 16 : 20;
   const compactMainChrome = contentTopGap === 0;
@@ -541,7 +546,7 @@ export function UnifiedPageLayout({
                 actions={topbarActions}
                 padLeft={contentPadLeft}
                 padRight={contentPadRight}
-                tabsWidth={topbarTabsWidth}
+                tabsWidth={resolvedTopbarTabsWidth}
               />
             )}
             {!hideDesktopHeader && (
