@@ -38,7 +38,7 @@ export const ORG_RESOURCE = {
   /** 카드 — 가로 직사각형 */
   cardWidth: Math.round(176 * CARD_S),
   cardHeight: Math.round(110 * CARD_S),
-  cardRadius: Math.round(12 * CARD_S),
+  cardRadius: 10,
   cardPadX: Math.round(14 * CARD_S),
   cardPadY: Math.round(12 * CARD_S),
   gridGap: Math.round(16 * CARD_S),
@@ -89,7 +89,46 @@ export const ORG_RESOURCE = {
   modalBtnRadius: 8,
   modalBtnGap: 10,
   modalDeleteRed: "#e55c5c",
+  /** 장소 관리 — 시안 01~11 */
+  placeGridGap: Math.round(16 * CARD_S),
+  placeCardMinHeight: Math.round(110 * CARD_S),
+  placeCardHoverBg: "#e3edff",
+  /** 첫 번째 장소(본당) 기본 하이라이트 */
+  placeCardHighlightBg: "#e6f0ff",
+  placeCardDefaultBg: "#ffffff",
+  placeCardDefaultShadow: "0 1px 4px rgba(0,0,0,0.05)",
+  placeEquipmentSize: Math.round(13 * CARD_S * CARD_TEXT_S),
+  placeEquipmentColor: "#0b0c0e",
+  placeCapacityLabelSize: Math.round(13 * CARD_S * CARD_TEXT_S),
+  placeCapacityNumSize: Math.round(40 * CARD_S * CARD_TEXT_S),
+  placeCapacityUnitSize: Math.round(18 * CARD_S * CARD_TEXT_S),
+  placeIconBtnBg: "#d4e3ff",
+  placeEmptyMinHeight: Math.round(110 * CARD_S * 2 + 16 * CARD_S),
+  placeEmptyBg: "#eceef1",
+  placeEmptyBgHover: "#ffffff",
+  placeEmptyBorder: "#ffffff",
+  placeEmptyBorderWidth: Math.round(2 * CARD_S),
+  placeCheckboxSize: 18,
+  placeCheckboxGap: 10,
+  placeCheckboxRowGap: 12,
 } as const;
+
+/** 장소 장비 — 시안 체크리스트 (03·04·10) */
+export const ORG_PLACE_EQUIPMENT = [
+  "음향 장비",
+  "영상 스크린",
+  "건반 악기",
+  "와이파이",
+] as const;
+
+export type OrgPlaceEquipment = (typeof ORG_PLACE_EQUIPMENT)[number];
+
+export function formatPlaceEquipment(equipment?: string[] | null): string {
+  if (!equipment?.length) return "";
+  const known = ORG_PLACE_EQUIPMENT.filter((x) => equipment.includes(x));
+  const extra = equipment.filter((x) => !ORG_PLACE_EQUIPMENT.includes(x as OrgPlaceEquipment));
+  return [...known, ...extra].join(" / ");
+}
 
 /** 1·6·11·16… 번째 컬러 — 시안 (라임·핑크 등) */
 export const ORG_SLOT_COLORS = [

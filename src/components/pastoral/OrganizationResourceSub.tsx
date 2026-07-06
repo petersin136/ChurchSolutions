@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import {
   ORG_RESOURCE,
+  ORG_PLACE_EQUIPMENT,
+  formatPlaceEquipment,
   orgIsColoredSlot,
   orgSlotColor,
   orgShadeHex,
@@ -86,12 +88,12 @@ const ADD_LABELS: Record<Exclude<OrgTab, "mokjang">, string> = {
 
 const ADD_MODAL_TITLES: Record<Exclude<OrgTab, "mokjang">, string> = {
   dept: "새 부서 추가",
-  place: "새 장소 추가",
+  place: "장소 추가",
 };
 
 const EDIT_MODAL_TITLES: Record<Exclude<OrgTab, "mokjang">, string> = {
   dept: "부서 수정",
-  place: "장소 수정",
+  place: "장소 편집",
 };
 
 const INPUT_PLACEHOLDERS: Record<Exclude<OrgTab, "mokjang">, string> = {
@@ -99,7 +101,7 @@ const INPUT_PLACEHOLDERS: Record<Exclude<OrgTab, "mokjang">, string> = {
   place: "장소 이름을 입력하세요",
 };
 
-const PLACE_CAPACITY_PLACEHOLDER = "수용 인원 (명)";
+const PLACE_CAPACITY_PLACEHOLDER = "최대 수용 인원을 입력하세요";
 
 function parseDeptList(depts: string): string[] {
   return depts.split(",").map((d) => d.trim()).filter(Boolean);
@@ -450,6 +452,407 @@ function OrgAddCard({ label, onClick }: { label: string; onClick: () => void }) 
   );
 }
 
+/* ── 장소 빈 상태 (01·02) — 전체 너비 패널 ── */
+function OrgPlaceEmptyPanel({ onClick }: { onClick: () => void }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: "100%",
+        minHeight: ORG_RESOURCE.placeEmptyMinHeight,
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        padding: 24,
+        borderRadius: ORG_RESOURCE.cardRadius,
+        border: `${ORG_RESOURCE.placeEmptyBorderWidth}px solid ${ORG_RESOURCE.placeEmptyBorder}`,
+        background: hover ? ORG_RESOURCE.placeEmptyBgHover : ORG_RESOURCE.placeEmptyBg,
+        cursor: "pointer",
+        fontFamily: ORG_RESOURCE.fontKR,
+        transition: "background 0.15s ease",
+      }}
+    >
+      <div
+        style={{
+          width: ORG_RESOURCE.addIconBoxSize,
+          height: ORG_RESOURCE.addIconBoxSize,
+          borderRadius: ORG_RESOURCE.addIconBoxRadius,
+          background: hover ? ORG_RESOURCE.addIconBoxBgHover : ORG_RESOURCE.addIconBoxBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "background 0.15s ease",
+        }}
+      >
+        <Plus
+          size={ORG_RESOURCE.addIconSize}
+          strokeWidth={1.5}
+          color={hover ? ORG_RESOURCE.addIconColorHover : ORG_RESOURCE.addIconColor}
+        />
+      </div>
+      <span
+        style={{
+          fontSize: ORG_RESOURCE.addLabelSize,
+          fontWeight: ORG_RESOURCE.addLabelWeight,
+          color: hover ? ORG_RESOURCE.addLabelColorHover : ORG_RESOURCE.addLabelColor,
+          transition: "color 0.15s ease",
+        }}
+      >
+        장소 추가하기
+      </span>
+    </button>
+  );
+}
+
+const placeCardShell: CSSProperties = {
+  width: "100%",
+  minHeight: ORG_RESOURCE.placeCardMinHeight,
+  boxSizing: "border-box",
+  borderRadius: ORG_RESOURCE.cardRadius,
+  position: "relative",
+  padding: `${ORG_RESOURCE.cardPadY}px ${ORG_RESOURCE.cardPadX}px`,
+  fontFamily: ORG_RESOURCE.fontKR,
+  border: "none",
+  cursor: "default",
+};
+
+/* ── 장소 카드 (05~07·09·11) — 호버 시 연파랑 + 장비·수용 ── */
+function OrgPlaceCard({
+  title,
+  equipment,
+  capacity,
+  highlighted,
+  onEdit,
+  onDelete,
+}: {
+  title: string;
+  equipment?: string[] | null;
+  capacity?: number | null;
+  highlighted?: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  const equipmentText = formatPlaceEquipment(equipment);
+  const cap = capacity != null && capacity > 0 ? capacity : 0;
+  const actionReserve = ORG_RESOURCE.cardIconBtnSize * 2 + 10;
+  const restingBg = highlighted ? ORG_RESOURCE.placeCardHighlightBg : ORG_RESOURCE.placeCardDefaultBg;
+
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setHover(false);
+      }}
+      tabIndex={0}
+      style={{
+        ...placeCardShell,
+        background: hover ? ORG_RESOURCE.placeCardHoverBg : restingBg,
+        boxShadow: hover || highlighted ? "none" : ORG_RESOURCE.placeCardDefaultShadow,
+        transition: "background 0.15s ease, box-shadow 0.15s ease",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: ORG_RESOURCE.cardPadY,
+          left: ORG_RESOURCE.cardPadX,
+          right: hover ? ORG_RESOURCE.cardPadX + actionReserve : ORG_RESOURCE.cardPadX,
+          minWidth: 0,
+          transition: "right 0.15s ease",
+        }}
+      >
+        <div style={{ fontSize: ORG_RESOURCE.cardTitleSize, fontWeight: ORG_RESOURCE.cardTitleWeight, color: ORG_RESOURCE.cardInk, lineHeight: 1.2 }}>
+          {title}
+        </div>
+        {equipmentText && (
+          <div
+            style={{
+              fontSize: ORG_RESOURCE.placeEquipmentSize,
+              fontWeight: 400,
+              color: ORG_RESOURCE.placeEquipmentColor,
+              marginTop: 6,
+              lineHeight: 1.4,
+            }}
+          >
+            {equipmentText}
+          </div>
+        )}
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: ORG_RESOURCE.cardPadY,
+          right: ORG_RESOURCE.cardPadX,
+          display: "flex",
+          gap: 5,
+          opacity: hover ? 1 : 0,
+          pointerEvents: hover ? "auto" : "none",
+          transition: "opacity 0.15s ease",
+        }}
+      >
+        <button
+          type="button"
+          aria-label="수정"
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          style={{ ...cardIconBtn, background: ORG_RESOURCE.placeIconBtnBg }}
+        >
+          <Pencil size={ORG_RESOURCE.cardActionIconSize} strokeWidth={2} color={ORG_RESOURCE.cardInk} />
+        </button>
+        <button
+          type="button"
+          aria-label="삭제"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          style={{ ...cardIconBtn, background: ORG_RESOURCE.placeIconBtnBg }}
+        >
+          <Trash2 size={ORG_RESOURCE.cardActionIconSize} strokeWidth={2} color={ORG_RESOURCE.cardInk} />
+        </button>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          right: ORG_RESOURCE.cardPadX,
+          bottom: ORG_RESOURCE.cardPadY,
+          display: "flex",
+          alignItems: "baseline",
+          gap: 3,
+          lineHeight: 1,
+        }}
+      >
+        <span style={{ fontFamily: ORG_RESOURCE.fontKR, fontSize: ORG_RESOURCE.placeCapacityLabelSize, fontWeight: 500, color: ORG_RESOURCE.cardInk }}>
+          수용
+        </span>
+        <span style={{ fontFamily: ORG_RESOURCE.fontLatin, fontSize: ORG_RESOURCE.placeCapacityNumSize, fontWeight: ORG_RESOURCE.cardCountWeight, color: ORG_RESOURCE.cardInk, letterSpacing: "-0.02em" }}>
+          {cap}
+        </span>
+        <span style={{ fontFamily: ORG_RESOURCE.fontKR, fontSize: ORG_RESOURCE.placeCapacityUnitSize, fontWeight: ORG_RESOURCE.cardCountWeight, color: ORG_RESOURCE.cardInk }}>
+          명
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── 장소 추가/편집 모달 (03·04·10) ── */
+function OrgPlaceFormModal({
+  open,
+  title,
+  name,
+  capacity,
+  equipment,
+  onNameChange,
+  onCapacityChange,
+  onEquipmentToggle,
+  onClose,
+  onSubmit,
+  submitLabel,
+}: {
+  open: boolean;
+  title: string;
+  name: string;
+  capacity: string;
+  equipment: string[];
+  onNameChange: (v: string) => void;
+  onCapacityChange: (v: string) => void;
+  onEquipmentToggle: (item: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+  submitLabel: string;
+}) {
+  if (!open) return null;
+  const fieldStyle: CSSProperties = {
+    width: "100%",
+    height: ORG_RESOURCE.modalInputHeight,
+    padding: "0 16px",
+    boxSizing: "border-box",
+    border: "none",
+    borderRadius: ORG_RESOURCE.modalInputRadius,
+    background: ORG_RESOURCE.modalInputBg,
+    fontSize: ORG_RESOURCE.modalInputFontSize,
+    fontFamily: ORG_RESOURCE.fontKR,
+    color: "#0b0c0e",
+    outline: "none",
+  };
+
+  return (
+    <div
+      className="modal-bg open"
+      role="presentation"
+      style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        style={{ maxWidth: ORG_RESOURCE.modalWidth, padding: ORG_RESOURCE.modalPad, borderRadius: ORG_RESOURCE.modalRadius }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <h2 style={{ margin: "0 0 20px", fontSize: ORG_RESOURCE.modalTitleSize, fontWeight: ORG_RESOURCE.modalTitleWeight, color: "#0b0c0e", fontFamily: ORG_RESOURCE.fontKR }}>
+          {title}
+        </h2>
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          placeholder={INPUT_PLACEHOLDERS.place}
+          style={{ ...fieldStyle, marginBottom: 12 }}
+        />
+        <input
+          value={capacity}
+          onChange={(e) => onCapacityChange(e.target.value.replace(/\D/g, ""))}
+          placeholder={PLACE_CAPACITY_PLACEHOLDER}
+          inputMode="numeric"
+          onKeyDown={(e) => { if (e.key === "Enter") onSubmit(); }}
+          style={{ ...fieldStyle, marginBottom: 20 }}
+        />
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#0b0c0e", marginBottom: 14, fontFamily: ORG_RESOURCE.fontKR }}>
+            장비
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: ORG_RESOURCE.placeCheckboxRowGap }}>
+            {ORG_PLACE_EQUIPMENT.map((item) => {
+              const checked = equipment.includes(item);
+              return (
+                <label
+                  key={item}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: ORG_RESOURCE.placeCheckboxGap,
+                    cursor: "pointer",
+                    fontSize: 15,
+                    fontWeight: 500,
+                    color: "#0b0c0e",
+                    fontFamily: ORG_RESOURCE.fontKR,
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      width: ORG_RESOURCE.placeCheckboxSize,
+                      height: ORG_RESOURCE.placeCheckboxSize,
+                      borderRadius: 4,
+                      background: checked ? "#0b0c0e" : "#ffffff",
+                      border: checked ? "2px solid #0b0c0e" : "2px solid #d5d6da",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {checked && (
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden>
+                        <path d="M1 4L3.5 6.5L9 1" stroke="#ffffff" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onEquipmentToggle(item)}
+                    style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+                  />
+                  {item}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap }}>
+          <button type="button" onClick={onClose} style={modalBtnCancel}>취소</button>
+          <button type="button" onClick={onSubmit} style={modalBtnSubmit}>{submitLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrgPlaceGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+        gap: ORG_RESOURCE.placeGridGap,
+        width: "100%",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ── 장소 탭용 추가 카드 (그리드 셀 전체 너비) ── */
+function OrgPlaceAddCard({ onClick }: { onClick: () => void }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width: "100%",
+        minHeight: ORG_RESOURCE.placeCardMinHeight,
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        padding: 16,
+        borderRadius: ORG_RESOURCE.cardRadius,
+        border: `${ORG_RESOURCE.addCardBorderWidth}px solid ${ORG_RESOURCE.addCardBorder}`,
+        background: hover ? ORG_RESOURCE.addCardBgHover : ORG_RESOURCE.addCardBg,
+        cursor: "pointer",
+        fontFamily: ORG_RESOURCE.fontKR,
+        transition: "background 0.15s ease, border-color 0.15s ease",
+      }}
+    >
+      <div
+        style={{
+          width: ORG_RESOURCE.addIconBoxSize,
+          height: ORG_RESOURCE.addIconBoxSize,
+          borderRadius: ORG_RESOURCE.addIconBoxRadius,
+          background: hover ? ORG_RESOURCE.addIconBoxBgHover : ORG_RESOURCE.addIconBoxBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "background 0.15s ease",
+        }}
+      >
+        <Plus
+          size={ORG_RESOURCE.addIconSize}
+          strokeWidth={1.5}
+          color={hover ? ORG_RESOURCE.addIconColorHover : ORG_RESOURCE.addIconColor}
+        />
+      </div>
+      <span
+        style={{
+          fontSize: ORG_RESOURCE.addLabelSize,
+          fontWeight: ORG_RESOURCE.addLabelWeight,
+          color: hover ? ORG_RESOURCE.addLabelColorHover : ORG_RESOURCE.addLabelColor,
+          transition: "color 0.15s ease",
+        }}
+      >
+        장소 추가하기
+      </span>
+    </button>
+  );
+}
+
 const cardShell: CSSProperties = {
   width: ORG_RESOURCE.cardWidth,
   height: ORG_RESOURCE.cardHeight,
@@ -714,12 +1117,6 @@ export function OrgDeleteModal({
   onConfirm: () => void;
 }) {
   if (!open) return null;
-  const desc =
-    tab === "mokjang"
-      ? `${name}을 삭제하면 소속 성도들은 모두 미배정으로 바뀝니다.`
-      : tab === "dept"
-        ? `${name} 부서를 삭제하면 해당 성도들의 부서 정보가 비워집니다.`
-        : `${name} 장소를 삭제합니다.`;
 
   return (
     <div
@@ -742,8 +1139,18 @@ export function OrgDeleteModal({
         <h2 style={{ margin: "0 0 10px", fontSize: ORG_RESOURCE.modalTitleSize, fontWeight: ORG_RESOURCE.modalTitleWeight, color: "#0b0c0e", fontFamily: ORG_RESOURCE.fontKR }}>
           정말 삭제할까요?
         </h2>
-        <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6b7280", lineHeight: 1.5, fontFamily: ORG_RESOURCE.fontKR }}>
-          {desc}
+        <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6b7280", lineHeight: 1.55, fontFamily: ORG_RESOURCE.fontKR }}>
+          {tab === "place" ? (
+            <>
+              선택한 장소를 삭제하면 해당 장소의 정보가
+              <br />
+              모두 삭제되며 복구할 수 없습니다.
+            </>
+          ) : tab === "mokjang" ? (
+            `${name}을 삭제하면 소속 성도들은 모두 미배정으로 바뀝니다.`
+          ) : (
+            `${name} 부서를 삭제하면 해당 성도들의 부서 정보가 비워집니다.`
+          )}
         </p>
         <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap }}>
           <button type="button" onClick={onClose} style={modalBtnCancel}>취소</button>
@@ -1204,6 +1611,7 @@ export function OrganizationResourceSub({
   const [editOldName, setEditOldName] = useState<string | null>(null);
   const [editPlaceId, setEditPlaceId] = useState<string | null>(null);
   const [editCapacity, setEditCapacity] = useState("");
+  const [editEquipment, setEditEquipment] = useState<string[]>([]);
 
   const [deleteTarget, setDeleteTarget] = useState<{ type: OrgTab; name: string; id?: string } | null>(null);
   const [resourceWizard, setResourceWizard] = useState<ResourceWizardState | null>(null);
@@ -1316,6 +1724,7 @@ export function OrganizationResourceSub({
     setEditPlaceId(null);
     setEditName("");
     setEditCapacity("");
+    setEditEquipment([]);
     setFormOpen(true);
   };
 
@@ -1335,6 +1744,7 @@ export function OrganizationResourceSub({
     setEditPlaceId(p.id);
     setEditName(p.name);
     setEditCapacity(p.capacity != null && p.capacity > 0 ? String(p.capacity) : "");
+    setEditEquipment([...(p.equipment ?? [])]);
     setFormOpen(true);
   };
 
@@ -1464,20 +1874,23 @@ export function OrganizationResourceSub({
         return;
       }
       try {
+        const equipmentPayload = editEquipment.length ? editEquipment : [];
         if (editPlaceId) {
-          const { error } = await supabase.from(TB_PLACES).update({ name: trimmed, capacity: cap }).eq("id", editPlaceId);
+          const { error } = await supabase
+            .from(TB_PLACES)
+            .update({ name: trimmed, capacity: cap, equipment: equipmentPayload })
+            .eq("id", editPlaceId);
           if (error) throw error;
         } else {
           const { error } = await supabase.from(TB_PLACES).insert({
             church_id: churchId,
             name: trimmed,
             capacity: cap,
-            equipment: [],
+            equipment: equipmentPayload,
             sort_order: places.length,
             is_active: true,
           });
           if (error) throw error;
-          assignSlotColor(`place:new-${trimmed}`, places.length);
         }
         await loadPlaces();
         toast(editPlaceId ? "장소가 수정되었습니다" : "장소가 추가되었습니다", "ok");
@@ -1623,39 +2036,42 @@ export function OrganizationResourceSub({
       {tab === "place" && (
         placesLoading ? (
           <div style={{ padding: 48, color: "#8b909a", fontSize: 15, fontFamily: ORG_RESOURCE.fontKR }}>불러오는 중…</div>
+        ) : places.length === 0 ? (
+          <OrgPlaceEmptyPanel onClick={openAdd} />
         ) : (
-          <OrgCardGrid>
-            {places.map((p, i) => {
-              const { colored, color } = getSlotCardColor(i, `place:${p.id}`);
-              return (
-                <OrgResourceCard
-                  key={p.id}
-                  title={p.name}
-                  count={p.capacity ?? 0}
-                  colored={colored}
-                  color={color}
-                  onEdit={() => openEditPlace(p)}
-                  onDelete={() => setDeleteTarget({ type: "place", name: p.name, id: p.id })}
-                />
-              );
-            })}
-            <OrgAddCard label={ADD_LABELS.place} onClick={openAdd} />
-          </OrgCardGrid>
+          <OrgPlaceGrid>
+            {places.map((p, i) => (
+              <OrgPlaceCard
+                key={p.id}
+                title={p.name}
+                equipment={p.equipment}
+                capacity={p.capacity}
+                highlighted={i === 0}
+                onEdit={() => openEditPlace(p)}
+                onDelete={() => setDeleteTarget({ type: "place", name: p.name, id: p.id })}
+              />
+            ))}
+            <OrgPlaceAddCard onClick={openAdd} />
+          </OrgPlaceGrid>
         )
       )}
 
-      <OrgFormModal
+      <OrgPlaceFormModal
         open={formOpen && tab === "place"}
         title={formTitle}
-        value={editName}
-        placeholder={INPUT_PLACEHOLDERS.place}
-        onChange={setEditName}
+        name={editName}
+        capacity={editCapacity}
+        equipment={editEquipment}
+        onNameChange={setEditName}
+        onCapacityChange={setEditCapacity}
+        onEquipmentToggle={(item) => {
+          setEditEquipment((prev) =>
+            prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item],
+          );
+        }}
         onClose={() => setFormOpen(false)}
         onSubmit={() => void handleSaveForm()}
         submitLabel={editPlaceId ? "저장" : "등록"}
-        capacityValue={editCapacity}
-        onCapacityChange={setEditCapacity}
-        capacityPlaceholder={PLACE_CAPACITY_PLACEHOLDER}
       />
 
       <OrgDeleteModal
