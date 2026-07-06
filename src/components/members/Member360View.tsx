@@ -48,8 +48,8 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
   const attendanceHistory = useMemo(() => {
     if (!member.id) return [];
     return rawAttendance
-      .filter(a => a.member_id === member.id && a.service_type === "주일예배")
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .filter((a) => a.member_id === member.id && a.service_type === "주일예배" && a.date)
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
       .slice(0, 20)
       .map(a => ({
         date: a.date,
