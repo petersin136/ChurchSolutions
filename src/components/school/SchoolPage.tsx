@@ -9,6 +9,7 @@ import { SchoolAttendanceSub } from "./SchoolAttendanceSub";
 import { DepartmentTransfer } from "./DepartmentTransfer";
 import { LayoutDashboard, Building2, Users, CalendarCheck, ArrowRightLeft } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
+import { SCHOOL_SET_SUB_EVENT } from "@/lib/globalSearch";
 
 type SchoolSubTab = "dashboard" | "departments" | "students" | "attendance" | "transfer";
 
@@ -53,6 +54,17 @@ export function SchoolPage({ db, toast }: SchoolPageProps) {
   useEffect(() => {
     if (typeof window !== "undefined") sessionStorage.setItem("schoolSubTab", subTab);
   }, [subTab]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const sub = (e as CustomEvent<string>).detail;
+      if (typeof sub === "string" && SCHOOL_SUB_TAB_IDS.includes(sub as SchoolSubTab)) {
+        setSubTab(sub as SchoolSubTab);
+      }
+    };
+    window.addEventListener(SCHOOL_SET_SUB_EVENT, handler as EventListener);
+    return () => window.removeEventListener(SCHOOL_SET_SUB_EVENT, handler as EventListener);
+  }, []);
 
   return (
     <UnifiedPageLayout

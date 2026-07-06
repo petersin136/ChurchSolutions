@@ -81,6 +81,56 @@ function saveColorMap(key: string, churchId: string, map: Record<string, string>
 }
 
 /* ── 세그먼트 탭 (회색 사각 컨테이너 + 흰 활성 탭) ── */
+function OrgSegTabButton({
+  id,
+  active,
+  onClick,
+}: {
+  id: OrgTab;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  const showHover = hover && !active;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        border: "none",
+        borderRadius: ORG_RESOURCE.segTabRadius,
+        padding: `${ORG_RESOURCE.segTabPadY}px ${ORG_RESOURCE.segTabPadX}px`,
+        fontSize: ORG_RESOURCE.segTabFontSize,
+        fontWeight: active ? ORG_RESOURCE.segTabActiveFontWeight : ORG_RESOURCE.segTabFontWeight,
+        fontFamily: ORG_RESOURCE.fontKR,
+        cursor: "pointer",
+        background: active
+          ? ORG_RESOURCE.segTabActiveBg
+          : showHover
+            ? ORG_RESOURCE.segTabHoverBg
+            : "transparent",
+        color: active
+          ? ORG_RESOURCE.segTabActiveColor
+          : showHover
+            ? ORG_RESOURCE.segTabHoverColor
+            : ORG_RESOURCE.segTabInactiveColor,
+        boxShadow: active
+          ? ORG_RESOURCE.segTabActiveShadow
+          : showHover
+            ? ORG_RESOURCE.segTabHoverShadow
+            : "none",
+        whiteSpace: "nowrap",
+        transition: "background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease",
+      }}
+    >
+      {TAB_LABELS[id]}
+    </button>
+  );
+}
+
 function OrgSegmentTabs({ tab, onChange }: { tab: OrgTab; onChange: (t: OrgTab) => void }) {
   return (
     <div
@@ -94,32 +144,9 @@ function OrgSegmentTabs({ tab, onChange }: { tab: OrgTab; onChange: (t: OrgTab) 
         marginBottom: ORG_RESOURCE.segToGridGap,
       }}
     >
-      {(["dept", "mokjang", "place"] as OrgTab[]).map((id) => {
-        const active = tab === id;
-        return (
-          <button
-            key={id}
-            type="button"
-            onClick={() => onChange(id)}
-            style={{
-              border: "none",
-              borderRadius: ORG_RESOURCE.segTabRadius,
-              padding: `${ORG_RESOURCE.segTabPadY}px ${ORG_RESOURCE.segTabPadX}px`,
-              fontSize: ORG_RESOURCE.segTabFontSize,
-              fontWeight: active ? ORG_RESOURCE.segTabActiveFontWeight : ORG_RESOURCE.segTabFontWeight,
-              fontFamily: ORG_RESOURCE.fontKR,
-              cursor: "pointer",
-              background: active ? ORG_RESOURCE.segTabActiveBg : "transparent",
-              color: active ? ORG_RESOURCE.segTabActiveColor : ORG_RESOURCE.segTabInactiveColor,
-              boxShadow: active ? ORG_RESOURCE.segTabActiveShadow : "none",
-              whiteSpace: "nowrap",
-              transition: "background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease",
-            }}
-          >
-            {TAB_LABELS[id]}
-          </button>
-        );
-      })}
+      {(["dept", "mokjang", "place"] as OrgTab[]).map((id) => (
+        <OrgSegTabButton key={id} id={id} active={tab === id} onClick={() => onChange(id)} />
+      ))}
     </div>
   );
 }
@@ -329,7 +356,7 @@ function OrgCardGrid({ children }: { children: React.ReactNode }) {
 }
 
 /* ── 추가/수정 모달 (시안: 제목 좌상단, 회색 입력, 취소+등록) ── */
-function OrgFormModal({
+export function OrgFormModal({
   open,
   title,
   value,
@@ -440,7 +467,7 @@ const modalBtnSubmit: CSSProperties = {
 };
 
 /* ── 삭제 확인 모달 ── */
-function OrgDeleteModal({
+export function OrgDeleteModal({
   open,
   name,
   tab,

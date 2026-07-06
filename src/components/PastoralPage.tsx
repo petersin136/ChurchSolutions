@@ -8,6 +8,7 @@ import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAuth } from "@/contexts/AuthContext";
 import { CHURCHUP_GO_HOME_EVENT } from "@/contexts/ShellNavContext";
+import { PASTORAL_SET_SUB_EVENT } from "@/lib/globalSearch";
 import {
   PASTORAL_MEMBERS_SEARCH_EVENT,
   PASTORAL_MEMBERS_SEARCH_KEY,
@@ -23,7 +24,7 @@ import {
   isEphemeralMemberPhotoUrl,
 } from "@/lib/member-photo";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
-import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, BookOpenCheck, ArrowUpRight, Plus } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, BookOpenCheck, ArrowUpRight, Plus, Pencil, Trash2 } from "lucide-react";
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
@@ -42,7 +43,7 @@ import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNot
 import { PcModalShell } from "@/components/common/PcModalShell";
 import { tokens } from "@/styles/tokens";
 import { APP_HISTORY_KEYS, mergePushAppHistory, mergeReplaceAppHistory, readAppHistoryState } from "@/lib/appHistory";
-import { OrganizationResourceSub } from "@/components/pastoral/OrganizationResourceSub";
+import { OrganizationResourceSub, OrgFormModal, OrgDeleteModal } from "@/components/pastoral/OrganizationResourceSub";
 import { ORG_RESOURCE } from "@/styles/orgResourceTokens";
 
 const MOB_PANEL_MIN_H = tokens.layout.mobPastoralPanelMinHeight;
@@ -788,6 +789,34 @@ function AttChartAxisLabel({
 const ATT_CHART_YEAR_CHEVRON =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b909a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")";
 
+function dashPeriodBtnStyle(
+  chartCtrl: typeof DASH_ATT_CHART_CTRL,
+  mob: boolean,
+  active: boolean,
+): CSSProperties {
+  const btnSize = mob ? chartCtrl.periodBtnSizeMob : chartCtrl.periodBtnSize;
+  return {
+    width: btnSize,
+    height: btnSize,
+    minWidth: btnSize,
+    borderRadius: chartCtrl.periodBtnRadius,
+    border: "none",
+    fontSize: mob ? chartCtrl.periodBtnFontSizeMob : chartCtrl.periodBtnFontSize,
+    fontWeight: 600,
+    fontFamily: DASH_GLOBAL.fontLatin,
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
+    boxSizing: "border-box",
+    background: active ? chartCtrl.periodActiveBg : chartCtrl.periodInactiveBg,
+    color: chartCtrl.periodText,
+    flexShrink: 0,
+    transition: "background 0.15s ease",
+  };
+}
+
 function AttChartControls({
   mob,
   attChartYear,
@@ -808,26 +837,7 @@ function AttChartControls({
   chartCtrl?: typeof DASH_ATT_CHART_CTRL;
 }) {
   const btnSize = mob ? chartCtrl.periodBtnSizeMob : chartCtrl.periodBtnSize;
-  const periodBtnStyle = (active: boolean): CSSProperties => ({
-    width: btnSize,
-    height: btnSize,
-    minWidth: btnSize,
-    borderRadius: chartCtrl.periodBtnRadius,
-    border: "none",
-    fontSize: mob ? chartCtrl.periodBtnFontSizeMob : chartCtrl.periodBtnFontSize,
-    fontWeight: 600,
-    fontFamily: DASH_GLOBAL.fontLatin,
-    cursor: "pointer",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 0,
-    boxSizing: "border-box",
-    background: active ? chartCtrl.periodActiveBg : chartCtrl.periodInactiveBg,
-    color: chartCtrl.periodText,
-    flexShrink: 0,
-    transition: "background 0.15s ease",
-  });
+  const periodBtnStyle = (active: boolean) => dashPeriodBtnStyle(chartCtrl, mob, active);
 
   return (
       <div
@@ -896,7 +906,27 @@ type PastoralFeedItem = {
   memberName?: string;
 };
 
-function DashboardSub({ db, currentWeek, rawAttendance, onNavSub, onOpenAttendanceStats }: { db: DB; currentWeek: number; rawAttendance: RawAttendanceRow[]; onNavSub?: (id: SubPage) => void; onOpenAttendanceStats?: () => void }) {
+function DashboardSub({
+  db,
+  setDb,
+  persist,
+  toast,
+  saveDb,
+  currentWeek,
+  rawAttendance,
+  onNavSub,
+  onOpenAttendanceStats,
+}: {
+  db: DB;
+  setDb: (fn: (prev: DB) => DB) => void;
+  persist: () => void;
+  toast: (m: string, t?: string) => void;
+  saveDb?: (d: DB) => Promise<void>;
+  currentWeek: number;
+  rawAttendance: RawAttendanceRow[];
+  onNavSub?: (id: SubPage) => void;
+  onOpenAttendanceStats?: () => void;
+}) {
   const mob = useIsMobile();
   const periodSegmentItems = useMemo(
     () => [
@@ -921,6 +951,13 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub, onOpenAttendan
   const [attChartWidth, setAttChartWidth] = useState(0);
   const [feedPage, setFeedPage] = useState(1);
   const feedSwipeStartX = useRef<number | null>(null);
+  const [deptFormOpen, setDeptFormOpen] = useState(false);
+  const [deptEditName, setDeptEditName] = useState("");
+  const [deptEditOldName, setDeptEditOldName] = useState<string | null>(null);
+  const [deptDeleteName, setDeptDeleteName] = useState<string | null>(null);
+  const [deptHover, setDeptHover] = useState<string | null>(null);
+
+  const deptNames = useMemo(() => getDepts(db), [db.settings.depts]);
 
   const attChartBarScale = useMemo(() => {
     const widths = dashChartBarWidths(attChartWidth, mob);
@@ -1071,9 +1108,83 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub, onOpenAttendan
 
   const deptCounts = useMemo(() => {
     const r: Record<string, number> = {};
-    m.forEach(s => { r[s.dept || ""] = (r[s.dept || ""] || 0) + 1; });
-    return Object.entries(r).sort((a, b) => b[1] - a[1]);
-  }, [m]);
+    deptNames.forEach((d) => { r[d] = 0; });
+    m.forEach((s) => {
+      const dept = s.dept || "";
+      if (dept) r[dept] = (r[dept] || 0) + 1;
+    });
+    return deptNames
+      .map((d) => [d, r[d] || 0] as [string, number])
+      .sort((a, b) => b[1] - a[1]);
+  }, [m, deptNames]);
+
+  const openDeptAdd = () => {
+    setDeptEditOldName(null);
+    setDeptEditName("");
+    setDeptFormOpen(true);
+  };
+
+  const openDeptEdit = (name: string) => {
+    setDeptEditOldName(name);
+    setDeptEditName(name);
+    setDeptFormOpen(true);
+  };
+
+  const saveDeptForm = () => {
+    const trimmed = deptEditName.trim();
+    if (!trimmed) {
+      toast("이름을 입력하세요", "err");
+      return;
+    }
+    if (deptEditOldName && deptEditOldName !== trimmed && deptNames.includes(trimmed)) {
+      toast("이미 있는 부서입니다", "err");
+      return;
+    }
+    if (!deptEditOldName && deptNames.includes(trimmed)) {
+      toast("이미 있는 부서입니다", "err");
+      return;
+    }
+    setDb((prev) => {
+      let names = [...deptNames];
+      let members = prev.members;
+      if (deptEditOldName) {
+        names = names.map((n) => (n === deptEditOldName ? trimmed : n));
+        if (deptEditOldName !== trimmed) {
+          members = members.map((m) => (m.dept === deptEditOldName ? { ...m, dept: trimmed } : m));
+        }
+      } else {
+        names.push(trimmed);
+      }
+      const next = {
+        ...prev,
+        settings: { ...prev.settings, depts: names.join(", ") },
+        members,
+      };
+      persist();
+      void saveDb?.(next).catch(() => toast("저장 실패", "err"));
+      return next;
+    });
+    toast(deptEditOldName ? "부서가 수정되었습니다" : "부서가 추가되었습니다", "ok");
+    setDeptFormOpen(false);
+  };
+
+  const confirmDeptDelete = () => {
+    if (!deptDeleteName) return;
+    const name = deptDeleteName;
+    setDb((prev) => {
+      const names = deptNames.filter((n) => n !== name);
+      const next = {
+        ...prev,
+        settings: { ...prev.settings, depts: names.join(", ") },
+        members: prev.members.map((m) => (m.dept === name ? { ...m, dept: "" } : m)),
+      };
+      persist();
+      void saveDb?.(next).catch(() => toast("저장 실패", "err"));
+      return next;
+    });
+    toast("부서가 삭제되었습니다", "ok");
+    setDeptDeleteName(null);
+  };
 
   useLayoutEffect(() => {
     if (mob) {
@@ -2097,11 +2208,14 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub, onOpenAttendan
             <h4 style={{ margin: 0, fontSize: mob ? dashTypo.section.titleSizeMob : dashTypo.section.titleSize, fontWeight: 700, color: C.text }}>부서별 인원</h4>
             <button
               type="button"
-              aria-label="성도 관리로 이동"
-              onClick={() => onNavSub?.("members")}
-              style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${C.border}`, background: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.text }}
+              aria-label="부서 추가"
+              onClick={openDeptAdd}
+              style={dashPeriodBtnStyle(dashTypo.chart, mob, deptFormOpen)}
             >
-              <Plus size={16} strokeWidth={2} />
+              <Plus
+                size={mob ? dashTypo.chart.periodBtnFontSizeMob : dashTypo.chart.periodBtnFontSize}
+                strokeWidth={2.5}
+              />
             </button>
           </div>
           <div
@@ -2128,9 +2242,14 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub, onOpenAttendan
                 const labelInset = dashScalePx(DASH_DEPT_CARD.labelInset, typoScale);
                 const countGap = dashScalePx(DASH_DEPT_CARD.countGap, typoScale);
                 const countMinW = dashScalePx(DASH_DEPT_CARD.countMinWidth, typoScale);
+                const rowHovered = deptHover === d;
+                const actionBtnSize = mob ? dashTypo.chart.periodBtnSizeMob : dashTypo.chart.periodBtnSize;
+                const actionIcon = Math.round((mob ? dashTypo.chart.periodBtnFontSizeMob : dashTypo.chart.periodBtnFontSize) * 0.75);
                 return (
                   <div
                     key={d}
+                    onMouseEnter={() => setDeptHover(d)}
+                    onMouseLeave={() => setDeptHover(null)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -2185,6 +2304,35 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub, onOpenAttendan
                     >
                       {cnt}명
                     </span>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 4,
+                        width: rowHovered ? actionBtnSize * 2 + 4 : 0,
+                        opacity: rowHovered ? 1 : 0,
+                        overflow: "hidden",
+                        flexShrink: 0,
+                        transition: "width 0.15s ease, opacity 0.15s ease",
+                        pointerEvents: rowHovered ? "auto" : "none",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        aria-label={`${d} 수정`}
+                        onClick={() => openDeptEdit(d)}
+                        style={dashPeriodBtnStyle(dashTypo.chart, mob, false)}
+                      >
+                        <Pencil size={actionIcon} strokeWidth={2.25} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`${d} 삭제`}
+                        onClick={() => setDeptDeleteName(d)}
+                        style={dashPeriodBtnStyle(dashTypo.chart, mob, false)}
+                      >
+                        <Trash2 size={actionIcon} strokeWidth={2.25} />
+                      </button>
+                    </div>
                   </div>
                 );
               })
@@ -2193,6 +2341,24 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub, onOpenAttendan
         </Card>
         </div>
       </div>
+
+      <OrgFormModal
+        open={deptFormOpen}
+        title={deptEditOldName ? "부서 수정" : "새 부서 추가"}
+        value={deptEditName}
+        placeholder="부서 이름을 입력하세요"
+        onChange={setDeptEditName}
+        onClose={() => setDeptFormOpen(false)}
+        onSubmit={saveDeptForm}
+        submitLabel={deptEditOldName ? "저장" : "등록"}
+      />
+      <OrgDeleteModal
+        open={!!deptDeleteName}
+        name={deptDeleteName ?? ""}
+        tab="dept"
+        onClose={() => setDeptDeleteName(null)}
+        onConfirm={confirmDeptDelete}
+      />
     </div>
   );
 }
@@ -4229,6 +4395,17 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     return () => window.removeEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
   }, []);
   useEffect(() => {
+    const handler = (e: Event) => {
+      const sub = (e as CustomEvent<string>).detail;
+      if (typeof sub === "string" && SUB_PAGE_IDS.includes(sub as SubPage)) {
+        setActiveSubState(sub as SubPage);
+        mergeReplaceAppHistory({ [APP_HISTORY_KEYS.pastoralSub]: sub as SubPage });
+      }
+    };
+    window.addEventListener(PASTORAL_SET_SUB_EVENT, handler as EventListener);
+    return () => window.removeEventListener(PASTORAL_SET_SUB_EVENT, handler as EventListener);
+  }, []);
+  useEffect(() => {
     const openMember = (memberId: string) => {
       setActiveSubState("members");
       setDetailId(memberId);
@@ -4783,7 +4960,19 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       contentFontFamily={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.fontKR : undefined}
       hideHeader={activeSub === "dashboard" || orgResourceLayout}
     >
-          {activeSub === "dashboard" && <DashboardSub db={db} currentWeek={currentWeek} rawAttendance={rawAttendance} onNavSub={navigateToSub} onOpenAttendanceStats={openAttendanceStatistics} />}
+          {activeSub === "dashboard" && (
+            <DashboardSub
+              db={db}
+              setDb={(fn) => setDb(fn)}
+              persist={persist}
+              toast={toast}
+              saveDb={saveDBToSupabase}
+              currentWeek={currentWeek}
+              rawAttendance={rawAttendance}
+              onNavSub={navigateToSub}
+              onOpenAttendanceStats={openAttendanceStatistics}
+            />
+          )}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>

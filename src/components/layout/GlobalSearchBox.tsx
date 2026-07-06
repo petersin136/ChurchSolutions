@@ -12,6 +12,7 @@ import {
 } from "@/lib/globalSearch";
 
 const CATEGORY_LABEL: Record<GlobalSearchResultKind, string> = {
+  menu: "메뉴",
   member: "성도",
   visit: "심방",
   income: "헌금",
@@ -88,6 +89,7 @@ export function GlobalSearchBox() {
   if (!nav) return null;
 
   const sections = ([
+    { kind: "menu" as const, items: results.menus },
     { kind: "member" as const, items: results.members },
     { kind: "visit" as const, items: results.visits },
     { kind: "income" as const, items: results.incomes },

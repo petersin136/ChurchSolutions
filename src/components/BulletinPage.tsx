@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, Fragment, type CSSPr
 import { createPortal } from "react-dom";
 import { LayoutDashboard, Pencil, FolderOpen, Settings, Newspaper, Printer, FileDown, Eye, Save, Archive, Edit3, type LucideIcon } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
+import { BULLETIN_SET_SUB_EVENT } from "@/lib/globalSearch";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import KakaoShareCard from "@/components/bulletin/KakaoShareCard";
 import { initKakao, shareTextToKakao } from "@/lib/kakao";
@@ -1276,6 +1277,16 @@ export function BulletinPage() {
   useEffect(() => {
     sessionStorage.setItem("bulletin-activeSub", activeSub);
   }, [activeSub]);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const sub = (e as CustomEvent<string>).detail;
+      if (sub === "edit" || sub === "history" || sub === "settings" || sub === "dash") {
+        setActiveSub(sub);
+      }
+    };
+    window.addEventListener(BULLETIN_SET_SUB_EVENT, handler as EventListener);
+    return () => window.removeEventListener(BULLETIN_SET_SUB_EVENT, handler as EventListener);
+  }, []);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     cover: false, worship: false, sermon: false,
     churchNews: false, departments: false, info: false,

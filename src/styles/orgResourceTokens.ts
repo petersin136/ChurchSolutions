@@ -31,6 +31,9 @@ export const ORG_RESOURCE = {
   segTabFontWeight: 600,
   segTabActiveFontWeight: 700,
   segTabActiveShadow: "0 1px 3px rgba(0,0,0,0.06)",
+  segTabHoverBg: "rgba(255,255,255,0.72)",
+  segTabHoverColor: "#3d424a",
+  segTabHoverShadow: "0 1px 2px rgba(0,0,0,0.05)",
   segToGridGap: 24,
   /** 카드 — 가로 직사각형 */
   cardWidth: Math.round(176 * CARD_S),

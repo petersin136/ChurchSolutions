@@ -30,6 +30,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import {
   FINANCE_SEARCH_EVENT,
   FINANCE_SEARCH_KEY,
+  FINANCE_SET_TAB_EVENT,
   useApplyGlobalSearch,
 } from "@/lib/globalSearch";
 
@@ -4757,6 +4758,17 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
     const onFinanceSearch = () => setActiveTab("offering");
     window.addEventListener(FINANCE_SEARCH_EVENT, onFinanceSearch);
     return () => window.removeEventListener(FINANCE_SEARCH_EVENT, onFinanceSearch);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tab = (e as CustomEvent<string>).detail;
+      if (typeof tab === "string" && VALID_FINANCE_TABS.has(tab)) {
+        setActiveTab(tab);
+      }
+    };
+    window.addEventListener(FINANCE_SET_TAB_EVENT, handler as EventListener);
+    return () => window.removeEventListener(FINANCE_SET_TAB_EVENT, handler as EventListener);
   }, []);
 
   const financeSidebarItems = [

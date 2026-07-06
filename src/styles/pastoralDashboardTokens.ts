@@ -47,9 +47,9 @@ export const DASH_SIDEBAR = {
   width: 240,
   /** 로고·날짜·메뉴 좌측 정렬 기준 */
   insetX: 20,
-  headerPaddingTop: 24,
-  /** church up 브랜드 블록(로고+날짜) — 사이드바 콘텐츠 영역(200px) 가운데 정렬 */
-  brandWidth: 200,
+  headerPaddingTop: 34,
+  /** church up 워드마크 블록(로고+날짜) */
+  brandWidth: 168,
   /** 실험 워드마크: "church" + Garb 앱 아이콘 */
   churchTextSize: 36,
   churchTextWeight: 600,
@@ -61,8 +61,8 @@ export const DASH_SIDEBAR = {
   /** 실험: 아이콘 내 up 글자 수평 맞춤 — 원본 -45° 보정(시계방향 38°) */
   appIconRotateDeg: 40,
   logoToDateGap: 18,
-  /** 날짜 라인 — 로고(church+아이콘) 폭에 맞춰 양끝 정렬 */
-  dateFontSize: 12,
+  /** 날짜 라인 — Today 바로 옆에 일자 */
+  dateFontSize: 13,
   dateLetterSpacing: 0,
   dateLineHeight: 1.2,
   itemColor: "#0b0c0e",

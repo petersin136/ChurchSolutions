@@ -1,71 +1,37 @@
 "use client";
 
 import Image from "next/image";
-import { DASH_COLOR, DASH_GLOBAL, DASH_SIDEBAR } from "@/styles/pastoralDashboardTokens";
+import { DASH_SIDEBAR } from "@/styles/pastoralDashboardTokens";
 
-/** 처치업 앱 아이콘 — Garb 마크 (사이드바 하단 프로필과 동일) */
-const GARB_APP_ICON = "/icons/icon-192x192.png";
+const CHURCHUP_LOGO = "/churchup-logo-black.png";
 
-/**
- * 실험 워드마크: "church" 텍스트 + Garb 앱 아이콘(네모 up 로고).
- * 아이콘은 시계방향 45° 회전해 up 글자가 수평이 되도록 한다.
- */
-export function SidebarBrandMark({ onClick }: { onClick?: () => void }) {
-  const box = DASH_SIDEBAR.appIconSize;
-  const inner = Math.round(box * DASH_SIDEBAR.appIconInnerRatio);
+/** 사이드바 상단 — 처치업(church up) 워드마크 */
+export function SidebarBrandMark({ onClick, compact = false }: { onClick?: () => void; compact?: boolean }) {
+  const logoWidth = compact ? 42 : DASH_SIDEBAR.brandWidth;
+
+  const mark = (
+    <Image
+      src={CHURCHUP_LOGO}
+      alt="church up"
+      width={1000}
+      height={167}
+      priority
+      style={{
+        width: logoWidth,
+        height: "auto",
+        display: "block",
+        maxWidth: "100%",
+      }}
+    />
+  );
 
   const innerStyle = {
     display: "flex",
     alignItems: "center",
-    gap: DASH_SIDEBAR.appIconGap,
-    width: "fit-content",
+    justifyContent: "center",
+    width: compact ? "100%" : "fit-content",
     maxWidth: "100%",
   } as const;
-
-  const mark = (
-    <>
-      <span
-        style={{
-          fontFamily: DASH_GLOBAL.fontLatin,
-          fontSize: DASH_SIDEBAR.churchTextSize,
-          fontWeight: DASH_SIDEBAR.churchTextWeight,
-          letterSpacing: "-0.045em",
-          color: DASH_COLOR.ink,
-          lineHeight: 1,
-          flexShrink: 0,
-        }}
-      >
-        church
-      </span>
-      <span
-        style={{
-          width: box,
-          height: box,
-          flexShrink: 0,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        aria-label="Garb"
-        title="Garb"
-      >
-        <Image
-          src={GARB_APP_ICON}
-          alt=""
-          width={192}
-          height={192}
-          priority
-          style={{
-            width: inner,
-            height: inner,
-            display: "block",
-            borderRadius: Math.round(inner * 0.22),
-            transform: `rotate(${DASH_SIDEBAR.appIconRotateDeg}deg)`,
-          }}
-        />
-      </span>
-    </>
-  );
 
   if (!onClick) {
     return <div style={innerStyle}>{mark}</div>;
@@ -85,7 +51,7 @@ export function SidebarBrandMark({ onClick }: { onClick?: () => void }) {
         margin: 0,
         cursor: "pointer",
         font: "inherit",
-        textAlign: "left",
+        textAlign: "center",
       }}
     >
       {mark}

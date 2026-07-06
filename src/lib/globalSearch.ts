@@ -2,11 +2,13 @@
 
 import { useEffect } from "react";
 import type { DB, Member, Visit, Income } from "@/types/db";
+import { getAppMenuEntry, searchAppMenus, type AppMenuEntry } from "@/lib/appMenuSearch";
 
 export const PASTORAL_MEMBERS_SEARCH_KEY = "pastoral_members_search";
 export const PASTORAL_MEMBERS_SEARCH_EVENT = "churchup:pastoral-members-search";
 export const PASTORAL_OPEN_MEMBER_KEY = "pastoral_open_member";
 export const PASTORAL_OPEN_MEMBER_EVENT = "churchup:open-member";
+export const PASTORAL_SET_SUB_EVENT = "churchup:pastoral-set-sub";
 
 export const VISIT_COUNSEL_SEARCH_KEY = "visit_counsel_search";
 export const VISIT_COUNSEL_SEARCH_EVENT = "churchup:visit-counsel-search";
@@ -16,9 +18,14 @@ export const VISIT_COUNSEL_OPEN_VISIT_EVENT = "churchup:open-visit";
 
 export const FINANCE_SEARCH_KEY = "finance_search";
 export const FINANCE_SEARCH_EVENT = "churchup:finance-search";
-const FINANCE_ACTIVE_TAB_KEY = "finance_active_tab";
+export const FINANCE_SET_TAB_EVENT = "churchup:finance-set-tab";
+export const FINANCE_ACTIVE_TAB_KEY = "finance_active_tab";
 
-export type GlobalSearchResultKind = "member" | "visit" | "income";
+export const SCHOOL_SET_SUB_EVENT = "churchup:school-set-sub";
+export const BULLETIN_SET_SUB_EVENT = "churchup:bulletin-set-sub";
+export const PLANNER_SET_SUB_EVENT = "churchup:planner-set-sub";
+
+export type GlobalSearchResultKind = "menu" | "member" | "visit" | "income";
 
 export interface GlobalSearchResult {
   kind: GlobalSearchResultKind;
@@ -28,6 +35,7 @@ export interface GlobalSearchResult {
 }
 
 export interface GlobalSearchResults {
+  menus: GlobalSearchResult[];
   members: GlobalSearchResult[];
   visits: GlobalSearchResult[];
   incomes: GlobalSearchResult[];
@@ -86,10 +94,17 @@ function memberSubtitle(m: Member): string {
   return parts.join(" · ");
 }
 
-/** 성도·심방·헌금 통합 검색 (상단 검색 드롭다운용) */
+/** 메뉴·성도·심방·헌금 통합 검색 (상단 검색 드롭다운용) */
 export function buildGlobalSearchResults(db: DB, query: string): GlobalSearchResults {
   const q = query.trim();
-  if (!q) return { members: [], visits: [], incomes: [] };
+  if (!q) return { menus: [], members: [], visits: [], incomes: [] };
+
+  const menus: GlobalSearchResult[] = searchAppMenus(q).map((entry) => ({
+    kind: "menu" as const,
+    id: entry.id,
+    title: entry.label,
+    subtitle: entry.path,
+  }));
 
   const memberById = new Map(db.members.map((m) => [m.id, m]));
 
@@ -133,11 +148,11 @@ export function buildGlobalSearchResults(db: DB, query: string): GlobalSearchRes
     if (incomes.length >= LIMIT_PER_CATEGORY) break;
   }
 
-  return { members, visits, incomes };
+  return { menus, members, visits, incomes };
 }
 
 export function flattenGlobalSearchResults(results: GlobalSearchResults): GlobalSearchResult[] {
-  return [...results.members, ...results.visits, ...results.incomes];
+  return [...results.menus, ...results.members, ...results.visits, ...results.incomes];
 }
 
 function dispatchSearch(eventName: string, query: string) {
@@ -147,6 +162,7 @@ function dispatchSearch(eventName: string, query: string) {
 
 function applyPastoralMembersSearch(query: string) {
   sessionStorage.setItem("pastoralSubTab", "members");
+  window.dispatchEvent(new CustomEvent(PASTORAL_SET_SUB_EVENT, { detail: "members" }));
   sessionStorage.setItem(PASTORAL_MEMBERS_SEARCH_KEY, query);
   dispatchSearch(PASTORAL_MEMBERS_SEARCH_EVENT, query);
 }
@@ -163,10 +179,53 @@ function applyFinanceSearch(query: string) {
   dispatchSearch(FINANCE_SEARCH_EVENT, query);
 }
 
+export function navigateToAppMenu(entry: AppMenuEntry, setCurrentPage: (id: string) => void) {
+  setCurrentPage(entry.page);
+  switch (entry.page) {
+    case "pastoral": {
+      const sub = entry.sub ?? "dashboard";
+      sessionStorage.setItem("pastoralSubTab", sub);
+      window.dispatchEvent(new CustomEvent(PASTORAL_SET_SUB_EVENT, { detail: sub }));
+      break;
+    }
+    case "visit": {
+      const sub = entry.sub ?? "dash";
+      window.dispatchEvent(new CustomEvent(VISIT_COUNSEL_SET_SUB_EVENT, { detail: sub }));
+      break;
+    }
+    case "school": {
+      const sub = entry.sub ?? "dashboard";
+      sessionStorage.setItem("schoolSubTab", sub);
+      window.dispatchEvent(new CustomEvent(SCHOOL_SET_SUB_EVENT, { detail: sub }));
+      break;
+    }
+    case "finance": {
+      const sub = entry.sub ?? "dashboard";
+      sessionStorage.setItem(FINANCE_ACTIVE_TAB_KEY, sub);
+      window.dispatchEvent(new CustomEvent(FINANCE_SET_TAB_EVENT, { detail: sub }));
+      break;
+    }
+    case "bulletin": {
+      const sub = entry.sub ?? "dash";
+      sessionStorage.setItem("bulletin-activeSub", sub);
+      window.dispatchEvent(new CustomEvent(BULLETIN_SET_SUB_EVENT, { detail: sub }));
+      break;
+    }
+    case "planner": {
+      const sub = entry.sub ?? "calendar";
+      window.dispatchEvent(new CustomEvent(PLANNER_SET_SUB_EVENT, { detail: sub }));
+      break;
+    }
+    default:
+      break;
+  }
+}
+
 export function navigateToMember(memberId: string, setCurrentPage: (id: string) => void) {
   sessionStorage.setItem("pastoralSubTab", "members");
   sessionStorage.setItem(PASTORAL_OPEN_MEMBER_KEY, memberId);
   setCurrentPage("pastoral");
+  window.dispatchEvent(new CustomEvent(PASTORAL_SET_SUB_EVENT, { detail: "members" }));
   window.dispatchEvent(new CustomEvent(PASTORAL_OPEN_MEMBER_EVENT, { detail: { memberId } }));
 }
 
@@ -189,6 +248,11 @@ export function navigateToSearchResult(
   db: DB,
 ) {
   switch (result.kind) {
+    case "menu": {
+      const entry = getAppMenuEntry(result.id);
+      if (entry) navigateToAppMenu(entry, setCurrentPage);
+      break;
+    }
     case "member":
       navigateToMember(result.id, setCurrentPage);
       break;
@@ -218,6 +282,12 @@ export function runGlobalSearch(
 ): boolean {
   const q = query.trim();
   if (!q) return false;
+
+  const menuHits = searchAppMenus(q);
+  if (menuHits.length > 0) {
+    navigateToAppMenu(menuHits[0], setCurrentPage);
+    return true;
+  }
 
   switch (currentPage) {
     case "visit":

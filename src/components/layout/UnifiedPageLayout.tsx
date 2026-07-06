@@ -5,7 +5,6 @@ import { type LucideIcon } from "lucide-react";
 import { GlobalTopBar } from "./GlobalTopBar";
 import { SidebarProfile } from "./SidebarProfile";
 import { SidebarBrandMark } from "./SidebarBrandMark";
-import { ChurchUpAppIcon } from "./ChurchUpAppIcon";
 import { useShellNav } from "@/contexts/ShellNavContext";
 import { DASH_COLOR, DASH_GLOBAL, DASH_SIDEBAR, dashTopNavTabsWidthCss } from "@/styles/pastoralDashboardTokens";
 
@@ -322,22 +321,22 @@ export function UnifiedPageLayout({
         {sidebarExpanded ? (
           <div
             style={{
-              padding: `${DASH_SIDEBAR.headerPaddingTop}px ${DASH_SIDEBAR.insetX}px 0`,
+              padding: `${DASH_SIDEBAR.headerPaddingTop}px 0 0`,
               borderBottom: mob ? LAYOUT.sidebarHeaderBorder : "none",
               background: "transparent",
               boxSizing: "border-box",
               display: "flex",
               justifyContent: "center",
+              width: "100%",
             }}
           >
-            {/* church + Garb 워드마크 + 날짜 — 로고 폭에 맞춰 Today·날짜 양끝 정렬 */}
+            {/* 처치업 로고 + 날짜 — 사이드바 가운데 정렬 */}
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "stretch",
+                alignItems: "center",
                 width: "fit-content",
-                maxWidth: DASH_SIDEBAR.brandWidth,
                 boxSizing: "border-box",
               }}
             >
@@ -345,11 +344,10 @@ export function UnifiedPageLayout({
               <div
                 style={{
                   marginTop: DASH_SIDEBAR.logoToDateGap,
-                  width: "100%",
                   display: "flex",
                   alignItems: "baseline",
-                  justifyContent: "space-between",
-                  gap: 8,
+                  justifyContent: "center",
+                  gap: 4,
                   fontFamily: DASH_GLOBAL.fontLatin,
                   fontSize: DASH_SIDEBAR.dateFontSize,
                   letterSpacing: `${DASH_SIDEBAR.dateLetterSpacing}px`,
@@ -387,7 +385,7 @@ export function UnifiedPageLayout({
                 display: "inline-flex",
               }}
             >
-              <ChurchUpAppIcon size={DASH_SIDEBAR.profileIconSize} />
+              <SidebarBrandMark onClick={handleBrandHomeClick} compact />
             </button>
           </div>
         )}

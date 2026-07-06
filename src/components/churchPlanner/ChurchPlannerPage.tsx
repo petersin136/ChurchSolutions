@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { PcModalShell } from "@/components/common/PcModalShell";
+import { PLANNER_SET_SUB_EVENT } from "@/lib/globalSearch";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAuth } from "@/contexts/AuthContext";
@@ -292,6 +293,16 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
   }, [ctxChurchId]);
 
   const [sidebarTab, setSidebarTab] = useState<"calendar" | "admin">("calendar");
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const sub = (e as CustomEvent<string>).detail;
+      if (sub === "calendar" || sub === "admin") setSidebarTab(sub);
+    };
+    window.addEventListener(PLANNER_SET_SUB_EVENT, handler as EventListener);
+    return () => window.removeEventListener(PLANNER_SET_SUB_EVENT, handler as EventListener);
+  }, []);
+
   const now = new Date();
   const [cursorY, setCursorY] = useState(now.getFullYear());
   const [cursorM, setCursorM] = useState(now.getMonth() + 1);
