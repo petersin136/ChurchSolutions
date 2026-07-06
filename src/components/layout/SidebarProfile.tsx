@@ -3,25 +3,21 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { DASH_SIDEBAR } from "@/styles/pastoralDashboardTokens";
+import { ChurchUpAppIcon } from "@/components/layout/ChurchUpAppIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-
-/** 사용자 지정 이미지가 없을 때 기본 처치업 앱 아이콘 */
-const DEFAULT_APP_ICON = "/icons/icon-192x192.png";
 
 interface SidebarProfileProps {
   /** 사이드바 펼침 여부 — 접힘(64px)일 땐 아바타만 표시 */
   expanded: boolean;
   /** useAuth().churchName 이 비어 있을 때 대체 교회명(예: 설정의 churchName) */
   churchNameFallback?: string;
-  /** 사용자 지정 프로필 이미지 URL — 없으면 기본 앱 아이콘 */
+  /** 사용자 지정 프로필 이미지 URL — 없으면 처치업 앱 아이콘 */
   avatarUrl?: string | null;
 }
 
 /**
- * 사이드바 하단 프로필 영역.
- * 왼쪽: 사용자 지정 이미지(없으면 기본 처치업 앱 아이콘)
- * 오른쪽: 교회 이름 + 역할(role)
+ * 사이드바 하단 프로필 — 시안: [회색 up 아이콘] + 교회명 + 역할
  */
 export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: SidebarProfileProps) {
   const { user, churchId, churchName } = useAuth();
@@ -54,9 +50,10 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
   }, [user, churchId]);
 
   const displayChurch = (churchName || churchNameFallback || "교회 이름").trim();
-  const src = avatarUrl || DEFAULT_APP_ICON;
-  const isDefaultIcon = src === DEFAULT_APP_ICON;
+  const customAvatar = avatarUrl?.trim() || "";
   const iconBox = DASH_SIDEBAR.profileIconSize;
+  const userMeta = user?.user_metadata as { name?: string } | undefined;
+  const subtitle = userMeta?.name?.trim() || role || "\u00a0";
 
   return (
     <div
@@ -68,46 +65,45 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
         width: "100%",
       }}
     >
-      <span
-        style={{
-          width: iconBox,
-          height: iconBox,
-          borderRadius: isDefaultIcon ? DASH_SIDEBAR.profileIconRadius : 10,
-          overflow: "hidden",
-          flexShrink: 0,
-          background: isDefaultIcon ? DASH_SIDEBAR.profileIconBg : "var(--color-surface)",
-          border: isDefaultIcon ? "none" : "1px solid var(--color-border)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Image
-          src={src}
-          alt="프로필"
-          width={iconBox}
-          height={iconBox}
+      {customAvatar ? (
+        <span
           style={{
-            width: isDefaultIcon ? Math.round(iconBox * 0.78) : iconBox,
-            height: isDefaultIcon ? Math.round(iconBox * 0.78) : iconBox,
-            objectFit: "cover",
-            ...(isDefaultIcon
-              ? {
-                  transform: `rotate(${DASH_SIDEBAR.appIconRotateDeg}deg)`,
-                  mixBlendMode: "lighten",
-                }
-              : {}),
+            width: iconBox,
+            height: iconBox,
+            borderRadius: 10,
+            overflow: "hidden",
+            flexShrink: 0,
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
-        />
-      </span>
+        >
+          <Image
+            src={customAvatar}
+            alt="프로필"
+            width={iconBox}
+            height={iconBox}
+            style={{
+              width: iconBox,
+              height: iconBox,
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        </span>
+      ) : (
+        <ChurchUpAppIcon size={iconBox} />
+      )}
       {expanded && (
         <div style={{ minWidth: 0, flex: 1, textAlign: "left" }}>
           <div
             style={{
               fontSize: 14,
-              fontWeight: 600,
+              fontWeight: 700,
               color: "var(--color-text)",
-              lineHeight: 1.3,
+              lineHeight: 1.25,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -118,14 +114,16 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
           <div
             style={{
               fontSize: 12,
-              color: "var(--color-text-muted)",
-              lineHeight: 1.3,
+              fontWeight: 400,
+              color: "var(--color-text)",
+              lineHeight: 1.25,
+              marginTop: 2,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
           >
-            {role || "\u00a0"}
+            {subtitle}
           </div>
         </div>
       )}

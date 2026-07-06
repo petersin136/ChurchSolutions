@@ -62,7 +62,7 @@ export function GlobalTopBar({
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="검색어를 입력하세요"
+            placeholder="성도·심방·헌금 검색"
             aria-label="검색"
           />
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
-import { aggregateMonthlyAverages, aggregateWeeklyByWeekNum, aggregateYearlyAverage, countSundayPresent, getThisSundayStr, isChurchActiveMember, isMemberStatusActive } from "@/lib/attendance-utils";
+import { countSundayPresent, getThisSundayStr, isChurchActiveMember, isMemberStatusActive } from "@/lib/attendance-utils";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +20,7 @@ import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Sett
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_LAYOUT, DASH_ATT_CHART_W, DASH_ATT_CHART_M, DASH_ATT_CHART_Y, dashStatRowHeight } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_ATT_CHART_CTRL, dashStatRowHeight } from "@/styles/pastoralDashboardTokens";
 import { MemberDotGrid } from "@/components/pastoral/MemberDotGrid";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -888,12 +888,16 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
   const ATT_BAR_COUNT = 20;
   const attFilledBars = Math.round((rate / 100) * ATT_BAR_COUNT);
 
-  const activeMemberIds = useMemo(() => activeMembers.map((s) => s.id), [activeMembers]);
-
-  const weeklyAtt = useMemo(
-    () => aggregateWeeklyByWeekNum(rawAttendance, attChartYear, activeMemberIds),
-    [rawAttendance, attChartYear, activeMemberIds],
-  );
+  const weeklyAtt = useMemo(() => {
+    const data: Set<string>[] = Array.from({ length: 52 }, () => new Set<string>());
+    rawAttendance.filter(r => r.year === attChartYear).forEach(r => {
+      const wn = r.week_num ?? 0;
+      if ((r.status === "p" || r.status === "o") && wn >= 1 && wn <= 52) {
+        data[wn - 1].add(r.member_id);
+      }
+    });
+    return data.map((s) => s.size);
+  }, [rawAttendance, attChartYear]);
 
   const currentMonthIdx = new Date().getMonth();
   const isCurrentYearSel = attChartYear === currentYear;
@@ -920,33 +924,48 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
 
   /** 월별(M): 12개월 평균 출석 명수(주 단위 평균), 현재 월 주황 하이라이트 */
   const monthlyAvg = useMemo(() => {
-    const avgs = aggregateMonthlyAverages(rawAttendance, attChartYear, activeMemberIds);
-    const cap = activeMembers.length;
-    return avgs.map((avg, i) => ({
-      avg: cap > 0 ? Math.min(avg, cap) : 0,
+    const sum = new Array(12).fill(0);
+    const svc: Set<number>[] = new Array(12).fill(0).map(() => new Set<number>());
+    rawAttendance.filter(r => r.year === attChartYear).forEach(r => {
+      if (r.status !== "p" && r.status !== "o") return;
+      const mn = r.date ? new Date(r.date).getMonth() : Math.min(11, Math.floor(((r.week_num ?? 1) - 1) / 4.33));
+      if (mn < 0 || mn > 11) return;
+      sum[mn]++;
+      svc[mn].add(r.week_num ?? (r.date ? new Date(r.date).getTime() : mn));
+    });
+    return sum.map((s, i) => ({
+      avg: svc[i].size > 0 ? Math.round(s / svc[i].size) : 0,
       isCurrent: isCurrentYearSel && i === currentMonthIdx,
     }));
-  }, [rawAttendance, attChartYear, activeMemberIds, activeMembers.length, isCurrentYearSel, currentMonthIdx]);
+  }, [rawAttendance, attChartYear, isCurrentYearSel, currentMonthIdx]);
 
   /** 연간(Y): 최근 3년, 연 평균 출석/총원 %, 최신 연도 주황 하이라이트 */
   const yearly3 = useMemo(() => {
     const years = [currentYear - 2, currentYear - 1, currentYear];
-    return years.map((y) => {
-      const { present, total, rate } = aggregateYearlyAverage(
-        rawAttendance,
-        y,
-        activeMembers.length,
-        activeMemberIds,
+    return years.map(y => {
+      const rows = rawAttendance.filter(
+        r => r.year === y && (r.status === "p" || r.status === "o") && (r.service_type === "주일예배" || !r.service_type),
       );
+      const byWeek = new Map<number, Set<string>>();
+      rows.forEach(r => {
+        const wn = r.week_num ?? 0;
+        if (wn < 1 || wn > 52) return;
+        if (!byWeek.has(wn)) byWeek.set(wn, new Set());
+        byWeek.get(wn)!.add(r.member_id);
+      });
+      const weekSets = Array.from(byWeek.values());
+      const present = weekSets.length > 0
+        ? Math.round(weekSets.reduce((sum, ids) => sum + ids.size, 0) / weekSets.length)
+        : 0;
       return {
         year: y,
         present,
-        total,
-        rate,
+        total: activeMembers.length,
+        rate: activeMembers.length > 0 ? Math.round((present / activeMembers.length) * 100) : 0,
         isCurrent: y === currentYear,
       };
     });
-  }, [rawAttendance, currentYear, activeMembers.length, activeMemberIds]);
+  }, [rawAttendance, currentYear, activeMembers.length]);
 
   const deptCounts = useMemo(() => {
     const r: Record<string, number> = {};
@@ -971,19 +990,6 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
       ro?.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, [mob]);
-
-  /** 로고 → 홈 후 사이드바 펼침 시 그리드 높이 재계산 */
-  useEffect(() => {
-    if (mob) return;
-    const onHome = () => {
-      requestAnimationFrame(() => {
-        const el = statGridRef.current;
-        if (el) setStatRowHeight(dashStatRowHeight(el.clientWidth));
-      });
-    };
-    window.addEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
-    return () => window.removeEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
   }, [mob]);
 
   const recentNotes = useMemo(() => {
@@ -1405,13 +1411,13 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                 display: "grid",
                 gridTemplateColumns: `repeat(${DASH_LAYOUT.gridColumns}, 1fr)`,
                 gap: DASH_LAYOUT.gridGap,
-                alignItems: "stretch",
+                alignItems: "start",
               }
         }
       >
         {/* 출석 통계 — 시안: 현황보고와 같은 행, 부서별 인원은 그 아래(스크롤) */}
-        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", ...(mob ? {} : { gridColumn: "1 / span 2", gridRow: 1, alignSelf: "stretch" }) }}>
-        <Card style={{ padding: 0, overflow: "hidden", minWidth: 0, border: "none", boxShadow: DASH_CARD.floatShadow, borderRadius: DASH_RADIUS.card, display: "flex", flexDirection: "column", flex: 1 }}>
+        <div style={{ minWidth: 0, ...(mob ? {} : { gridColumn: "1 / span 2", gridRow: 1 }) }}>
+        <Card style={{ padding: 0, overflow: "visible", minWidth: 0, border: "none", boxShadow: DASH_CARD.floatShadow, borderRadius: DASH_RADIUS.card }}>
           {mob ? (
             <div style={{ padding: "8px 12px", borderBottom: `1px solid ${C.border}` }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text)", marginBottom: 8 }}>
@@ -1438,7 +1444,7 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
               </div>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: DASH_ATT_CHART_LAYOUT.headerPadding, flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "16px 24px" }}>
               <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>출석 통계</h4>
               <div style={{ display: "flex", alignItems: "center", gap: mob ? 10 : 14, flexWrap: "wrap", position: "relative", zIndex: 1, marginLeft: "auto" }}>
                 <AttChartControls
@@ -1453,19 +1459,7 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
               </div>
             </div>
           )}
-          <div
-            style={{
-              padding: mob
-                ? `8px 10px ${DASH_ATT_CHART_LAYOUT.bodyPaddingBottomMob}px`
-                : `${DASH_ATT_CHART_LAYOUT.bodyPaddingTop}px ${DASH_ATT_CHART_LAYOUT.bodyPaddingX}px ${DASH_ATT_CHART_LAYOUT.bodyPaddingBottom}px`,
-              minHeight: mob ? tokens.height.mobileChart : DASH_ATT_CHART_LAYOUT.bodyHeight,
-              boxSizing: "border-box",
-              overflow: mob ? "auto" : "visible",
-              flex: mob ? undefined : 1,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
+          <div style={{ padding: mob ? "8px 10px" : "16px 20px", height: mob ? tokens.height.mobileChart : DASH_LAYOUT.attendanceChartHeight, minHeight: mob ? tokens.height.mobileChart : DASH_LAYOUT.attendanceChartHeight, boxSizing: "border-box", overflow: mob ? "auto" : "hidden" }}>
             {(() => {
               const emptyMsg = (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: C.textMuted, fontSize: 13 }}>
@@ -1474,53 +1468,23 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
               );
 
               if (attChartView === "week") {
-                if (activeMembers.length === 0) return emptyMsg;
-                const W = DASH_ATT_CHART_W;
-                const barMax = mob ? W.barMaxMob : W.barMax;
+                const has = weekly5.some(w => w.present > 0);
+                if (!has) return emptyMsg;
+                const barMax = mob ? 116 : 176;
+                const barMin = 52;
                 const maxRate = Math.max(...weekly5.map(x => x.rate), 1);
                 return (
-                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? W.barGapMob : W.barGap, flex: 1, minHeight: 0, boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: mob ? 8 : 16, height: "100%", paddingTop: 8, boxSizing: "border-box" }}>
                     {weekly5.map((w) => {
                       const hot = w.isCurrent;
-                      const h = W.barMin + (w.rate / maxRate) * (barMax - W.barMin);
-                      const pctColor = hot ? W.hotText : W.coldText;
-                      const subColor = hot ? W.hotSub : W.coldSub;
+                      const h = barMin + (w.rate / maxRate) * (barMax - barMin);
                       return (
-                        <div key={w.wk} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0, minHeight: 0 }}>
-                          <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", justifyContent: "flex-end", minHeight: 0 }}>
-                            <div
-                              style={{
-                                width: "100%",
-                                height: h,
-                                borderRadius: `${W.barRadius}px ${W.barRadius}px 0 0`,
-                                background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                padding: `${W.barPaddingTop}px 6px 0`,
-                                boxSizing: "border-box",
-                              }}
-                            >
-                              <span style={{ fontSize: mob ? W.pctSizeMob : W.pctSize, fontWeight: W.pctWeight, color: pctColor, letterSpacing: "-0.02em", lineHeight: 1 }}>{w.rate}%</span>
-                              <span style={{ fontSize: W.subSize, fontWeight: W.subWeight, color: subColor, marginTop: 4, lineHeight: 1.2 }}>{w.present}/{w.total}명</span>
-                            </div>
+                        <div key={w.wk} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 0 }}>
+                          <div style={{ width: "100%", height: h, borderRadius: "12px 12px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase, display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 4px 0", boxSizing: "border-box" }}>
+                            <span style={{ fontSize: mob ? 16 : 22, fontWeight: 800, color: hot ? "#fff" : DASH_CHART.statTextGray, letterSpacing: "-0.02em", lineHeight: 1 }}>{w.rate}%</span>
+                            <span style={{ fontSize: 11, color: hot ? "rgba(255,255,255,0.9)" : DASH_CHART.statSubGray, marginTop: 3 }}>{w.present}/{w.total}명</span>
                           </div>
-                          <span
-                            style={{
-                              fontSize: W.labelSize,
-                              color: hot ? DASH_COLOR.ink : DASH_COLOR.dateValue,
-                              fontWeight: hot ? W.labelWeightHot : W.labelWeight,
-                              whiteSpace: "nowrap",
-                              lineHeight: 1.2,
-                              marginTop: W.columnGap,
-                              flexShrink: 0,
-                              minHeight: W.labelMinHeight,
-                              textAlign: "center",
-                              width: "100%",
-                            }}
-                          >
-                            {w.label}
-                          </span>
+                          <span style={{ fontSize: 11, color: hot ? C.text : C.textMuted, fontWeight: hot ? 700 : 500, whiteSpace: "nowrap" }}>{w.label}</span>
                         </div>
                       );
                     })}
@@ -1532,55 +1496,18 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                 const MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
                 const has = monthlyAvg.some(x => x.avg > 0);
                 if (!has) return emptyMsg;
-                const M = DASH_ATT_CHART_M;
                 const maxM = Math.max(...monthlyAvg.map(x => x.avg), 1);
-                const barMax = mob ? 100 : DASH_ATT_CHART_LAYOUT.monthBarMax;
+                const barMax = mob ? 104 : 159;
                 return (
-                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? M.barGapMob : M.barGap, flex: 1, minHeight: 0, boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: mob ? 4 : 8, height: "100%", paddingTop: 16, boxSizing: "border-box" }}>
                     {monthlyAvg.map((mm, i) => {
                       const hot = mm.isCurrent;
-                      const h = mm.avg > 0 ? Math.max(M.barMin, (mm.avg / maxM) * barMax) : 0;
+                      const h = Math.max(4, (mm.avg / maxM) * barMax);
                       return (
-                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, height: "100%" }}>
-                          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", minHeight: 0 }}>
-                            {mm.avg > 0 ? (
-                              <span
-                                style={{
-                                  fontSize: M.valueSize,
-                                  fontWeight: hot ? M.valueWeightHot : M.valueWeight,
-                                  color: hot ? M.valueColorHot : M.valueColor,
-                                  marginBottom: M.valueBarGap,
-                                  lineHeight: 1,
-                                }}
-                              >
-                                {mm.avg}
-                              </span>
-                            ) : null}
-                            {h > 0 ? (
-                              <div
-                                style={{
-                                  width: "100%",
-                                  height: h,
-                                  borderRadius: `${M.barRadius}px ${M.barRadius}px 0 0`,
-                                  background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase,
-                                }}
-                              />
-                            ) : null}
-                          </div>
-                          <span
-                            style={{
-                              fontSize: M.labelSize,
-                              color: hot ? M.labelColorHot : M.labelColor,
-                              fontWeight: hot ? M.labelWeightHot : M.labelWeight,
-                              flexShrink: 0,
-                              lineHeight: 1.2,
-                              marginTop: DASH_ATT_CHART_LAYOUT.monthLabelGap,
-                              textAlign: "center",
-                              width: "100%",
-                            }}
-                          >
-                            {MON[i]}
-                          </span>
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 0, justifyContent: "flex-end" }}>
+                          <span style={{ fontSize: 11, color: hot ? DASH_CHART.statBarHighlight : C.textMuted, fontWeight: hot ? 700 : 500 }}>{mm.avg || ""}</span>
+                          <div style={{ width: "100%", height: h, minHeight: 4, borderRadius: "6px 6px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase }} />
+                          <span style={{ fontSize: 10, color: hot ? DASH_CHART.statBarHighlight : C.textMuted, fontWeight: hot ? 700 : 500 }}>{MON[i]}</span>
                         </div>
                       );
                     })}
@@ -1588,19 +1515,18 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                 );
               }
 
-              const Y = DASH_ATT_CHART_Y;
-              const barMax = mob ? Y.barMaxMob : Y.barMax;
-              const barMin = mob ? Y.barMinMob : Y.barMin;
+              const barMax = mob ? 168 : 200;
+              const barMin = mob ? 72 : 92;
               const maxRate = Math.max(...yearly3.map(x => Math.min(x.rate, 100)), 1);
               const yearBlockStyles = [
                 { bg: DASH_CHART.statBarYearBack, text: DASH_CHART.statTextYearBack, sub: DASH_CHART.statSubYearBack },
                 { bg: DASH_CHART.statBarYearMid, text: DASH_CHART.statTextYearMid, sub: DASH_CHART.statSubYearMid },
                 { bg: DASH_CHART.statBarHighlight, text: DASH_CHART.statTextYearHighlight, sub: DASH_CHART.statSubYearHighlight },
               ] as const;
-              const yearBlockWidth = mob ? Y.blockWidthMob : Y.blockWidth;
-              const yearBlockOverlap = mob ? Y.blockOverlapMob : Y.blockOverlap;
+              const yearBlockWidth = mob ? "50%" : "48%";
+              const yearBlockOverlap = mob ? "-24%" : "-22%";
               return (
-                <div style={{ display: "flex", alignItems: "flex-end", width: "100%", flex: 1, minHeight: 0, paddingTop: mob ? Y.bodyPaddingTopMob : Y.bodyPaddingTop, boxSizing: "border-box" }}>
+                <div style={{ display: "flex", alignItems: "flex-end", width: "100%", height: "100%", paddingTop: mob ? 8 : 10, boxSizing: "border-box" }}>
                   {yearly3.map((y, i) => {
                     const palette = yearBlockStyles[i] ?? yearBlockStyles[yearBlockStyles.length - 1];
                     const isFront = i === yearly3.length - 1;
@@ -1616,12 +1542,12 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                           marginLeft: i > 0 ? yearBlockOverlap : 0,
                           zIndex: i + 1,
                           position: "relative",
-                          borderRadius: Y.blockRadius,
+                          borderRadius: 16,
                           background: palette.bg,
                           display: "flex",
                           flexDirection: "column",
                           justifyContent: "space-between",
-                          padding: mob ? Y.blockPaddingMob : Y.blockPadding,
+                          padding: mob ? "16px 14px 14px" : "20px 18px 16px",
                           boxSizing: "border-box",
                         }}
                       >
@@ -1629,7 +1555,7 @@ function DashboardSub({ db, currentWeek, rawAttendance, onNavSub }: { db: DB; cu
                           <div style={{ fontSize: mob ? 28 : 34, fontWeight: 800, color: palette.text, letterSpacing: "-0.03em", lineHeight: 1 }}>{visualRate}%</div>
                           <div style={{ fontSize: mob ? 11 : 12, color: palette.sub, marginTop: 6, fontWeight: 500 }}>{y.present}/{y.total}명</div>
                         </div>
-                        <div style={{ fontSize: mob ? 11 : 12, color: palette.sub, fontWeight: isFront ? 700 : 500, lineHeight: 1.2 }}>{y.year}</div>
+                        <div style={{ fontSize: mob ? 11 : 12, color: palette.sub, fontWeight: isFront ? 700 : 500 }}>{y.year}</div>
                       </div>
                     );
                   })}

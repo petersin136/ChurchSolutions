@@ -27,6 +27,11 @@ import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { initKakao, shareTextToKakao } from "@/lib/kakao";
 import { useAppData } from "@/contexts/AppDataContext";
+import {
+  FINANCE_SEARCH_EVENT,
+  FINANCE_SEARCH_KEY,
+  useApplyGlobalSearch,
+} from "@/lib/globalSearch";
 
 /* ---------- useIsMobile ---------- */
 function useIsMobile(bp = 768) {
@@ -956,6 +961,11 @@ function OfferingTab({ offerings, setOfferings, donors, categories, onAddIncome,
   const [currentPage, setCurrentPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
+  const applyFinanceOfferingSearch = useCallback((q: string) => {
+    setSearch(q);
+    setCurrentPage(1);
+  }, []);
+  useApplyGlobalSearch(FINANCE_SEARCH_KEY, FINANCE_SEARCH_EVENT, applyFinanceOfferingSearch);
   const [filterCat, setFilterCat] = useState("all");
   const [filterMonth, setFilterMonth] = useState("all");
   const [form, setForm] = useState({ donorName: "", categoryId: "tithe", amount: "", date: todayStr(), method: "현금", note: "" });
@@ -4742,6 +4752,12 @@ export function FinancePage({ db, setDb, settings, toast }: { db?: DB; setDb?: (
       window.sessionStorage.setItem(FINANCE_ACTIVE_TAB_KEY, activeTab);
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const onFinanceSearch = () => setActiveTab("offering");
+    window.addEventListener(FINANCE_SEARCH_EVENT, onFinanceSearch);
+    return () => window.removeEventListener(FINANCE_SEARCH_EVENT, onFinanceSearch);
+  }, []);
 
   const financeSidebarItems = [
     { id: "fin_income" as const, label: "수입/지출", Icon: Wallet },

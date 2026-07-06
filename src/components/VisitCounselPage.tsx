@@ -7,6 +7,14 @@ import { getChurchId, filterByChurch } from "@/lib/tenant";
 import { useAppData } from "@/contexts/AppDataContext";
 import { PcModalShell } from "@/components/common/PcModalShell";
 import { LayoutDashboard, Home, MessageCircle, Bell, Heart, User, ScrollText, TrendingUp, ClipboardList, Settings } from "lucide-react";
+import {
+  VISIT_COUNSEL_SEARCH_EVENT,
+  VISIT_COUNSEL_SEARCH_KEY,
+  VISIT_COUNSEL_SET_SUB_EVENT,
+  useApplyGlobalSearch,
+} from "@/lib/globalSearch";
+
+export { VISIT_COUNSEL_SET_SUB_EVENT };
 
 const iconStyle = { strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
 const Icons = {
@@ -955,6 +963,8 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
 function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModal: (id?: string) => void; loading?: boolean }) {
   const mob = useIsMobile();
   const [search, setSearch] = useState("");
+  const applyVisitSearch = useCallback((q: string) => setSearch(q), []);
+  useApplyGlobalSearch(VISIT_COUNSEL_SEARCH_KEY, VISIT_COUNSEL_SEARCH_EVENT, applyVisitSearch);
   const [filter, setFilter] = useState<string>("all");
   const getMember = (id: string) => (db.members ?? []).find(m => m.id === id) || { name: "(삭제됨)", group: "", role: "", id: "", phone: "", note: "" };
 
@@ -1125,6 +1135,11 @@ function MainDBVisitList({
   const [viewMode, setViewMode] = useState<"list" | "byGroup">("list");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const applyVisitSearch = useCallback((q: string) => {
+    setSearch(q);
+    setPage(1);
+  }, []);
+  useApplyGlobalSearch(VISIT_COUNSEL_SEARCH_KEY, VISIT_COUNSEL_SEARCH_EVENT, applyVisitSearch);
   const [filterType, setFilterType] = useState<string>("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [addDate, setAddDate] = useState(todayStr());
@@ -2083,7 +2098,6 @@ function SettingsSub({ db, setDb, persist, toast }: { db: VCDB; setDb: React.Dis
 type SubPage = "dash" | "visits" | "counsels" | "followup";
 
 /** Dispatched on `window` with `detail: SubPage` to switch 심방·상담 탭 without remounting. */
-export const VISIT_COUNSEL_SET_SUB_EVENT = "visitCounsel:setSub";
 
 const SUB_PAGE_KEYS = new Set<SubPage>(["dash", "visits", "counsels", "followup"]);
 

@@ -79,10 +79,12 @@ export const DASH_SIDEBAR = {
   menuFontSize: 15,
   /** 날짜 아래 → 첫 메뉴(대시보드)까지 */
   dateToMenuGap: 56,
-  /** 하단 프로필 기본 앱 아이콘 배경 — 시안 픽셀 #c2c5cc */
-  profileIconBg: "#c2c5cc",
-  profileIconRadius: 10,
+  /** 하단 프로필 아이콘 — 시안: 회색 스쿼클 + 흰 up */
   profileIconSize: 36,
+  profileIconRadius: 10,
+  profileIconBg: "#c2c5cc",
+  /** lighten 블렌드 시 up 글자 크기(박스 대비) */
+  profileIconInnerRatio: 0.78,
 } as const;
 
 /** 상단 메인 메뉴바 */
@@ -152,83 +154,10 @@ export const DASH_ATT_CHART_CTRL = {
   periodBtnRadius: 8,
   periodBtnGap: 6,
   periodActiveBg: "#d8dce3",
-  periodInactiveBg: "#ffffff",
+  periodInactiveBg: "#eceef1",
   periodText: "#0b0c0e",
   controlsGap: 14,
   controlsGapMob: 10,
-} as const;
-
-/** 출석 통계 차트 본문 — 패딩·높이(헤더 제외, 하단 라벨 여백 포함) */
-export const DASH_ATT_CHART_LAYOUT = {
-  headerPadding: "14px 24px 8px",
-  bodyHeight: 352,
-  bodyPaddingTop: 6,
-  bodyPaddingX: 20,
-  bodyPaddingBottom: 26,
-  bodyPaddingBottomMob: 16,
-  monthBarMax: 196,
-  monthLabelGap: 8,
-} as const;
-
-/** 출석 통계 W(주별) — 시안 1번 */
-export const DASH_ATT_CHART_W = {
-  barGap: 12,
-  barGapMob: 8,
-  barRadius: 12,
-  barMin: 52,
-  barMax: 168,
-  barMaxMob: 116,
-  columnGap: 10,
-  labelSize: 11,
-  labelMinHeight: 16,
-  labelWeight: 500,
-  labelWeightHot: 700,
-  pctSize: 22,
-  pctSizeMob: 16,
-  pctWeight: 800,
-  subSize: 11,
-  subWeight: 500,
-  barPaddingTop: 8,
-  hotText: "#c45a3a",
-  hotSub: "#d4714f",
-  coldText: "#6f7480",
-  coldSub: "#b1b5c0",
-} as const;
-
-/** 출석 통계 M(월별) — 시안 2번 */
-export const DASH_ATT_CHART_M = {
-  barGap: 6,
-  barGapMob: 4,
-  barRadius: 6,
-  barMin: 4,
-  valueSize: 11,
-  valueWeight: 500,
-  valueWeightHot: 600,
-  valueBarGap: 4,
-  labelSize: 10,
-  labelWeight: 500,
-  labelWeightHot: 700,
-  labelColor: "#9fa4b0",
-  labelColorHot: "#0b0c0e",
-  valueColor: "#9fa4b0",
-  valueColorHot: "#9fa4b0",
-} as const;
-
-/** 출석 통계 Y(연간) — 겹침 블록 */
-export const DASH_ATT_CHART_Y = {
-  blockRadius: 16,
-  blockWidth: "48%",
-  blockWidthMob: "50%",
-  blockOverlap: "-22%",
-  blockOverlapMob: "-24%",
-  barMin: 92,
-  barMinMob: 72,
-  barMax: 200,
-  barMaxMob: 168,
-  bodyPaddingTop: 10,
-  bodyPaddingTopMob: 8,
-  blockPadding: "18px 18px 20px",
-  blockPaddingMob: "14px 14px 18px",
 } as const;
 
 /** 대시보드 카드 공통 radius — 시안 픽셀 추출(각진 편, 12~14px) */
@@ -291,8 +220,8 @@ export const DASH_LAYOUT = {
   /** 금주 출석률 세그먼트 간격·모서리 — 시안 픽셀 추출 */
   attendanceBarGap: 6,
   attendanceBarRadius: 2,
-  /** 2행(새가족·위험·심방·기도) — 1행과 같은 높이. 값↑ = 카드↓ (짧아짐) */
-  midCardAspectRatio: "1.52 / 1",
+  /** 2행(새가족·위험·심방·기도) — 1행과 같은 높이(열 너비 대비 비율). 값↓ = 카드↑ */
+  midCardAspectRatio: "1.42 / 1",
   midCardPadding: 22,
   /** 우상단 ↗ 아이콘 */
   midCardArrowSize: 28,
@@ -301,8 +230,8 @@ export const DASH_LAYOUT = {
   /** 출석통계(좌) : 현황보고(우). 부서별 인원은 출석통계 아래 별도 행 */
   bottomLeftFr: 1.63,
   bottomRightFr: 1,
-  /** @deprecated DASH_ATT_CHART_LAYOUT.bodyHeight 사용 */
-  attendanceChartHeight: 352,
+  /** 출석 통계 차트 본문 높이 */
+  attendanceChartHeight: 340,
   /** 전체 성도 dot — 시안 300px 카드 기준 ~16.5px → 232px 카드에 13px */
   memberDotSize: 13,
   /** 전체 성도 dot 간격 — 시안 ~10.6px → 232px 카드에 8px */
@@ -486,13 +415,12 @@ export function layoutMemberDotGrid(
   };
 }
 
-/** 4열 그리드에서 2행 카드 높이(=1행 카드 높이) — 넓은 화면에서 과도하게 커지지 않도록 상한 */
+/** 4열 그리드에서 2행 카드 높이(=1행 카드 높이) */
 export function dashStatRowHeight(gridWidth: number): number {
   const cols = DASH_LAYOUT.gridColumns;
   const gap = DASH_LAYOUT.gridGap;
   const colW = (gridWidth - (cols - 1) * gap) / cols;
   const [aw, ah] = DASH_LAYOUT.midCardAspectRatio.split("/").map((s) => parseFloat(s.trim()));
   if (!aw || !ah || colW <= 0) return DASH_LAYOUT.topCardHeight;
-  const h = Math.round(colW * (ah / aw));
-  return Math.min(h, DASH_LAYOUT.topCardHeight);
+  return Math.round(colW * (ah / aw));
 }

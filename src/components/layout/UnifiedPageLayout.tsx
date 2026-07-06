@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useContext, createContext, type ReactNode, type ComponentType, type TouchEvent } from "react";
-import { Home, type LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 import { GlobalTopBar } from "./GlobalTopBar";
 import { SidebarProfile } from "./SidebarProfile";
 import { SidebarBrandMark } from "./SidebarBrandMark";
-import { useShellNav, CHURCHUP_GO_HOME_EVENT } from "@/contexts/ShellNavContext";
+import { ChurchUpAppIcon } from "./ChurchUpAppIcon";
+import { useShellNav } from "@/contexts/ShellNavContext";
 import { DASH_COLOR, DASH_GLOBAL, DASH_SIDEBAR } from "@/styles/pastoralDashboardTokens";
 
 /**
@@ -176,7 +177,7 @@ export function UnifiedPageLayout({
   headerDesc,
   headerActions,
   children,
-  SidebarIcon,
+  SidebarIcon: _SidebarIcon,
   accentColor: _accentColor,
   hideMobileSubTabs = false,
   contentTopGap,
@@ -191,10 +192,7 @@ export function UnifiedPageLayout({
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
   const shellNav = useShellNav();
-  const [sideOpen, setSideOpen] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth > 1024;
-  });
+  const [sideOpen, setSideOpen] = useState(false);
 
   const flatTabs = useMemo(() => navSections.flatMap((sec) => sec.items), [navSections]);
   const touchStartX = useRef(0);
@@ -234,17 +232,6 @@ export function UnifiedPageLayout({
     else setSideOpen(false);
   }, [mob]);
 
-  /** 로고 → 홈: 데스크톱에서는 사이드바 펼침 유지(접힘 상태로 고착되는 버그 방지) */
-  useEffect(() => {
-    const onHome = () => {
-      if (mob) setSideOpen(false);
-      else setSideOpen(true);
-    };
-    window.addEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
-    return () => window.removeEventListener(CHURCHUP_GO_HOME_EVENT, onHome);
-  }, [mob]);
-
-  const IconComp = SidebarIcon ?? Home;
   const layoutDepth = useContext(UnifiedLayoutDepthContext);
   const isOutermost = layoutDepth === 0;
   /** 데스크톱 + 최상위 레이아웃에서만 상단 메인 메뉴바를 콘텐츠 영역 위에 렌더 */
@@ -259,7 +246,8 @@ export function UnifiedPageLayout({
     const wd = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][d.getDay()];
     return `${y}. ${m}. ${day}. ${wd}`;
   })();
-  const sidebarExpanded = mob || sideOpen;
+  const sidebarExpanded = !mob || sideOpen;
+  const asideWidth = LAYOUT.sidebarWidth;
   const contentPadLeft = mob ? LAYOUT.mainContentPaddingMob : (contentPaddingLeft ?? contentPaddingX ?? LAYOUT.mainContentPadding);
   const contentPadRight = mob ? LAYOUT.mainContentPaddingMob : (contentPaddingRight ?? contentPaddingX ?? LAYOUT.mainContentPadding);
   const contentPadBottom = contentPaddingBottom ?? 120;
@@ -300,7 +288,7 @@ export function UnifiedPageLayout({
       {/* Sidebar — Visit과 동일 px/색상 */}
       <aside
         style={{
-          width: mob ? LAYOUT.sidebarWidth : sideOpen ? LAYOUT.sidebarWidth : LAYOUT.sidebarWidthCollapsed,
+          width: asideWidth,
           /* 데스크톱: 사이드바·콘텐츠 동일 #f4f4f6 — 메뉴 경계 없음. 모바일 드로어는 기존 유지 */
           background: mob ? LAYOUT.sidebarBg : LAYOUT.shellPageBg,
           borderRight: mob ? `1px solid ${LAYOUT.sidebarBorder}` : "none",
@@ -343,8 +331,7 @@ export function UnifiedPageLayout({
                   shellNav?.goHome
                     ? () => {
                         shellNav.goHome();
-                        if (mob) setSideOpen(false);
-                        else setSideOpen(true);
+                        setSideOpen(false);
                       }
                     : undefined
                 }
@@ -380,20 +367,29 @@ export function UnifiedPageLayout({
               justifyContent: "center",
             }}
           >
-            <div
+            <button
+              type="button"
+              onClick={
+                shellNav?.goHome
+                  ? () => {
+                      shellNav.goHome();
+                      setSideOpen(false);
+                    }
+                  : undefined
+              }
+              aria-label="홈으로 이동"
+              title="홈으로 이동"
               style={{
-                width: LAYOUT.sidebarHeaderIconSize,
-                height: LAYOUT.sidebarHeaderIconSize,
-                borderRadius: LAYOUT.sidebarHeaderIconRadius,
-                background: "var(--color-primary-soft)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
+                border: "none",
+                background: "transparent",
+                padding: 0,
+                margin: 0,
+                cursor: shellNav?.goHome ? "pointer" : "default",
+                display: "inline-flex",
               }}
             >
-              <IconComp size={20} strokeWidth={1.5} color="var(--color-text-muted)" />
-            </div>
+              <ChurchUpAppIcon size={DASH_SIDEBAR.profileIconSize} />
+            </button>
           </div>
         )}
 
