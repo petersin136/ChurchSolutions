@@ -74,7 +74,9 @@ export const ORG_RESOURCE = {
   addLabelColorHover: "#6b7280",
   addLabelWeight: 500,
   /** 모달 */
-  modalWidth: 400,
+  modalWidth: 460,
+  modalWizardHeight: 580,
+  modalMemberListHeight: 180,
   modalPad: 28,
   modalRadius: 14,
   modalTitleSize: 18,

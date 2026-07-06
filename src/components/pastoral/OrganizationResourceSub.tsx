@@ -136,17 +136,31 @@ function saveMokjangLeaders(churchId: string, map: Record<string, string>) {
 }
 
 function loadSmallGroupTerm(churchId: string): string {
-  if (typeof window === "undefined") return DEFAULT_SMALL_GROUP_TERM;
+  if (typeof window === "undefined") return "";
   try {
-    return localStorage.getItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`)?.trim() || DEFAULT_SMALL_GROUP_TERM;
+    const stored = localStorage.getItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`)?.trim() ?? "";
+    if (!stored || stored === DEFAULT_SMALL_GROUP_TERM) return "";
+    return stored;
   } catch {
-    return DEFAULT_SMALL_GROUP_TERM;
+    return "";
   }
 }
 
 function saveSmallGroupTerm(churchId: string, term: string) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`, term);
+  const trimmed = term.trim();
+  const normalized = !trimmed || trimmed === DEFAULT_SMALL_GROUP_TERM ? "" : trimmed;
+  if (!normalized) {
+    localStorage.removeItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`);
+  } else {
+    localStorage.setItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`, normalized);
+  }
+}
+
+function displaySmallGroupTermInput(term: string): string {
+  const trimmed = term.trim();
+  if (!trimmed || trimmed === DEFAULT_SMALL_GROUP_TERM) return "";
+  return trimmed;
 }
 
 /* ── 세그먼트 탭 (회색 사각 컨테이너 + 흰 활성 탭) ── */
@@ -267,7 +281,7 @@ function SmallGroupTermCustomizer({
   term: string;
   onTermChange: (term: string) => void;
 }) {
-  const [draft, setDraft] = useState(term);
+  const [draft, setDraft] = useState(() => displaySmallGroupTermInput(term));
   const inputRef = useRef<HTMLInputElement>(null);
   const focusedRef = useRef(false);
   const composingRef = useRef(false);
@@ -275,15 +289,16 @@ function SmallGroupTermCustomizer({
 
   useEffect(() => {
     if (!focusedRef.current) {
-      setDraft(term);
+      setDraft(displaySmallGroupTermInput(term));
     }
   }, [term]);
 
   const commit = (value: string) => {
-    const trimmed = value.trim() || DEFAULT_SMALL_GROUP_TERM;
-    setDraft(trimmed);
-    if (trimmed !== term) {
-      onTermChange(trimmed);
+    const trimmed = value.trim();
+    const normalized = !trimmed || trimmed === DEFAULT_SMALL_GROUP_TERM ? "" : trimmed;
+    setDraft(displaySmallGroupTermInput(normalized));
+    if (normalized !== term) {
+      onTermChange(normalized);
     }
   };
 
@@ -354,6 +369,7 @@ function SmallGroupTermCustomizer({
           fontSize: 15,
           fontFamily: ORG_RESOURCE.fontKR,
           color: "#0b0c0e",
+          textAlign: "center",
           outline: "none",
           flexShrink: 0,
         }}
@@ -836,14 +852,14 @@ function OrgModalSelect({
   );
 }
 
-const modalRowRemoveBtn: CSSProperties = {
-  padding: "6px 12px",
-  borderRadius: ORG_RESOURCE.modalBtnRadius,
-  border: "1px solid #e3e4e8",
-  background: "#ffffff",
-  color: "#6b7280",
-  fontSize: 13,
-  fontWeight: 600,
+const modalMemberRemoveBtn: CSSProperties = {
+  padding: 0,
+  marginLeft: 2,
+  border: "none",
+  background: "transparent",
+  color: "#c4c8d0",
+  fontSize: 14,
+  lineHeight: 1,
   fontFamily: ORG_RESOURCE.fontKR,
   cursor: "pointer",
   flexShrink: 0,
@@ -863,11 +879,9 @@ function memberIdsInResource(db: DB, kind: OrgMemberManageKind, name: string): s
 function OrgDeptMokWizardModal({
   wizard,
   db,
-  addSelect,
   leaderLabel,
   mokjangLabels,
   groupTerm,
-  onAddSelectChange,
   onNameChange,
   onDraftChange,
   onLeaderChange,
@@ -879,11 +893,9 @@ function OrgDeptMokWizardModal({
 }: {
   wizard: ResourceWizardState;
   db: DB;
-  addSelect: string;
   leaderLabel: string;
   mokjangLabels: ReturnType<typeof mokjangUiLabels>;
   groupTerm: string;
-  onAddSelectChange: (v: string) => void;
   onNameChange: (v: string) => void;
   onDraftChange: (ids: string[]) => void;
   onLeaderChange: (id: string | null, draftMemberIds?: string[]) => void;
@@ -913,10 +925,9 @@ function OrgDeptMokWizardModal({
     return true;
   });
 
-  const addDraftMember = () => {
-    if (!addSelect) return;
-    onDraftChange([...draftMemberIds, addSelect]);
-    onAddSelectChange("");
+  const handleMemberSelect = (id: string) => {
+    if (!id || draftMemberIds.includes(id)) return;
+    onDraftChange([...draftMemberIds, id]);
   };
 
   const handleLeaderChange = (id: string | null) => {
@@ -934,33 +945,43 @@ function OrgDeptMokWizardModal({
 
   const leaderCandidates = db.members.filter((m) => m.status !== "졸업/전출");
 
+  const leaderMember = leaderId ? draftMembers.find((m) => m.id === leaderId) : null;
+  const groupMembers =
+    !isDept && leaderId ? draftMembers.filter((m) => m.id !== leaderId) : draftMembers;
+  const totalCount = draftMembers.length;
+
   const memberListPanel = (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", marginBottom: 0 }}>
       <label style={modalFieldLabel}>
-        배정된 성도
-        {draftMembers.length > 0 && (
-          <span style={{ fontWeight: 500, color: "#b0b4bc", marginLeft: 6 }}>
-            {draftMembers.length}명
-          </span>
-        )}
+        배정 현황
+        <span style={{ fontWeight: 500, color: "#b0b4bc", marginLeft: 6 }}>
+          {totalCount}명
+        </span>
       </label>
+
       <div
         style={{
+          flex: 1,
+          minHeight: ORG_RESOURCE.modalMemberListHeight,
           borderRadius: ORG_RESOURCE.modalInputRadius,
           background: ORG_RESOURCE.modalInputBg,
-          padding: 8,
-          maxHeight: 220,
+          padding: "16px 18px",
+          boxSizing: "border-box",
           overflowY: "auto",
+          fontFamily: ORG_RESOURCE.fontKR,
         }}
       >
-        {draftMembers.length === 0 ? (
+        {totalCount === 0 ? (
           <div
             style={{
-              padding: "24px 16px",
+              height: "100%",
+              minHeight: ORG_RESOURCE.modalMemberListHeight - 32,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               textAlign: "center",
               fontSize: 14,
               color: "#8b909a",
-              fontFamily: ORG_RESOURCE.fontKR,
               lineHeight: 1.55,
             }}
           >
@@ -969,56 +990,55 @@ function OrgDeptMokWizardModal({
             <span style={{ fontSize: 13, color: "#b0b4bc" }}>
               {isDept
                 ? "위에서 성도를 선택해 추가하세요."
-                : `위에서 ${leaderLabel}를 지정하고 ${groupTerm}원을 추가하세요.`}
+                : `위에서 ${leaderLabel}를 지정하고 ${groupTerm}원을 선택하세요.`}
             </span>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {draftMembers.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  padding: "12px 14px",
-                  borderRadius: 6,
-                  background: "#ffffff",
-                  fontFamily: ORG_RESOURCE.fontKR,
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "#0b0c0e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {m.name}
-                    {!isDept && leaderId === m.id && (
-                      <span
-                        style={{
-                          marginLeft: 8,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: "#6b7280",
-                          background: "#f4f4f6",
-                          borderRadius: 4,
-                          padding: "2px 6px",
-                          verticalAlign: "middle",
-                        }}
-                      >
-                        {leaderLabel}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#8b909a", marginTop: 3 }}>
-                    {isDept
-                      ? ((m.mokjang ?? m.group) ? `${groupTerm} ${m.mokjang ?? m.group}` : mokjangLabels.unassigned)
-                      : (m.dept || "부서 미배정")}
-                  </div>
-                </div>
-                <button type="button" onClick={() => removeDraftMember(m.id)} style={modalRowRemoveBtn}>
-                  제거
-                </button>
-              </div>
-            ))}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 4px", lineHeight: 1.7 }}>
+            {!isDept ? (
+              <>
+                <span
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: leaderMember ? "#0b0c0e" : "#b0b4bc",
+                  }}
+                >
+                  {leaderMember?.name ?? `${leaderLabel} 미지정`}
+                </span>
+                {groupMembers.map((m, i) => (
+                  <span key={m.id} style={{ display: "inline-flex", alignItems: "center" }}>
+                    <span style={{ color: "#d1d5db", fontSize: 13, margin: "0 4px", userSelect: "none" }} aria-hidden>·</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "#8b909a" }}>{m.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeDraftMember(m.id)}
+                      style={modalMemberRemoveBtn}
+                      aria-label={`${m.name} 제거`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </>
+            ) : (
+              draftMembers.map((m, i) => (
+                <span key={m.id} style={{ display: "inline-flex", alignItems: "center" }}>
+                  {i > 0 && (
+                    <span style={{ color: "#d1d5db", fontSize: 13, marginRight: 4, userSelect: "none" }} aria-hidden>·</span>
+                  )}
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#8b909a" }}>{m.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeDraftMember(m.id)}
+                    style={modalMemberRemoveBtn}
+                    aria-label={`${m.name} 제거`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -1026,53 +1046,56 @@ function OrgDeptMokWizardModal({
   );
 
   const addMemberPanel = (
-    <>
-      <div style={{ marginBottom: 12 }}>
-        <label style={modalFieldLabel}>{isDept ? "성도 추가" : mokjangLabels.memberAdd}</label>
-        <OrgModalSelect
-          value={addSelect}
-          onChange={onAddSelectChange}
-          placeholder="성도 선택"
-          aria-label="성도 선택"
-        >
-          {availableMembers.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-              {isDept
-                ? ` (${(m.mokjang ?? m.group) || mokjangLabels.none})`
-                : ` (${m.dept || "부서 없음"})`}
-            </option>
-          ))}
-        </OrgModalSelect>
-      </div>
-
-      <button
-        type="button"
-        disabled={!addSelect}
-        onClick={addDraftMember}
-        style={{
-          width: "100%",
-          height: ORG_RESOURCE.modalBtnHeight,
-          marginBottom: 16,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          borderRadius: ORG_RESOURCE.modalBtnRadius,
-          border: `1px solid ${addSelect ? "#e3e4e8" : "transparent"}`,
-          background: addSelect ? "#ffffff" : ORG_RESOURCE.modalInputBg,
-          color: addSelect ? "#0b0c0e" : "#b0b4bc",
-          fontSize: 15,
-          fontWeight: 600,
-          fontFamily: ORG_RESOURCE.fontKR,
-          cursor: addSelect ? "pointer" : "not-allowed",
-          transition: "background 0.15s ease, border-color 0.15s ease, color 0.15s ease",
-        }}
+    <div style={{ marginBottom: 12, flexShrink: 0 }}>
+      <label style={modalFieldLabel}>{isDept ? "성도 추가" : mokjangLabels.memberAdd}</label>
+      <OrgModalSelect
+        value=""
+        onChange={handleMemberSelect}
+        placeholder="성도 선택"
+        aria-label="성도 선택"
       >
-        <Plus size={16} strokeWidth={2} />
-        목록에 추가
-      </button>
-    </>
+        {availableMembers.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.name}
+            {isDept
+              ? ` (${(m.mokjang ?? m.group) || mokjangLabels.none})`
+              : ` (${m.dept || "부서 없음"})`}
+          </option>
+        ))}
+      </OrgModalSelect>
+    </div>
+  );
+
+  const wizardModalShell: CSSProperties = {
+    width: ORG_RESOURCE.modalWidth,
+    maxWidth: ORG_RESOURCE.modalWidth,
+    height: ORG_RESOURCE.modalWizardHeight,
+    minHeight: ORG_RESOURCE.modalWizardHeight,
+    maxHeight: ORG_RESOURCE.modalWizardHeight,
+    padding: ORG_RESOURCE.modalPad,
+    borderRadius: ORG_RESOURCE.modalRadius,
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  };
+
+  const wizardFooter = (
+    <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap, flexShrink: 0, marginTop: 16 }}>
+      {step === 1 ? (
+        <>
+          <button type="button" onClick={onClose} style={modalBtnCancel}>취소</button>
+          <button type="button" onClick={onNext} style={modalBtnSubmit}>다음</button>
+        </>
+      ) : (
+        <>
+          <button type="button" onClick={onBack} style={modalBtnCancel}>이전</button>
+          <button type="button" onClick={onFinish} style={modalBtnSubmit}>
+            {mode === "add" ? "등록" : "저장"}
+          </button>
+        </>
+      )}
+    </div>
   );
 
   return (
@@ -1087,10 +1110,10 @@ function OrgDeptMokWizardModal({
         role="dialog"
         aria-modal="true"
         aria-label={stepTitle}
-        style={{ maxWidth: ORG_RESOURCE.modalWidth, padding: ORG_RESOURCE.modalPad, borderRadius: ORG_RESOURCE.modalRadius }}
+        style={wizardModalShell}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexShrink: 0 }}>
           <h2 style={{ margin: 0, fontSize: ORG_RESOURCE.modalTitleSize, fontWeight: ORG_RESOURCE.modalTitleWeight, color: "#0b0c0e", fontFamily: ORG_RESOURCE.fontKR }}>
             {stepTitle}
           </h2>
@@ -1098,56 +1121,49 @@ function OrgDeptMokWizardModal({
             {step} / 2
           </span>
         </div>
-        <p style={{ margin: "0 0 20px", fontSize: 14, color: "#6b7280", lineHeight: 1.5, fontFamily: ORG_RESOURCE.fontKR }}>
+        <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6b7280", lineHeight: 1.5, fontFamily: ORG_RESOURCE.fontKR, flexShrink: 0 }}>
           {stepDesc}
         </p>
 
-        {step === 1 ? (
-          <>
-            <input
-              autoFocus
-              value={name}
-              onChange={(e) => onNameChange(e.target.value)}
-              placeholder={isDept ? INPUT_PLACEHOLDERS.dept : mokjangLabels.placeholder}
-              onKeyDown={(e) => { if (e.key === "Enter") onNext(); }}
-              style={{ ...modalInputStyle, marginBottom: 20 }}
-            />
-            <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap }}>
-              <button type="button" onClick={onClose} style={modalBtnCancel}>취소</button>
-              <button type="button" onClick={onNext} style={modalBtnSubmit}>다음</button>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {step === 1 ? (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
+              <input
+                autoFocus
+                value={name}
+                onChange={(e) => onNameChange(e.target.value)}
+                placeholder={isDept ? INPUT_PLACEHOLDERS.dept : mokjangLabels.placeholder}
+                onKeyDown={(e) => { if (e.key === "Enter") onNext(); }}
+                style={{ ...modalInputStyle, marginBottom: 0 }}
+              />
             </div>
-          </>
-        ) : (
-          <>
-            {!isDept && (
-              <div style={{ marginBottom: 16 }}>
-                <label style={modalFieldLabel}>
-                  {leaderLabel} 지정 <span style={{ fontWeight: 500, color: "#b0b4bc" }}>(선택)</span>
-                </label>
-                <OrgModalSelect
-                  value={leaderId ?? ""}
-                  onChange={(v) => handleLeaderChange(v || null)}
-                  placeholder={`${leaderLabel} 없음`}
-                  aria-label={`${leaderLabel} 선택`}
-                >
-                  {leaderCandidates.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </OrgModalSelect>
-              </div>
-            )}
+          ) : (
+            <>
+              {!isDept && (
+                <div style={{ marginBottom: 12, flexShrink: 0 }}>
+                  <label style={modalFieldLabel}>
+                    {leaderLabel} 지정 <span style={{ fontWeight: 500, color: "#b0b4bc" }}>(선택)</span>
+                  </label>
+                  <OrgModalSelect
+                    value={leaderId ?? ""}
+                    onChange={(v) => handleLeaderChange(v || null)}
+                    placeholder={`${leaderLabel} 없음`}
+                    aria-label={`${leaderLabel} 선택`}
+                  >
+                    {leaderCandidates.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </OrgModalSelect>
+                </div>
+              )}
 
-            {addMemberPanel}
-            {memberListPanel}
+              {addMemberPanel}
+              {memberListPanel}
+            </>
+          )}
+        </div>
 
-            <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap }}>
-              <button type="button" onClick={onBack} style={modalBtnCancel}>이전</button>
-              <button type="button" onClick={onFinish} style={modalBtnSubmit}>
-                {mode === "add" ? "등록" : "저장"}
-              </button>
-            </div>
-          </>
-        )}
+        {wizardFooter}
       </div>
     </div>
   );
@@ -1179,7 +1195,7 @@ export function OrganizationResourceSub({
 
   const [slotColors, setSlotColors] = useState<Record<string, string>>({});
   const [mokjangLeaders, setMokjangLeaders] = useState<Record<string, string>>({});
-  const [smallGroupTerm, setSmallGroupTerm] = useState(DEFAULT_SMALL_GROUP_TERM);
+  const [smallGroupTerm, setSmallGroupTerm] = useState("");
   const [places, setPlaces] = useState<PlannerPlace[]>([]);
   const [placesLoading, setPlacesLoading] = useState(false);
 
@@ -1191,8 +1207,6 @@ export function OrganizationResourceSub({
 
   const [deleteTarget, setDeleteTarget] = useState<{ type: OrgTab; name: string; id?: string } | null>(null);
   const [resourceWizard, setResourceWizard] = useState<ResourceWizardState | null>(null);
-  const [wizardAddSelect, setWizardAddSelect] = useState("");
-
   useEffect(() => {
     sessionStorage.setItem(ORG_TAB_KEY, tab);
   }, [tab]);
@@ -1295,7 +1309,6 @@ export function OrganizationResourceSub({
 
   const openAdd = () => {
     if (tab === "dept" || tab === "mokjang") {
-      setWizardAddSelect("");
       setResourceWizard({ kind: tab, mode: "add", step: 1, name: "", oldName: null, draftMemberIds: [], leaderId: null });
       return;
     }
@@ -1308,7 +1321,6 @@ export function OrganizationResourceSub({
 
   const openEdit = (name: string) => {
     if (tab === "dept" || tab === "mokjang") {
-      setWizardAddSelect("");
       setResourceWizard({ kind: tab, mode: "edit", step: 1, name, oldName: name, draftMemberIds: [], leaderId: null });
       return;
     }
@@ -1328,7 +1340,6 @@ export function OrganizationResourceSub({
 
   const closeWizard = () => {
     setResourceWizard(null);
-    setWizardAddSelect("");
   };
 
   const wizardNext = () => {
@@ -1356,7 +1367,6 @@ export function OrganizationResourceSub({
       resourceWizard.kind === "mokjang"
         ? (resourceWizard.mode === "edit" ? (mokjangLeaders[lookupName] ?? null) : resourceWizard.leaderId)
         : null;
-    setWizardAddSelect("");
     setResourceWizard({ ...resourceWizard, name: trimmed, step: 2, draftMemberIds, leaderId });
   };
 
@@ -1660,11 +1670,9 @@ export function OrganizationResourceSub({
         <OrgDeptMokWizardModal
           wizard={resourceWizard}
           db={db}
-          addSelect={wizardAddSelect}
           leaderLabel={smallGroupLeaderLabel}
           mokjangLabels={mokjangLabels}
           groupTerm={smallGroupTerm}
-          onAddSelectChange={setWizardAddSelect}
           onNameChange={(v) => setResourceWizard({ ...resourceWizard, name: v })}
           onDraftChange={(ids) => {
             setResourceWizard((prev) => {
@@ -1689,10 +1697,7 @@ export function OrganizationResourceSub({
           onStepChange={(step) => setResourceWizard({ ...resourceWizard, step })}
           onClose={closeWizard}
           onNext={wizardNext}
-          onBack={() => {
-            setWizardAddSelect("");
-            setResourceWizard({ ...resourceWizard, step: 1 });
-          }}
+          onBack={() => setResourceWizard({ ...resourceWizard, step: 1 })}
           onFinish={wizardFinish}
         />
       )}

@@ -519,50 +519,78 @@ function financeStickyNavShell(mob: boolean): CSSProperties {
 function FinanceCategoryNav({ activeTab, onLeafChange }: { activeTab: string; onLeafChange: (id: string) => void }) {
   const mob = useIsMobile();
   const category = LEAF_TO_FINANCE_CATEGORY[activeTab] ?? "fin_income";
+  const categories = FINANCE_CATEGORY_GRID.flat();
+  const subTabs = FINANCE_SUB_TABS_BY_CATEGORY[category];
   return (
-    <div style={{ width: "100%", maxWidth: "100%", display: "flex", flexDirection: "column", gap: mob ? 4 : 4 }}>
-      <div style={{ marginBottom: 0 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: mob ? 4 : 8, width: "100%" }}>
-          {FINANCE_CATEGORY_GRID[0].map((c) => (
+    <div style={{ width: "100%", maxWidth: "100%", display: "flex", flexDirection: "column", gap: mob ? 10 : 12 }}>
+      {/* 카테고리 — 세그먼트 컨트롤 (회색 트랙 + 흰 활성 탭) */}
+      <div style={{ display: "flex", gap: 2, padding: 4, borderRadius: 10, background: "#e9e9eb", width: "100%", boxSizing: "border-box" }}>
+        {categories.map((c) => {
+          const active = category === c.id;
+          return (
             <button
               key={c.id}
               type="button"
               className="finance-nav-btn"
-              style={mob ? financeCategoryGridBtnStyle(category === c.id, true) : { ...financeCategoryGridBtnStyle(category === c.id, false), minHeight: 40, fontSize: 14, borderRadius: 8 }}
               onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                border: "none",
+                cursor: "pointer",
+                borderRadius: 8,
+                padding: mob ? "8px 4px" : "9px 12px",
+                fontSize: mob ? 12 : 14,
+                fontWeight: active ? 700 : 600,
+                fontFamily: "inherit",
+                background: active ? "#ffffff" : "transparent",
+                color: active ? "#0b0c0e" : "#8b909a",
+                boxShadow: active ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
+                transition: "background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                outline: "none",
+                WebkitTapHighlightColor: "transparent",
+              }}
             >
               {c.label}
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
-      <div style={{ marginBottom: 0 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: mob ? 4 : 8, width: "100%" }}>
-          {FINANCE_CATEGORY_GRID[1].map((c) => (
+      {/* 서브탭 — 밑줄 텍스트 탭 (상단바 톤) */}
+      <div style={{ display: "flex", gap: mob ? 16 : 24, borderBottom: `1px solid ${C.border}`, paddingLeft: 2, overflowX: "auto", scrollbarWidth: "none" }} className="scrollbar-hide">
+        {subTabs.map((t) => {
+          const active = activeTab === t.id;
+          return (
             <button
-              key={c.id}
+              key={t.id}
               type="button"
               className="finance-nav-btn"
-              style={mob ? financeCategoryGridBtnStyle(category === c.id, true) : { ...financeCategoryGridBtnStyle(category === c.id, false), minHeight: 40, fontSize: 14, borderRadius: 8 }}
-              onClick={() => onLeafChange(FINANCE_CATEGORY_FIRST_TAB[c.id])}
+              onClick={() => onLeafChange(t.id)}
+              style={{
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                padding: mob ? "6px 0" : "8px 0",
+                fontSize: mob ? 12 : 14,
+                fontWeight: active ? 700 : 500,
+                fontFamily: "inherit",
+                color: active ? "#0b0c0e" : "#8b909a",
+                borderBottom: active ? "2px solid #0b0c0e" : "2px solid transparent",
+                marginBottom: -1,
+                transition: "color 0.15s ease, border-color 0.15s ease",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                outline: "none",
+                WebkitTapHighlightColor: "transparent",
+              }}
             >
-              {c.label}
+              {t.label}
             </button>
-          ))}
-        </div>
-      </div>
-      <div className="finance-sub-pills" style={{ ...financeSubTabRowStyle, gap: mob ? 4 : 8, marginBottom: 0 }}>
-        {FINANCE_SUB_TABS_BY_CATEGORY[category].map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className="finance-nav-btn"
-            style={financeSubTabStyle(activeTab === t.id, "rowEqual", mob)}
-            onClick={() => onLeafChange(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -1553,6 +1581,120 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
   );
 }
 
+/* ====== 보고서 — 조직/자원관리·대시보드 톤 컴포넌트 ====== */
+/** 세그먼트 컨트롤 (회색 트랙 + 흰 활성 탭) */
+function ReportSegmented({ options, value, onChange, mob }: {
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (v: string) => void;
+  mob: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 2, padding: 4, borderRadius: 10, background: "#e9e9eb", width: "100%", boxSizing: "border-box" }}>
+      {options.map((o) => {
+        const active = value === o.value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onChange(o.value)}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              border: "none",
+              cursor: "pointer",
+              borderRadius: 8,
+              padding: mob ? "8px 4px" : "9px 12px",
+              fontSize: mob ? 12 : 14,
+              fontWeight: active ? 700 : 600,
+              fontFamily: "inherit",
+              background: active ? "#ffffff" : "transparent",
+              color: active ? "#0b0c0e" : "#8b909a",
+              boxShadow: active ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
+              transition: "background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** 기간 칩 (테두리 없는 뉴트럴 칩 · 활성=먹색) */
+function ReportChip({ label, active, onClick, mob }: { label: string; active: boolean; onClick: () => void; mob: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        border: "none",
+        cursor: "pointer",
+        borderRadius: 8,
+        padding: mob ? "8px 12px" : "9px 14px",
+        fontSize: mob ? 11 : 13,
+        fontWeight: active ? 700 : 600,
+        fontFamily: "inherit",
+        background: active ? "#0b0c0e" : "#f2f3f5",
+        color: active ? "#ffffff" : "#6b7280",
+        transition: "background 0.15s ease, color 0.15s ease",
+        whiteSpace: "nowrap",
+        boxSizing: "border-box",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+/** 요약 카드 (테두리 없이 소프트 섀도) */
+function ReportStat({ label, value, color, mob }: { label: string; value: number; color: string; mob: boolean }) {
+  return (
+    <div style={{ background: C.surface, borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", padding: mob ? "14px 16px" : "20px 22px" }}>
+      <div style={{ fontSize: mob ? 11 : 13, color: C.text3, fontWeight: 600, marginBottom: mob ? 6 : 10 }}>{label}</div>
+      <div style={{ fontSize: mob ? 20 : 30, fontWeight: 800, color, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+        ₩{fmt(value)}
+      </div>
+    </div>
+  );
+}
+
+/** 항목별 막대 리스트 (대시보드 부서별 인원 톤) */
+function ReportBreakdown({ title, items, fill, empty, mob }: {
+  title: string;
+  items: { name: string; total: number; pct: string }[];
+  fill: string;
+  empty: string;
+  mob: boolean;
+}) {
+  return (
+    <div style={{ background: C.surface, borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", padding: mob ? 16 : 22, display: "flex", flexDirection: "column", gap: mob ? 12 : 16 }}>
+      <div style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: C.text1 }}>{title}</div>
+      {items.length === 0 ? (
+        <div style={{ padding: mob ? "24px 0" : "32px 0", textAlign: "center", color: C.text3, fontSize: mob ? 12 : 13 }}>{empty}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: mob ? 10 : 12 }}>
+          {items.map((it) => {
+            const pctNum = parseFloat(it.pct) || 0;
+            return (
+              <div key={it.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0, position: "relative", height: mob ? 32 : 36, borderRadius: 8, background: "#f3f4f6", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.max(pctNum, 3)}%`, background: fill, borderRadius: 8, transition: "width 0.3s ease" }} />
+                  <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: mob ? 12 : 14, fontWeight: 600, color: C.text1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "70%" }}>{it.name}</span>
+                  <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: mob ? 10 : 12, fontWeight: 600, color: C.text3 }}>{it.pct}%</span>
+                </div>
+                <span style={{ width: mob ? 88 : 108, textAlign: "right", fontSize: mob ? 12 : 14, fontWeight: 700, color: C.text1, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>₩{fmt(it.total)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ====== 보고서 ====== */
 function ReportTab({ offerings, expenses, categories, departments, expenseCategories }: {
   offerings: Offering[]; expenses: Expense[]; categories: Category[];
@@ -1607,141 +1749,122 @@ function ReportTab({ offerings, expenses, categories, departments, expenseCatego
   }, [offerings, expenses, categories, departments, expenseCategories, reportType, selectedPeriod]);
 
   const mob = useIsMobile();
-  const reportTypeLabel: Record<string, string> = { weekly: "주간", monthly: "월간", quarterly: "분기", half: "반기", annual: "연간" };
+
+  const reportTypeOptions = [
+    { value: "weekly", label: "주간" },
+    { value: "monthly", label: "월간" },
+    { value: "quarterly", label: "분기" },
+    { value: "half", label: "반기" },
+    { value: "annual", label: "연간" },
+  ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 16 : 20 }}>
+      {/* 헤더 */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: mob ? 16 : 20, fontWeight: 700, color: C.text1, letterSpacing: "-0.01em" }}>기간별 재정 보고</div>
+          <div style={{ fontSize: mob ? 11 : 13, color: C.text3, marginTop: 3 }}>기간을 선택하면 수입·지출 현황이 자동으로 집계됩니다.</div>
+        </div>
         <button
           type="button"
-          className="finance-nav-btn"
           onClick={() => setShowSettlement(true)}
-          style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, fontWeight: 600, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, background: C.primary, color: "var(--color-primary-on)", border: "none", cursor: "pointer", boxShadow: "none", outline: "none" }}
+          style={{ flexShrink: 0, height: mob ? 36 : 42, padding: mob ? "0 14px" : "0 20px", borderRadius: 8, background: "#0b0c0e", color: "#ffffff", border: "none", fontSize: mob ? 12 : 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
         >
           결산 보고서
         </button>
       </div>
-      <Card style={{ padding: 12 }}>
-        <div style={{ ...financeSubTabRowStyle, marginBottom: reportType !== "annual" ? 8 : 0 }}>
-          {["weekly", "monthly", "quarterly", "half", "annual"].map((t) => (
-            <button
-              key={t}
-              type="button"
-              className="finance-nav-btn"
-              onClick={() => {
-                setReportType(t);
-                setSelectedPeriod(t === "monthly" ? "01" : "0");
-              }}
-              style={financeTogglePillStyle(reportType === t, mob)}
-            >
-              {reportTypeLabel[t]}
-            </button>
-          ))}
-        </div>
+
+      {/* 기간 선택 */}
+      <div style={{ background: C.surface, borderRadius: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", padding: mob ? 14 : 18, display: "flex", flexDirection: "column", gap: reportType === "annual" ? 0 : 14 }}>
+        <ReportSegmented
+          options={reportTypeOptions}
+          value={reportType}
+          onChange={(t) => { setReportType(t); setSelectedPeriod(t === "monthly" ? "01" : "0"); }}
+          mob={mob}
+        />
         {reportType !== "annual" && (
           reportType === "monthly" ? (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(6, 1fr)",
-                gap: 4,
-                width: "100%",
-              }}
-            >
+            <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(4, 1fr)" : "repeat(6, 1fr)", gap: 6, width: "100%" }}>
               {periodOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className="finance-nav-btn"
-                  onClick={() => setSelectedPeriod(opt.value)}
-                  style={financeSubTabStyle(selectedPeriod === opt.value, "gridCell", mob)}
-                >
-                  {opt.label}
-                </button>
+                <ReportChip key={opt.value} label={opt.label} active={selectedPeriod === opt.value} onClick={() => setSelectedPeriod(opt.value)} mob={mob} />
               ))}
             </div>
           ) : reportType === "weekly" ? (
-            <div
-              className="scrollbar-hide"
-              style={{
-                display: "flex",
-                gap: 4,
-                width: "100%",
-                overflowX: "auto",
-                WebkitOverflowScrolling: "touch",
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              }}
-            >
+            <div className="scrollbar-hide" style={{ display: "flex", gap: 6, width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {periodOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className="finance-nav-btn"
-                  onClick={() => setSelectedPeriod(opt.value)}
-                  style={financeScrollRowPillStyle(selectedPeriod === opt.value, mob)}
-                >
-                  {opt.label}
-                </button>
+                <div key={opt.value} style={{ flex: "0 0 auto" }}>
+                  <ReportChip label={opt.label} active={selectedPeriod === opt.value} onClick={() => setSelectedPeriod(opt.value)} mob={mob} />
+                </div>
               ))}
             </div>
           ) : (
-            <div style={financeSubTabRowStyle}>
+            <div style={{ display: "flex", gap: 6, width: "100%" }}>
               {periodOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className="finance-nav-btn"
-                  onClick={() => setSelectedPeriod(opt.value)}
-                  style={financeTogglePillStyle(selectedPeriod === opt.value, mob)}
-                >
-                  {opt.label}
-                </button>
+                <div key={opt.value} style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ width: "100%" }}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPeriod(opt.value)}
+                      style={{
+                        width: "100%",
+                        border: "none",
+                        cursor: "pointer",
+                        borderRadius: 8,
+                        padding: mob ? "8px 4px" : "9px 8px",
+                        fontSize: mob ? 11 : 13,
+                        fontWeight: selectedPeriod === opt.value ? 700 : 600,
+                        fontFamily: "inherit",
+                        background: selectedPeriod === opt.value ? "#0b0c0e" : "#f2f3f5",
+                        color: selectedPeriod === opt.value ? "#ffffff" : "#6b7280",
+                        transition: "background 0.15s ease, color 0.15s ease",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           )
         )}
-      </Card>
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, 1fr)", gap: mob ? 12 : 20 }}>
-        <div style={{ background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: mob ? 16 : 24, boxShadow: C.shadow }}>
-          <div style={{ fontSize: mob ? 10 : 13, color: C.text3, fontWeight: 500 }}>수입 합계</div>
-          <div style={{ fontSize: mob ? 18 : 26, fontWeight: 800, color: C.income, letterSpacing: "-0.02em" }}>₩{fmt(reportData.totalOff)}</div>
-        </div>
-        <div style={{ background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: mob ? 16 : 24, boxShadow: C.shadow }}>
-          <div style={{ fontSize: mob ? 10 : 13, color: C.text3, fontWeight: 500 }}>지출 합계</div>
-          <div style={{ fontSize: mob ? 18 : 26, fontWeight: 800, color: C.expense, letterSpacing: "-0.02em" }}>₩{fmt(reportData.totalExp)}</div>
-        </div>
-        <div style={{ background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: mob ? 16 : 24, boxShadow: C.shadow }}>
-          <div style={{ fontSize: mob ? 10 : 13, color: C.text3, fontWeight: 500 }}>잔액</div>
-          <div style={{ fontSize: mob ? 18 : 26, fontWeight: 800, color: C.balance, letterSpacing: "-0.02em" }}>₩{fmt(reportData.balance)}</div>
-        </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: mob ? 12 : 20 }}>
-        <Card>
-          <h4 style={{ margin: "0 0 16px", color: C.navy, fontSize: mob ? 13 : 16, fontWeight: 700 }}>헌금 항목별 보고</h4>
-          <Table columns={[
-            { label: "항목", key: "name" },
-            { label: "비율", render: (r) => <span>{r.pct as string}%</span> },
-            { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700 }}>₩{fmt(r.total as number)}</span> },
-          ]} data={reportData.catBreakdown as unknown as Record<string, unknown>[]} />
-        </Card>
-        <Card>
-          <h4 style={{ margin: "0 0 16px", color: C.navy, fontSize: mob ? 13 : 16, fontWeight: 700 }}>지출 항목별 보고</h4>
-          <Table columns={[
-            { label: "항목", key: "name" },
-            { label: "비율", render: (r) => <span>{r.pct as string}%</span> },
-            { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700 }}>₩{fmt(r.total as number)}</span> },
-          ]} data={reportData.expCatBreakdown as unknown as Record<string, unknown>[]} />
-        </Card>
+
+      {/* 요약 */}
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, 1fr)", gap: mob ? 10 : 16 }}>
+        <ReportStat label="수입 합계" value={reportData.totalOff} color={C.income} mob={mob} />
+        <ReportStat label="지출 합계" value={reportData.totalExp} color={C.expense} mob={mob} />
+        <ReportStat label="잔액" value={reportData.balance} color={C.balance} mob={mob} />
       </div>
-      <Card>
-        <h4 style={{ margin: "0 0 16px", color: C.navy, fontSize: mob ? 13 : 16, fontWeight: 700 }}>부서별 지출 보고</h4>
-        <Table columns={[
-          { label: "부서", key: "name" },
-          { label: "비율", render: (r) => <span>{r.pct as string}%</span> },
-          { label: "금액", align: "right", render: (r) => <span style={{ fontWeight: 700 }}>₩{fmt(r.total as number)}</span> },
-        ]} data={reportData.deptBreakdown as unknown as Record<string, unknown>[]} />
-      </Card>
+
+      {/* 항목별 보고 */}
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: mob ? 12 : 16 }}>
+        <ReportBreakdown
+          title="헌금 항목별 보고"
+          items={reportData.catBreakdown}
+          fill="color-mix(in srgb, var(--color-success) 24%, var(--color-surface))"
+          empty="집계된 헌금 내역이 없습니다."
+          mob={mob}
+        />
+        <ReportBreakdown
+          title="지출 항목별 보고"
+          items={reportData.expCatBreakdown}
+          fill="color-mix(in srgb, var(--color-danger) 20%, var(--color-surface))"
+          empty="집계된 지출 내역이 없습니다."
+          mob={mob}
+        />
+      </div>
+      <ReportBreakdown
+        title="부서별 지출 보고"
+        items={reportData.deptBreakdown}
+        fill="color-mix(in srgb, var(--color-primary) 22%, var(--color-surface))"
+        empty="집계된 부서별 지출이 없습니다."
+        mob={mob}
+      />
+
       <SettlementReportModal open={showSettlement} onClose={() => setShowSettlement(false)} offerings={offerings} expenses={expenses} categories={categories} expenseCategories={expenseCategories} />
     </div>
   );

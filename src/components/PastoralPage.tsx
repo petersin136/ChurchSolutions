@@ -549,6 +549,12 @@ function fmtNoteDate(s: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function fmtFeedDate(timestamp: string | number | Date): string {
+  const d = new Date(timestamp);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: { n: Note; mbrName?: string; mbrDept?: string; onClick?: () => void; answered?: boolean; onToggleAnswered?: () => void }) {
   const mob = useIsMobile();
   const [hover, setHover] = useState(false);
@@ -2126,15 +2132,7 @@ function DashboardSub({
                         {item.body}
                       </span>
                       <span style={{ fontSize: dashTypo.section.smallSize, color: C.textMuted, textAlign: "right", whiteSpace: "nowrap" }}>
-                        {(() => {
-                          const d = new Date(item.timestamp);
-                          const now = new Date();
-                          const diff = (now.getTime() - d.getTime()) / 1000 / 60;
-                          if (diff < 60) return `${Math.floor(diff)}분 전`;
-                          if (diff < 60 * 24) return `${Math.floor(diff / 60)}시간 전`;
-                          if (diff < 60 * 24 * 7) return `${Math.floor(diff / 60 / 24)}일 전`;
-                          return d.toISOString().slice(5, 10).replace("-", ".");
-                        })()}
+                        {fmtFeedDate(item.timestamp)}
                       </span>
                     </div>
                   );
