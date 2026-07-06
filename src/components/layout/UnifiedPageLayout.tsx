@@ -192,6 +192,13 @@ export function UnifiedPageLayout({
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
   const shellNav = useShellNav();
+  const goHome = shellNav?.goHome;
+  const handleBrandHomeClick = goHome
+    ? () => {
+        goHome();
+        setSideOpen(false);
+      }
+    : undefined;
   const [sideOpen, setSideOpen] = useState(false);
 
   const flatTabs = useMemo(() => navSections.flatMap((sec) => sec.items), [navSections]);
@@ -326,16 +333,7 @@ export function UnifiedPageLayout({
                 boxSizing: "border-box",
               }}
             >
-              <SidebarBrandMark
-                onClick={
-                  shellNav?.goHome
-                    ? () => {
-                        shellNav.goHome();
-                        setSideOpen(false);
-                      }
-                    : undefined
-                }
-              />
+              <SidebarBrandMark onClick={handleBrandHomeClick} />
               <div
                 style={{
                   marginTop: DASH_SIDEBAR.logoToDateGap,
@@ -369,14 +367,7 @@ export function UnifiedPageLayout({
           >
             <button
               type="button"
-              onClick={
-                shellNav?.goHome
-                  ? () => {
-                      shellNav.goHome();
-                      setSideOpen(false);
-                    }
-                  : undefined
-              }
+              onClick={handleBrandHomeClick}
               aria-label="홈으로 이동"
               title="홈으로 이동"
               style={{
@@ -384,7 +375,7 @@ export function UnifiedPageLayout({
                 background: "transparent",
                 padding: 0,
                 margin: 0,
-                cursor: shellNav?.goHome ? "pointer" : "default",
+                cursor: goHome ? "pointer" : "default",
                 display: "inline-flex",
               }}
             >

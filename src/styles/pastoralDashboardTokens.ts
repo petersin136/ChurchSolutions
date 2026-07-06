@@ -387,7 +387,7 @@ export function layoutMemberDotGrid(
 
   let bestCols = 1;
   let bestSize = MEMBER_DOT_MIN;
-  let bestGap = DASH_LAYOUT.memberDotGap;
+  let bestGap: number = DASH_LAYOUT.memberDotGap;
 
   const colLimit = Math.min(maxCols, slotCount);
   for (let cols = colLimit; cols >= 1; cols--) {
