@@ -1,28 +1,43 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useShellNav } from "@/contexts/ShellNavContext";
+import { GlobalSearchBox } from "@/components/layout/GlobalSearchBox";
 
 /**
  * 상단 메인 메뉴바 — 사이드바 오른쪽 콘텐츠 영역 위에 얹힌다.
- * 메뉴 스펙(56px 간격 / 566px 기준선 / 텍스트 폭 2px 인디케이터 / Pretendard)은
  * globals.css의 .pc-top-nav-tabs · .pc-nav-tab 규칙을 재사용한다.
- * 우측에는 (페이지 액션) + 검색 입력창(밑줄형, 돋보기 우측) + 로그아웃 아이콘.
  */
 export function GlobalTopBar({
   actions,
   padLeft,
   padRight,
+  tabsWidth,
 }: {
   actions?: ReactNode;
   /** 콘텐츠 좌측 여백과 맞춤 (시안 40px) */
   padLeft?: number;
   /** 콘텐츠 우측 여백과 맞춤 (시안 24px) */
   padRight?: number;
+  /** 탭·기준선 영역 고정 폭 — 대시보드 금주 출석률 카드(2칸)와 동일 */
+  tabsWidth?: string;
 }) {
   const nav = useShellNav();
-  const [q, setQ] = useState("");
   if (!nav) return null;
+
+  const tabButtons = nav.tabs.map((t) => {
+    const isActive = nav.currentPage === t.id;
+    return (
+      <button
+        key={t.id}
+        type="button"
+        className={`pc-nav-tab ${isActive ? "active" : ""}`}
+        onClick={() => nav.setCurrentPage(t.id)}
+      >
+        <span>{t.label}</span>
+      </button>
+    );
+  });
 
   return (
     <div
@@ -32,44 +47,21 @@ export function GlobalTopBar({
         ...(padRight != null ? { paddingRight: padRight } : {}),
       }}
     >
-      <nav className="pc-top-nav-tabs" aria-label="주 메뉴">
-        {nav.tabs.map((t) => {
-          const isActive = nav.currentPage === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              className={`pc-nav-tab ${isActive ? "active" : ""}`}
-              onClick={() => nav.setCurrentPage(t.id)}
-            >
-              <span>{t.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      {tabsWidth ? (
+        <div className="pc-topbar-tabs-slot" style={{ width: tabsWidth, maxWidth: tabsWidth }}>
+          <nav className="pc-top-nav-tabs pc-top-nav-tabs--content-span" aria-label="주 메뉴">
+            {tabButtons}
+          </nav>
+        </div>
+      ) : (
+        <nav className="pc-top-nav-tabs" aria-label="주 메뉴">
+          {tabButtons}
+        </nav>
+      )}
 
       <div className="pc-topbar-right">
         {actions}
-        <form
-          className="pc-topbar-search"
-          role="search"
-          onSubmit={(e) => {
-            e.preventDefault();
-            nav.onSearch?.(q.trim());
-          }}
-        >
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="성도·심방·헌금 검색"
-            aria-label="검색"
-          />
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-        </form>
+        <GlobalSearchBox />
         <button
           type="button"
           className="pc-topbar-logout"

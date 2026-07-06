@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import type { DB } from "@/types/db";
 import { CATS_INCOME, CATS_EXPENSE } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getThisMonth } from "@/lib/store";
+import { APP_HISTORY_KEYS, mergePushAppHistory, mergeReplaceAppHistory, readAppHistoryState } from "@/lib/appHistory";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppData } from "@/contexts/AppDataContext";
 import { SuperPlannerUI } from "./SuperPlannerUI";
@@ -21,6 +22,8 @@ export interface ToastItem {
 
 function getInitialPage(): PageId {
   if (typeof window === "undefined") return "pastoral";
+  const hist = readAppHistoryState()[APP_HISTORY_KEYS.page] as PageId | undefined;
+  if (hist && PAGE_IDS.includes(hist)) return hist;
   const saved = window.sessionStorage.getItem(STORAGE_KEY_PAGE);
   if (saved && PAGE_IDS.includes(saved as PageId)) return saved as PageId;
   return "pastoral";
@@ -29,8 +32,30 @@ function getInitialPage(): PageId {
 export default function SuperPlanner() {
   const { churchId } = useAuth();
   const { db, setDb, saveDb, loading, loadError } = useAppData();
-  const [currentPage, setCurrentPage] = useState<PageId>(getInitialPage);
+  const [currentPage, setCurrentPageState] = useState<PageId>(getInitialPage);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  useEffect(() => {
+    mergeReplaceAppHistory({ [APP_HISTORY_KEYS.page]: currentPage });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 최초 history 기준점만 기록
+  }, []);
+
+  const setCurrentPage = useCallback((next: PageId) => {
+    setCurrentPageState((prev) => {
+      if (prev !== next) mergePushAppHistory({ [APP_HISTORY_KEYS.page]: next });
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onPop = () => {
+      const page = readAppHistoryState()[APP_HISTORY_KEYS.page] as PageId | undefined;
+      if (page && PAGE_IDS.includes(page)) setCurrentPageState(page);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

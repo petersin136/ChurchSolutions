@@ -241,7 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (s?.user) {
           console.log("[Auth] loadChurch 호출:", s.user.id);
           lastAuthUserIdRef.current = s.user.id;
-          await loadChurch(s.user.id);
+          void loadChurch(s.user.id);
         } else {
           lastAuthUserIdRef.current = null;
           loadedChurchUserIdRef.current = null;

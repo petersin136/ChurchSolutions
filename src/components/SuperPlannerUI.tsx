@@ -16,6 +16,7 @@ import { ReportsPage } from "./ReportsPage";
 import { SettingsPage } from "./SettingsPage";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShellNavProvider, CHURCHUP_GO_HOME_EVENT } from "@/contexts/ShellNavContext";
+import { runGlobalSearch } from "@/lib/globalSearch";
 import { AppShellBackdrop } from "@/components/layout/AppShellBackdrop";
 
 const TAB_CONFIG: { id: PageId; label: string; Icon: React.ComponentType<any> }[] = [
@@ -99,9 +100,13 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
       }
     }, 80);
   };
-  const handleQuickSearch = () => {
-    setCurrentPage("pastoral");
-    focusFirstSearchInput();
+  const handleGlobalSearch = (q: string) => {
+    if (!q.trim()) {
+      setCurrentPage("pastoral");
+      focusFirstSearchInput();
+      return;
+    }
+    runGlobalSearch(q, currentPage, (id) => setCurrentPage(id as PageId));
   };
   const handleOpenProfile = () => {
     setCurrentPage("settings");
@@ -135,7 +140,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
     tabs: TAB_CONFIG.map(({ id, label }) => ({ id: id as string, label })),
     goHome,
     onLogout: handleLogout,
-    onSearch: handleQuickSearch,
+    onSearch: handleGlobalSearch,
   };
 
   return (
@@ -210,7 +215,7 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
       </main>
 
       <aside className="pc-right-bar" aria-label="빠른 도구">
-        <button type="button" className="pc-right-btn" title="검색" onClick={handleQuickSearch}>
+        <button type="button" className="pc-right-btn" title="검색" onClick={() => handleGlobalSearch("")}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.3-4.3" />

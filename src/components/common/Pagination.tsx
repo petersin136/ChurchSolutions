@@ -24,6 +24,8 @@ export interface PaginationProps {
   compact?: boolean;
   /** compact와 함께 쓰면 버튼/요약을 더 촘촘하게(리스트 하단 바 전용) */
   pinBottom?: boolean;
+  /** 카드 하단 고정용 — pinBottom보다 크고 기본보다 약간 작게 */
+  comfortable?: boolean;
 }
 
 /** 리스트+Pagination 부모: flex column + 최소 높이 — Pagination의 marginTop:auto가 이 영역 하단까지 밀어냄 */
@@ -53,6 +55,7 @@ export function Pagination({
   hideSummary = true,
   compact = false,
   pinBottom = false,
+  comfortable = false,
 }: PaginationProps) {
   const mob = useIsMobile();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -77,31 +80,32 @@ export function Pagination({
   const prevDisabled = safePage <= 1;
   const nextDisabled = safePage >= totalPages;
 
-  const tight = compact || pinBottom;
-  const desktopLoose = !tight && !mob;
+  const tight = (compact || pinBottom) && !comfortable;
+  const desktopLoose = !tight && !comfortable && !mob;
   const btnBase: React.CSSProperties = {
-    padding: tight ? "3px 8px" : desktopLoose ? "8px 14px" : "6px 12px",
-    borderRadius: tight ? 6 : 8,
+    padding: comfortable ? "7px 16px" : tight ? "3px 8px" : desktopLoose ? "8px 14px" : "6px 12px",
+    borderRadius: comfortable ? 8 : tight ? 6 : 8,
     border: "1px solid var(--color-border)",
     background: "#fff",
-    color: "var(--color-text-muted)",
-    fontSize: tight ? (pinBottom ? 10 : 11) : desktopLoose ? 14 : 13,
+    color: comfortable ? "var(--color-text)" : "var(--color-text-muted)",
+    fontSize: comfortable ? 14 : tight ? (pinBottom ? 10 : 11) : desktopLoose ? 14 : 13,
     fontWeight: 600,
     cursor: "pointer",
     fontFamily: "inherit",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: tight ? (pinBottom ? 44 : 46) : desktopLoose ? 52 : 48,
-    height: tight ? 24 : desktopLoose ? 34 : 30,
+    minWidth: comfortable ? 60 : tight ? (pinBottom ? 44 : 46) : desktopLoose ? 52 : 48,
+    height: comfortable ? 36 : tight ? 24 : desktopLoose ? 34 : 30,
     boxSizing: "border-box",
   };
-  const summaryFs = tight ? 10 : desktopLoose ? 14 : 13;
+  const summaryFs = comfortable ? 13 : tight ? 10 : desktopLoose ? 14 : 13;
+  const pageIndicatorFs = comfortable ? 15 : tight ? 10 : desktopLoose ? 14 : 13;
 
   const wrapStyle: React.CSSProperties = {
     marginTop: 0,
-    paddingTop: tight ? 8 : 14,
-    paddingBottom: tight ? 8 : 12,
+    paddingTop: comfortable ? 12 : tight ? 8 : 14,
+    paddingBottom: comfortable ? 12 : tight ? 8 : 12,
     flexShrink: 0,
     width: "100%",
     boxSizing: "border-box",
@@ -118,10 +122,10 @@ export function Pagination({
         style={{
           display: "flex",
           justifyContent: "center",
-          gap: 6,
+          gap: comfortable ? 10 : 6,
           flexWrap: "nowrap",
           alignItems: "center",
-          minHeight: tight ? 24 : desktopLoose ? 34 : 30,
+          minHeight: comfortable ? 36 : tight ? 24 : desktopLoose ? 34 : 30,
         }}
       >
         <button
@@ -139,11 +143,11 @@ export function Pagination({
         </button>
         <span
           style={{
-            fontSize: tight ? 10 : desktopLoose ? 14 : 13,
-            color: "var(--color-text-muted)",
-            fontWeight: 600,
+            fontSize: pageIndicatorFs,
+            color: comfortable ? "var(--color-text)" : "var(--color-text-muted)",
+            fontWeight: 700,
             fontVariantNumeric: "tabular-nums",
-            minWidth: tight ? 42 : 56,
+            minWidth: comfortable ? 64 : tight ? 42 : 56,
             textAlign: "center",
           }}
         >

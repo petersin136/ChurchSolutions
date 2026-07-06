@@ -162,6 +162,8 @@ export interface UnifiedPageLayoutProps {
   hideHeader?: boolean;
   /** 데스크톱 상단 메뉴바(GlobalTopBar) 우측(검색창 옆)에 렌더할 페이지 액션(예: +새가족) */
   topbarActions?: ReactNode;
+  /** 데스크톱 상단 탭 nav 폭 — 금주 출석률 카드 등 콘텐츠 그리드와 맞출 때 calc(...) */
+  topbarTabsWidth?: string;
 }
 
 export function UnifiedPageLayout({
@@ -189,6 +191,7 @@ export function UnifiedPageLayout({
   contentFontFamily,
   hideHeader = false,
   topbarActions,
+  topbarTabsWidth,
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
   const shellNav = useShellNav();
@@ -498,10 +501,11 @@ export function UnifiedPageLayout({
 
         <div
           style={{
-            padding: "12px 16px",
+            padding: `${DASH_SIDEBAR.profilePaddingTop}px ${DASH_SIDEBAR.profilePaddingX}px ${DASH_SIDEBAR.profilePaddingBottom}px`,
             borderTop: mob ? LAYOUT.sidebarHeaderBorder : "none",
             display: "flex",
             flexDirection: "column",
+            alignItems: "center",
           }}
         >
           <SidebarProfile expanded={sidebarExpanded} churchNameFallback={_churchName} />
@@ -537,6 +541,7 @@ export function UnifiedPageLayout({
                 actions={topbarActions}
                 padLeft={contentPadLeft}
                 padRight={contentPadRight}
+                tabsWidth={topbarTabsWidth}
               />
             )}
             {!hideDesktopHeader && (

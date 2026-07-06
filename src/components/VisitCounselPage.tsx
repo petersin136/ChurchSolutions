@@ -11,6 +11,8 @@ import {
   VISIT_COUNSEL_SEARCH_EVENT,
   VISIT_COUNSEL_SEARCH_KEY,
   VISIT_COUNSEL_SET_SUB_EVENT,
+  VISIT_COUNSEL_OPEN_VISIT_EVENT,
+  VISIT_COUNSEL_OPEN_VISIT_KEY,
   useApplyGlobalSearch,
 } from "@/lib/globalSearch";
 
@@ -2285,6 +2287,27 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
     }
     setShowVisitModal(true);
   }, [db.visits]);
+
+  useEffect(() => {
+    const tryOpen = () => {
+      const id = sessionStorage.getItem(VISIT_COUNSEL_OPEN_VISIT_KEY);
+      if (!id) return;
+      const found = (db.visits ?? []).some((v) => v.id === id);
+      if (!found) return;
+      sessionStorage.removeItem(VISIT_COUNSEL_OPEN_VISIT_KEY);
+      openVisitModal(id);
+    };
+    tryOpen();
+    const handler = (e: Event) => {
+      const visitId = (e as CustomEvent<{ visitId?: string }>).detail?.visitId;
+      if (visitId) {
+        sessionStorage.setItem(VISIT_COUNSEL_OPEN_VISIT_KEY, visitId);
+        tryOpen();
+      }
+    };
+    window.addEventListener(VISIT_COUNSEL_OPEN_VISIT_EVENT, handler);
+    return () => window.removeEventListener(VISIT_COUNSEL_OPEN_VISIT_EVENT, handler);
+  }, [db.visits, openVisitModal]);
 
   const saveVisit = async () => {
     if (!vMember) { toast("성도를 선택하세요"); return; }

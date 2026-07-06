@@ -229,7 +229,7 @@ export function toVisit(r: Record<string, unknown>): Visit {
     date: String(r.date ?? ""),
     memberId: r.member_id ? String(r.member_id) : "",
     type: (r.type as string) ?? "",
-    content: String(r.content ?? ""),
+    content: String(r.content ?? r.summary ?? ""),
   };
 }
 

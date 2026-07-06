@@ -1754,6 +1754,33 @@ html:has(.superplanner-root) body {
   box-sizing: border-box;
 }
 
+/* 대시보드: 탭·기준선 폭 = 금주 출석률 카드(4열 중 2칸). 선 안쪽 ≈1cm 여백 후 첫 탭 */
+.pc-content-topbar .pc-topbar-tabs-slot {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.pc-content-topbar .pc-top-nav-tabs--content-span {
+  justify-content: space-between;
+  gap: 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+.pc-content-topbar .pc-top-nav-tabs--content-span::after {
+  left: 0;
+  right: 0;
+  width: 100%;
+}
+
+.pc-content-topbar .pc-top-nav-tabs--content-span .pc-nav-tab {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 /* 상단바 우측: 검색 입력창 + 로그아웃 (기존 우측 유틸바에서 이동) */
 .pc-topbar-right {
   display: flex;
@@ -1785,11 +1812,17 @@ html:has(.superplanner-root) body {
   --topbar-search-icon: #171719;
 }
 
+.pc-topbar-search-wrap {
+  position: relative;
+  width: var(--topbar-search-w);
+  flex-shrink: 0;
+}
+
 .pc-topbar-search {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: var(--topbar-search-w);
+  width: 100%;
   height: var(--topbar-search-h);
   padding: 0;
   background: var(--topbar-search-bg);
@@ -1797,6 +1830,89 @@ html:has(.superplanner-root) body {
   border-bottom: 1px solid var(--topbar-search-underline);
   border-radius: var(--topbar-search-radius);
   transition: border-color 0.15s ease;
+}
+
+.pc-topbar-search-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 120;
+  width: min(420px, 92vw);
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+  padding: 8px 0;
+  background: #fff;
+  border: 1px solid #e4e5e8;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(11, 12, 14, 0.12);
+}
+
+.pc-topbar-search-section + .pc-topbar-search-section {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #f0f1f3;
+}
+
+.pc-topbar-search-section-label {
+  padding: 6px 14px 4px;
+  font-family: 'Pretendard', 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #8b8f98;
+}
+
+.pc-topbar-search-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.pc-topbar-search-item:hover,
+.pc-topbar-search-item.active {
+  background: #f4f5f7;
+}
+
+.pc-topbar-search-item-title {
+  font-family: 'Pretendard', 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #171719;
+  line-height: 1.35;
+}
+
+.pc-topbar-search-item-sub {
+  font-family: 'Pretendard', 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.pc-topbar-search-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 14px;
+  font-family: 'Pretendard', 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pc-topbar-search-empty-hint {
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 .pc-topbar-search:focus-within {

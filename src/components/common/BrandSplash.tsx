@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const MIN_DISPLAY_MS = 1200;
 const FADE_OUT_MS = 300;
+const MAX_SPLASH_MS = 10000;
 const SPLASH_THEME_COLOR = "#f4f4f6";
 
 interface BrandSplashProps {
@@ -86,6 +87,16 @@ export function BrandSplashGate() {
       if (removeTimer) clearTimeout(removeTimer);
     };
   }, [loading, visible]);
+
+  /** auth loading 이 길어져도 스플래시는 최대 10초 후 강제 해제 */
+  useEffect(() => {
+    if (!visible) return;
+    const forceTimer = setTimeout(() => {
+      setFading(true);
+      setTimeout(() => setVisible(false), FADE_OUT_MS);
+    }, MAX_SPLASH_MS);
+    return () => clearTimeout(forceTimer);
+  }, [visible]);
 
   if (!visible) return null;
 

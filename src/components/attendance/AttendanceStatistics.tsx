@@ -9,7 +9,7 @@ import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import LazyChart from "../common/LazyChart";
 import { MemberPhotoCircle } from "@/components/common/MemberPhoto";
-import { getSundayForWeekNum } from "@/lib/store";
+import { getSundayForWeekNum, getWeekNum } from "@/lib/store";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
@@ -140,12 +140,14 @@ export function AttendanceStatistics({
   const mob = useIsMobile();
   const { db, rawAttendance } = useAppData();
   const thisYear = new Date().getFullYear();
-  const defaultStart = `${thisYear}-01-01`;
-  const defaultEnd = new Date().toISOString().slice(0, 10);
-  const [startDate, setStartDate] = useState(startProp ?? defaultStart);
-  const [endDate, setEndDate] = useState(endProp ?? defaultEnd);
+  const currentWeekNum = getWeekNum();
+  const currentWeekSunday = getSundayForWeekNum(thisYear, currentWeekNum);
+  const defaultStart = startProp ?? currentWeekSunday;
+  const defaultEnd = endProp ?? currentWeekSunday;
+  const [startDate, setStartDate] = useState(defaultStart);
+  const [endDate, setEndDate] = useState(defaultEnd);
   const [quickYear, setQuickYear] = useState(thisYear);
-  const [quickWeek, setQuickWeek] = useState("");
+  const [quickWeek, setQuickWeek] = useState(String(currentWeekNum));
   const [deptFilter, setDeptFilter] = useState("");
   const [mokjangFilter, setMokjangFilter] = useState("");
   const [sortBy, setSortBy] = useState<"rate" | "name">("rate");

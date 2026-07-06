@@ -17,7 +17,7 @@ interface SidebarProfileProps {
 }
 
 /**
- * 사이드바 하단 프로필 — 시안: [회색 up 아이콘] + 교회명 + 역할
+ * 사이드바 하단 프로필 — [앱 아이콘] + 교회명 + 계정명
  */
 export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: SidebarProfileProps) {
   const { user, churchId, churchName } = useAuth();
@@ -55,22 +55,14 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
   const userMeta = user?.user_metadata as { name?: string } | undefined;
   const subtitle = userMeta?.name?.trim() || role || "\u00a0";
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: expanded ? 10 : 0,
-        justifyContent: expanded ? "flex-start" : "center",
-        width: "100%",
-      }}
-    >
+  const profileRow = (
+    <>
       {customAvatar ? (
         <span
           style={{
             width: iconBox,
             height: iconBox,
-            borderRadius: 10,
+            borderRadius: DASH_SIDEBAR.profileIconRadius,
             overflow: "hidden",
             flexShrink: 0,
             background: "var(--color-surface)",
@@ -94,16 +86,16 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
           />
         </span>
       ) : (
-        <ChurchUpAppIcon size={iconBox} />
+        <ChurchUpAppIcon size={iconBox} variant="full" />
       )}
       {expanded && (
         <div style={{ minWidth: 0, flex: 1, textAlign: "left" }}>
           <div
             style={{
-              fontSize: 14,
+              fontSize: DASH_SIDEBAR.profileChurchFontSize,
               fontWeight: 700,
               color: "var(--color-text)",
-              lineHeight: 1.25,
+              lineHeight: 1.3,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -113,11 +105,11 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
           </div>
           <div
             style={{
-              fontSize: 12,
-              fontWeight: 400,
+              fontSize: DASH_SIDEBAR.profileUserFontSize,
+              fontWeight: 500,
               color: "var(--color-text)",
-              lineHeight: 1.25,
-              marginTop: 2,
+              lineHeight: 1.3,
+              marginTop: 3,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -127,6 +119,30 @@ export function SidebarProfile({ expanded, churchNameFallback, avatarUrl }: Side
           </div>
         </div>
       )}
+    </>
+  );
+
+  if (!expanded) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+        {profileRow}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          maxWidth: DASH_SIDEBAR.profileBlockWidth,
+          width: "100%",
+        }}
+      >
+        {profileRow}
+      </div>
     </div>
   );
 }
