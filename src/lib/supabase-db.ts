@@ -436,11 +436,41 @@ export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<
   }
 }
 
+/** church_id 범위 내 테이블 행 삭제 (다른 교회 데이터는 건드리지 않음) */
+async function deleteChurchScopedRows(
+  table: string,
+  churchId: string,
+  scope?: { column: string; op: "eq" | "gte" | "neq"; value: string | number },
+): Promise<void> {
+  if (!supabase) return;
+  let query = supabase.from(table).delete().eq("church_id", churchId);
+  if (scope) {
+    if (scope.op === "eq") query = query.eq(scope.column, scope.value);
+    else if (scope.op === "gte") query = query.gte(scope.column, scope.value);
+    else query = query.neq(scope.column, scope.value);
+  } else {
+    query = query.neq("id", MATCH_ALL_ID);
+  }
+  const { error } = await query;
+  if (error) throw new Error(`${table} 기존 데이터 삭제 실패: ${error.message}`);
+}
+
+const SAVE_INSERT_BATCH_SIZE = 500;
+
+async function insertRowsInBatches(table: string, rows: Record<string, unknown>[]): Promise<void> {
+  if (!supabase || rows.length === 0) return;
+  for (let i = 0; i < rows.length; i += SAVE_INSERT_BATCH_SIZE) {
+    const chunk = rows.slice(i, i + SAVE_INSERT_BATCH_SIZE);
+    const { error } = await supabase.from(table).insert(chunk);
+    if (error) throw new Error(`${table} 저장 실패: ${error.message}`);
+  }
+}
+
 /**
- * DB 전체를 Supabase에 저장 (insert/upsert만 수행).
- * 삭제는 이 함수에서 절대 하지 않음 — 사용자가 UI에서 명시적으로 삭제 버튼을 누를 때만 해당 컴포넌트에서 수행.
+ * DB 전체를 Supabase에 저장 (일괄 저장·복원용).
  * settings는 saveSettingsToSupabase에서 별도 저장.
- * attendance / notes / budget / checklist 포함 (복원·일괄 저장용).
+ * attendance / notes / budget / checklist 는 church_id 범위 delete 후 insert (중복 방지).
+ * members / plans / sermons / visits / income / expense 등은 id 기준 upsert.
  */
 export async function saveDBToSupabase(db: DB): Promise<void> {
   if (!supabase) return;
@@ -606,9 +636,9 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       });
     }
   }
+  await deleteChurchScopedRows("attendance", churchId, { column: "week_num", op: "gte", value: 0 });
   if (attendanceRows.length > 0) {
-    const { error } = await supabase.from("attendance").insert(attendanceRows);
-    if (error) throw new Error(`attendance 저장 실패: ${error.message}`);
+    await insertRowsInBatches("attendance", attendanceRows);
   }
 
   const noteRows: Record<string, unknown>[] = [];
@@ -624,9 +654,9 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       });
     }
   }
+  await deleteChurchScopedRows("notes", churchId, { column: "member_id", op: "neq", value: MATCH_ALL_ID });
   if (noteRows.length > 0) {
-    const { error } = await supabase.from("notes").insert(noteRows);
-    if (error) throw new Error(`notes 저장 실패: ${error.message}`);
+    await insertRowsInBatches("notes", noteRows);
   }
 
   const fiscal_year = String(CURRENT_YEAR);
@@ -641,9 +671,9 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       annual_total: Number(value) || 0,
     });
   }
+  await deleteChurchScopedRows("budget", churchId, { column: "fiscal_year", op: "eq", value: fiscal_year });
   if (budgetRows.length > 0) {
-    const { error } = await supabase.from("budget").insert(budgetRows);
-    if (error) throw new Error(`budget 저장 실패: ${error.message}`);
+    await insertRowsInBatches("budget", budgetRows);
   }
 
   const checklistRows: Record<string, unknown>[] = [];
@@ -658,9 +688,9 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       });
     });
   }
+  await deleteChurchScopedRows("checklist", churchId, { column: "week_key", op: "neq", value: "__none__" });
   if (checklistRows.length > 0) {
-    const { error } = await supabase.from("checklist").insert(checklistRows);
-    if (error) throw new Error(`checklist 저장 실패: ${error.message}`);
+    await insertRowsInBatches("checklist", checklistRows);
   }
 }
 
