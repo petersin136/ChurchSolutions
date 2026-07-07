@@ -90,11 +90,11 @@ export const ORG_RESOURCE = {
   modalBtnGap: 10,
   modalDeleteRed: "#e55c5c",
   /** 부서 편집 모달 — 시안 01~05 */
-  deptModalWidth: 460,
-  deptModalHeight: 580,
-  deptModalMemberAreaMinHeight: 248,
+  deptModalWidth: 520,
+  deptModalHeight: 520,
+  deptModalMemberAreaMinHeight: 160,
   deptModalMemberRowHeight: 44,
-  deptModalSearchDropdownMaxHeight: 176,
+  deptModalSearchDropdownMaxHeight: 220,
   deptModalLabelSize: 14,
   deptModalLabelWeight: 600,
   deptModalLabelColor: "#0b0c0e",
@@ -110,11 +110,11 @@ export const ORG_RESOURCE = {
   deptModalDeleteBtnSize: 32,
   deptModalDeleteHoverBg: "#ebebed",
   deptModalSearchDropdownHoverBg: "#f4f4f6",
-  deptModalTitleToInputGap: 20,
-  deptModalInputToLabelGap: 20,
-  deptModalLabelToListGap: 12,
-  deptModalListToSearchGap: 16,
-  deptModalSearchToFooterGap: 20,
+  deptModalTitleToInputGap: 16,
+  deptModalInputToLabelGap: 16,
+  deptModalLabelToListGap: 10,
+  deptModalListToSearchGap: 12,
+  deptModalSearchToFooterGap: 16,
   /** 장소 관리 — 시안 01~11 */
   placeGridGap: Math.round(16 * CARD_S),
   placeCardMinHeight: Math.round(110 * CARD_S),
@@ -137,6 +137,19 @@ export const ORG_RESOURCE = {
   placeCheckboxSize: 18,
   placeCheckboxGap: 10,
   placeCheckboxRowGap: 12,
+} as const;
+
+/** 부서 추가/편집 모달 — 시안 문구 (01~05·추가) */
+export const DEPT_MODAL_COPY = {
+  titleAdd: "부서 추가",
+  titleEdit: "부서 편집",
+  namePlaceholder: "부서 이름을 입력하세요",
+  membersLabel: "소속 그룹원",
+  emptyLine1: "아직 등록된 성도가 없습니다.",
+  emptyLine2: "아래 검색창에서 성도를 찾아 추가해 보세요.",
+  searchPlaceholder: "이름으로 성도 검색",
+  cancel: "취소",
+  save: "저장",
 } as const;
 
 /** 장소 장비 — 시안 체크리스트 (03·04·10) */

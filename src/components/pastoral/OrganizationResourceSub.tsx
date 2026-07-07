@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from "react";
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Pencil, Trash2, AlertTriangle, ChevronDown, Search, Star } from "lucide-react";
 import type { DB } from "@/types/db";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import {
   ORG_RESOURCE,
+  DEPT_MODAL_COPY,
   ORG_PLACE_EQUIPMENT,
   formatPlaceEquipment,
   orgIsColoredSlot,
@@ -87,17 +89,17 @@ const ADD_LABELS: Record<Exclude<OrgTab, "mokjang">, string> = {
 };
 
 const ADD_MODAL_TITLES: Record<Exclude<OrgTab, "mokjang">, string> = {
-  dept: "부서 추가",
+  dept: DEPT_MODAL_COPY.titleAdd,
   place: "장소 추가",
 };
 
 const EDIT_MODAL_TITLES: Record<Exclude<OrgTab, "mokjang">, string> = {
-  dept: "부서 편집",
+  dept: DEPT_MODAL_COPY.titleEdit,
   place: "장소 편집",
 };
 
 const INPUT_PLACEHOLDERS: Record<Exclude<OrgTab, "mokjang">, string> = {
-  dept: "부서 이름을 입력하세요",
+  dept: DEPT_MODAL_COPY.namePlaceholder,
   place: "장소 이름을 입력하세요",
 };
 
@@ -1169,8 +1171,18 @@ export function OrgDeleteModal({
 
 export type OrgMemberManageKind = "dept" | "mokjang";
 
-type ResourceWizardState = {
-  kind: OrgMemberManageKind;
+export type OrgDeptWizardState = {
+  kind: "dept";
+  mode: "add" | "edit";
+  step: 1 | 2;
+  name: string;
+  oldName: string | null;
+  draftMemberIds: string[];
+  leaderId: string | null;
+};
+
+type ResourceWizardState = OrgDeptWizardState | {
+  kind: "mokjang";
   mode: "add" | "edit";
   step: 1 | 2;
   name: string;
@@ -1282,7 +1294,11 @@ function memberIdsInResource(db: DB, kind: OrgMemberManageKind, name: string): s
     .map((m) => m.id);
 }
 
-function inferDeptLeaderId(db: DB, memberIds: string[]): string | null {
+export function deptMemberIds(db: DB, name: string): string[] {
+  return memberIdsInResource(db, "dept", name);
+}
+
+export function inferDeptLeaderId(db: DB, memberIds: string[]): string | null {
   if (!memberIds.length) return null;
   const members = memberIds.map((id) => db.members.find((m) => m.id === id)).filter(Boolean) as typeof db.members;
   const withRole =
@@ -1297,7 +1313,7 @@ function memberRoleLabel(role?: string): string {
 }
 
 /** 부서 추가/편집 — 시안 01~05 단일 화면 */
-function OrgDeptEditModal({
+export function OrgDeptEditModal({
   wizard,
   db,
   onNameChange,
@@ -1306,7 +1322,7 @@ function OrgDeptEditModal({
   onClose,
   onFinish,
 }: {
-  wizard: ResourceWizardState;
+  wizard: OrgDeptWizardState;
   db: DB;
   onNameChange: (v: string) => void;
   onDraftChange: (ids: string[]) => void;
@@ -1319,9 +1335,11 @@ function OrgDeptEditModal({
   const [searchFocused, setSearchFocused] = useState(false);
   const [hoverDeleteId, setHoverDeleteId] = useState<string | null>(null);
   const [hoverResultId, setHoverResultId] = useState<string | null>(null);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
+  const dropdownPortalRef = useRef<HTMLDivElement>(null);
 
-  const title = mode === "add" ? ADD_MODAL_TITLES.dept : EDIT_MODAL_TITLES.dept;
+  const title = mode === "add" ? DEPT_MODAL_COPY.titleAdd : DEPT_MODAL_COPY.titleEdit;
   const draftMembers = db.members.filter((m) => draftMemberIds.includes(m.id));
   const sortedDraftMembers = useMemo(() => {
     if (!leaderId) return draftMembers;
@@ -1347,9 +1365,10 @@ function OrgDeptEditModal({
   useEffect(() => {
     if (!showDropdown) return;
     const onDocClick = (e: MouseEvent) => {
-      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
-        setSearchFocused(false);
-      }
+      const target = e.target as Node;
+      if (searchWrapRef.current?.contains(target)) return;
+      if (dropdownPortalRef.current?.contains(target)) return;
+      setSearchFocused(false);
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
@@ -1371,6 +1390,28 @@ function OrgDeptEditModal({
       onLeaderChange(remaining[0] ?? null);
     }
   };
+
+  const hasDropdown = showDropdown && searchResults.length > 0;
+
+  useLayoutEffect(() => {
+    if (!hasDropdown) {
+      setDropdownRect(null);
+      return;
+    }
+    const updateRect = () => {
+      const el = searchWrapRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setDropdownRect({ top: rect.bottom, left: rect.left, width: rect.width });
+    };
+    updateRect();
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect, true);
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect, true);
+    };
+  }, [hasDropdown, searchQuery, searchResults.length, sortedDraftMembers.length]);
 
   const deptModalShell: CSSProperties = {
     width: ORG_RESOURCE.deptModalWidth,
@@ -1432,7 +1473,7 @@ function OrgDeptEditModal({
           autoFocus
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
-          placeholder={INPUT_PLACEHOLDERS.dept}
+          placeholder={DEPT_MODAL_COPY.namePlaceholder}
           style={{ ...fieldStyle, marginBottom: ORG_RESOURCE.deptModalInputToLabelGap, flexShrink: 0 }}
         />
 
@@ -1446,38 +1487,39 @@ function OrgDeptEditModal({
             flexShrink: 0,
           }}
         >
-          소속 그룹원
+          {DEPT_MODAL_COPY.membersLabel}
         </div>
 
         <div
           style={{
             flex: 1,
-            minHeight: ORG_RESOURCE.deptModalMemberAreaMinHeight,
+            minHeight: 0,
             overflowY: "auto",
             marginBottom: ORG_RESOURCE.deptModalListToSearchGap,
           }}
         >
           {sortedDraftMembers.length === 0 ? (
-            <div
-              style={{
-                height: "100%",
-                minHeight: ORG_RESOURCE.deptModalMemberAreaMinHeight,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-                fontFamily: ORG_RESOURCE.fontKR,
-                lineHeight: 1.55,
-              }}
-            >
-              <div style={{ fontSize: ORG_RESOURCE.deptModalEmptySize, color: ORG_RESOURCE.deptModalEmptyColor }}>
-                아직 등록된 성도가 없습니다.
+            !hasDropdown ? (
+              <div
+                style={{
+                  minHeight: ORG_RESOURCE.deptModalMemberAreaMinHeight,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  fontFamily: ORG_RESOURCE.fontKR,
+                  lineHeight: 1.55,
+                }}
+              >
+                <div style={{ fontSize: ORG_RESOURCE.deptModalEmptySize, color: ORG_RESOURCE.deptModalEmptyColor }}>
+                  {DEPT_MODAL_COPY.emptyLine1}
+                </div>
+                <div style={{ fontSize: ORG_RESOURCE.deptModalEmptySubSize, color: ORG_RESOURCE.deptModalEmptySubColor, marginTop: 6 }}>
+                  {DEPT_MODAL_COPY.emptyLine2}
+                </div>
               </div>
-              <div style={{ fontSize: ORG_RESOURCE.deptModalEmptySubSize, color: ORG_RESOURCE.deptModalEmptySubColor, marginTop: 6 }}>
-                아래 검색창에서 성도를 찾아 추가해 보세요.
-              </div>
-            </div>
+            ) : null
           ) : (
             <div style={{ display: "flex", flexDirection: "column" }}>
               {sortedDraftMembers.map((m) => {
@@ -1581,44 +1623,53 @@ function OrgDeptEditModal({
           )}
         </div>
 
-        <div ref={searchWrapRef} style={{ position: "relative", flexShrink: 0, marginBottom: ORG_RESOURCE.deptModalSearchToFooterGap }}>
-          <div style={{ position: "relative" }}>
-            <Search
-              size={18}
-              strokeWidth={1.75}
-              color="#b0b4bc"
-              style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
-            />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              placeholder="이름으로 성도 검색"
-              aria-label="이름으로 성도 검색"
-              style={{
-                ...fieldStyle,
-                paddingLeft: 44,
-                borderRadius: showDropdown && searchResults.length > 0
-                  ? `${ORG_RESOURCE.modalInputRadius}px ${ORG_RESOURCE.modalInputRadius}px 0 0`
-                  : ORG_RESOURCE.modalInputRadius,
-              }}
-            />
-          </div>
-          {showDropdown && searchResults.length > 0 && (
+        <div ref={searchWrapRef} style={{ position: "relative", flexShrink: 0 }}>
+          <Search
+            size={18}
+            strokeWidth={1.75}
+            color="#b0b4bc"
+            style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", zIndex: 1 }}
+          />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            placeholder={DEPT_MODAL_COPY.searchPlaceholder}
+            aria-label={DEPT_MODAL_COPY.searchPlaceholder}
+            style={{
+              ...fieldStyle,
+              paddingLeft: 44,
+              borderRadius: hasDropdown
+                ? `${ORG_RESOURCE.modalInputRadius}px ${ORG_RESOURCE.modalInputRadius}px 0 0`
+                : ORG_RESOURCE.modalInputRadius,
+            }}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap, flexShrink: 0, marginTop: ORG_RESOURCE.deptModalSearchToFooterGap }}>
+          <button type="button" onClick={onClose} style={modalBtnCancel}>{DEPT_MODAL_COPY.cancel}</button>
+          <button type="button" onClick={onFinish} style={modalBtnSubmit}>{DEPT_MODAL_COPY.save}</button>
+        </div>
+      </div>
+
+      {hasDropdown && dropdownRect && typeof document !== "undefined"
+        ? createPortal(
             <div
+              ref={dropdownPortalRef}
               style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: ORG_RESOURCE.modalInputHeight,
+                position: "fixed",
+                top: dropdownRect.top,
+                left: dropdownRect.left,
+                width: dropdownRect.width,
                 maxHeight: ORG_RESOURCE.deptModalSearchDropdownMaxHeight,
                 overflowY: "auto",
                 background: "#ffffff",
                 borderRadius: `0 0 ${ORG_RESOURCE.modalInputRadius}px ${ORG_RESOURCE.modalInputRadius}px`,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
                 border: "1px solid #ebebed",
                 borderTop: "none",
-                zIndex: 2,
+                zIndex: 1100,
+                boxSizing: "border-box",
               }}
             >
               {searchResults.map((m) => (
@@ -1655,15 +1706,10 @@ function OrgDeptEditModal({
                   </span>
                 </button>
               ))}
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap, flexShrink: 0 }}>
-          <button type="button" onClick={onClose} style={modalBtnCancel}>취소</button>
-          <button type="button" onClick={onFinish} style={modalBtnSubmit}>저장</button>
-        </div>
-      </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -2069,8 +2115,12 @@ export function OrganizationResourceSub({
   };
 
   const openAdd = () => {
-    if (tab === "dept" || tab === "mokjang") {
-      setResourceWizard({ kind: tab, mode: "add", step: 1, name: "", oldName: null, draftMemberIds: [], leaderId: null });
+    if (tab === "dept") {
+      setResourceWizard({ kind: "dept", mode: "add", step: 1, name: "", oldName: null, draftMemberIds: [], leaderId: null });
+      return;
+    }
+    if (tab === "mokjang") {
+      setResourceWizard({ kind: "mokjang", mode: "add", step: 1, name: "", oldName: null, draftMemberIds: [], leaderId: null });
       return;
     }
     setEditOldName(null);
@@ -2082,8 +2132,21 @@ export function OrganizationResourceSub({
   };
 
   const openEdit = (name: string) => {
-    if (tab === "dept" || tab === "mokjang") {
-      setResourceWizard({ kind: tab, mode: "edit", step: 1, name, oldName: name, draftMemberIds: [], leaderId: null });
+    if (tab === "dept") {
+      const ids = memberIdsInResource(db, "dept", name);
+      setResourceWizard({
+        kind: "dept",
+        mode: "edit",
+        step: 1,
+        name,
+        oldName: name,
+        draftMemberIds: ids,
+        leaderId: inferDeptLeaderId(db, ids),
+      });
+      return;
+    }
+    if (tab === "mokjang") {
+      setResourceWizard({ kind: "mokjang", mode: "edit", step: 1, name, oldName: name, draftMemberIds: [], leaderId: null });
       return;
     }
     setEditOldName(name);
@@ -2106,30 +2169,27 @@ export function OrganizationResourceSub({
   };
 
   const wizardNext = () => {
-    if (!resourceWizard) return;
+    if (!resourceWizard || resourceWizard.kind !== "mokjang") return;
     const trimmed = resourceWizard.name.trim();
     if (!trimmed) {
       toast("이름을 입력하세요", "err");
       return;
     }
-    const names = resourceWizard.kind === "dept" ? deptNames : mokjangNames;
     const dup =
       resourceWizard.mode === "add"
-        ? names.includes(trimmed)
-        : resourceWizard.oldName !== trimmed && names.includes(trimmed);
+        ? mokjangNames.includes(trimmed)
+        : resourceWizard.oldName !== trimmed && mokjangNames.includes(trimmed);
     if (dup) {
-      toast(resourceWizard.kind === "dept" ? "이미 있는 부서입니다" : mokjangLabels.duplicate, "err");
+      toast(mokjangLabels.duplicate, "err");
       return;
     }
     const lookupName = resourceWizard.mode === "edit" ? (resourceWizard.oldName ?? trimmed) : trimmed;
     const draftMemberIds =
       resourceWizard.mode === "edit"
-        ? memberIdsInResource(db, resourceWizard.kind, lookupName)
+        ? memberIdsInResource(db, "mokjang", lookupName)
         : resourceWizard.draftMemberIds;
     const leaderId =
-      resourceWizard.kind === "mokjang"
-        ? (resourceWizard.mode === "edit" ? (mokjangLeaders[lookupName] ?? null) : resourceWizard.leaderId)
-        : null;
+      resourceWizard.mode === "edit" ? (mokjangLeaders[lookupName] ?? null) : resourceWizard.leaderId;
     setResourceWizard({ ...resourceWizard, name: trimmed, step: 2, draftMemberIds, leaderId });
   };
 
@@ -2140,6 +2200,18 @@ export function OrganizationResourceSub({
       toast("이름을 입력하세요", "err");
       return;
     }
+
+    if (resourceWizard.kind === "dept") {
+      const dup =
+        resourceWizard.mode === "add"
+          ? deptNames.includes(trimmed)
+          : resourceWizard.oldName !== trimmed && deptNames.includes(trimmed);
+      if (dup) {
+        toast("이미 있는 부서입니다", "err");
+        return;
+      }
+    }
+
     const { kind, mode, oldName, draftMemberIds, leaderId } = resourceWizard;
     const draftSet = new Set(draftMemberIds);
 
@@ -2435,8 +2507,31 @@ export function OrganizationResourceSub({
         onConfirm={confirmDelete}
       />
 
-      {resourceWizard && (
-        <OrgDeptMokWizardModal
+      {resourceWizard?.kind === "dept" && (
+        <OrgDeptEditModal
+          wizard={resourceWizard}
+          db={db}
+          onNameChange={(v) => setResourceWizard({ ...resourceWizard, name: v })}
+          onDraftChange={(ids) => {
+            setResourceWizard((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                draftMemberIds: ids,
+                leaderId: prev.leaderId && !ids.includes(prev.leaderId) ? null : prev.leaderId,
+              };
+            });
+          }}
+          onLeaderChange={(id) => {
+            setResourceWizard((prev) => (prev ? { ...prev, leaderId: id } : prev));
+          }}
+          onClose={closeWizard}
+          onFinish={wizardFinish}
+        />
+      )}
+
+      {resourceWizard?.kind === "mokjang" && (
+        <OrgMokjangWizardModal
           wizard={resourceWizard}
           db={db}
           leaderLabel={smallGroupLeaderLabel}
@@ -2463,7 +2558,6 @@ export function OrganizationResourceSub({
               };
             });
           }}
-          onStepChange={(step) => setResourceWizard({ ...resourceWizard, step })}
           onClose={closeWizard}
           onNext={wizardNext}
           onBack={() => setResourceWizard({ ...resourceWizard, step: 1 })}

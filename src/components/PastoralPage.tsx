@@ -44,7 +44,7 @@ import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNot
 import { PcModalShell } from "@/components/common/PcModalShell";
 import { tokens } from "@/styles/tokens";
 import { APP_HISTORY_KEYS, mergePushAppHistory, mergeReplaceAppHistory, readAppHistoryState } from "@/lib/appHistory";
-import { OrganizationResourceSub, OrgFormModal, OrgDeleteModal } from "@/components/pastoral/OrganizationResourceSub";
+import { OrganizationResourceSub, OrgDeptEditModal, OrgDeleteModal, deptMemberIds, inferDeptLeaderId, type OrgDeptWizardState } from "@/components/pastoral/OrganizationResourceSub";
 import { ORG_RESOURCE } from "@/styles/orgResourceTokens";
 
 const MOB_PANEL_MIN_H = tokens.layout.mobPastoralPanelMinHeight;
@@ -1031,9 +1031,7 @@ function DashboardSub({
   const [attChartWidth, setAttChartWidth] = useState(0);
   const [feedPage, setFeedPage] = useState(1);
   const feedSwipeStartX = useRef<number | null>(null);
-  const [deptFormOpen, setDeptFormOpen] = useState(false);
-  const [deptEditName, setDeptEditName] = useState("");
-  const [deptEditOldName, setDeptEditOldName] = useState<string | null>(null);
+  const [deptWizard, setDeptWizard] = useState<OrgDeptWizardState | null>(null);
   const [deptDeleteName, setDeptDeleteName] = useState<string | null>(null);
   const [deptHover, setDeptHover] = useState<string | null>(null);
 
@@ -1199,41 +1197,64 @@ function DashboardSub({
   }, [m, deptNames]);
 
   const openDeptAdd = () => {
-    setDeptEditOldName(null);
-    setDeptEditName("");
-    setDeptFormOpen(true);
+    setDeptWizard({
+      kind: "dept",
+      mode: "add",
+      step: 1,
+      name: "",
+      oldName: null,
+      draftMemberIds: [],
+      leaderId: null,
+    });
   };
 
   const openDeptEdit = (name: string) => {
-    setDeptEditOldName(name);
-    setDeptEditName(name);
-    setDeptFormOpen(true);
+    const ids = deptMemberIds(db, name);
+    setDeptWizard({
+      kind: "dept",
+      mode: "edit",
+      step: 1,
+      name,
+      oldName: name,
+      draftMemberIds: ids,
+      leaderId: inferDeptLeaderId(db, ids),
+    });
   };
 
-  const saveDeptForm = () => {
-    const trimmed = deptEditName.trim();
+  const closeDeptWizard = () => setDeptWizard(null);
+
+  const saveDeptWizard = () => {
+    if (!deptWizard) return;
+    const trimmed = deptWizard.name.trim();
     if (!trimmed) {
       toast("이름을 입력하세요", "err");
       return;
     }
-    if (deptEditOldName && deptEditOldName !== trimmed && deptNames.includes(trimmed)) {
+    if (deptWizard.mode === "add" && deptNames.includes(trimmed)) {
       toast("이미 있는 부서입니다", "err");
       return;
     }
-    if (!deptEditOldName && deptNames.includes(trimmed)) {
+    if (deptWizard.mode === "edit" && deptWizard.oldName !== trimmed && deptNames.includes(trimmed)) {
       toast("이미 있는 부서입니다", "err");
       return;
     }
+
+    const { mode, oldName, draftMemberIds } = deptWizard;
+    const draftSet = new Set(draftMemberIds);
+
     setDb((prev) => {
       let names = [...deptNames];
       let members = prev.members;
-      if (deptEditOldName) {
-        names = names.map((n) => (n === deptEditOldName ? trimmed : n));
-        if (deptEditOldName !== trimmed) {
-          members = members.map((m) => (m.dept === deptEditOldName ? { ...m, dept: trimmed } : m));
-        }
+      if (mode === "edit" && oldName) {
+        names = names.map((n) => (n === oldName ? trimmed : n));
+        members = prev.members.map((m) => {
+          if (draftSet.has(m.id)) return { ...m, dept: trimmed };
+          if (m.dept === oldName) return { ...m, dept: "" };
+          return m;
+        });
       } else {
         names.push(trimmed);
+        members = prev.members.map((m) => (draftSet.has(m.id) ? { ...m, dept: trimmed } : m));
       }
       const next = {
         ...prev,
@@ -1244,8 +1265,8 @@ function DashboardSub({
       void saveDb?.(next).catch(() => toast("저장 실패", "err"));
       return next;
     });
-    toast(deptEditOldName ? "부서가 수정되었습니다" : "부서가 추가되었습니다", "ok");
-    setDeptFormOpen(false);
+    toast(mode === "edit" ? "부서가 저장되었습니다" : "부서가 추가되었습니다", "ok");
+    closeDeptWizard();
   };
 
   const confirmDeptDelete = () => {
@@ -2317,7 +2338,7 @@ function DashboardSub({
               type="button"
               aria-label="부서 추가"
               onClick={openDeptAdd}
-              style={dashPeriodBtnStyle(dashTypo.chart, mob, deptFormOpen)}
+              style={dashPeriodBtnStyle(dashTypo.chart, mob, !!deptWizard)}
             >
               <Plus
                 size={mob ? dashTypo.chart.periodBtnFontSizeMob : dashTypo.chart.periodBtnFontSize}
@@ -2449,16 +2470,28 @@ function DashboardSub({
         </div>
       </div>
 
-      <OrgFormModal
-        open={deptFormOpen}
-        title={deptEditOldName ? "부서 수정" : "새 부서 추가"}
-        value={deptEditName}
-        placeholder="부서 이름을 입력하세요"
-        onChange={setDeptEditName}
-        onClose={() => setDeptFormOpen(false)}
-        onSubmit={saveDeptForm}
-        submitLabel={deptEditOldName ? "저장" : "등록"}
-      />
+      {deptWizard && (
+        <OrgDeptEditModal
+          wizard={deptWizard}
+          db={db}
+          onNameChange={(v) => setDeptWizard({ ...deptWizard, name: v })}
+          onDraftChange={(ids) => {
+            setDeptWizard((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                draftMemberIds: ids,
+                leaderId: prev.leaderId && !ids.includes(prev.leaderId) ? null : prev.leaderId,
+              };
+            });
+          }}
+          onLeaderChange={(id) => {
+            setDeptWizard((prev) => (prev ? { ...prev, leaderId: id } : prev));
+          }}
+          onClose={closeDeptWizard}
+          onFinish={saveDeptWizard}
+        />
+      )}
       <OrgDeleteModal
         open={!!deptDeleteName}
         name={deptDeleteName ?? ""}
@@ -4787,16 +4820,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
   const didMountRef = useRef(false);
   useEffect(() => {
-    if (!didMountRef.current) {
-      didMountRef.current = true;
-      return;
-    }
-    const t = setTimeout(() => {
-      if (!saveDb) return;
-      saveDb(db).catch(() => {});
-    }, 400);
-    return () => clearTimeout(t);
-  }, [db, saveDb]);
+    // 자동 저장 비활성화: saveDBToSupabase가 delete 없이 전체 db를 insert만 하여
+    // db가 바뀔 때마다 notes/attendance 전체가 중복 복제되는 폭증 버그를 막기 위함.
+    didMountRef.current = true;
+  }, []);
 
   const toastIdRef = useRef(0);
   const toastTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
