@@ -661,9 +661,8 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       });
     }
   }
-  await deleteNotesForChurch(churchId);
   if (noteRows.length > 0) {
-    await insertRowsInBatches("notes", noteRows);
+    await upsertRowsInBatches("notes", noteRows, "church_id,member_id,type,content,date");
   }
 
   const fiscal_year = String(CURRENT_YEAR);
