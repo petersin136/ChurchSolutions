@@ -29,6 +29,7 @@ import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
+import { PastoralFeedDetailModal } from "@/components/pastoral/PastoralFeedDetailModal";
 import { MemberDotGrid } from "@/components/pastoral/MemberDotGrid";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -993,6 +994,7 @@ function DashboardSub({
   rawAttendance,
   onNavSub,
   onOpenAttendanceStats,
+  onFeedItemOpen,
 }: {
   db: DB;
   setDb: (fn: (prev: DB) => DB) => void;
@@ -1003,6 +1005,7 @@ function DashboardSub({
   rawAttendance: RawAttendanceRow[];
   onNavSub?: (id: SubPage) => void;
   onOpenAttendanceStats?: () => void;
+  onFeedItemOpen?: (item: PastoralFeedItem) => void;
 }) {
   const mob = useIsMobile();
   const periodSegmentItems = useMemo(
@@ -1444,25 +1447,16 @@ function DashboardSub({
     else setFeedPage((p) => Math.max(1, p - 1));
   };
 
-  const handleFeedItemClick = useCallback((item: PastoralFeedItem) => {
-    if (item.kind === "newcomer" && item.memberId) {
-      sessionStorage.setItem(PASTORAL_OPEN_NEWFAMILY_KEY, item.memberId);
-      onNavSub?.("newfamily");
-      return;
+  const handleFeedItemClick = useCallback((item: PastoralFeedItem, e?: React.MouseEvent | React.KeyboardEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    if (!item.memberId || (!item.noteType && item.kind !== "newcomer")) return;
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(PASTORAL_FEED_FOCUS_KEY);
+      sessionStorage.removeItem("pastoral_notes_type");
     }
-    if (!item.memberId || !item.noteType) return;
-    const focus: PastoralFeedFocus = {
-      target: "notes",
-      memberId: item.memberId,
-      noteType: item.noteType,
-      content: item.body,
-      date: item.noteDate,
-      createdAt: item.noteCreatedAt,
-      isProfilePrayer: item.isProfilePrayer,
-    };
-    sessionStorage.setItem(PASTORAL_FEED_FOCUS_KEY, JSON.stringify(focus));
-    onNavSub?.("notes");
-  }, [onNavSub]);
+    onFeedItemOpen?.(item);
+  }, [onFeedItemOpen]);
 
   const [feedHoverId, setFeedHoverId] = useState<string | null>(null);
 
@@ -2199,8 +2193,8 @@ function DashboardSub({
                       key={item.id}
                       role={clickable ? "button" : undefined}
                       tabIndex={clickable ? 0 : undefined}
-                      onClick={clickable ? () => handleFeedItemClick(item) : undefined}
-                      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleFeedItemClick(item); } } : undefined}
+                      onClick={clickable ? (e) => handleFeedItemClick(item, e) : undefined}
+                      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") handleFeedItemClick(item, e); } : undefined}
                       onMouseEnter={() => clickable && setFeedHoverId(item.id)}
                       onMouseLeave={() => setFeedHoverId(null)}
                       style={{
@@ -4630,6 +4624,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
   const [prayerModalMemberId, setPrayerModalMemberId] = useState<string | null>(null);
   const [prayerModalFocusContent, setPrayerModalFocusContent] = useState<string | null>(null);
+  const [feedDetailItem, setFeedDetailItem] = useState<PastoralFeedItem | null>(null);
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
   const [quickNoteMemberId, setQuickNoteMemberId] = useState("");
   const [quickNoteMemberName, setQuickNoteMemberName] = useState("");
@@ -5170,6 +5165,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               rawAttendance={rawAttendance}
               onNavSub={navigateToSub}
               onOpenAttendanceStats={openAttendanceStatistics}
+              onFeedItemOpen={setFeedDetailItem}
             />
           )}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} churchId={churchId} />}
@@ -5433,6 +5429,15 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
       {/* New Family Program Detail Modal */}
       {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} onSaved={() => setDb(prev => { void saveDb?.(prev); return prev; })} saveDb={saveDb} toast={toast} mob={mob} churchId={churchId} />}
+
+      {/* 현황 보고 — 대시보드 리스트 클릭 시 상세 모달 (페이지 이동 없음) */}
+      {feedDetailItem ? (
+        <PastoralFeedDetailModal
+          item={feedDetailItem}
+          db={db}
+          onClose={() => setFeedDetailItem(null)}
+        />
+      ) : null}
 
       {/* Prayer Modal — 기도/메모 페이지에서 이름 클릭 시 */}
       {prayerModalMemberId && (() => {

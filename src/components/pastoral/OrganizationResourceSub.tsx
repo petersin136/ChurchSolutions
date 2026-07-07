@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from "react";
-import { Plus, Pencil, Trash2, AlertTriangle, ChevronDown } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertTriangle, ChevronDown, Search, Star } from "lucide-react";
 import type { DB } from "@/types/db";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -87,12 +87,12 @@ const ADD_LABELS: Record<Exclude<OrgTab, "mokjang">, string> = {
 };
 
 const ADD_MODAL_TITLES: Record<Exclude<OrgTab, "mokjang">, string> = {
-  dept: "새 부서 추가",
+  dept: "부서 추가",
   place: "장소 추가",
 };
 
 const EDIT_MODAL_TITLES: Record<Exclude<OrgTab, "mokjang">, string> = {
-  dept: "부서 수정",
+  dept: "부서 편집",
   place: "장소 편집",
 };
 
@@ -1282,8 +1282,394 @@ function memberIdsInResource(db: DB, kind: OrgMemberManageKind, name: string): s
     .map((m) => m.id);
 }
 
-/** 부서·목장 추가/편집 — 1단계 이름 → 2단계 인원 배정 */
-function OrgDeptMokWizardModal({
+function inferDeptLeaderId(db: DB, memberIds: string[]): string | null {
+  if (!memberIds.length) return null;
+  const members = memberIds.map((id) => db.members.find((m) => m.id === id)).filter(Boolean) as typeof db.members;
+  const withRole =
+    members.find((m) => (m.role || "").includes("담당") || (m.role || "").includes("부장") || (m.role || "").includes("교사")) ??
+    members.find((m) => m.role?.trim());
+  return withRole?.id ?? members[0]?.id ?? null;
+}
+
+function memberRoleLabel(role?: string): string {
+  const r = (role || "").trim();
+  return r || "성도";
+}
+
+/** 부서 추가/편집 — 시안 01~05 단일 화면 */
+function OrgDeptEditModal({
+  wizard,
+  db,
+  onNameChange,
+  onDraftChange,
+  onLeaderChange,
+  onClose,
+  onFinish,
+}: {
+  wizard: ResourceWizardState;
+  db: DB;
+  onNameChange: (v: string) => void;
+  onDraftChange: (ids: string[]) => void;
+  onLeaderChange: (id: string | null) => void;
+  onClose: () => void;
+  onFinish: () => void;
+}) {
+  const { mode, name, draftMemberIds, leaderId } = wizard;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [hoverDeleteId, setHoverDeleteId] = useState<string | null>(null);
+  const [hoverResultId, setHoverResultId] = useState<string | null>(null);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
+
+  const title = mode === "add" ? ADD_MODAL_TITLES.dept : EDIT_MODAL_TITLES.dept;
+  const draftMembers = db.members.filter((m) => draftMemberIds.includes(m.id));
+  const sortedDraftMembers = useMemo(() => {
+    if (!leaderId) return draftMembers;
+    const leader = draftMembers.find((m) => m.id === leaderId);
+    const rest = draftMembers.filter((m) => m.id !== leaderId);
+    return leader ? [leader, ...rest] : draftMembers;
+  }, [draftMembers, leaderId]);
+
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return db.members
+      .filter((m) => {
+        if (m.status === "졸업/전출") return false;
+        if (draftMemberIds.includes(m.id)) return false;
+        return m.name.toLowerCase().includes(q);
+      })
+      .slice(0, 8);
+  }, [db.members, draftMemberIds, searchQuery]);
+
+  const showDropdown = searchFocused && searchQuery.trim().length > 0;
+
+  useEffect(() => {
+    if (!showDropdown) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
+        setSearchFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [showDropdown]);
+
+  const addMember = (id: string) => {
+    if (!id || draftMemberIds.includes(id)) return;
+    const next = [...draftMemberIds, id];
+    onDraftChange(next);
+    if (!leaderId) onLeaderChange(id);
+    setSearchQuery("");
+    setSearchFocused(false);
+  };
+
+  const removeMember = (id: string) => {
+    onDraftChange(draftMemberIds.filter((x) => x !== id));
+    if (leaderId === id) {
+      const remaining = draftMemberIds.filter((x) => x !== id);
+      onLeaderChange(remaining[0] ?? null);
+    }
+  };
+
+  const deptModalShell: CSSProperties = {
+    width: ORG_RESOURCE.deptModalWidth,
+    maxWidth: ORG_RESOURCE.deptModalWidth,
+    height: ORG_RESOURCE.deptModalHeight,
+    minHeight: ORG_RESOURCE.deptModalHeight,
+    maxHeight: ORG_RESOURCE.deptModalHeight,
+    padding: ORG_RESOURCE.modalPad,
+    borderRadius: ORG_RESOURCE.modalRadius,
+    boxSizing: "border-box",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  };
+
+  const fieldStyle: CSSProperties = {
+    width: "100%",
+    height: ORG_RESOURCE.modalInputHeight,
+    padding: "0 16px",
+    boxSizing: "border-box",
+    border: "none",
+    borderRadius: ORG_RESOURCE.modalInputRadius,
+    background: ORG_RESOURCE.modalInputBg,
+    fontSize: ORG_RESOURCE.modalInputFontSize,
+    fontFamily: ORG_RESOURCE.fontKR,
+    color: "#0b0c0e",
+    outline: "none",
+  };
+
+  return (
+    <div
+      className="modal-bg open"
+      role="presentation"
+      style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        style={deptModalShell}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <h2
+          style={{
+            margin: `0 0 ${ORG_RESOURCE.deptModalTitleToInputGap}px`,
+            fontSize: ORG_RESOURCE.modalTitleSize,
+            fontWeight: ORG_RESOURCE.modalTitleWeight,
+            color: "#0b0c0e",
+            fontFamily: ORG_RESOURCE.fontKR,
+            flexShrink: 0,
+          }}
+        >
+          {title}
+        </h2>
+
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          placeholder={INPUT_PLACEHOLDERS.dept}
+          style={{ ...fieldStyle, marginBottom: ORG_RESOURCE.deptModalInputToLabelGap, flexShrink: 0 }}
+        />
+
+        <div
+          style={{
+            fontSize: ORG_RESOURCE.deptModalLabelSize,
+            fontWeight: ORG_RESOURCE.deptModalLabelWeight,
+            color: ORG_RESOURCE.deptModalLabelColor,
+            fontFamily: ORG_RESOURCE.fontKR,
+            marginBottom: ORG_RESOURCE.deptModalLabelToListGap,
+            flexShrink: 0,
+          }}
+        >
+          소속 그룹원
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            minHeight: ORG_RESOURCE.deptModalMemberAreaMinHeight,
+            overflowY: "auto",
+            marginBottom: ORG_RESOURCE.deptModalListToSearchGap,
+          }}
+        >
+          {sortedDraftMembers.length === 0 ? (
+            <div
+              style={{
+                height: "100%",
+                minHeight: ORG_RESOURCE.deptModalMemberAreaMinHeight,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                fontFamily: ORG_RESOURCE.fontKR,
+                lineHeight: 1.55,
+              }}
+            >
+              <div style={{ fontSize: ORG_RESOURCE.deptModalEmptySize, color: ORG_RESOURCE.deptModalEmptyColor }}>
+                아직 등록된 성도가 없습니다.
+              </div>
+              <div style={{ fontSize: ORG_RESOURCE.deptModalEmptySubSize, color: ORG_RESOURCE.deptModalEmptySubColor, marginTop: 6 }}>
+                아래 검색창에서 성도를 찾아 추가해 보세요.
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {sortedDraftMembers.map((m) => {
+                const isLeader = leaderId === m.id;
+                return (
+                  <div
+                    key={m.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: `${ORG_RESOURCE.deptModalStarSize + 8}px 88px 56px 1fr ${ORG_RESOURCE.deptModalDeleteBtnSize}px`,
+                      alignItems: "center",
+                      columnGap: 12,
+                      height: ORG_RESOURCE.deptModalMemberRowHeight,
+                      minHeight: ORG_RESOURCE.deptModalMemberRowHeight,
+                      fontFamily: ORG_RESOURCE.fontKR,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-label={isLeader ? "담당자" : "담당자로 지정"}
+                      onClick={() => onLeaderChange(m.id)}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        padding: 0,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: ORG_RESOURCE.deptModalStarSize + 8,
+                        height: ORG_RESOURCE.deptModalStarSize + 8,
+                      }}
+                    >
+                      <Star
+                        size={ORG_RESOURCE.deptModalStarSize}
+                        strokeWidth={isLeader ? 0 : 1.75}
+                        fill={isLeader ? "#0b0c0e" : "none"}
+                        color={isLeader ? "#0b0c0e" : "#c4c8d0"}
+                      />
+                    </button>
+                    <span
+                      style={{
+                        fontSize: ORG_RESOURCE.deptModalMemberNameSize,
+                        fontWeight: ORG_RESOURCE.deptModalMemberNameWeight,
+                        color: "#0b0c0e",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {m.name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: ORG_RESOURCE.deptModalMemberMetaSize,
+                        color: ORG_RESOURCE.deptModalMemberMetaColor,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {memberRoleLabel(m.role)}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: ORG_RESOURCE.deptModalMemberMetaSize,
+                        color: ORG_RESOURCE.deptModalMemberMetaColor,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {m.dept || "—"}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={`${m.name} 제거`}
+                      onClick={() => removeMember(m.id)}
+                      onMouseEnter={() => setHoverDeleteId(m.id)}
+                      onMouseLeave={() => setHoverDeleteId(null)}
+                      style={{
+                        border: "none",
+                        borderRadius: 8,
+                        width: ORG_RESOURCE.deptModalDeleteBtnSize,
+                        height: ORG_RESOURCE.deptModalDeleteBtnSize,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        background: hoverDeleteId === m.id ? ORG_RESOURCE.deptModalDeleteHoverBg : "transparent",
+                        transition: "background 0.15s ease",
+                        justifySelf: "end",
+                      }}
+                    >
+                      <Trash2 size={16} strokeWidth={1.75} color="#8b909a" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div ref={searchWrapRef} style={{ position: "relative", flexShrink: 0, marginBottom: ORG_RESOURCE.deptModalSearchToFooterGap }}>
+          <div style={{ position: "relative" }}>
+            <Search
+              size={18}
+              strokeWidth={1.75}
+              color="#b0b4bc"
+              style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+            />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              placeholder="이름으로 성도 검색"
+              aria-label="이름으로 성도 검색"
+              style={{
+                ...fieldStyle,
+                paddingLeft: 44,
+                borderRadius: showDropdown && searchResults.length > 0
+                  ? `${ORG_RESOURCE.modalInputRadius}px ${ORG_RESOURCE.modalInputRadius}px 0 0`
+                  : ORG_RESOURCE.modalInputRadius,
+              }}
+            />
+          </div>
+          {showDropdown && searchResults.length > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: ORG_RESOURCE.modalInputHeight,
+                maxHeight: ORG_RESOURCE.deptModalSearchDropdownMaxHeight,
+                overflowY: "auto",
+                background: "#ffffff",
+                borderRadius: `0 0 ${ORG_RESOURCE.modalInputRadius}px ${ORG_RESOURCE.modalInputRadius}px`,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                border: "1px solid #ebebed",
+                borderTop: "none",
+                zIndex: 2,
+              }}
+            >
+              {searchResults.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onMouseEnter={() => setHoverResultId(m.id)}
+                  onMouseLeave={() => setHoverResultId(null)}
+                  onClick={() => addMember(m.id)}
+                  style={{
+                    width: "100%",
+                    border: "none",
+                    background: hoverResultId === m.id ? ORG_RESOURCE.deptModalSearchDropdownHoverBg : "#ffffff",
+                    cursor: "pointer",
+                    display: "grid",
+                    gridTemplateColumns: "88px 56px 1fr",
+                    columnGap: 12,
+                    alignItems: "center",
+                    padding: "10px 16px",
+                    boxSizing: "border-box",
+                    textAlign: "left",
+                    fontFamily: ORG_RESOURCE.fontKR,
+                    transition: "background 0.12s ease",
+                  }}
+                >
+                  <span style={{ fontSize: ORG_RESOURCE.deptModalMemberNameSize, fontWeight: ORG_RESOURCE.deptModalMemberNameWeight, color: "#0b0c0e" }}>
+                    {m.name}
+                  </span>
+                  <span style={{ fontSize: ORG_RESOURCE.deptModalMemberMetaSize, color: ORG_RESOURCE.deptModalMemberMetaColor }}>
+                    {memberRoleLabel(m.role)}
+                  </span>
+                  <span style={{ fontSize: ORG_RESOURCE.deptModalMemberMetaSize, color: ORG_RESOURCE.deptModalMemberMetaColor }}>
+                    {m.dept || "—"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap, flexShrink: 0 }}>
+          <button type="button" onClick={onClose} style={modalBtnCancel}>취소</button>
+          <button type="button" onClick={onFinish} style={modalBtnSubmit}>저장</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 목장 추가/편집 — 1단계 이름 → 2단계 인원 배정 */
+function OrgMokjangWizardModal({
   wizard,
   db,
   leaderLabel,
@@ -1292,7 +1678,6 @@ function OrgDeptMokWizardModal({
   onNameChange,
   onDraftChange,
   onLeaderChange,
-  onStepChange,
   onClose,
   onNext,
   onBack,
@@ -1306,24 +1691,20 @@ function OrgDeptMokWizardModal({
   onNameChange: (v: string) => void;
   onDraftChange: (ids: string[]) => void;
   onLeaderChange: (id: string | null, draftMemberIds?: string[]) => void;
-  onStepChange: (step: 1 | 2) => void;
   onClose: () => void;
   onNext: () => void;
   onBack: () => void;
   onFinish: () => void;
 }) {
-  const { kind, mode, step, name, draftMemberIds, leaderId } = wizard;
-  const isDept = kind === "dept";
+  const { mode, step, name, draftMemberIds, leaderId } = wizard;
   const stepTitle =
     step === 1
-      ? (mode === "add"
-          ? (isDept ? ADD_MODAL_TITLES.dept : mokjangLabels.addModal)
-          : (isDept ? EDIT_MODAL_TITLES.dept : mokjangLabels.editModal))
-      : (isDept ? "부서원 배정" : mokjangLabels.memberAssign);
+      ? (mode === "add" ? mokjangLabels.addModal : mokjangLabels.editModal)
+      : mokjangLabels.memberAssign;
   const stepDesc =
     step === 1
-      ? (isDept ? "부서 이름을 입력한 뒤 다음 단계에서 성도를 배정합니다." : mokjangLabels.step1Desc)
-      : (isDept ? "이 부서에 소속할 성도를 선택하세요." : mokjangLabels.step2Desc);
+      ? mokjangLabels.step1Desc
+      : mokjangLabels.step2Desc;
 
   const draftMembers = db.members.filter((m) => draftMemberIds.includes(m.id));
   const availableMembers = db.members.filter((m) => {
@@ -1347,14 +1728,13 @@ function OrgDeptMokWizardModal({
 
   const removeDraftMember = (id: string) => {
     onDraftChange(draftMemberIds.filter((x) => x !== id));
-    if (!isDept && leaderId === id) onLeaderChange(null);
+    if (leaderId === id) onLeaderChange(null);
   };
 
   const leaderCandidates = db.members.filter((m) => m.status !== "졸업/전출");
 
   const leaderMember = leaderId ? draftMembers.find((m) => m.id === leaderId) : null;
-  const groupMembers =
-    !isDept && leaderId ? draftMembers.filter((m) => m.id !== leaderId) : draftMembers;
+  const groupMembers = leaderId ? draftMembers.filter((m) => m.id !== leaderId) : draftMembers;
   const totalCount = draftMembers.length;
 
   const memberListPanel = (
@@ -1395,57 +1775,34 @@ function OrgDeptMokWizardModal({
             아직 배정된 성도가 없습니다.
             <br />
             <span style={{ fontSize: 13, color: "#b0b4bc" }}>
-              {isDept
-                ? "위에서 성도를 선택해 추가하세요."
-                : `위에서 ${leaderLabel}를 지정하고 ${groupTerm}원을 선택하세요.`}
+              {`위에서 ${leaderLabel}를 지정하고 ${groupTerm}원을 선택하세요.`}
             </span>
           </div>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 4px", lineHeight: 1.7 }}>
-            {!isDept ? (
-              <>
-                <span
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: leaderMember ? "#0b0c0e" : "#b0b4bc",
-                  }}
+            <span
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: leaderMember ? "#0b0c0e" : "#b0b4bc",
+              }}
+            >
+              {leaderMember?.name ?? `${leaderLabel} 미지정`}
+            </span>
+            {groupMembers.map((m) => (
+              <span key={m.id} style={{ display: "inline-flex", alignItems: "center" }}>
+                <span style={{ color: "#d1d5db", fontSize: 13, margin: "0 4px", userSelect: "none" }} aria-hidden>·</span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: "#8b909a" }}>{m.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removeDraftMember(m.id)}
+                  style={modalMemberRemoveBtn}
+                  aria-label={`${m.name} 제거`}
                 >
-                  {leaderMember?.name ?? `${leaderLabel} 미지정`}
-                </span>
-                {groupMembers.map((m, i) => (
-                  <span key={m.id} style={{ display: "inline-flex", alignItems: "center" }}>
-                    <span style={{ color: "#d1d5db", fontSize: 13, margin: "0 4px", userSelect: "none" }} aria-hidden>·</span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "#8b909a" }}>{m.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeDraftMember(m.id)}
-                      style={modalMemberRemoveBtn}
-                      aria-label={`${m.name} 제거`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </>
-            ) : (
-              draftMembers.map((m, i) => (
-                <span key={m.id} style={{ display: "inline-flex", alignItems: "center" }}>
-                  {i > 0 && (
-                    <span style={{ color: "#d1d5db", fontSize: 13, marginRight: 4, userSelect: "none" }} aria-hidden>·</span>
-                  )}
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "#8b909a" }}>{m.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeDraftMember(m.id)}
-                    style={modalMemberRemoveBtn}
-                    aria-label={`${m.name} 제거`}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))
-            )}
+                  ×
+                </button>
+              </span>
+            ))}
           </div>
         )}
       </div>
@@ -1454,7 +1811,7 @@ function OrgDeptMokWizardModal({
 
   const addMemberPanel = (
     <div style={{ marginBottom: 12, flexShrink: 0 }}>
-      <label style={modalFieldLabel}>{isDept ? "성도 추가" : mokjangLabels.memberAdd}</label>
+      <label style={modalFieldLabel}>{mokjangLabels.memberAdd}</label>
       <OrgModalSelect
         value=""
         onChange={handleMemberSelect}
@@ -1464,9 +1821,7 @@ function OrgDeptMokWizardModal({
         {availableMembers.map((m) => (
           <option key={m.id} value={m.id}>
             {m.name}
-            {isDept
-              ? ` (${(m.mokjang ?? m.group) || mokjangLabels.none})`
-              : ` (${m.dept || "부서 없음"})`}
+            {` (${m.dept || "부서 없음"})`}
           </option>
         ))}
       </OrgModalSelect>
@@ -1539,30 +1894,28 @@ function OrgDeptMokWizardModal({
                 autoFocus
                 value={name}
                 onChange={(e) => onNameChange(e.target.value)}
-                placeholder={isDept ? INPUT_PLACEHOLDERS.dept : mokjangLabels.placeholder}
+                placeholder={mokjangLabels.placeholder}
                 onKeyDown={(e) => { if (e.key === "Enter") onNext(); }}
                 style={{ ...modalInputStyle, marginBottom: 0 }}
               />
             </div>
           ) : (
             <>
-              {!isDept && (
-                <div style={{ marginBottom: 12, flexShrink: 0 }}>
-                  <label style={modalFieldLabel}>
-                    {leaderLabel} 지정 <span style={{ fontWeight: 500, color: "#b0b4bc" }}>(선택)</span>
-                  </label>
-                  <OrgModalSelect
-                    value={leaderId ?? ""}
-                    onChange={(v) => handleLeaderChange(v || null)}
-                    placeholder={`${leaderLabel} 없음`}
-                    aria-label={`${leaderLabel} 선택`}
-                  >
-                    {leaderCandidates.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </OrgModalSelect>
-                </div>
-              )}
+              <div style={{ marginBottom: 12, flexShrink: 0 }}>
+                <label style={modalFieldLabel}>
+                  {leaderLabel} 지정 <span style={{ fontWeight: 500, color: "#b0b4bc" }}>(선택)</span>
+                </label>
+                <OrgModalSelect
+                  value={leaderId ?? ""}
+                  onChange={(v) => handleLeaderChange(v || null)}
+                  placeholder={`${leaderLabel} 없음`}
+                  aria-label={`${leaderLabel} 선택`}
+                >
+                  {leaderCandidates.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </OrgModalSelect>
+              </div>
 
               {addMemberPanel}
               {memberListPanel}
