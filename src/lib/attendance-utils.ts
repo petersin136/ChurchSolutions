@@ -163,7 +163,7 @@ export function aggregateYearlyAverage(
 }
 
 /** AppDataContext 출석 로드 — 올해·작년만 (대시보드 초기 로딩 속도) */
-export const ATTENDANCE_LOAD_YEARS = 2;
+export const ATTENDANCE_LOAD_YEARS = 3;
 
 export function getAttendanceLoadMinYear(from: Date = new Date()): number {
   return from.getFullYear() - (ATTENDANCE_LOAD_YEARS - 1);

@@ -1124,7 +1124,12 @@ function DashboardSub({
     const start = Math.max(1, Math.min(currentWeek - 4, 48));
     const weeks: { wk: number; label: string; present: number; total: number; rate: number; isCurrent: boolean }[] = [];
     for (let wk = start; wk <= start + 4; wk++) {
-      const present = weeklyAtt[wk - 1] ?? 0;
+      let present = weeklyAtt[wk - 1] ?? 0;
+      const isCurrent = isCurrentYearSel && wk === currentWeek;
+      // 아직 출석 기록이 없는 현재 주차는 직전 주 데이터로 막대 표시
+      if (isCurrent && present === 0 && wk > 1) {
+        present = weeklyAtt[wk - 2] ?? 0;
+      }
       const d = new Date(attChartYear, 0, 1 + (wk - 1) * 7);
       const wom = Math.ceil(d.getDate() / 7);
       weeks.push({
@@ -1133,7 +1138,7 @@ function DashboardSub({
         present,
         total: activeMembers.length,
         rate: activeMembers.length > 0 ? Math.round((present / activeMembers.length) * 100) : 0,
-        isCurrent: isCurrentYearSel && wk === currentWeek,
+        isCurrent,
       });
     }
     return weeks;
@@ -1158,7 +1163,7 @@ function DashboardSub({
 
   /** 연간(Y): 올해·작년 평균 출석/총원 % */
   const yearlyTrend = useMemo(() => {
-    const years = [currentYear - 1, currentYear];
+    const years = [currentYear - 2, currentYear - 1, currentYear];
     return years.map(y => {
       const rows = rawAttendance.filter(
         r => r.year === y && (r.status === "p" || r.status === "o") && (r.service_type === "주일예배" || !r.service_type),
@@ -2026,8 +2031,11 @@ function DashboardSub({
                 { bg: DASH_CHART.statBarYearMid, text: DASH_CHART.statTextYearMid, sub: DASH_CHART.statSubYearMid, textShadow: "0 1px 1px rgba(255,255,255,0.55)" },
                 { bg: DASH_CHART.statBarHighlight, text: DASH_CHART.statTextYearHighlight, sub: DASH_CHART.statSubYearHighlight, textShadow: "0 1px 1px rgba(255,255,255,0.45)" },
               ] as const;
+              const yearBookendLayout = yearlyTrend.length >= 3;
               const yearBlockWidth = mob ? "50%" : "48%";
               const yearBlockOverlap = mob ? "-24%" : "-22%";
+              const yearSideWidth = mob ? "46%" : "44%";
+              const yearMidWidth = mob ? "40%" : "38%";
               const yearLabelStyle = (palette: (typeof yearBlockStyles)[number], isFront: boolean): CSSProperties => ({
                 fontSize: yearChartTypo.label,
                 color: palette.sub,
@@ -2039,7 +2047,7 @@ function DashboardSub({
                 overflow: "hidden",
               });
               return (
-                <div style={{ display: "flex", alignItems: "stretch", width: "100%", flex: 1, minHeight: 0, paddingTop: mob ? 8 : 10, boxSizing: "border-box" }}>
+                <div style={{ position: yearBookendLayout ? "relative" : undefined, display: "flex", alignItems: "stretch", width: "100%", flex: 1, minHeight: 0, paddingTop: mob ? 8 : 10, boxSizing: "border-box" }}>
                   {yearlyTrend.map((y, i) => {
                     const palette = yearBlockStyles[i] ?? yearBlockStyles[yearBlockStyles.length - 1];
                     const isFront = i === yearlyTrend.length - 1;
@@ -2047,10 +2055,20 @@ function DashboardSub({
                     const hasData = visualRate > 0;
                     const spacerFlex = Math.max(0, yearChartFullRate - (hasData ? visualRate : 0));
                     const barFlex = hasData ? visualRate : 0;
-                    return (
-                      <div
-                        key={y.year}
-                        style={{
+                    const shellStyle: CSSProperties = yearBookendLayout
+                      ? {
+                          position: "absolute",
+                          top: 0,
+                          bottom: 0,
+                          width: i === 1 ? yearMidWidth : yearSideWidth,
+                          display: "flex",
+                          flexDirection: "column",
+                          minHeight: 0,
+                          ...(i === 0 ? { left: 0, zIndex: 2 } : {}),
+                          ...(i === 1 ? { left: "50%", transform: "translateX(-50%)", zIndex: 1 } : {}),
+                          ...(i >= 2 ? { right: 0, zIndex: 3 + i - 2 } : {}),
+                        }
+                      : {
                           flex: `0 0 ${yearBlockWidth}`,
                           width: yearBlockWidth,
                           marginLeft: i > 0 ? yearBlockOverlap : 0,
@@ -2060,7 +2078,11 @@ function DashboardSub({
                           flexDirection: "column",
                           minHeight: 0,
                           alignSelf: "stretch",
-                        }}
+                        };
+                    return (
+                      <div
+                        key={y.year}
+                        style={shellStyle}
                       >
                         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, justifyContent: "flex-end" }}>
                           {spacerFlex > 0 && <div style={{ flex: spacerFlex, minHeight: 0 }} />}
