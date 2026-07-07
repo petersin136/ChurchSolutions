@@ -10,6 +10,7 @@ import { ModernSelect } from "@/components/common/ModernSelect";
 import LazyChart from "../common/LazyChart";
 import { MemberPhotoCircle } from "@/components/common/MemberPhoto";
 import { getSundayForWeekNum, getWeekNum } from "@/lib/store";
+import { getAttendanceLoadYearOptions } from "@/lib/attendance-utils";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
@@ -264,8 +265,8 @@ export function AttendanceStatistics({
   const depts = useMemo(() => Array.from(new Set(activeMembers.map((m) => m.dept).filter(Boolean))) as string[], [activeMembers]);
 
   const quickYearOptions = useMemo(
-    () => [thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: `${y}년` })),
-    [thisYear]
+    () => getAttendanceLoadYearOptions().map((y) => ({ value: String(y), label: `${y}년` })),
+    [],
   );
   const quickWeekOptions = useMemo(
     () => [

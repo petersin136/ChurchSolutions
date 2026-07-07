@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 import type { DB, Member, Note, AttStatus, NewFamilyProgram, Attendance } from "@/types/db";
 import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
-import { countSundayPresent, getThisSundayStr, isChurchActiveMember, isMemberStatusActive } from "@/lib/attendance-utils";
+import { countSundayPresent, getThisSundayStr, isChurchActiveMember, isMemberStatusActive, getAttendanceLoadYearOptions, getAttendanceLoadMinYear } from "@/lib/attendance-utils";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1014,7 +1014,7 @@ function DashboardSub({
     [],
   );
   const currentYear = new Date().getFullYear();
-  const attChartYearOptions = useMemo(() => Array.from({ length: 6 }, (_, i) => currentYear - i), [currentYear]);
+  const attChartYearOptions = useMemo(() => getAttendanceLoadYearOptions(), []);
   const [attChartView, setAttChartView] = useState<AttChartView>("week");
   const [attChartYear, setAttChartYear] = useState(currentYear);
   const statGridRef = useRef<HTMLDivElement>(null);
@@ -1155,9 +1155,9 @@ function DashboardSub({
     }));
   }, [rawAttendance, attChartYear, isCurrentYearSel, currentMonthIdx]);
 
-  /** 연간(Y): 최근 3년, 연 평균 출석/총원 %, 최신 연도 주황 하이라이트 */
-  const yearly3 = useMemo(() => {
-    const years = [currentYear - 2, currentYear - 1, currentYear];
+  /** 연간(Y): 올해·작년 평균 출석/총원 % */
+  const yearlyTrend = useMemo(() => {
+    const years = [currentYear - 1, currentYear];
     return years.map(y => {
       const rows = rawAttendance.filter(
         r => r.year === y && (r.status === "p" || r.status === "o") && (r.service_type === "주일예배" || !r.service_type),
@@ -2004,7 +2004,7 @@ function DashboardSub({
               }
 
               const yearChartFullRate = 100;
-              const yearHasData = yearly3.some((y) => y.rate > 0);
+              const yearHasData = yearlyTrend.some((y) => y.rate > 0);
               if (!yearHasData) return emptyMsg;
               const yearBlockStyles = [
                 { bg: DASH_CHART.statBarYearBack, text: DASH_CHART.statTextYearBack, sub: DASH_CHART.statSubYearBack, textShadow: "0 1px 1px rgba(0,0,0,0.1)" },
@@ -2025,9 +2025,9 @@ function DashboardSub({
               });
               return (
                 <div style={{ display: "flex", alignItems: "stretch", width: "100%", flex: 1, minHeight: 0, paddingTop: mob ? 8 : 10, boxSizing: "border-box" }}>
-                  {yearly3.map((y, i) => {
+                  {yearlyTrend.map((y, i) => {
                     const palette = yearBlockStyles[i] ?? yearBlockStyles[yearBlockStyles.length - 1];
-                    const isFront = i === yearly3.length - 1;
+                    const isFront = i === yearlyTrend.length - 1;
                     const visualRate = Math.min(y.rate, 100);
                     const hasData = visualRate > 0;
                     const spacerFlex = Math.max(0, yearChartFullRate - (hasData ? visualRate : 0));
@@ -4735,8 +4735,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     if (!supabase || !churchId) return;
     supabase
       .from("attendance")
-      .select("id, member_id, week_num, date, status, reason")
+      .select("id, member_id, week_num, year, date, status, reason")
       .eq("church_id", churchId)
+      .gte("year", getAttendanceLoadMinYear())
       .then(({ data, error }: { data: unknown[] | null; error: { message: string; details?: unknown } | null }) => {
         if (error) {
           console.warn("[PastoralPage] refetchAttendance error:", error.message);

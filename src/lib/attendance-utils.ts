@@ -161,3 +161,15 @@ export function aggregateYearlyAverage(
   const rate = totalMembers > 0 ? Math.round((present / totalMembers) * 100) : 0;
   return { present, total: totalMembers, rate };
 }
+
+/** AppDataContext 출석 로드 — 올해·작년만 (대시보드 초기 로딩 속도) */
+export const ATTENDANCE_LOAD_YEARS = 2;
+
+export function getAttendanceLoadMinYear(from: Date = new Date()): number {
+  return from.getFullYear() - (ATTENDANCE_LOAD_YEARS - 1);
+}
+
+export function getAttendanceLoadYearOptions(from: Date = new Date()): number[] {
+  const y = from.getFullYear();
+  return Array.from({ length: ATTENDANCE_LOAD_YEARS }, (_, i) => y - i);
+}

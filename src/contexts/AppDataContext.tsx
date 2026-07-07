@@ -6,6 +6,7 @@ import { DEFAULT_DB } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadDBFromSupabase, saveDBToSupabase, toMember, toVisit, toIncome, toExpense, toNewFamilyProgram, toPlan, toSermon } from "@/lib/supabase-db";
+import { getAttendanceLoadMinYear } from "@/lib/attendance-utils";
 
 /** attendance 등 대량 테이블은 여러 페이지 fetch로 10초를 넘길 수 있음 */
 const REFRESH_TIMEOUT_MS = 120000;
@@ -124,6 +125,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (table === "attendance") {
         const PAGE_SIZE = 1000;
+        const minYear = getAttendanceLoadMinYear();
         const allRows: RawAttendanceRow[] = [];
         let from = 0;
         while (true) {
@@ -131,6 +133,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             .from("attendance")
             .select("*")
             .eq("church_id", cid)
+            .gte("year", minYear)
             .range(from, from + PAGE_SIZE - 1);
           if (error) {
             console.warn("[AppData] attendance fetch error:", error.message);
@@ -146,6 +149,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         console.log(
           "[AppData] attendance loaded total:",
           allRows.length,
+          `minYear: ${minYear}`,
           "years:",
           Array.from(new Set(allRows.map((r) => (r as { year?: number }).year))).sort((a, b) => (a ?? 0) - (b ?? 0)),
         );
