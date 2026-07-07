@@ -76,6 +76,11 @@ export async function loadDBFromSupabase(optionalChurchId?: string | null): Prom
       depts: settingsRow?.depts ?? empty.settings.depts,
       fiscalStart: settingsRow?.fiscal_start ?? empty.settings.fiscalStart,
       denomination: (settingsRow as Record<string, unknown>)?.denomination as string | undefined ?? empty.settings.denomination,
+      baptismTerminology: (() => {
+        const raw = (settingsRow as Record<string, unknown>)?.baptism_terminology as string | undefined;
+        if (raw === "chimrye" || raw === "seryae") return raw;
+        return empty.settings.baptismTerminology;
+      })(),
       address: (settingsRow as Record<string, unknown>)?.address as string | undefined ?? empty.settings.address,
       pastor: (settingsRow as Record<string, unknown>)?.pastor as string | undefined ?? empty.settings.pastor,
       businessNumber: (settingsRow as Record<string, unknown>)?.business_number as string | undefined ?? empty.settings.businessNumber,
@@ -401,6 +406,9 @@ export async function saveSettingsToSupabase(settings: DB["settings"]): Promise<
     depts: settings.depts,
     fiscal_start: settings.fiscalStart,
     ...(settings.denomination !== undefined && { denomination: settings.denomination }),
+    ...(settings.baptismTerminology !== undefined && {
+      baptism_terminology: settings.baptismTerminology === "auto" ? null : settings.baptismTerminology,
+    }),
     ...(settings.address !== undefined && { address: settings.address }),
     ...(settings.pastor !== undefined && { pastor: settings.pastor }),
     ...(settings.businessNumber !== undefined && { business_number: settings.businessNumber }),

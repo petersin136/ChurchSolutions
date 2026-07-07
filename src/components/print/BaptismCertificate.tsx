@@ -1,25 +1,21 @@
 "use client";
 
 import type { Member } from "@/types/db";
+import type { Settings } from "@/types/db";
 import { registerKoreanFont } from "@/utils/fontLoader";
-
-/** 교단명에 '침례'가 포함되면 '침례' 표기 (예: 침례교, 기독교한국침례회) */
-function isBaptistDenomination(denomination?: string | null): boolean {
-  const d = denomination?.trim();
-  return Boolean(d && d.includes("침례"));
-}
+import { displayBaptismType, getBaptismTermLabels } from "@/lib/churchTerminology";
 
 export async function generateBaptismCertificatePdf(
   member: Member,
   churchName: string,
   sealImageUrl?: string | null,
-  denomination?: string | null
+  settings?: Pick<Settings, "baptismTerminology" | "denomination"> | null,
 ): Promise<void> {
-  const useChimrye = isBaptistDenomination(denomination);
-  const title = useChimrye ? "침 례 증 명 서" : "세 례 증 명 서";
-  const defaultType = useChimrye ? "침례" : "세례";
-  const dateLabel = useChimrye ? "침례일" : "세례일";
-  const fileNamePrefix = useChimrye ? "침례증명서" : "세례증명서";
+  const labels = getBaptismTermLabels(settings ?? {});
+  const title = labels.baptismCertificateTitle;
+  const defaultType = labels.baptism;
+  const dateLabel = labels.baptismDate;
+  const fileNamePrefix = labels.baptismCertificate;
 
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -35,7 +31,7 @@ export async function generateBaptismCertificatePdf(
   y += 20;
 
   doc.setFontSize(10);
-  const displayType = useChimrye && member.baptism_type === "세례" ? "침례" : (member.baptism_type ?? defaultType);
+  const displayType = displayBaptismType(member.baptism_type, settings ?? {}) || defaultType;
   doc.text(`위 사람은 본 교회에서 ${displayType}를 받았음을 증명합니다.`, 105, y, { align: "center" });
   y += 10;
   doc.text(`${dateLabel}: ${member.baptism_date ?? "-"}`, 105, y, { align: "center" });

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { DB, Member, Note } from "@/types/db";
 import { getDepts } from "@/lib/store";
 import { CATS_INCOME, CATS_EXPENSE } from "@/types/db";
@@ -12,11 +13,14 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
 
 function ModalOverlay({ open, id, children }: { open: boolean; id: string; children: ReactNode }) {
-  if (!open) return null;
-  return (
-    <div className="modal-bg open" id={id}>
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!open || !mounted) return null;
+  return createPortal(
+    <div id={id} className="app-modal-overlay open" role="presentation">
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 }
 

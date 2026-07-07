@@ -1,22 +1,18 @@
 "use client";
 
 import type { Member } from "@/types/db";
+import type { Settings } from "@/types/db";
 import { registerKoreanFont } from "@/utils/fontLoader";
-
-/** 교단명에 '침례'가 포함되면 '침례' 표기 (예: 침례교, 기독교한국침례회) */
-function isBaptistDenomination(denomination?: string | null): boolean {
-  const d = denomination?.trim();
-  return Boolean(d && d.includes("침례"));
-}
+import { displayBaptismType, getBaptismTermLabels } from "@/lib/churchTerminology";
 
 export async function generateChurchRegisterPdf(
   member: Member,
   churchName: string,
-  denomination?: string | null
+  settings?: Pick<Settings, "baptismTerminology" | "denomination"> | null,
 ): Promise<void> {
-  const useChimrye = isBaptistDenomination(denomination);
-  const dateLabel = useChimrye ? "침례일" : "세례일";
-  const typeLabel = useChimrye ? "침례 유형" : "세례 유형";
+  const labels = getBaptismTermLabels(settings ?? {});
+  const dateLabel = labels.baptismDate;
+  const typeLabel = labels.useChimrye ? "침례 유형" : "세례 유형";
 
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -32,7 +28,7 @@ export async function generateChurchRegisterPdf(
   y += 14;
 
   doc.setFontSize(10);
-  const baptismTypeDisplay = useChimrye && member.baptism_type === "세례" ? "침례" : (member.baptism_type ?? "-");
+  const baptismTypeDisplay = displayBaptismType(member.baptism_type, settings ?? {});
   const rows: [string, string][] = [
     ["성명", member.name ?? "-"],
     ["부서", member.dept ?? "-"],

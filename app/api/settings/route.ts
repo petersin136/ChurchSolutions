@@ -10,6 +10,7 @@ export async function POST(request: Request) {
     const depts = body?.depts ?? "";
     const fiscalStart = body?.fiscalStart ?? "1";
     const denomination = body?.denomination ?? "";
+    const baptismTerminology = body?.baptismTerminology ?? "auto";
     const address = body?.address ?? "";
     const pastor = body?.pastor ?? "";
     const businessNumber = body?.businessNumber ?? "";
@@ -22,6 +23,8 @@ export async function POST(request: Request) {
       depts,
       fiscal_start: fiscalStart,
       denomination: denomination || null,
+      baptism_terminology:
+        baptismTerminology === "chimrye" || baptismTerminology === "seryae" ? baptismTerminology : null,
       address: address || null,
       pastor: pastor || null,
       business_number: businessNumber || null,

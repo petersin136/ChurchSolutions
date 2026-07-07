@@ -30,6 +30,7 @@ import {
   getStepsForTemplate,
   deleteSession,
 } from "@/lib/ceremony";
+import { getCeremonyCategoryTabs } from "@/lib/churchTerminology";
 import { PcButton } from "@/components/ui/PcButton";
 import { PcInput } from "@/components/ui/PcInput";
 import { CeremonyTemplatePicker } from "./CeremonyTemplatePicker";
@@ -63,28 +64,6 @@ const KNOWN_CATEGORIES = [
   "wedding",
   "ordination",
 ] as const;
-
-interface CategoryTab {
-  id: string;
-  label: string;
-  /** 이 탭이 매칭하는 category 코드 목록. null 이면 전체 매칭. */
-  categories: readonly string[] | null;
-  /** "기타" 처럼 known 에 없는 모든 카테고리를 잡기 위한 inverse 매칭 플래그 */
-  matchUnknown?: boolean;
-}
-
-const CATEGORY_TABS: CategoryTab[] = [
-  { id: "all",       label: "전체",     categories: null },
-  { id: "funeral",   label: "장례",     categories: ["funeral"] },
-  { id: "memorial",  label: "추도예배", categories: ["memorial"] },
-  { id: "visit",     label: "심방예배", categories: ["visit"] },
-  { id: "holiday",   label: "명절",     categories: ["holiday"] },
-  { id: "communion", label: "성찬식",   categories: ["communion"] },
-  { id: "baptism",   label: "세례",     categories: ["baptism"] },
-  { id: "wedding",   label: "결혼",     categories: ["wedding"] },
-  { id: "ordination", label: "임직",   categories: ["ordination"] },
-  { id: "etc",       label: "기타",     categories: null, matchUnknown: true },
-];
 
 type StatusFilter = "all" | CeremonySessionStatus;
 
@@ -154,7 +133,7 @@ function calcProgress(
  * ────────────────────────────────────────── */
 export function CeremonyBoard({ toast }: CeremonyBoardProps) {
   const mob = useIsMobile();
-  const { ceremonyTemplates, ceremonySteps, ceremonySessions, refreshCeremonySessions } =
+  const { db, ceremonyTemplates, ceremonySteps, ceremonySessions, refreshCeremonySessions } =
     useAppData();
   const { canEdit, canManage } = useCeremonyPermissions();
 
@@ -163,9 +142,11 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const categoryTabs = useMemo(() => getCeremonyCategoryTabs(db.settings), [db.settings]);
+
   const currentTab = useMemo(
-    () => CATEGORY_TABS.find((t) => t.id === categoryTabId) ?? CATEGORY_TABS[0],
-    [categoryTabId],
+    () => categoryTabs.find((t) => t.id === categoryTabId) ?? categoryTabs[0],
+    [categoryTabId, categoryTabs],
   );
 
   /** 카테고리 탭 + 교단 + is_active 필터가 적용된 가시 템플릿 */
@@ -351,7 +332,7 @@ export function CeremonyBoard({ toast }: CeremonyBoardProps) {
             minWidth: 0,
           }}
         >
-          {CATEGORY_TABS.map((tab) => {
+          {categoryTabs.map((tab) => {
             const selected = tab.id === categoryTabId;
             return (
               <button

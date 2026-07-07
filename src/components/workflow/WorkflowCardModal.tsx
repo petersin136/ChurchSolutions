@@ -598,7 +598,6 @@ export function WorkflowCardModal({ open, cardId, onClose, onToast }: WorkflowCa
       open={open}
       onClose={onClose}
       title="사역흐름 상세"
-      maxWidth={640}
       footer={footer}
     >
       {headerBlock}

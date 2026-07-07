@@ -20,6 +20,8 @@ import { PcButton, PcCard, PcInput, PcSegmented, PcTabs } from "@/components/ui"
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { getSundayForWeekNum, saveSettingsToSupabase } from "@/lib/store";
+import { SmallGroupTermField } from "@/components/settings/SmallGroupTermField";
+import { BaptismTerminologyField } from "@/components/settings/BaptismTerminologyField";
 import settingsStyles from "./ReportsSettingsPage.module.css";
 import reportItemStyles from "./ReportItemCard.module.css";
 
@@ -463,21 +465,73 @@ function ThemeSettingsCard() {
   );
 }
 
-function ChurchInfoSettingsCard({ db, setDb, save, toast }: Pick<ReportsSettingsPageProps, "db" | "setDb" | "save" | "toast">) {
-  const s = db.settings;
-  const patch = (partial: Partial<Settings>) => {
-    setDb((prev) => ({ ...prev, settings: { ...prev.settings, ...partial } }));
+type ChurchInfoDraft = Pick<
+  Settings,
+  "churchName" | "pastor" | "address" | "businessNumber" | "denomination" | "baptismTerminology"
+>;
+
+function pickChurchInfoDraft(s: Settings): ChurchInfoDraft {
+  return {
+    churchName: s.churchName ?? "",
+    pastor: s.pastor ?? "",
+    address: s.address ?? "",
+    businessNumber: s.businessNumber ?? "",
+    denomination: s.denomination ?? "",
+    baptismTerminology: s.baptismTerminology ?? "auto",
   };
+}
+
+function ChurchInfoSettingsCard({ db, setDb, save, toast }: Pick<ReportsSettingsPageProps, "db" | "setDb" | "save" | "toast">) {
+  const churchId = getChurchId() || null;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const editingRef = useRef(false);
+  const [draft, setDraft] = useState<ChurchInfoDraft>(() => pickChurchInfoDraft(db.settings));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (editingRef.current) return;
+    setDraft(pickChurchInfoDraft(db.settings));
+  }, [
+    db.settings.churchName,
+    db.settings.pastor,
+    db.settings.address,
+    db.settings.businessNumber,
+    db.settings.denomination,
+    db.settings.baptismTerminology,
+  ]);
+
+  const patch = (partial: Partial<ChurchInfoDraft>) => {
+    setDraft((prev) => ({ ...prev, ...partial }));
+  };
+
+  const handleFieldFocus = () => {
+    editingRef.current = true;
+  };
+
+  const handleFieldBlur = () => {
+    window.setTimeout(() => {
+      if (!cardRef.current?.contains(document.activeElement)) {
+        editingRef.current = false;
+      }
+    }, 0);
+  };
+
   const handleSave = async () => {
+    const nextSettings = { ...db.settings, ...draft };
+    setSaving(true);
     try {
-      await saveSettingsToSupabase(db.settings);
+      await saveSettingsToSupabase(nextSettings);
+      setDb((prev) => ({ ...prev, settings: nextSettings }));
       save();
       toast("교회 정보가 저장되었습니다", "ok");
     } catch (e) {
       console.error(e);
       toast("교회 정보 저장 실패: " + (e instanceof Error ? e.message : String(e)), "err");
+    } finally {
+      setSaving(false);
     }
   };
+
   return (
     <PcCard padding="lg" elevation="sm" className={settingsStyles.settingCard}>
       <div className={settingsStyles.settingsCardHead}>
@@ -486,30 +540,61 @@ function ChurchInfoSettingsCard({ db, setDb, save, toast }: Pick<ReportsSettings
         </div>
         <div className={settingsStyles.settingsHeadText}>
           <h3 className={settingsStyles.settingsHeadTitle}>교회 정보</h3>
-          <p className={settingsStyles.settingsHeadDesc}>기본 교회 메타데이터를 입력하고 저장합니다.</p>
+          <p className={settingsStyles.settingsHeadDesc}>기본 교회 메타데이터, 소그룹·세례 표기를 설정합니다.</p>
         </div>
       </div>
       <hr className={settingsStyles.settingsDivider} />
-      <div className={settingsStyles.settingsStack}>
-        <PcInput size="lg" label="교회명" value={s.churchName ?? ""} onChange={(e) => patch({ churchName: e.target.value })} />
-        <PcInput size="lg" label="담임목사명" value={s.pastor ?? ""} onChange={(e) => patch({ pastor: e.target.value })} />
-        <PcInput size="lg" label="소재지" value={s.address ?? ""} onChange={(e) => patch({ address: e.target.value })} />
+      <div ref={cardRef} className={settingsStyles.settingsStack}>
+        <PcInput
+          size="lg"
+          label="교회명"
+          value={draft.churchName ?? ""}
+          onFocus={handleFieldFocus}
+          onBlur={handleFieldBlur}
+          onChange={(e) => patch({ churchName: e.target.value })}
+        />
+        <PcInput
+          size="lg"
+          label="담임목사명"
+          value={draft.pastor ?? ""}
+          onFocus={handleFieldFocus}
+          onBlur={handleFieldBlur}
+          onChange={(e) => patch({ pastor: e.target.value })}
+        />
+        <PcInput
+          size="lg"
+          label="소재지"
+          value={draft.address ?? ""}
+          onFocus={handleFieldFocus}
+          onBlur={handleFieldBlur}
+          onChange={(e) => patch({ address: e.target.value })}
+        />
         <PcInput
           size="lg"
           label="사업자등록번호(고유번호)"
-          value={s.businessNumber ?? ""}
+          value={draft.businessNumber ?? ""}
+          onFocus={handleFieldFocus}
+          onBlur={handleFieldBlur}
           onChange={(e) => patch({ businessNumber: e.target.value })}
         />
         <PcInput
           size="lg"
           label="교단"
-          value={s.denomination ?? ""}
+          value={draft.denomination ?? ""}
           placeholder="예: 장로교, 침례교"
+          onFocus={handleFieldFocus}
+          onBlur={handleFieldBlur}
           onChange={(e) => patch({ denomination: e.target.value })}
         />
+        <BaptismTerminologyField
+          value={draft.baptismTerminology ?? "auto"}
+          denomination={draft.denomination}
+          onChange={(baptismTerminology) => patch({ baptismTerminology })}
+        />
+        <SmallGroupTermField churchId={churchId} />
         <div className={settingsStyles.settingsActionsRow}>
-          <PcButton type="button" variant="primary" onClick={handleSave}>
-            저장
+          <PcButton type="button" variant="primary" onClick={handleSave} disabled={saving}>
+            {saving ? "저장 중…" : "저장"}
           </PcButton>
         </div>
       </div>
@@ -517,15 +602,45 @@ function ChurchInfoSettingsCard({ db, setDb, save, toast }: Pick<ReportsSettings
   );
 }
 
-function NotificationSettingsCard({ db, setDb, save }: Pick<ReportsSettingsPageProps, "db" | "setDb" | "save">) {
-  const s = db.settings;
-  const weeks = s.absenteeAlertConsecutiveWeeks ?? 3;
-  const newFamilyOn = s.alertNewFamilyIncomplete !== false;
-  const patch = (partial: Partial<Settings>) => {
-    setDb((prev) => ({ ...prev, settings: { ...prev.settings, ...partial } }));
-    save();
-  };
-  const weeksValue = Number.isFinite(weeks) ? weeks : 3;
+function NotificationSettingsCard({ db, setDb }: Pick<ReportsSettingsPageProps, "db" | "setDb">) {
+  const [draft, setDraft] = useState(() => ({
+    absenteeAlertConsecutiveWeeks: db.settings.absenteeAlertConsecutiveWeeks ?? 3,
+    alertNewFamilyIncomplete: db.settings.alertNewFamilyIncomplete !== false,
+  }));
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editingRef = useRef(false);
+
+  useEffect(() => {
+    if (editingRef.current) return;
+    setDraft({
+      absenteeAlertConsecutiveWeeks: db.settings.absenteeAlertConsecutiveWeeks ?? 3,
+      alertNewFamilyIncomplete: db.settings.alertNewFamilyIncomplete !== false,
+    });
+  }, [db.settings.absenteeAlertConsecutiveWeeks, db.settings.alertNewFamilyIncomplete]);
+
+  const commit = useCallback(
+    (next: typeof draft) => {
+      setDraft(next);
+      const nextSettings = { ...db.settings, ...next };
+      setDb((prev) => ({ ...prev, settings: { ...prev.settings, ...next } }));
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        void saveSettingsToSupabase(nextSettings).catch((e) => {
+          console.error("[NotificationSettings] save failed:", e);
+        });
+      }, 800);
+    },
+    [db.settings, setDb],
+  );
+
+  useEffect(() => () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  }, []);
+
+  const weeksValue = Number.isFinite(draft.absenteeAlertConsecutiveWeeks)
+    ? draft.absenteeAlertConsecutiveWeeks
+    : 3;
+
   return (
     <PcCard padding="lg" elevation="sm" className={settingsStyles.settingCard}>
       <div className={settingsStyles.settingsCardHead}>
@@ -548,18 +663,20 @@ function NotificationSettingsCard({ db, setDb, save }: Pick<ReportsSettingsPageP
           label="결석 알림 기준 (연속 주)"
           helperText="연속 결석이 이 주 수에 도달하면 알림(향후 연동) 기준으로 사용됩니다."
           value={String(weeksValue)}
+          onFocus={() => { editingRef.current = true; }}
+          onBlur={() => { editingRef.current = false; }}
           onChange={(e) => {
             const raw = Number(e.target.value);
             if (!Number.isFinite(raw)) return;
             const clamped = Math.min(8, Math.max(2, Math.round(raw)));
-            patch({ absenteeAlertConsecutiveWeeks: clamped });
+            commit({ ...draft, absenteeAlertConsecutiveWeeks: clamped });
           }}
         />
         <div className={settingsStyles.toggleRow}>
           <span className={settingsStyles.toggleLabel}>새가족 정착 미완료 알림</span>
           <PcSegmented
-            value={newFamilyOn ? "on" : "off"}
-            onChange={(v) => patch({ alertNewFamilyIncomplete: v === "on" })}
+            value={draft.alertNewFamilyIncomplete ? "on" : "off"}
+            onChange={(v) => commit({ ...draft, alertNewFamilyIncomplete: v === "on" })}
             options={[
               { value: "on", label: "켜기" },
               { value: "off", label: "끄기" },
@@ -2063,7 +2180,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
             <h2 className={settingsStyles.settingsHeading}>설정</h2>
             <ThemeSettingsCard />
             <ChurchInfoSettingsCard db={db} setDb={setDb} save={save} toast={toast} />
-            <NotificationSettingsCard db={db} setDb={setDb} save={save} />
+            <NotificationSettingsCard db={db} setDb={setDb} />
             <DataBackupPanel db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
             <AccountLogoutPanel />
           </section>

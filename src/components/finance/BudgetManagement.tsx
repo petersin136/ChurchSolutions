@@ -269,48 +269,63 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
 
   const loadBudget = async (selectedYear: string, isCancelled: () => boolean) => {
     const aborted = () => isCancelled();
-
-    if (!supabase) {
-      if (aborted()) return;
-      setLoading(false);
-      setIncomeRows(DEFAULT_INCOME_CATEGORIES.map((cat) => ({ category: cat, amounts: MONTHS.reduce((acc, m) => ({ ...acc, [m]: 0 }), {} as Record<number, number>) })));
-      setExpenseRows(DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: MONTHS.reduce((acc, m) => ({ ...acc, [m]: 0 }), {} as Record<number, number>) })));
-      return;
-    }
-    if (aborted()) return;
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("budget")
-      .select("*")
-      .eq("church_id", getChurchId())
-      .eq("fiscal_year", selectedYear)
-      .order("category_type", { ascending: true })
-      .order("category", { ascending: true });
-    if (aborted()) return;
-    if (error) {
-      console.error(error);
-      if (aborted()) return;
-      toast("데이터 로드 실패: " + error.message, "err");
+    const applyDefaultRows = () => {
       setIncomeRows(DEFAULT_INCOME_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) })));
       setExpenseRows(DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) })));
-      setLoading(false);
+    };
+
+    if (!supabase) {
+      if (!aborted()) {
+        applyDefaultRows();
+        setLoading(false);
+      }
       return;
     }
-    if (aborted()) return;
-    const budgets = (data ?? []) as Budget[];
-    const inc = budgets.filter((b) => b.category_type === "수입");
-    const exp = budgets.filter((b) => b.category_type === "지출");
-    setIncomeRows(
-      inc.length > 0
-        ? inc.map((b) => ({ category: b.category, amounts: toAmounts(b.monthly_amounts) }))
-        : DEFAULT_INCOME_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) }))
-    );
-    setExpenseRows(
-      exp.length > 0
-        ? exp.map((b) => ({ category: b.category, amounts: toAmounts(b.monthly_amounts) }))
-        : DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) }))
-    );
-    if (!aborted()) setLoading(false);
+
+    if (!aborted()) setLoading(true);
+
+    try {
+      if (aborted()) return;
+
+      const churchId = getChurchId();
+      const { data, error } = await supabase
+        .from("budget")
+        .select("*")
+        .eq("church_id", churchId)
+        .eq("fiscal_year", selectedYear)
+        .order("category_type", { ascending: true })
+        .order("category", { ascending: true });
+
+      if (aborted()) return;
+
+      if (error) {
+        console.error(error);
+        toast("데이터 로드 실패: " + error.message, "err");
+        applyDefaultRows();
+        return;
+      }
+
+      const budgets = (data ?? []) as Budget[];
+      const inc = budgets.filter((b) => b.category_type === "수입");
+      const exp = budgets.filter((b) => b.category_type === "지출");
+      setIncomeRows(
+        inc.length > 0
+          ? inc.map((b) => ({ category: b.category, amounts: toAmounts(b.monthly_amounts) }))
+          : DEFAULT_INCOME_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) }))
+      );
+      setExpenseRows(
+        exp.length > 0
+          ? exp.map((b) => ({ category: b.category, amounts: toAmounts(b.monthly_amounts) }))
+          : DEFAULT_EXPENSE_CATEGORIES.map((cat) => ({ category: cat, amounts: toAmounts({}) }))
+      );
+    } catch (e) {
+      if (aborted()) return;
+      console.error(e);
+      toast("데이터 로드 실패: " + (e instanceof Error ? e.message : String(e)), "err");
+      applyDefaultRows();
+    } finally {
+      if (!aborted()) setLoading(false);
+    }
   };
 
   useEffect(() => {

@@ -114,14 +114,20 @@ export function BudgetVsActual({
       return;
     }
     setLoading(true);
-    const { data, error } = await filterByChurch(supabase.from("budget").select("*")).eq("fiscal_year", year);
-    if (error) {
-      console.error(error);
-      toast("예산 로드 실패: " + error.message, "err");
-    } else {
-      setBudgets((data ?? []) as Budget[]);
+    try {
+      const { data, error } = await filterByChurch(supabase.from("budget").select("*")).eq("fiscal_year", year);
+      if (error) {
+        console.error(error);
+        toast("예산 로드 실패: " + error.message, "err");
+      } else {
+        setBudgets((data ?? []) as Budget[]);
+      }
+    } catch (e) {
+      console.error(e);
+      toast("예산 로드 실패: " + (e instanceof Error ? e.message : String(e)), "err");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [year, toast]);
 
   useEffect(() => {

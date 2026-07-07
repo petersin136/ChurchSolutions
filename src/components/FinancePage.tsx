@@ -1538,7 +1538,7 @@ function SettlementReportModal({ open, onClose, offerings, expenses, categories,
   };
 
   return (
-    <PcModalShell open={open} onClose={onClose} title="월별 결산 보고서" maxWidth={560}>
+    <PcModalShell open={open} onClose={onClose} title="월별 결산 보고서">
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <Select label="년" options={[{ value: year.toString(), label: `${year}년` }, { value: (year - 1).toString(), label: `${year - 1}년` }, { value: (year - 2).toString(), label: `${year - 2}년` }]} value={String(year)} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { setYear(Number(e.target.value)); setPageIncome(1); setPageExpense(1); }} />
@@ -4536,7 +4536,6 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               open
               onClose={() => setReprintModal(null)}
               title="재출력 · 주민등록번호 입력"
-              maxWidth={400}
               footer={
                 <>
                   <button type="button" className="btn btn-secondary" onClick={() => setReprintModal(null)}>닫기</button>
@@ -4596,7 +4595,6 @@ function ReceiptTab({ donors, offerings, settings, toast }: { donors: Donor[]; o
               open
               onClose={() => setCancelModal(null)}
               title="영수증 취소"
-              maxWidth={400}
               footer={
                 <>
                   <button type="button" className="btn btn-secondary" onClick={() => setCancelModal(null)}>닫기</button>

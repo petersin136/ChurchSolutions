@@ -8,6 +8,8 @@ const ICON_BTN_S = 0.7;
 /** 카드 내 텍스트 80% */
 const CARD_TEXT_S = 0.8;
 
+import { APP_MODAL } from "./appModalTokens";
+
 export const ORG_RESOURCE = {
   bg: "#f4f4f6",
   fontKR: "'Pretendard', system-ui, -apple-system, sans-serif",
@@ -73,12 +75,13 @@ export const ORG_RESOURCE = {
   addLabelColor: "#9ca3af",
   addLabelColorHover: "#6b7280",
   addLabelWeight: 500,
-  /** 모달 */
-  modalWidth: 460,
-  modalWizardHeight: 580,
-  modalMemberListHeight: 180,
-  modalPad: 28,
-  modalRadius: 14,
+  /** 모달 — 앱 공통 {@link APP_MODAL} 과 동일 */
+  modalWidth: APP_MODAL.width,
+  modalWizardHeight: APP_MODAL.wizardHeight,
+  modalMemberListHeight: 196,
+  modalPad: APP_MODAL.padding,
+  modalRadius: APP_MODAL.radius,
+  modalCardMarginTop: APP_MODAL.cardMarginTop,
   modalTitleSize: 18,
   modalTitleWeight: 700,
   modalInputBg: "#f4f4f6",
@@ -90,9 +93,9 @@ export const ORG_RESOURCE = {
   modalBtnGap: 10,
   modalDeleteRed: "#e55c5c",
   /** 부서 편집 모달 — 시안 01~05 */
-  deptModalWidth: 520,
-  deptModalHeight: 520,
-  deptModalMemberAreaMinHeight: 160,
+  deptModalWidth: APP_MODAL.width,
+  deptModalHeight: APP_MODAL.tallHeight,
+  deptModalMemberAreaMinHeight: 200,
   deptModalMemberRowHeight: 44,
   deptModalSearchDropdownMaxHeight: 220,
   deptModalLabelSize: 14,

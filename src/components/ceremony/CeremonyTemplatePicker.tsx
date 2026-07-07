@@ -35,6 +35,7 @@ import {
   createSession,
   getCategoryFormCopy,
 } from "@/lib/ceremony";
+import { getCeremonyCategoryTabs } from "@/lib/churchTerminology";
 import type {
   CeremonyTemplate,
   CeremonyFamilyInfo,
@@ -69,26 +70,6 @@ const KNOWN_CATEGORIES = [
   "wedding",
   "ordination",
 ] as const;
-
-interface CategoryTab {
-  id: string;
-  label: string;
-  categories: readonly string[] | null;
-  matchUnknown?: boolean;
-}
-
-const CATEGORY_TABS: CategoryTab[] = [
-  { id: "all",        label: "전체",     categories: null },
-  { id: "funeral",    label: "장례",     categories: ["funeral"] },
-  { id: "memorial",   label: "추도예배", categories: ["memorial"] },
-  { id: "visit",      label: "심방예배", categories: ["visit"] },
-  { id: "holiday",    label: "명절",     categories: ["holiday"] },
-  { id: "communion",  label: "성찬식",   categories: ["communion"] },
-  { id: "baptism",    label: "세례",     categories: ["baptism"] },
-  { id: "wedding",    label: "결혼",     categories: ["wedding"] },
-  { id: "ordination", label: "임직",     categories: ["ordination"] },
-  { id: "etc",        label: "기타",     categories: null, matchUnknown: true },
-];
 
 /** 30분 단위 06:00 ~ 23:30 */
 const TIME_SLOTS: ModernSelectOption[] = (() => {
@@ -224,9 +205,11 @@ export function CeremonyTemplatePicker({
   }, [open, initialTemplateId]);
 
   /* ---------- 파생 데이터 ---------- */
+  const categoryTabs = useMemo(() => getCeremonyCategoryTabs(db.settings), [db.settings]);
+
   const currentTab = useMemo(
-    () => CATEGORY_TABS.find((t) => t.id === categoryFilter) ?? CATEGORY_TABS[0],
-    [categoryFilter],
+    () => categoryTabs.find((t) => t.id === categoryFilter) ?? categoryTabs[0],
+    [categoryFilter, categoryTabs],
   );
 
   const visibleTemplatesAll = useMemo(
@@ -381,7 +364,7 @@ export function CeremonyTemplatePicker({
           flexWrap: "wrap",
         }}
       >
-        {CATEGORY_TABS.map((tab) => {
+        {categoryTabs.map((tab) => {
           const selected = tab.id === categoryFilter;
           return (
             <button
@@ -848,7 +831,6 @@ export function CeremonyTemplatePicker({
       open={open}
       onClose={onClose}
       title="새 식순 시작"
-      maxWidth={720}
       footer={footer}
     >
       {step === 1 ? step1Body : step2Body}

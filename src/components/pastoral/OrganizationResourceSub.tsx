@@ -16,6 +16,12 @@ import {
   orgSlotColor,
   orgShadeHex,
 } from "@/styles/orgResourceTokens";
+import {
+  appModalOverlayStyle,
+  appModalCardStyle,
+  appModalBtnCancel,
+  appModalBtnSubmit,
+} from "@/styles/appModalTokens";
 import { TB_PLACES } from "@/components/churchPlanner/plannerDb";
 
 type OrgTab = "dept" | "mokjang" | "place";
@@ -33,27 +39,12 @@ type PlannerPlace = {
 const ORG_TAB_KEY = "pastoral_org_tab";
 const SLOT_COLORS_KEY = "pastoral_org_slot_colors";
 const MOKJANG_LEADERS_KEY = "pastoral_org_mokjang_leaders";
-const SMALL_GROUP_TERM_KEY = "pastoral_org_small_group_term";
-const DEFAULT_SMALL_GROUP_TERM = "소그룹";
-
-/** 한국 교회에서 쓰는 소그룹 명칭 예시 — 클릭 시 명칭·리더 호칭 자동 적용 */
-const SMALL_GROUP_TERM_PRESETS: { term: string; leader: string }[] = [
-  { term: "목장", leader: "목자" },
-  { term: "셀", leader: "셀 리더" },
-  { term: "구역", leader: "구역장" },
-  { term: "속", leader: "속장" },
-  { term: "전도회", leader: "회장" },
-  { term: "선교회", leader: "회장" },
-];
-
-function inferLeaderLabelFromTerm(term: string): string {
-  const trimmed = term.trim();
-  if (!trimmed || trimmed === "소그룹") return "리더";
-  const preset = SMALL_GROUP_TERM_PRESETS.find((p) => p.term === trimmed);
-  if (preset) return preset.leader;
-  if (trimmed.endsWith("회")) return "회장";
-  return `${trimmed} 리더`;
-}
+import {
+  DEFAULT_SMALL_GROUP_TERM,
+  SMALL_GROUP_TERM_CHANGED_EVENT,
+  inferLeaderLabelFromTerm,
+  loadSmallGroupTerm,
+} from "@/lib/smallGroupTerm";
 
 function mokjangUiLabels(term: string) {
   const t = term.trim() || DEFAULT_SMALL_GROUP_TERM;
@@ -64,8 +55,8 @@ function mokjangUiLabels(term: string) {
     editModal: `${t} 수정`,
     placeholder: `${t} 이름을 입력하세요`,
     memberAssign: `${t}원 배정`,
-    step1Desc: `${t} 이름을 입력한 뒤 다음 단계에서 성도를 배정합니다.`,
-    step2Desc: `먼저 ${inferLeaderLabelFromTerm(t)}를 지정한 뒤 ${t}원을 추가하세요.`,
+    step1Desc: `${t} 이름을 입력하고 ${inferLeaderLabelFromTerm(t)}를 선택한 뒤 다음 단계에서 ${t}원을 배정합니다.`,
+    step2Desc: `아래에서 ${t}원을 검색해 추가하세요.`,
     memberAdd: `${t}원 추가`,
     unassigned: `${t} 미배정`,
     none: `${t} 없음`,
@@ -139,39 +130,10 @@ function saveMokjangLeaders(churchId: string, map: Record<string, string>) {
   localStorage.setItem(`${MOKJANG_LEADERS_KEY}_${churchId}`, JSON.stringify(map));
 }
 
-function loadSmallGroupTerm(churchId: string): string {
-  if (typeof window === "undefined") return "";
-  try {
-    const stored = localStorage.getItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`)?.trim() ?? "";
-    if (!stored || stored === DEFAULT_SMALL_GROUP_TERM) return "";
-    return stored;
-  } catch {
-    return "";
-  }
-}
-
-function saveSmallGroupTerm(churchId: string, term: string) {
-  if (typeof window === "undefined") return;
-  const trimmed = term.trim();
-  const normalized = !trimmed || trimmed === DEFAULT_SMALL_GROUP_TERM ? "" : trimmed;
-  if (!normalized) {
-    localStorage.removeItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`);
-  } else {
-    localStorage.setItem(`${SMALL_GROUP_TERM_KEY}_${churchId}`, normalized);
-  }
-}
-
-function displaySmallGroupTermInput(term: string): string {
-  const trimmed = term.trim();
-  if (!trimmed || trimmed === DEFAULT_SMALL_GROUP_TERM) return "";
-  return trimmed;
-}
-
 /* ── 세그먼트 탭 (회색 사각 컨테이너 + 흰 활성 탭) ── */
 /** 세 탭 동일 너비 (소그룹 명칭 변경 시에도 레이아웃 고정) */
 const ORG_SEG_TAB_EQUAL_WIDTH = 136;
 const ORG_SEG_TAB_PAD_X = 14;
-const ORG_GROUP_TERM_BAR_WIDTH = 480;
 
 function OrgSegTabButton({
   id,
@@ -272,125 +234,6 @@ function OrgSegmentTabs({
           equalWidth={ORG_SEG_TAB_EQUAL_WIDTH}
         />
       ))}
-    </div>
-  );
-}
-
-const SMALL_GROUP_TERM_EXAMPLES = SMALL_GROUP_TERM_PRESETS.map((p) => p.term).join(", ");
-
-function SmallGroupTermCustomizer({
-  term,
-  onTermChange,
-}: {
-  term: string;
-  onTermChange: (term: string) => void;
-}) {
-  const [draft, setDraft] = useState(() => displaySmallGroupTermInput(term));
-  const inputRef = useRef<HTMLInputElement>(null);
-  const focusedRef = useRef(false);
-  const composingRef = useRef(false);
-  const skipBlurCommitRef = useRef(false);
-
-  useEffect(() => {
-    if (!focusedRef.current) {
-      setDraft(displaySmallGroupTermInput(term));
-    }
-  }, [term]);
-
-  const commit = (value: string) => {
-    const trimmed = value.trim();
-    const normalized = !trimmed || trimmed === DEFAULT_SMALL_GROUP_TERM ? "" : trimmed;
-    setDraft(displaySmallGroupTermInput(normalized));
-    if (normalized !== term) {
-      onTermChange(normalized);
-    }
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        width: ORG_GROUP_TERM_BAR_WIDTH,
-        flexShrink: 0,
-        fontFamily: ORG_RESOURCE.fontKR,
-        boxSizing: "border-box",
-        paddingLeft: 4,
-      }}
-    >
-      <span
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: "#6b7280",
-          whiteSpace: "nowrap",
-          flexShrink: 0,
-        }}
-      >
-        소그룹 형태
-      </span>
-      <input
-        ref={inputRef}
-        type="text"
-        value={draft}
-        onFocus={() => { focusedRef.current = true; }}
-        onChange={(e) => setDraft(e.target.value)}
-        onCompositionStart={() => { composingRef.current = true; }}
-        onCompositionEnd={(e) => {
-          composingRef.current = false;
-          setDraft(e.currentTarget.value);
-        }}
-        onBlur={() => {
-          focusedRef.current = false;
-          if (skipBlurCommitRef.current) {
-            skipBlurCommitRef.current = false;
-            return;
-          }
-          window.setTimeout(() => {
-            if (composingRef.current) return;
-            commit(inputRef.current?.value ?? draft);
-          }, 0);
-        }}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter") return;
-          if (e.nativeEvent.isComposing || composingRef.current) return;
-          e.preventDefault();
-          skipBlurCommitRef.current = true;
-          commit((e.currentTarget as HTMLInputElement).value);
-          (e.currentTarget as HTMLInputElement).blur();
-        }}
-        placeholder={DEFAULT_SMALL_GROUP_TERM}
-        aria-label="소그룹 형태"
-        style={{
-          width: 96,
-          height: 34,
-          padding: "0 12px",
-          boxSizing: "border-box",
-          border: "1px solid #e3e4e8",
-          borderRadius: 6,
-          background: "#ffffff",
-          fontSize: 15,
-          fontFamily: ORG_RESOURCE.fontKR,
-          color: "#0b0c0e",
-          textAlign: "center",
-          outline: "none",
-          flexShrink: 0,
-        }}
-      />
-      <span
-        style={{
-          fontSize: 13,
-          color: "#b0b4bc",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          flex: 1,
-          minWidth: 0,
-        }}
-      >
-        예 {SMALL_GROUP_TERM_EXAMPLES}
-      </span>
     </div>
   );
 }
@@ -687,17 +530,17 @@ function OrgPlaceFormModal({
 
   return (
     <div
-      className="modal-bg open"
+      className="app-modal-overlay open"
       role="presentation"
-      style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+      style={appModalOverlayStyle}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="modal"
+        className="app-modal-card"
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        style={{ maxWidth: ORG_RESOURCE.modalWidth, padding: ORG_RESOURCE.modalPad, borderRadius: ORG_RESOURCE.modalRadius }}
+        style={appModalCardStyle()}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <h2 style={{ margin: "0 0 20px", fontSize: ORG_RESOURCE.modalTitleSize, fontWeight: ORG_RESOURCE.modalTitleWeight, color: "#0b0c0e", fontFamily: ORG_RESOURCE.fontKR }}>
@@ -1035,17 +878,17 @@ export function OrgFormModal({
   };
   return (
     <div
-      className="modal-bg open"
+      className="app-modal-overlay open"
       role="presentation"
-      style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+      style={appModalOverlayStyle}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="modal"
+        className="app-modal-card"
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        style={{ maxWidth: ORG_RESOURCE.modalWidth, padding: ORG_RESOURCE.modalPad, borderRadius: ORG_RESOURCE.modalRadius }}
+        style={appModalCardStyle()}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <h2 style={{ margin: "0 0 20px", fontSize: ORG_RESOURCE.modalTitleSize, fontWeight: ORG_RESOURCE.modalTitleWeight, color: "#0b0c0e", fontFamily: ORG_RESOURCE.fontKR }}>
@@ -1078,31 +921,9 @@ export function OrgFormModal({
   );
 }
 
-const modalBtnCancel: CSSProperties = {
-  flex: 1,
-  height: ORG_RESOURCE.modalBtnHeight,
-  borderRadius: ORG_RESOURCE.modalBtnRadius,
-  border: "1px solid #e3e4e8",
-  background: "#ffffff",
-  color: "#0b0c0e",
-  fontSize: 15,
-  fontWeight: 600,
-  fontFamily: ORG_RESOURCE.fontKR,
-  cursor: "pointer",
-};
+const modalBtnCancel: CSSProperties = appModalBtnCancel;
 
-const modalBtnSubmit: CSSProperties = {
-  flex: 1,
-  height: ORG_RESOURCE.modalBtnHeight,
-  borderRadius: ORG_RESOURCE.modalBtnRadius,
-  border: "none",
-  background: "#0b0c0e",
-  color: "#ffffff",
-  fontSize: 15,
-  fontWeight: 600,
-  fontFamily: ORG_RESOURCE.fontKR,
-  cursor: "pointer",
-};
+const modalBtnSubmit: CSSProperties = appModalBtnSubmit;
 
 /* ── 삭제 확인 모달 ── */
 export function OrgDeleteModal({
@@ -1122,17 +943,17 @@ export function OrgDeleteModal({
 
   return (
     <div
-      className="modal-bg open"
+      className="app-modal-overlay open"
       role="presentation"
-      style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+      style={appModalOverlayStyle}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="modal"
+        className="app-modal-card"
         role="alertdialog"
         aria-modal="true"
         aria-label="삭제 확인"
-        style={{ maxWidth: ORG_RESOURCE.modalWidth, padding: ORG_RESOURCE.modalPad, borderRadius: ORG_RESOURCE.modalRadius, textAlign: "center" }}
+        style={{ ...appModalCardStyle(), textAlign: "center" }}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
@@ -1312,6 +1133,175 @@ function memberRoleLabel(role?: string): string {
   return r || "성도";
 }
 
+/** 성도 이름 검색 — 드롭다운 대신 타이핑 자동완성 (이름·직분·부서 표시) */
+function OrgMemberSearchField({
+  db,
+  placeholder,
+  excludeIds = [],
+  onSelect,
+  autoFocus,
+}: {
+  db: DB;
+  placeholder: string;
+  excludeIds?: string[];
+  onSelect: (memberId: string) => void;
+  autoFocus?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
+  const [hoverResultId, setHoverResultId] = useState<string | null>(null);
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dropdownPortalRef = useRef<HTMLDivElement>(null);
+
+  const searchResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return db.members
+      .filter((m) => {
+        if (m.status === "졸업/전출") return false;
+        if (excludeIds.includes(m.id)) return false;
+        return m.name.toLowerCase().includes(q);
+      })
+      .slice(0, 8);
+  }, [db.members, excludeIds, query]);
+
+  const showDropdown = focused && query.trim().length > 0;
+  const hasDropdown = showDropdown && searchResults.length > 0;
+
+  useEffect(() => {
+    if (!showDropdown) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (wrapRef.current?.contains(target)) return;
+      if (dropdownPortalRef.current?.contains(target)) return;
+      setFocused(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [showDropdown]);
+
+  useLayoutEffect(() => {
+    if (!hasDropdown) {
+      setDropdownRect(null);
+      return;
+    }
+    const updateRect = () => {
+      const el = wrapRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setDropdownRect({ top: rect.bottom, left: rect.left, width: rect.width });
+    };
+    updateRect();
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect, true);
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect, true);
+    };
+  }, [hasDropdown, query, searchResults.length]);
+
+  const pick = (id: string) => {
+    onSelect(id);
+    setQuery("");
+    setFocused(false);
+  };
+
+  const fieldStyle: CSSProperties = {
+    width: "100%",
+    height: ORG_RESOURCE.modalInputHeight,
+    padding: "0 16px 0 44px",
+    boxSizing: "border-box",
+    border: "none",
+    borderRadius: hasDropdown
+      ? `${ORG_RESOURCE.modalInputRadius}px ${ORG_RESOURCE.modalInputRadius}px 0 0`
+      : ORG_RESOURCE.modalInputRadius,
+    background: ORG_RESOURCE.modalInputBg,
+    fontSize: ORG_RESOURCE.modalInputFontSize,
+    fontFamily: ORG_RESOURCE.fontKR,
+    color: "#0b0c0e",
+    outline: "none",
+  };
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative", flexShrink: 0 }}>
+      <Search
+        size={18}
+        strokeWidth={1.75}
+        color="#b0b4bc"
+        style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", zIndex: 1 }}
+      />
+      <input
+        autoFocus={autoFocus}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setFocused(true)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        style={fieldStyle}
+      />
+      {hasDropdown && dropdownRect
+        ? createPortal(
+            <div
+              ref={dropdownPortalRef}
+              style={{
+                position: "fixed",
+                top: dropdownRect.top,
+                left: dropdownRect.left,
+                width: dropdownRect.width,
+                maxHeight: ORG_RESOURCE.deptModalSearchDropdownMaxHeight,
+                overflowY: "auto",
+                background: "#ffffff",
+                borderRadius: `0 0 ${ORG_RESOURCE.modalInputRadius}px ${ORG_RESOURCE.modalInputRadius}px`,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                border: "1px solid #ebebed",
+                borderTop: "none",
+                zIndex: 1300,
+                boxSizing: "border-box",
+              }}
+            >
+              {searchResults.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onMouseEnter={() => setHoverResultId(m.id)}
+                  onMouseLeave={() => setHoverResultId(null)}
+                  onClick={() => pick(m.id)}
+                  style={{
+                    width: "100%",
+                    border: "none",
+                    background: hoverResultId === m.id ? ORG_RESOURCE.deptModalSearchDropdownHoverBg : "#ffffff",
+                    cursor: "pointer",
+                    display: "grid",
+                    gridTemplateColumns: "88px 56px 1fr",
+                    columnGap: 12,
+                    alignItems: "center",
+                    padding: "10px 16px",
+                    boxSizing: "border-box",
+                    textAlign: "left",
+                    fontFamily: ORG_RESOURCE.fontKR,
+                    transition: "background 0.12s ease",
+                  }}
+                >
+                  <span style={{ fontSize: ORG_RESOURCE.deptModalMemberNameSize, fontWeight: ORG_RESOURCE.deptModalMemberNameWeight, color: "#0b0c0e" }}>
+                    {m.name}
+                  </span>
+                  <span style={{ fontSize: ORG_RESOURCE.deptModalMemberMetaSize, color: ORG_RESOURCE.deptModalMemberMetaColor }}>
+                    {memberRoleLabel(m.role)}
+                  </span>
+                  <span style={{ fontSize: ORG_RESOURCE.deptModalMemberMetaSize, color: ORG_RESOURCE.deptModalMemberMetaColor }}>
+                    {m.dept || "—"}
+                  </span>
+                </button>
+              ))}
+            </div>,
+            document.body,
+          )
+        : null}
+    </div>
+  );
+}
+
 /** 부서 추가/편집 — 시안 01~05 단일 화면 */
 export function OrgDeptEditModal({
   wizard,
@@ -1413,19 +1403,10 @@ export function OrgDeptEditModal({
     };
   }, [hasDropdown, searchQuery, searchResults.length, sortedDraftMembers.length]);
 
-  const deptModalShell: CSSProperties = {
+  const deptModalShell: CSSProperties = appModalCardStyle({
     width: ORG_RESOURCE.deptModalWidth,
-    maxWidth: ORG_RESOURCE.deptModalWidth,
     height: ORG_RESOURCE.deptModalHeight,
-    minHeight: ORG_RESOURCE.deptModalHeight,
-    maxHeight: ORG_RESOURCE.deptModalHeight,
-    padding: ORG_RESOURCE.modalPad,
-    borderRadius: ORG_RESOURCE.modalRadius,
-    boxSizing: "border-box",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-  };
+  });
 
   const fieldStyle: CSSProperties = {
     width: "100%",
@@ -1443,13 +1424,13 @@ export function OrgDeptEditModal({
 
   return (
     <div
-      className="modal-bg open"
+      className="app-modal-overlay open"
       role="presentation"
-      style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+      style={appModalOverlayStyle}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="modal"
+        className="app-modal-card"
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -1743,6 +1724,7 @@ function OrgMokjangWizardModal({
   onFinish: () => void;
 }) {
   const { mode, step, name, draftMemberIds, leaderId } = wizard;
+  const [hoverDeleteId, setHoverDeleteId] = useState<string | null>(null);
   const stepTitle =
     step === 1
       ? (mode === "add" ? mokjangLabels.addModal : mokjangLabels.editModal)
@@ -1753,11 +1735,12 @@ function OrgMokjangWizardModal({
       : mokjangLabels.step2Desc;
 
   const draftMembers = db.members.filter((m) => draftMemberIds.includes(m.id));
-  const availableMembers = db.members.filter((m) => {
-    if (m.status === "졸업/전출") return false;
-    if (draftMemberIds.includes(m.id)) return false;
-    return true;
-  });
+  const sortedDraftMembers = useMemo(() => {
+    if (!leaderId) return draftMembers;
+    const leader = draftMembers.find((m) => m.id === leaderId);
+    const rest = draftMembers.filter((m) => m.id !== leaderId);
+    return leader ? [leader, ...rest] : draftMembers;
+  }, [draftMembers, leaderId]);
 
   const handleMemberSelect = (id: string) => {
     if (!id || draftMemberIds.includes(id)) return;
@@ -1777,10 +1760,7 @@ function OrgMokjangWizardModal({
     if (leaderId === id) onLeaderChange(null);
   };
 
-  const leaderCandidates = db.members.filter((m) => m.status !== "졸업/전출");
-
-  const leaderMember = leaderId ? draftMembers.find((m) => m.id === leaderId) : null;
-  const groupMembers = leaderId ? draftMembers.filter((m) => m.id !== leaderId) : draftMembers;
+  const leaderMember = leaderId ? db.members.find((m) => m.id === leaderId) : null;
   const totalCount = draftMembers.length;
 
   const memberListPanel = (
@@ -1796,9 +1776,10 @@ function OrgMokjangWizardModal({
         style={{
           flex: 1,
           minHeight: ORG_RESOURCE.modalMemberListHeight,
+          maxHeight: ORG_RESOURCE.modalMemberListHeight,
           borderRadius: ORG_RESOURCE.modalInputRadius,
           background: ORG_RESOURCE.modalInputBg,
-          padding: "16px 18px",
+          padding: "8px 12px",
           boxSizing: "border-box",
           overflowY: "auto",
           fontFamily: ORG_RESOURCE.fontKR,
@@ -1808,7 +1789,7 @@ function OrgMokjangWizardModal({
           <div
             style={{
               height: "100%",
-              minHeight: ORG_RESOURCE.modalMemberListHeight - 32,
+              minHeight: ORG_RESOURCE.modalMemberListHeight - 16,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -1821,34 +1802,85 @@ function OrgMokjangWizardModal({
             아직 배정된 성도가 없습니다.
             <br />
             <span style={{ fontSize: 13, color: "#b0b4bc" }}>
-              {`위에서 ${leaderLabel}를 지정하고 ${groupTerm}원을 선택하세요.`}
+              {`위에서 ${groupTerm}원을 검색해 추가하세요.`}
             </span>
           </div>
         ) : (
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 4px", lineHeight: 1.7 }}>
-            <span
-              style={{
-                fontSize: 16,
-                fontWeight: 700,
-                color: leaderMember ? "#0b0c0e" : "#b0b4bc",
-              }}
-            >
-              {leaderMember?.name ?? `${leaderLabel} 미지정`}
-            </span>
-            {groupMembers.map((m) => (
-              <span key={m.id} style={{ display: "inline-flex", alignItems: "center" }}>
-                <span style={{ color: "#d1d5db", fontSize: 13, margin: "0 4px", userSelect: "none" }} aria-hidden>·</span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#8b909a" }}>{m.name}</span>
-                <button
-                  type="button"
-                  onClick={() => removeDraftMember(m.id)}
-                  style={modalMemberRemoveBtn}
-                  aria-label={`${m.name} 제거`}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {sortedDraftMembers.map((m) => {
+              const isLeader = leaderId === m.id;
+              return (
+                <div
+                  key={m.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: `88px 56px 1fr ${ORG_RESOURCE.deptModalDeleteBtnSize}px`,
+                    alignItems: "center",
+                    columnGap: 12,
+                    height: ORG_RESOURCE.deptModalMemberRowHeight,
+                    minHeight: ORG_RESOURCE.deptModalMemberRowHeight,
+                    fontFamily: ORG_RESOURCE.fontKR,
+                  }}
                 >
-                  ×
-                </button>
-              </span>
-            ))}
+                  <span
+                    style={{
+                      fontSize: ORG_RESOURCE.deptModalMemberNameSize,
+                      fontWeight: isLeader ? 700 : ORG_RESOURCE.deptModalMemberNameWeight,
+                      color: "#0b0c0e",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {m.name}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: ORG_RESOURCE.deptModalMemberMetaSize,
+                      color: ORG_RESOURCE.deptModalMemberMetaColor,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {memberRoleLabel(m.role)}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: ORG_RESOURCE.deptModalMemberMetaSize,
+                      color: ORG_RESOURCE.deptModalMemberMetaColor,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {m.dept || "—"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`${m.name} 제거`}
+                    onClick={() => removeDraftMember(m.id)}
+                    onMouseEnter={() => setHoverDeleteId(m.id)}
+                    onMouseLeave={() => setHoverDeleteId(null)}
+                    style={{
+                      border: "none",
+                      borderRadius: 8,
+                      width: ORG_RESOURCE.deptModalDeleteBtnSize,
+                      height: ORG_RESOURCE.deptModalDeleteBtnSize,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      background: hoverDeleteId === m.id ? ORG_RESOURCE.deptModalDeleteHoverBg : "transparent",
+                      transition: "background 0.15s ease",
+                      justifySelf: "end",
+                    }}
+                  >
+                    <Trash2 size={16} strokeWidth={1.75} color="#8b909a" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1857,36 +1889,19 @@ function OrgMokjangWizardModal({
 
   const addMemberPanel = (
     <div style={{ marginBottom: 12, flexShrink: 0 }}>
-      <label style={modalFieldLabel}>{mokjangLabels.memberAdd}</label>
-      <OrgModalSelect
-        value=""
-        onChange={handleMemberSelect}
-        placeholder="성도 선택"
-        aria-label="성도 선택"
-      >
-        {availableMembers.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.name}
-            {` (${m.dept || "부서 없음"})`}
-          </option>
-        ))}
-      </OrgModalSelect>
+      <OrgMemberSearchField
+        db={db}
+        placeholder={mokjangLabels.memberAdd}
+        excludeIds={draftMemberIds}
+        onSelect={handleMemberSelect}
+      />
     </div>
   );
 
-  const wizardModalShell: CSSProperties = {
+  const wizardModalShell: CSSProperties = appModalCardStyle({
     width: ORG_RESOURCE.modalWidth,
-    maxWidth: ORG_RESOURCE.modalWidth,
     height: ORG_RESOURCE.modalWizardHeight,
-    minHeight: ORG_RESOURCE.modalWizardHeight,
-    maxHeight: ORG_RESOURCE.modalWizardHeight,
-    padding: ORG_RESOURCE.modalPad,
-    borderRadius: ORG_RESOURCE.modalRadius,
-    boxSizing: "border-box",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-  };
+  });
 
   const wizardFooter = (
     <div style={{ display: "flex", gap: ORG_RESOURCE.modalBtnGap, flexShrink: 0, marginTop: 16 }}>
@@ -1908,13 +1923,13 @@ function OrgMokjangWizardModal({
 
   return (
     <div
-      className="modal-bg open"
+      className="app-modal-overlay open"
       role="presentation"
-      style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+      style={appModalOverlayStyle}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="modal"
+        className="app-modal-card"
         role="dialog"
         aria-modal="true"
         aria-label={stepTitle}
@@ -1935,7 +1950,7 @@ function OrgMokjangWizardModal({
 
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {step === 1 ? (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-start", gap: 12 }}>
               <input
                 autoFocus
                 value={name}
@@ -1944,25 +1959,55 @@ function OrgMokjangWizardModal({
                 onKeyDown={(e) => { if (e.key === "Enter") onNext(); }}
                 style={{ ...modalInputStyle, marginBottom: 0 }}
               />
+              <OrgMemberSearchField
+                db={db}
+                placeholder={`${leaderLabel} 지정 선택`}
+                excludeIds={leaderId ? [leaderId] : []}
+                onSelect={(id) => handleLeaderChange(id)}
+              />
+              {leaderMember ? (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "88px 56px 1fr auto",
+                    columnGap: 12,
+                    alignItems: "center",
+                    padding: "10px 14px",
+                    borderRadius: ORG_RESOURCE.modalInputRadius,
+                    background: ORG_RESOURCE.modalInputBg,
+                    fontFamily: ORG_RESOURCE.fontKR,
+                  }}
+                >
+                  <span style={{ fontSize: ORG_RESOURCE.deptModalMemberNameSize, fontWeight: 700, color: "#0b0c0e" }}>
+                    {leaderMember.name}
+                  </span>
+                  <span style={{ fontSize: ORG_RESOURCE.deptModalMemberMetaSize, color: ORG_RESOURCE.deptModalMemberMetaColor }}>
+                    {memberRoleLabel(leaderMember.role)}
+                  </span>
+                  <span style={{ fontSize: ORG_RESOURCE.deptModalMemberMetaSize, color: ORG_RESOURCE.deptModalMemberMetaColor }}>
+                    {leaderMember.dept || "—"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleLeaderChange(null)}
+                    aria-label={`${leaderLabel} 지정 해제`}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: 13,
+                      color: "#8b909a",
+                      padding: "4px 8px",
+                      fontFamily: ORG_RESOURCE.fontKR,
+                    }}
+                  >
+                    해제
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : (
             <>
-              <div style={{ marginBottom: 12, flexShrink: 0 }}>
-                <label style={modalFieldLabel}>
-                  {leaderLabel} 지정 <span style={{ fontWeight: 500, color: "#b0b4bc" }}>(선택)</span>
-                </label>
-                <OrgModalSelect
-                  value={leaderId ?? ""}
-                  onChange={(v) => handleLeaderChange(v || null)}
-                  placeholder={`${leaderLabel} 없음`}
-                  aria-label={`${leaderLabel} 선택`}
-                >
-                  {leaderCandidates.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </OrgModalSelect>
-              </div>
-
               {addMemberPanel}
               {memberListPanel}
             </>
@@ -2025,13 +2070,18 @@ export function OrganizationResourceSub({
     setSmallGroupTerm(loadSmallGroupTerm(churchId));
   }, [churchId]);
 
+  useEffect(() => {
+    if (!churchId) return;
+    const onTermChanged = (e: Event) => {
+      const detail = (e as CustomEvent<{ churchId: string; term: string }>).detail;
+      if (detail?.churchId === churchId) setSmallGroupTerm(detail.term);
+    };
+    window.addEventListener(SMALL_GROUP_TERM_CHANGED_EVENT, onTermChanged);
+    return () => window.removeEventListener(SMALL_GROUP_TERM_CHANGED_EVENT, onTermChanged);
+  }, [churchId]);
+
   const mokjangLabels = useMemo(() => mokjangUiLabels(smallGroupTerm), [smallGroupTerm]);
   const smallGroupLeaderLabel = useMemo(() => inferLeaderLabelFromTerm(smallGroupTerm), [smallGroupTerm]);
-
-  const handleSmallGroupTermChange = (term: string) => {
-    setSmallGroupTerm(term);
-    if (churchId) saveSmallGroupTerm(churchId, term);
-  };
 
   const deptNames = useMemo(() => parseDeptList(db.settings.depts || ""), [db.settings.depts]);
   const mokjangNames = useMemo(() => getMokjangList(db), [db, getMokjangList]);
@@ -2146,7 +2196,16 @@ export function OrganizationResourceSub({
       return;
     }
     if (tab === "mokjang") {
-      setResourceWizard({ kind: "mokjang", mode: "edit", step: 1, name, oldName: name, draftMemberIds: [], leaderId: null });
+      const ids = memberIdsInResource(db, "mokjang", name);
+      setResourceWizard({
+        kind: "mokjang",
+        mode: "edit",
+        step: 1,
+        name,
+        oldName: name,
+        draftMemberIds: ids,
+        leaderId: mokjangLeaders[name] ?? null,
+      });
       return;
     }
     setEditOldName(name);
@@ -2385,34 +2444,13 @@ export function OrganizationResourceSub({
 
   return (
     <div style={{ width: "100%", boxSizing: "border-box", textAlign: "left" }}>
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 16,
-          marginBottom: ORG_RESOURCE.segToGridGap,
-          height: 44,
-          flexShrink: 0,
-        }}
-      >
+      <div style={{ marginBottom: ORG_RESOURCE.segToGridGap, flexShrink: 0 }}>
         <OrgSegmentTabs
           tab={tab}
           onChange={setTab}
           mokjangTabLabel={mokjangLabels.tab}
           inline
         />
-        {tab === "mokjang" && (
-          <>
-            <div
-              aria-hidden
-              style={{ width: 1, height: 24, background: "#d5d6da", flexShrink: 0, margin: "0 4px" }}
-            />
-            <SmallGroupTermCustomizer
-              term={smallGroupTerm}
-              onTermChange={handleSmallGroupTermChange}
-            />
-          </>
-        )}
       </div>
 
       {tab === "dept" && (

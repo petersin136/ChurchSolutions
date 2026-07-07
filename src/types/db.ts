@@ -2,8 +2,10 @@ export interface Settings {
   churchName: string;
   depts: string;
   fiscalStart: string;
-  /** 교단 (예: 침례교, 장로교). 침례교면 증서에 '침례' 표기, 그 외 '세례' */
+  /** 교단 (예: 침례교, 장로교) */
   denomination?: string;
+  /** 세례·침례 표기. auto면 교단명에서 추론, chimrye/seryae면 명시 적용 */
+  baptismTerminology?: "auto" | "chimrye" | "seryae";
   /** 목장 목록 (쉼표 구분). 비어 있으면 성도 데이터에서 자동 추출 */
   mokjangList?: string;
   /** 기부금 영수증용: 소재지 */
@@ -614,6 +616,7 @@ export const DEFAULT_SETTINGS: Settings = {
   depts: "유아부,유치부,유년부,초등부,중등부,고등부,청년부,장년부",
   fiscalStart: "1",
   denomination: "",
+  baptismTerminology: "auto",
   mokjangList: "",
   address: "",
   pastor: "",

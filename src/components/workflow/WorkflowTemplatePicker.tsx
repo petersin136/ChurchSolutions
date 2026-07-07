@@ -376,7 +376,6 @@ export function WorkflowTemplatePicker({
       open={open}
       onClose={onClose}
       title={title}
-      maxWidth={520}
       footer={footer}
     >
       {body}

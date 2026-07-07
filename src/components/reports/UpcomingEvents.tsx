@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { DB, Member } from "@/types/db";
+import { getBaptismTermLabels } from "@/lib/churchTerminology";
 
 /**
  * 현재 날짜 기준 ±30일 이내 경조사 (생일, 결혼기념일, 세례기념일, 양력 기준)
@@ -48,7 +49,7 @@ export interface UpcomingEventsProps {
 
 export function UpcomingEvents({ members, db, className = "" }: UpcomingEventsProps) {
   const { start, end } = useMemo(() => getRange30Days(), []);
-  const baptismEventLabel = db?.settings?.denomination?.trim().includes("침례") ? "침례기념일" : "세례기념일";
+  const baptismEventLabel = getBaptismTermLabels(db?.settings ?? {}).baptismAnniversary;
 
   const events = useMemo(() => {
     const list: { name: string; type: string; date: string; displayDate: string; phone?: string }[] = [];

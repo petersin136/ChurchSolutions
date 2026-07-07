@@ -30,10 +30,12 @@ import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
 import { PastoralFeedDetailModal } from "@/components/pastoral/PastoralFeedDetailModal";
+import { APP_MODAL } from "@/styles/appModalTokens";
 import { MemberDotGrid } from "@/components/pastoral/MemberDotGrid";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
+import { MembersManagementPanel } from "@/components/pastoral/MembersManagementPanel";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics } from "@/components/attendance";
 import { MonthlyAttendanceBulletin } from "@/components/reports/MonthlyAttendanceBulletin";
 import { ReportModal } from "@/components/report/ReportModal";
@@ -83,7 +85,6 @@ const STATUS_BADGE: Record<string, string> = {
 };
 const MEMBER_STATUS_LIST: (string | null)[] = ["활동", "휴적", "은퇴", "별세", "이적", "제적", "미등록"];
 const ROLES_LIST = ["담임목사", "부목사", "전도사", "장로", "안수집사", "권사", "집사", "성도", "청년", "학생"];
-const BAPTISM_LIST = ["유아세례", "세례", "입교", "미세례"];
 const NOTE_ICON_SIZE = 12;
 const NOTE_ICONS: Record<string, ReactNode> = {
   memo: <FileText size={NOTE_ICON_SIZE} strokeWidth={1.5} className="text-gray-400" />,
@@ -2031,11 +2032,17 @@ function DashboardSub({
                 { bg: DASH_CHART.statBarYearMid, text: DASH_CHART.statTextYearMid, sub: DASH_CHART.statSubYearMid, textShadow: "0 1px 1px rgba(255,255,255,0.55)" },
                 { bg: DASH_CHART.statBarHighlight, text: DASH_CHART.statTextYearHighlight, sub: DASH_CHART.statSubYearHighlight, textShadow: "0 1px 1px rgba(255,255,255,0.45)" },
               ] as const;
-              const yearBookendLayout = yearlyTrend.length >= 3;
+              const yearThreeWide = yearlyTrend.length >= 3;
               const yearBlockWidth = mob ? "50%" : "48%";
               const yearBlockOverlap = mob ? "-24%" : "-22%";
-              const yearSideWidth = mob ? "46%" : "44%";
+              /** 3년: 첫 블록은 세 번째 블록 앞(왼쪽)을 살짝만 지나는 너비 */
+              const yearLastWidthPct = mob ? 44 : 42;
+              const yearLastInsetPx = mob ? 10 : 16;
+              const yearPassPx = mob ? 14 : 24;
+              const yearFirstWidth = `calc(${100 - yearLastWidthPct}% - ${yearLastInsetPx}px + ${yearPassPx}px)`;
               const yearMidWidth = mob ? "40%" : "38%";
+              const yearLastWidth = `${yearLastWidthPct}%`;
+              const yearMidLeft = mob ? "24%" : "22%";
               const yearLabelStyle = (palette: (typeof yearBlockStyles)[number], isFront: boolean): CSSProperties => ({
                 fontSize: yearChartTypo.label,
                 color: palette.sub,
@@ -2047,7 +2054,7 @@ function DashboardSub({
                 overflow: "hidden",
               });
               return (
-                <div style={{ position: yearBookendLayout ? "relative" : undefined, display: "flex", alignItems: "stretch", width: "100%", flex: 1, minHeight: 0, paddingTop: mob ? 8 : 10, boxSizing: "border-box" }}>
+                <div style={{ position: "relative", display: "flex", alignItems: "stretch", width: "100%", flex: 1, minHeight: 0, paddingTop: mob ? 8 : 10, boxSizing: "border-box" }}>
                   {yearlyTrend.map((y, i) => {
                     const palette = yearBlockStyles[i] ?? yearBlockStyles[yearBlockStyles.length - 1];
                     const isFront = i === yearlyTrend.length - 1;
@@ -2055,18 +2062,18 @@ function DashboardSub({
                     const hasData = visualRate > 0;
                     const spacerFlex = Math.max(0, yearChartFullRate - (hasData ? visualRate : 0));
                     const barFlex = hasData ? visualRate : 0;
-                    const shellStyle: CSSProperties = yearBookendLayout
+                    const shellStyle: CSSProperties = yearThreeWide
                       ? {
                           position: "absolute",
                           top: 0,
                           bottom: 0,
-                          width: i === 1 ? yearMidWidth : yearSideWidth,
                           display: "flex",
                           flexDirection: "column",
                           minHeight: 0,
-                          ...(i === 0 ? { left: 0, zIndex: 2 } : {}),
-                          ...(i === 1 ? { left: "50%", transform: "translateX(-50%)", zIndex: 1 } : {}),
-                          ...(i >= 2 ? { right: 0, zIndex: 3 + i - 2 } : {}),
+                          zIndex: i + 1,
+                          ...(i === 0 ? { left: 0, width: yearFirstWidth } : {}),
+                          ...(i === 1 ? { left: yearMidLeft, width: yearMidWidth } : {}),
+                          ...(i >= 2 ? { right: yearLastInsetPx, width: yearLastWidth } : {}),
                         }
                       : {
                           flex: `0 0 ${yearBlockWidth}`,
@@ -2554,12 +2561,9 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
 }) {
   const mob = useIsMobile();
   const tabletOrLess = useIsMobile(1024);
-  const listRef = useRef<HTMLDivElement>(null);
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerms, setSearchTerms] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const applyMembersSearch = useCallback((q: string) => {
-    setSearchInput(q);
-    setSearchTerms([q]);
+    setSearchQuery(q);
     setPageList(1);
   }, []);
   useApplyGlobalSearch(PASTORAL_MEMBERS_SEARCH_KEY, PASTORAL_MEMBERS_SEARCH_EVENT, applyMembersSearch);
@@ -2568,31 +2572,9 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const [mokjangF, setMokjangF] = useState("all");
   const [statusF, setStatusF] = useState("all");
   const [riskDormantOnly, setRiskDormantOnly] = useState(false);
-  const [newFamilyOnly, setNewFamilyOnly] = useState(false);
-  const [prospectOnly, setProspectOnly] = useState(false);
-  const [baptismF, setBaptismF] = useState("all");
-  const [viewMode, setViewMode] = useState<"list" | "group">("list");
-  const [groupBy, setGroupBy] = useState<"dept" | "mokjang" | "role">("dept");
-  const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null);
-  const [pageGroup, setPageGroup] = useState(1);
   const [pageList, setPageList] = useState(1);
   const PAGE_SIZE_MEM = tabletOrLess ? 10 : 15;
   const depts = getDepts(db);
-  const viewModeOptions = useMemo(
-    () => [
-      { value: "list", label: "테이블 보기" },
-      { value: "group", label: "그룹 보기" },
-    ],
-    []
-  );
-  const groupByOptions = useMemo(
-    () => [
-      { value: "dept", label: "부서별" },
-      { value: "mokjang", label: "목장별" },
-      { value: "role", label: "직분별" },
-    ],
-    []
-  );
 
   /* 성도 목록: churchId 없으면 쿼리하지 않음. churchId가 준비되면 그때 로드. (setDb는 ref로 넣어 의존성에서 제외해 불필요한 재실행 방지) */
   const setDbRef = useRef(setDb);
@@ -2624,12 +2606,6 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   }, []);
 
   const mokjangList = getMokjangList(db);
-  const denom = db.settings.denomination?.trim();
-  const isChimrye = !!denom && denom.includes("침례");
-  /* 침례교회: 침례·입교만 표시 (DB 값은 '세례' 유지), 미세례·유아세례 제거 */
-  const baptismOptions = isChimrye
-    ? [{ value: "세례", label: "침례" }, { value: "입교", label: "입교" }]
-    : BAPTISM_LIST.map(b => ({ value: b, label: b }));
   const roleFilterOptions = useMemo(() => {
     const baseOrder = ["담임목사", "부목사", "강도사", "전도사", "교육전도사", "장로", "안수집사", "권사", "집사", "교사", "부교사", "성도", "청년", "학생", "새가족"];
     const fromMembers = Array.from(new Set(db.members.map((m) => (m.role || "").trim()).filter(Boolean)));
@@ -2652,106 +2628,52 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   /* 대시보드와 동일 조건: status !== "졸업/전출" (DashboardSub는 x.status만 사용) */
   const filtered = useMemo(() => {
     let r = db.members.filter(m => (m.member_status ?? m.status) !== "졸업/전출");
-    if (searchTerms.length > 0) {
-      const cleanTerm = (s: string) => (s ?? "").trim().replace(/[,\uFF0C]+$/g, "").trim();
-      const terms = searchTerms
-        .map(cleanTerm)
-        .filter((t) => {
-          if (!t) return false;
-          const digits = t.replace(/\D/g, "");
-          // 한 글자 한글 검색어는 너무 넓게 매칭되어 오탐이 많으므로 무시
-          if (digits.length === 0 && t.length < 2) return false;
-          return true;
-        });
-      const norm = (s: string) => (s ?? "").toLowerCase().replace(/\s+/g, "").replace(/[,\uFF0C.]/g, "");
-      r = r.filter((m) => {
-        const nameN = norm(m.name || "");
-        const phoneN = (m.phone || "").replace(/\D/g, "");
-        const addrN = norm(m.address || "");
-        const memoN = norm(m.memo || "");
-        const prayerN = norm(m.prayer || "");
-        return terms.some((t) => {
-          const tn = norm(t);
-          if (!tn) return false;
-          // 1개만 검색할 때는 최대한 "그 사람만" 나오도록: 이름 정확일치 우선, 없으면 부분일치
-          if (terms.length === 1) {
-            if (nameN === tn) return true;
-          }
-          const digits = t.replace(/\D/g, "");
+    const q = searchQuery.trim().replace(/[,\uFF0C]+$/g, "").trim();
+    if (q) {
+      const norm = (s: string) => (s ?? "").toLowerCase().replace(/\s+/g, "").replace(/[,\uFF0C./]/g, "");
+      const qn = norm(q);
+      const digits = q.replace(/\D/g, "");
+      if (digits.length === 0 && q.length < 2) {
+        r = [];
+      } else {
+        r = r.filter((m) => {
+          const nameN = norm(m.name || "");
+          const phoneN = (m.phone || "").replace(/\D/g, "");
+          const deptN = norm(m.dept || "");
+          const mokjangN = norm((m.mokjang ?? m.group) || "");
+          const roleN = norm(m.role || "");
+          const addrN = norm(m.address || "");
+          const memoN = norm(m.memo || "");
+          const prayerN = norm(m.prayer || "");
+          if (nameN === qn) return true;
           return (
-            nameN.includes(tn) ||
+            nameN.includes(qn) ||
+            deptN.includes(qn) ||
+            mokjangN.includes(qn) ||
+            roleN.includes(qn) ||
             (digits.length > 0 ? phoneN.includes(digits) : false) ||
-            addrN.includes(tn) ||
-            memoN.includes(tn) ||
-            prayerN.includes(tn)
+            addrN.includes(qn) ||
+            memoN.includes(qn) ||
+            prayerN.includes(qn)
           );
         });
-      });
+      }
     }
     if (deptF !== "all") r = r.filter(m => m.dept === deptF);
     if (roleF !== "all") r = r.filter(m => m.role === roleF);
     if (mokjangF !== "all") r = r.filter(m => ((m.mokjang ?? m.group) || "") === mokjangF);
     if (statusF !== "all") r = r.filter(m => (m.member_status ?? m.status) === statusF);
     if (riskDormantOnly) r = r.filter(m => m.status === "위험" || m.status === "휴면");
-    if (newFamilyOnly) r = r.filter(m => m.is_new_family === true);
-    if (prospectOnly) r = r.filter(m => m.is_prospect === true);
-    if (baptismF !== "all") r = r.filter(m => m.baptism_type === baptismF);
     return r;
-  }, [db.members, searchTerms, deptF, roleF, mokjangF, statusF, riskDormantOnly, newFamilyOnly, prospectOnly, baptismF]);
+  }, [db.members, searchQuery, deptF, roleF, mokjangF, statusF, riskDormantOnly]);
 
-  const addSearchTerm = useCallback(() => {
-    const v = searchInput.trim().replace(/[,\uFF0C]+$/g, "").trim();
-    if (!v) return;
-    const digits = v.replace(/\D/g, "");
-    if (digits.length === 0 && v.length < 2) {
-      toast("이름은 2글자 이상 입력해 주세요", "warn");
-      return;
-    }
-    setSearchTerms((prev) => {
-      const exists = prev.some((x) => x.toLowerCase() === v.toLowerCase());
-      const next = exists ? prev : [...prev, v];
-      return next;
-    });
-    setSearchInput("");
+  const resetFilters = useCallback(() => {
+    setDeptF("all");
+    setRoleF("all");
+    setMokjangF("all");
+    setStatusF("all");
     setPageList(1);
-    setPageGroup(1);
-  }, [searchInput]);
-
-  const removeSearchTerm = useCallback((term: string) => {
-    setSearchTerms((prev) => prev.filter((t) => t !== term));
-    setPageList(1);
-    setPageGroup(1);
   }, []);
-
-  const grouped = useMemo(() => {
-    const map: Record<string, Member[]> = {};
-    const sortedMembers = [...filtered].sort((a, b) =>
-      (ROLE_PRIORITY[a.role || ""] ?? 99) - (ROLE_PRIORITY[b.role || ""] ?? 99) || (a.name || "").localeCompare(b.name || "", "ko")
-    );
-    sortedMembers.forEach((m) => {
-      const key =
-        groupBy === "dept"
-          ? (m.dept || "미지정")
-          : groupBy === "mokjang"
-            ? (m.mokjang ?? m.group) || "미배정"
-            : (m.role || "미지정");
-      if (!map[key]) map[key] = [];
-      map[key].push(m);
-    });
-    for (const arr of Object.values(map)) {
-      arr.sort((a, b) => (ROLE_PRIORITY[a.role || ""] ?? 99) - (ROLE_PRIORITY[b.role || ""] ?? 99) || (a.name || "").localeCompare(b.name || "", "ko"));
-    }
-    const entries = Object.entries(map);
-    if (groupBy === "role") {
-      return entries.sort(([a], [b]) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99) || a.localeCompare(b, "ko"));
-    }
-    return entries.sort(([a], [b]) => a.localeCompare(b, "ko"));
-  }, [filtered, groupBy]);
-
-  const selectedGroupMembers = selectedGroupKey ? (grouped.find(([name]) => name === selectedGroupKey)?.[1] ?? []) : [];
-  const totalPagesGroup = Math.max(1, Math.ceil(selectedGroupMembers.length / PAGE_SIZE_MEM));
-  const currentPageGroup = Math.min(pageGroup, totalPagesGroup);
-  const pageGroupMembers = selectedGroupMembers.slice((currentPageGroup - 1) * PAGE_SIZE_MEM, currentPageGroup * PAGE_SIZE_MEM);
 
   const totalPagesList = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE_MEM));
   const currentPageList = Math.min(pageList, totalPagesList);
@@ -2759,546 +2681,45 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
 
   useEffect(() => {
     setPageList((p) => Math.min(p, totalPagesList));
-    setPageGroup((p) => Math.min(p, totalPagesGroup));
-  }, [totalPagesList, totalPagesGroup]);
-
-  const cycleAtt = (id: string) => {
-    setDb(prev => {
-      const att = { ...prev.attendance };
-      if (!att[id]) att[id] = {};
-      const raw = att[id][currentWeek];
-      const cur: AttStatus = (raw === "p" || raw === "a") ? raw : "n";
-      const next = ({ n: "p", p: "a", a: "n" } as Record<string, AttStatus>)[cur] || "n";
-      att[id] = { ...att[id], [currentWeek]: next };
-      const labels: Record<string, string> = { p: "출석", a: "결석", n: "미기록" };
-      toast(labels[next] + "으로 변경", "ok");
-      return { ...prev, attendance: att };
-    });
-    persist();
-  };
-
-  const listMobTh = mob ? 10 : 13;
-  const listMobCell = mob ? 10 : 13;
-  const listMobName = mob ? 11 : 14;
-  const listMobRole = mob ? 10 : 12;
-  const listMobAvatarInit = mob ? 11 : 14;
+  }, [totalPagesList]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box", ...(mob ? { minHeight: MOB_PANEL_MIN_H, gap: 8 } : { gap: 20 }) }}>
-      {/* ─── 필터 바 ─── */}
-      <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap", width: "100%", minWidth: 0, ...(mob ? { flexShrink: 0 } : {}) }}>
-        <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
-          <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textMuted }}><Icons.Search /></div>
-          <input
-            value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addSearchTerm();
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                setSearchInput("");
-              }
-            }}
-            placeholder="이름, 연락처 검색..."
-            style={{
-              width: "100%",
-              height: mob ? tokens.height.mobileInput : tokens.height.desktopInput,
-              paddingRight: 56,
-              paddingLeft: 34,
-              fontFamily: "inherit",
-              fontSize: mob ? 11 : tokens.fontSize.desktop.search,
-              background: C.card,
-              border: `1px solid ${C.border}`,
-              borderRadius: mob ? tokens.radius.sm : tokens.radius.lg,
-              color: C.text,
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
-          <button
-            type="button"
-            onClick={addSearchTerm}
-            style={{
-              position: "absolute",
-              right: 8,
-              top: "50%",
-              transform: "translateY(-50%)",
-              height: mob ? 26 : 30,
-              padding: mob ? "0 10px" : "0 12px",
-              borderRadius: 10,
-              border: `1px solid ${C.border}`,
-              background: C.bg,
-              color: C.textMuted,
-              cursor: "pointer",
-              fontSize: mob ? 10 : 12,
-              fontWeight: 600,
-              fontFamily: "inherit",
-              whiteSpace: "nowrap",
-            }}
-          >
-            검색
-          </button>
-        </div>
-        {searchTerms.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 6,
-              alignItems: "center",
-              width: "100%",
-              minWidth: 0,
-            }}
-          >
-            {searchTerms.map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => removeSearchTerm(t)}
-                title="클릭하여 제거"
-                style={{
-                  height: mob ? 26 : 30,
-                  padding: mob ? "0 10px" : "0 12px",
-                  borderRadius: 999,
-                  border: `1px solid ${C.border}`,
-                  background: C.bg,
-                  color: C.text,
-                  cursor: "pointer",
-                  fontSize: mob ? 10 : 12,
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  whiteSpace: "nowrap",
-                  maxWidth: "100%",
-                }}
-              >
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{t}</span>
-                <span style={{ color: C.textMuted, fontWeight: 800 }}>×</span>
-              </button>
-            ))}
-          </div>
-        )}
-        {mob ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%" }}>
-            <ModernSelect
-              value={deptF}
-              onChange={(v) => { setDeptF(v); setPageList(1); setPageGroup(1); }}
-              options={deptSelectOptions}
-              compact
-              uniform32
-              style={{ marginBottom: 0 }}
-            />
-            <ModernSelect
-              value={roleF}
-              onChange={(v) => { setRoleF(v); setPageList(1); setPageGroup(1); }}
-              options={roleSelectOptions}
-              compact
-              uniform32
-              style={{ marginBottom: 0 }}
-            />
-            <select
-              id="debug-status"
-              className="members-mob-filter-select"
-              value={statusF}
-              onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }}
-              style={{ minWidth: 0, width: "100%", appearance: "none", WebkitAppearance: "none", fontFamily: "inherit", color: C.text, cursor: "pointer", outline: "none" }}
-            >
-              <option value="all">전체 상태</option>
-              {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
-            </select>
-            <div
-              id="debug-checkbox-box"
-              style={{
-                height: tokens.height.mobileSelect,
-                fontSize: 10,
-                borderRadius: tokens.radius.sm,
-                border: `1px solid ${C.border}`,
-                boxSizing: "border-box",
-                padding: tokens.space.padding.mobileFilter,
-                minWidth: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                background: C.card,
-              }}
-            >
-              <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: mob ? 10 : 13, cursor: "pointer", whiteSpace: "nowrap" }}>
-                <input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} />
-                새가족
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: mob ? 10 : 13, cursor: "pointer", whiteSpace: "nowrap" }}>
-                <input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} />
-                관심성도
-              </label>
-              <span style={{ marginLeft: "auto", color: "var(--color-primary)", fontWeight: 700, fontSize: mob ? 10 : 13 }}>{filtered.length}명</span>
-            </div>
-            <button
-              id="debug-register-btn"
-              type="button"
-              onClick={() => openMemberModal()}
-              style={{
-                height: tokens.height.mobileSelect,
-                borderRadius: tokens.radius.sm,
-                border: "none",
-                boxSizing: "border-box",
-                padding: tokens.space.padding.mobileFilter,
-                minWidth: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 4,
-                background: C.primary,
-                color: "var(--color-primary-on)",
-                fontWeight: 600,
-                fontFamily: "inherit",
-                fontSize: mob ? 10 : tokens.fontSize.desktop.button,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              + 새 교인 등록
-            </button>
-          </div>
-        ) : (
-          <>
-            <ModernSelect value={deptF} onChange={(v) => { setDeptF(v); setPageList(1); setPageGroup(1); }} options={deptSelectOptions} style={{ marginBottom: 0, minWidth: 120 }} />
-            <ModernSelect value={mokjangF} onChange={(v) => { setMokjangF(v); setPageList(1); setPageGroup(1); }} options={mokjangSelectOptions} style={{ marginBottom: 0, minWidth: 120 }} />
-            <ModernSelect value={roleF} onChange={(v) => { setRoleF(v); setPageList(1); setPageGroup(1); }} options={roleSelectOptions} style={{ marginBottom: 0, minWidth: 120 }} />
-            <select value={statusF} onChange={e => { setStatusF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
-              <option value="all">전체 상태</option>
-              {MEMBER_STATUS_LIST.map(s => s && <option key={s} value={s}>{s}</option>)}
-            </select>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={newFamilyOnly} onChange={e => { setNewFamilyOnly(e.target.checked); setPageList(1); }} /> 새가족</label>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, height: 40, padding: "0 10px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}><input type="checkbox" checked={prospectOnly} onChange={e => { setProspectOnly(e.target.checked); setPageList(1); }} /> 관심성도</label>
-            <select value={baptismF} onChange={e => { setBaptismF(e.target.value); setPageList(1); setPageGroup(1); }} className="select-modern" style={{ height: 40, width: "auto", minWidth: 70 }}>
-              <option value="all">전체</option>
-              {baptismOptions.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-            </select>
-            <SBadge variant="accent">{filtered.length}명</SBadge>
-            <Btn onClick={() => openMemberModal()} icon={<Icons.Plus />}>새 교인 등록</Btn>
-          </>
-        )}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : viewMode === "group" ? "180px 180px" : "180px", gap: 8, width: "100%", minWidth: 0, ...(mob ? { flexShrink: 0 } : {}) }}>
-        <ModernSelect
-          value={viewMode}
-          onChange={(v) => {
-            const next = v === "group" ? "group" : "list";
-            setViewMode(next);
-            setSelectedGroupKey(null);
-            setPageGroup(1);
-            setPageList(1);
-          }}
-          options={viewModeOptions}
-          compact={mob}
-          uniform32={mob}
-          style={{ marginBottom: 0 }}
-        />
-        {viewMode === "group" && (
-          <ModernSelect
-            value={groupBy}
-            onChange={(v) => {
-              const next = v === "dept" || v === "mokjang" || v === "role" ? v : "dept";
-              setGroupBy(next);
-              setSelectedGroupKey(null);
-              setPageGroup(1);
-            }}
-            options={groupByOptions}
-            compact={mob}
-            uniform32={mob}
-            style={{ marginBottom: 0 }}
-          />
-        )}
-      </div>
-
-      <div style={mob ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 } : { width: "100%", minWidth: 0 }}>
-      {/* ─── 목장별 뷰: 목장 이름만 진열 → 클릭 시 목장원 표시 (10명 단위 페이지) ─── */}
-      {viewMode === "group" && (
-        <>
-          {selectedGroupKey === null ? (
-            /* 목장 이름 카드만 진열 */
-            <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, ...(mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const, alignContent: "start" } : {}) }}>
-              {grouped.length === 0 ? (
-                <Card><div style={{ textAlign: "center", color: C.textMuted, padding: 24 }}>검색 결과가 없습니다</div></Card>
-              ) : grouped.map(([gName, gMembers]) => (
-                <button key={gName} type="button" onClick={() => { setSelectedGroupKey(gName); setPageGroup(1); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 18px", background: "var(--color-primary-soft)", color: "var(--color-primary)", border: "1px solid var(--color-primary)", borderRadius: 16, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700, textAlign: "left", transition: "transform 0.15s, box-shadow 0.2s" }}>
-                  <span>{groupBy === "dept" ? "🏢 " : groupBy === "mokjang" ? "🏠 " : "🏷️ "}{gName}</span>
-                  <span style={{ background: "rgba(255,255,255,0.25)", padding: "4px 10px", borderRadius: 20, fontSize: 13, fontWeight: 600 }}>{gMembers.length}명</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            /* 선택된 목장의 목장원 (10명 단위 페이지) — 테이블로 한눈에 */
-            <div style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { minWidth: 0 } : {}) }}>
-              <div ref={listRef} style={{ flex: 1, minHeight: 0, ...(mob ? { overflowY: "auto", WebkitOverflowScrolling: "touch" as const } : {}) }}><Card style={{ padding: 0, overflow: "hidden", border: `1px solid ${C.border}`, borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                <div style={{ padding: "14px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                  <button type="button" onClick={() => { setSelectedGroupKey(null); setPageGroup(1); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "none", background: "transparent", color: C.accent, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 그룹 목록</button>
-                  <span style={{ color: C.text, fontWeight: 700 }}>{selectedGroupKey} ({selectedGroupMembers.length}명)</span>
-                </div>
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: mob ? listMobCell : 14 }}>
-                    <thead>
-                      <tr style={{ background: C.bg }}>
-                        {["이름","부서","출석","기도제목","최근 심방"].map((h, i) => (
-                          <th key={i} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, fontSize: listMobTh, color: C.text, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pageGroupMembers.map((m, idx) => {
-                        const ws = (db.attendance[m.id] || {})[currentWeek] || "n";
-                        const globalIdx = (currentPageGroup - 1) * PAGE_SIZE_MEM + idx;
-                        const isLeader = groupBy === "mokjang" && globalIdx === 0;
-                        const notes = (db.notes[m.id] || []).slice().reverse();
-                        const lastVisit = notes.find(n => n.type === "visit");
-                        const prayerSnip = m.prayer ? (m.prayer.length > 20 ? m.prayer.substring(0, 20) + "…" : m.prayer) : "-";
-                        return (
-                          <tr key={m.id} onClick={() => openDetail(m.id)} style={{ cursor: "pointer", borderBottom: `1px solid ${C.borderLight}`, transition: "background 0.1s" }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.bg; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                            <td style={{ padding: "10px 14px", minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                                <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: listMobAvatarInit, fontWeight: 700, background: isLeader ? `linear-gradient(135deg, ${C.accent}, ${C.purple})` : `linear-gradient(135deg, ${C.accentBg}, ${C.tealBg})`, color: isLeader ? "var(--color-primary-on)" : C.text, overflow: "hidden", flexShrink: 0 }}>
-                                    <MemberPhoto photo={m.photo} name={m.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                </div>
-                                <div style={{ minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ fontWeight: 700, fontSize: listMobName, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{m.name}</span>{isLeader && <span style={{ fontSize: mob ? 9 : 10, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>목자</span>}</div><div style={{ fontSize: listMobRole, color: C.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.role || ""}</div></div>
-                              </div>
-                            </td>
-                            <td style={{ padding: "10px 14px" }}><SBadge variant="gray" style={mob ? { fontSize: 9, padding: "1px 6px" } : undefined}>{m.dept || "-"}</SBadge></td>
-                            <td style={{ padding: "10px 14px" }}><AttDot status={ws} onClick={() => cycleAtt(m.id)} /></td>
-                            <td style={{ padding: "10px 14px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell, color: C.purple }}>{prayerSnip}</td>
-                            <td style={{ padding: "10px 14px", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: listMobCell }}>{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 10)}…` : "-"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </Card></div>
-              <Pagination compact={mob} totalItems={selectedGroupMembers.length} itemsPerPage={PAGE_SIZE_MEM} currentPage={currentPageGroup} onPageChange={(p) => setPageGroup(p)} />
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ─── 테이블 목록 뷰 (출석 통계 목록과 동일: 번호 열, 10행 고정, 체크박스 없음) ─── */}
-      {viewMode === "list" && (
-        <>
-          <div style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { minWidth: 0 } : {}) }}>
-            <div
-              ref={listRef}
-              style={{
-                flex: 1,
-                minHeight: 0,
-                ...(mob
-                  ? { overflowY: "auto", WebkitOverflowScrolling: "touch" as const, width: "100%", maxWidth: "100%", minWidth: 0 }
-                  : { width: "100%", maxWidth: "100%", minWidth: 0 }),
-              }}
-            >
-              <div className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm w-full max-w-full box-border">
-                <div className="min-h-0 overflow-x-auto w-full max-w-full">
-                  <table className="w-full table-fixed border-collapse text-sm">
-                    <colgroup>
-                      <col className="w-[52px]" />
-                      <col className="w-[190px]" />
-                      <col className="w-[120px]" />
-                      <col className="w-[190px]" />
-                      <col className="w-[72px]" />
-                      <col className="w-[160px] md:w-[220px] lg:w-[260px]" />
-                      <col className="w-[180px]" />
-                      <col className="w-[180px]" />
-                      <col className="w-[68px]" />
-                    </colgroup>
-                    <thead className="border-b border-gray-200 bg-gray-50/95">
-                      <tr>
-                        {(["번호", "이름", "직분", "부서", "출석", "기도제목", "최근 심방", "최근 메모", "기록"] as const).map((h, i) => (
-                          <th
-                            key={h}
-                            className={`py-3 font-semibold text-[#1e40af] ${i === 0 || i === 8 ? "px-2" : "px-3"} ${i === 0 ? "text-center" : i === 2 || i === 4 || i === 8 ? "text-center" : "text-left"}`}
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.length === 0 ? (
-                        Array.from({ length: PAGE_SIZE_MEM }, (_, idx) => {
-                          const centerIdx = Math.floor(PAGE_SIZE_MEM / 2);
-                          if (idx === centerIdx) {
-                            return (
-                              <tr key={`members-empty-msg-${idx}`} className="h-12 border-b border-gray-100">
-                                <td colSpan={9} className="h-12 px-2 text-center align-middle text-gray-500">
-                                  <div className="inline-flex items-center gap-2">
-                                    <span style={{ fontSize: 18, opacity: 0.45 }}>📭</span>
-                                    <span className="text-sm font-medium">검색 결과가 없습니다</span>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          }
-                          return (
-                            <tr key={`members-empty-pad-${idx}`} className="h-12 border-b border-gray-100" aria-hidden>
-                              <td colSpan={9} className="h-12 p-0" />
-                            </tr>
-                          );
-                        })
-                      ) : (
-                        Array.from({ length: PAGE_SIZE_MEM }, (_, idx) => {
-                          const m = pageListMembers[idx];
-                          const rowNum = (currentPageList - 1) * PAGE_SIZE_MEM + idx + 1;
-                          if (!m) {
-                            return (
-                              <tr key={`members-pad-${currentPageList}-${idx}`} className="h-12 border-b border-gray-100" aria-hidden>
-                                <td colSpan={9} className="h-12 p-0" />
-                              </tr>
-                            );
-                          }
-                          const ws = (db.attendance[m.id] || {})[currentWeek] || "n";
-                          const notes = (db.notes[m.id] || []).slice().reverse();
-                          const lastMemo = notes.find((n) => n.type === "memo");
-                          const lastPrayerNote = notes.find((n) => n.type === "prayer");
-                          const lastVisit = notes.find((n) => n.type === "visit");
-                          const roleLabel = (m.role || "").trim();
-                          const deptLabel = (m.dept || "").trim();
-                          const mokjangLabel = ((m.mokjang ?? m.group) || "").trim();
-                          const primaryRoleText =
-                            roleLabel && roleLabel !== "학생" ? roleLabel : (deptLabel || roleLabel || "-");
-                          const affiliationText =
-                            deptLabel && mokjangLabel
-                              ? `${deptLabel} · ${mokjangLabel}`
-                              : deptLabel || mokjangLabel || "-";
-                          const prayerPreview = m.prayer || lastPrayerNote?.content || "";
-                          const prayerSnip = prayerPreview
-                            ? prayerPreview.length > 15
-                              ? prayerPreview.substring(0, 15) + "…"
-                              : prayerPreview
-                            : "";
-                          const memoSnip = lastMemo?.content
-                            ? lastMemo.content.length > 15
-                              ? lastMemo.content.substring(0, 15) + "…"
-                              : lastMemo.content
-                            : "";
-                          return (
-                            <tr
-                              key={m.id}
-                              className="h-12 border-b border-gray-100 hover:bg-gray-50/50 cursor-pointer"
-                              onClick={() => openDetail(m.id)}
-                            >
-                              <td className="px-2 py-3 text-center align-middle tabular-nums text-gray-500">{rowNum}</td>
-                              <td className="overflow-hidden px-3 py-3 align-middle">
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <div
-                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold overflow-hidden"
-                                    style={{
-                                      background: `linear-gradient(135deg,${C.accentBg},${C.tealBg})`,
-                                      color: C.text,
-                                    }}
-                                  >
-                                    <MemberPhoto photo={m.photo} name={m.name} className="h-full w-full object-cover" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="truncate font-medium text-gray-900">{m.name}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="overflow-hidden px-3 py-3 align-middle text-center">
-                                <div className="flex justify-center">
-                                  <SBadge variant="gray" style={mob ? { fontSize: 9, padding: "1px 6px" } : undefined}>
-                                    {primaryRoleText}
-                                  </SBadge>
-                                </div>
-                              </td>
-                              <td className="overflow-hidden px-3 py-3 align-middle text-gray-600 text-sm">
-                                <div className="truncate">{affiliationText}</div>
-                              </td>
-                              <td className="px-3 py-3 text-center align-middle">
-                                <div className="flex justify-center">
-                                  <AttDot status={ws} onClick={() => cycleAtt(m.id)} />
-                                </div>
-                              </td>
-                              <td
-                                className="overflow-hidden px-3 py-3 align-middle text-sm truncate max-w-0 cursor-pointer"
-                                style={{ color: C.purple }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openQuickNote(m.id, m.name || "?", "prayer");
-                                }}
-                              >
-                                {prayerSnip ? (
-                                  <div className="w-full overflow-hidden text-ellipsis whitespace-nowrap">{prayerSnip}</div>
-                                ) : (
-                                  <span className="text-gray-300 whitespace-nowrap">+ 추가</span>
-                                )}
-                              </td>
-                              <td className="overflow-hidden px-3 py-3 align-middle text-sm text-gray-600 max-w-0">
-                                <div className="truncate">{lastVisit ? `${lastVisit.date} ${lastVisit.content.substring(0, 12)}…` : "-"}</div>
-                              </td>
-                              <td className="overflow-hidden px-3 py-3 align-middle max-w-0" onClick={(e) => e.stopPropagation()}>
-                                {memoSnip ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => openQuickNote(m.id, m.name || "?", "note")}
-                                    className="inline-flex max-w-full items-center gap-1 truncate border-0 bg-transparent p-0 text-left text-sm text-gray-800 cursor-pointer"
-                                  >
-                                    {NOTE_ICONS.memo} {memoSnip}
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => openQuickNote(m.id, m.name || "?", "note")}
-                                    className="border-0 bg-transparent p-0 text-sm text-gray-300 cursor-pointer"
-                                  >
-                                    + 추가
-                                  </button>
-                                )}
-                              </td>
-                              <td className="px-2 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
-                                <Btn
-                                  variant="soft"
-                                  size="sm"
-                                  icon={<FileText size={14} />}
-                                  onClick={(e) => {
-                                    e?.stopPropagation();
-                                    openNoteModal(m.id);
-                                  }}
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            <div
-              className={
-                mob
-                  ? "flex shrink-0 items-center justify-center gap-2 border-t border-gray-100 bg-gray-50/90 px-2 py-1.5 backdrop-blur-sm"
-                  : "flex shrink-0 items-center justify-center gap-3 border-t border-gray-200 bg-gray-50/90 px-4 py-2.5 backdrop-blur-sm"
-              }
-            >
-              <Pagination
-                compact={mob}
-                totalItems={filtered.length}
-                itemsPerPage={PAGE_SIZE_MEM}
-                currentPage={currentPageList}
-                onPageChange={(p) => setPageList(p)}
-              />
-            </div>
-          </div>
-        </>
-      )}
-      </div>
-    </div>
+    <MembersManagementPanel
+      mob={mob}
+      mobPanelMinH={MOB_PANEL_MIN_H}
+      searchQuery={searchQuery}
+      onSearchChange={(v) => {
+        setSearchQuery(v);
+        setPageList(1);
+      }}
+      deptOptions={deptSelectOptions}
+      mokjangOptions={mokjangSelectOptions}
+      roleOptions={roleSelectOptions}
+      onSelectDept={(v) => {
+        setDeptF(v);
+        setPageList(1);
+      }}
+      onSelectMokjang={(v) => {
+        setMokjangF(v);
+        setPageList(1);
+      }}
+      onSelectRole={(v) => {
+        setRoleF(v);
+        setPageList(1);
+      }}
+      onResetFilters={resetFilters}
+      onRegister={() => openMemberModal()}
+      db={db}
+      filtered={filtered}
+      pageMembers={pageListMembers}
+      pageSize={PAGE_SIZE_MEM}
+      currentPage={currentPageList}
+      totalItems={filtered.length}
+      onPageChange={setPageList}
+      onOpenDetail={openDetail}
+      onOpenQuickPrayer={(id, name) => openQuickNote(id, name, "prayer")}
+      onOpenActivity={openNoteModal}
+    />
   );
 }
 
@@ -3699,7 +3120,7 @@ function PrayerModal({
       open
       onClose={onClose}
       title={`${member.name} — 기도`}
-      maxWidth={720}
+      height={APP_MODAL.tallHeight}
       footer={
         <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -4450,7 +3871,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
           <FormInput label="교회 이름" value={db.settings.churchName || ""} placeholder="○○교회"
             style={formInMob}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, churchName: e.target.value } })); persist(); }} />
-          <FormInput label="교단" value={db.settings.denomination || ""} placeholder="예: 침례교, 장로교, 감리교 (침례교면 증서에 침례 표기)"
+          <FormInput label="교단" value={db.settings.denomination || ""} placeholder="예: 침례교, 장로교, 감리교 (세례·침례 표기는 설정에서 지정)"
             style={formInMob}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setDb(prev => ({ ...prev, settings: { ...prev.settings, denomination: e.target.value } })); persist(); }} />
           <FormInput label="부서 목록 (쉼표 구분)" value={db.settings.depts || ""} placeholder="유아부,유치부,유년부,초등부,중등부,고등부,청년부,장년부"
@@ -5201,7 +4622,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : undefined}
       contentTopGap={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadTop : undefined}
       contentFontFamily={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.fontKR : undefined}
-      hideHeader={activeSub === "dashboard" || orgResourceLayout}
+      hideHeader={activeSub === "dashboard" || orgResourceLayout || activeSub === "members"}
     >
           {activeSub === "dashboard" && (
             <DashboardSub

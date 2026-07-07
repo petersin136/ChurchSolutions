@@ -2359,3 +2359,103 @@ div[style*="height"] canvas {
 
 .pco-card { background: var(--pco-card); border: 1px solid var(--pco-border); border-radius: 12px; padding: 24px; }
 .pco-card-title { font-size: 16px; font-weight: 700; color: var(--pco-text); margin: 0 0 16px 0; }
+
+/* ── 앱 공통 모달 (PcModalShell + 레거시 .modal) ── */
+.app-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 14vh 16px 24px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  overflow: auto;
+}
+
+.app-modal-card,
+.app-modal-overlay > .modal {
+  width: 540px;
+  max-width: 100%;
+  max-height: min(85vh, 720px);
+  padding: 30px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 12px rgba(17, 17, 26, 0.05);
+  font-family: "Pretendard", system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.app-modal-overlay > .modal {
+  width: 540px;
+  max-width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(17, 17, 26, 0.05);
+}
+
+.app-modal-overlay .modal-handle {
+  display: none;
+}
+
+.app-modal-overlay .modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 16px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+.app-modal-overlay .modal-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0b0c0e;
+  line-height: 1.35;
+}
+
+.app-modal-overlay .modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 0 0;
+}
+
+.app-modal-overlay .modal-foot {
+  flex-shrink: 0;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.app-modal-overlay .modal-x {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  color: #8b909a;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.app-modal-overlay .modal-x:hover {
+  background: #f4f4f6;
+  color: #0b0c0e;
+}

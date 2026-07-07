@@ -2761,7 +2761,6 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
           overlayStyle={{ zIndex: 9999 }}
           title={briefingEvent.title}
           onClose={() => setBriefingEvent(null)}
-          maxWidth={460}
           footer={
             <div style={{ display: "flex", gap: 8, width: "100%", alignItems: "center" }}>
               <button
@@ -3130,7 +3129,6 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
             setEventModalOpen(false);
             resetEventForm();
           }}
-          maxWidth={520}
         >
           <label style={plannerFieldLabel(mob)}>제목 *</label>
           <FieldInput
@@ -3426,7 +3424,6 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
             setDeptModalOpen(false);
             setEditingDeptId(null);
           }}
-          maxWidth={480}
         >
           <label style={lbl}>부서명 *</label>
           <FieldInput value={deptForm.name} onChange={(v) => setDeptForm((f) => ({ ...f, name: v }))} placeholder="부서명" />
@@ -3480,7 +3477,6 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
             setPlaceModalOpen(false);
             setEditingPlaceId(null);
           }}
-          maxWidth={480}
         >
           <label style={lbl}>장소명 *</label>
           <FieldInput value={placeForm.name} onChange={(v) => setPlaceForm((f) => ({ ...f, name: v }))} placeholder="장소명" />
@@ -3527,7 +3523,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
       )}
 
       {moreModal && (
-        <PcModalShell open overlayStyle={{ zIndex: 9999 }} title="일정 목록" onClose={() => setMoreModal(null)} maxWidth={480}>
+        <PcModalShell open overlayStyle={{ zIndex: 9999 }} title="일정 목록" onClose={() => setMoreModal(null)}>
           <p style={{ fontSize: 15, fontWeight: 700, color: NAVY, margin: "0 0 16px" }}>
             {moreModal.y}년 {moreModal.m}월 {moreModal.d}일
           </p>
@@ -3564,7 +3560,6 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
           overlayStyle={{ zIndex: 9999 }}
           title="부서 색상"
           onClose={() => setShowLegendModal(false)}
-          maxWidth={320}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {departments

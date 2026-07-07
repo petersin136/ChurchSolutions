@@ -6,6 +6,7 @@ import type { DB, Member, Note, Visit, Income, MemberStatusHistory, NewFamilyPro
 import { supabase } from "@/lib/supabase";
 import { getChurchId, filterByChurch } from "@/lib/tenant";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { getBaptismTermLabels, displayBaptismType } from "@/lib/churchTerminology";
 import LazyChart from "../common/LazyChart";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
 
@@ -159,11 +160,10 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
   );
 
   const statusColor = STATUS_BADGE_COLOR[member.member_status || ""] || "#6B7280";
-  const denom = db.settings?.denomination?.trim();
-  const isBaptist = Boolean(denom && denom.includes("침례"));
-  const baptismCertLabel = isBaptist ? "침례증명서" : "세례증명서";
-  const baptismInfoLabel = isBaptist ? "침례" : "세례";
-  const baptismDisplayValue = isBaptist && member.baptism_type === "세례" ? "침례" : member.baptism_type;
+  const baptismLabels = getBaptismTermLabels(db.settings);
+  const baptismCertLabel = baptismLabels.baptismCertificate;
+  const baptismInfoLabel = baptismLabels.baptism;
+  const baptismDisplayValue = displayBaptismType(member.baptism_type, db.settings);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col flex-1 min-h-0">
@@ -192,7 +192,7 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {onEdit && <button type="button" onClick={onEdit} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">편집</button>}
-          <button type="button" onClick={async () => { try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(member, db.settings?.churchName ?? "", null, db.settings?.denomination); toast?.(`${baptismCertLabel} PDF 다운로드됨`, "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">{baptismCertLabel} 인쇄</button>
+          <button type="button" onClick={async () => { try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(member, db.settings?.churchName ?? "", null, db.settings); toast?.(`${baptismCertLabel} PDF 다운로드됨`, "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">{baptismCertLabel} 인쇄</button>
           <button type="button" onClick={async () => { try { const { generateMemberCertificatePdf } = await import("@/components/print/MemberCertificate"); await generateMemberCertificatePdf(member, db.settings?.churchName ?? "", null); toast?.("교인증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">교인증명서 인쇄</button>
           {member.phone && <a href={`tel:${member.phone}`} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">전화</a>}
           {member.phone && <a href={`sms:${member.phone}`} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">문자</a>}

@@ -190,30 +190,46 @@ export function SuperPlannerUI(props: SuperPlannerUIProps) {
 
       <div className="pc-app-body">
       <main>
-        <div className={`page ${currentPage === "pastoral" ? "active" : ""}`} id="page-pastoral">
-          <PastoralPage db={db} setDb={setDb} saveDb={saveDb} />
-        </div>
-        <div className={`page ${currentPage === "visit" ? "active" : ""}`} id="page-visit">
-          <VisitCounselPage mainDb={db} setMainDb={setDb} saveMain={save} />
-        </div>
-        <div className={`page ${currentPage === "school" ? "active" : ""}`} id="page-school">
-          <SchoolPage db={db} toast={toast} />
-        </div>
-        <div className={`page ${currentPage === "finance" ? "active" : ""}`} id="page-finance">
-          <FinancePage db={db} setDb={setDb} settings={db.settings} toast={toast} />
-        </div>
-        <div className={`page ${currentPage === "planner" ? "active" : ""}`} id="page-planner">
-          <PlannerPage toast={toast} />
-        </div>
-        <div className={`page ${currentPage === "bulletin" ? "active" : ""}`} id="page-bulletin">
-          <BulletinPage />
-        </div>
-        <div className={`page ${currentPage === "reports" ? "active" : ""}`} id="page-reports">
-          <ReportsPage db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
-        </div>
-        <div className={`page ${currentPage === "settings" ? "active" : ""}`} id="page-settings">
-          <SettingsPage db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
-        </div>
+        {currentPage === "pastoral" ? (
+          <div className="page active" id="page-pastoral">
+            <PastoralPage db={db} setDb={setDb} saveDb={saveDb} />
+          </div>
+        ) : null}
+        {currentPage === "visit" ? (
+          <div className="page active" id="page-visit">
+            <VisitCounselPage mainDb={db} setMainDb={setDb} saveMain={save} />
+          </div>
+        ) : null}
+        {currentPage === "school" ? (
+          <div className="page active" id="page-school">
+            <SchoolPage db={db} toast={toast} />
+          </div>
+        ) : null}
+        {currentPage === "finance" ? (
+          <div className="page active" id="page-finance">
+            <FinancePage db={db} setDb={setDb} settings={db.settings} toast={toast} />
+          </div>
+        ) : null}
+        {currentPage === "planner" ? (
+          <div className="page active" id="page-planner">
+            <PlannerPage toast={toast} />
+          </div>
+        ) : null}
+        {currentPage === "bulletin" ? (
+          <div className="page active" id="page-bulletin">
+            <BulletinPage />
+          </div>
+        ) : null}
+        {currentPage === "reports" ? (
+          <div className="page active" id="page-reports">
+            <ReportsPage db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
+          </div>
+        ) : null}
+        {currentPage === "settings" ? (
+          <div className="page active" id="page-settings">
+            <SettingsPage db={db} setDb={setDb} save={save} saveDb={saveDb} toast={toast} />
+          </div>
+        ) : null}
       </main>
 
       <aside className="pc-right-bar" aria-label="빠른 도구">

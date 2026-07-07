@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { DB, Member, Family } from "@/types/db";
 import { getDepts } from "@/lib/store";
+import { getBaptismTermLabels, getBaptismTypeOptions } from "@/lib/churchTerminology";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -11,13 +12,6 @@ import { CalendarDropdown } from "@/components/CalendarDropdown";
 const ROLES = ["담임목사", "부목사", "전도사", "장로", "안수집사", "권사", "집사", "성도", "청년", "학생"];
 const VISIT_PATHS: Member["visit_path"][] = ["지인소개", "전도", "자진방문", "이전교회", "기타"];
 const FAMILY_RELATIONS: Member["family_relation"][] = ["본인", "배우자", "자녀", "부모", "형제", "기타"];
-const BAPTISM_TYPES_ALL: Member["baptism_type"][] = ["유아세례", "세례", "입교", "미세례"];
-/** 침례교회용: 유아세례 제거, 세례 → 침례 표기 (value는 DB 호환으로 '세례' 유지) */
-const BAPTISM_OPTIONS_CHIMRYE: { value: Member["baptism_type"]; label: string }[] = [
-  { value: "세례", label: "침례" },
-  { value: "입교", label: "입교" },
-  { value: "미세례", label: "미세례" },
-];
 const MEMBER_STATUSES: Member["member_status"][] = ["활동", "휴적", "은퇴", "별세", "이적", "제적", "미등록"];
 
 function formatPhone(v: string): string {
@@ -35,21 +29,15 @@ export interface MemberFormProps {
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 
-/** 교단명에 '침례'가 포함되면 침례 표기 (예: 침례교, 기독교한국침례회, 한국침례회) */
-function isBaptistDenomination(denomination?: string | null): boolean {
-  const d = denomination?.trim();
-  return Boolean(d && d.includes("침례"));
-}
-
 export function MemberForm({ db, member, onSaved, onCancel, toast }: MemberFormProps) {
   const { refreshMembers } = useAppData();
   const depts = getDepts(db);
   const mokjangList = (db.settings.mokjangList || "").split(",").map((s) => s.trim()).filter(Boolean);
-  const useChimrye = isBaptistDenomination(db.settings.denomination);
-  const baptismSectionLabel = useChimrye ? "침례/가족" : "세례/가족";
-  const baptismTypeLabel = useChimrye ? "침례 구분" : "세례 구분";
-  const baptismDateLabel = useChimrye ? "침례일" : "세례일";
-  const baptismTypeOptions = useChimrye ? BAPTISM_OPTIONS_CHIMRYE : BAPTISM_TYPES_ALL.map((b) => ({ value: b, label: b }));
+  const baptismLabels = getBaptismTermLabels(db.settings);
+  const baptismSectionLabel = baptismLabels.baptismFamilySection;
+  const baptismTypeLabel = baptismLabels.baptismType;
+  const baptismDateLabel = baptismLabels.baptismDate;
+  const baptismTypeOptions = getBaptismTypeOptions(db.settings);
 
   const [name, setName] = useState("");
   const [gender, setGender] = useState("");

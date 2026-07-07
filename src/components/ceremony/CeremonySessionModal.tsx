@@ -747,7 +747,6 @@ export function CeremonySessionModal({
         open={open}
         onClose={onClose}
         title="예식 상세"
-        maxWidth={760}
         footer={
           <div style={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
             <PcButton variant="ghost" onClick={onClose}>
@@ -1660,7 +1659,6 @@ export function CeremonySessionModal({
         open={open}
         onClose={onClose}
         title={modalTitle}
-        maxWidth={mob ? 720 : 860}
         footer={footer}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: mob ? 12 : 14 }}>

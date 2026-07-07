@@ -389,7 +389,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style, icon,
 
 function Modal({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; footer?: ReactNode }) {
   return (
-    <PcModalShell open={open} onClose={onClose} title={title} maxWidth={600} footer={footer}>
+    <PcModalShell open={open} onClose={onClose} title={title} footer={footer}>
       {children}
     </PcModalShell>
   );

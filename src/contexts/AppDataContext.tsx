@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, startTransition } from "react";
 import type { DB, SchoolDepartment, SchoolClass, SchoolEnrollment, Workflow, WorkflowStep, WorkflowCard, CeremonyTemplate, CeremonyStep, CeremonySession } from "@/types/db";
 import { DEFAULT_DB } from "@/types/db";
 import { supabase } from "@/lib/supabase";
@@ -18,11 +18,51 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
-function debounceByKey<T extends string>(fn: (key: T) => void, ms: number): (key: T) => void {
-  const timers: Record<string, ReturnType<typeof setTimeout>> = {};
-  return (key: T) => {
-    clearTimeout(timers[key]);
-    timers[key] = setTimeout(() => fn(key), ms);
+/** Realtime 이벤트를 모아 한 번에 처리 (테이블별 500ms 타이머 난립 방지) */
+const REALTIME_COALESCE_MS = 2000;
+
+function createCoalescedTableRefresh(run: (table: string) => void, ms: number) {
+  const pending = new Set<string>();
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let paused = false;
+
+  const flush = () => {
+    timer = null;
+    if (paused) {
+      timer = setTimeout(flush, ms);
+      return;
+    }
+    const tables = Array.from(pending);
+    pending.clear();
+    const order = ["settings", "budget", "members", "notes", "visits", "income", "expense", "attendance"];
+    tables
+      .sort((a, b) => {
+        const ai = order.indexOf(a);
+        const bi = order.indexOf(b);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      })
+      .forEach((table) => run(table));
+  };
+
+  const schedule = (table: string) => {
+    pending.add(table);
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(flush, ms);
+  };
+
+  return {
+    schedule,
+    setPaused(value: boolean) {
+      paused = value;
+      if (!paused && pending.size > 0 && !timer) {
+        timer = setTimeout(flush, 0);
+      }
+    },
+    dispose() {
+      if (timer) clearTimeout(timer);
+      timer = null;
+      pending.clear();
+    },
   };
 }
 
@@ -109,6 +149,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [ceremonySessions, setCeremonySessions] = useState<CeremonySession[]>([]);
   const channelRef = useRef<any>(null);
   const churchIdRef = useRef(churchId);
+  const partialRefreshInflightRef = useRef(new Set<string>());
+  const coalescedRefreshRef = useRef<ReturnType<typeof createCoalescedTableRefresh> | null>(null);
   churchIdRef.current = churchId;
 
   const loading = coreLoading;
@@ -116,12 +158,16 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const partialRefresh = useCallback(async (table: string) => {
     const cid = churchIdRef.current;
     if (!cid || !supabase) return;
+    if (partialRefreshInflightRef.current.has(table)) return;
+    partialRefreshInflightRef.current.add(table);
 
     try {
       if (table === "members") {
         const { data } = await supabase.from("members").select("*").eq("church_id", cid).order("created_at", { ascending: true });
         if (data) {
-          setDb(prev => ({ ...prev, members: data.map((r: Record<string, unknown>) => toMember(r)) }));
+          startTransition(() => {
+            setDb((prev) => ({ ...prev, members: data.map((r: Record<string, unknown>) => toMember(r)) }));
+          });
         }
       } else if (table === "attendance") {
         const PAGE_SIZE = 1000;
@@ -145,14 +191,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           from += PAGE_SIZE;
           if (from > 200000) break;
         }
-        setRawAttendance(allRows);
-        console.log(
-          "[AppData] attendance loaded total:",
-          allRows.length,
-          `minYear: ${minYear}`,
-          "years:",
-          Array.from(new Set(allRows.map((r) => (r as { year?: number }).year))).sort((a, b) => (a ?? 0) - (b ?? 0)),
-        );
         const attendance: DB["attendance"] = {};
         const attendanceReasons: NonNullable<DB["attendanceReasons"]> = {};
         allRows.forEach((r: any) => {
@@ -167,7 +205,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             attendanceReasons[mid][week] = absentNote;
           }
         });
-        setDb(prev => ({ ...prev, attendance, attendanceReasons }));
+        startTransition(() => {
+          setRawAttendance(allRows);
+          setDb((prev) => ({ ...prev, attendance, attendanceReasons }));
+        });
       } else if (table === "notes") {
         const { data } = await supabase.from("notes").select("*").eq("church_id", cid);
         if (data) {
@@ -185,16 +226,20 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
               if (r.answered_at) answeredPrayerDates[key] = String(r.answered_at).slice(0, 10);
             }
           });
-          setDb(prev => ({
-            ...prev, notes,
-            answeredPrayerKeys: answeredPrayerKeys.length > 0 ? [...new Set([...(prev.answeredPrayerKeys || []), ...answeredPrayerKeys])] : prev.answeredPrayerKeys,
-            answeredPrayerDates: { ...(prev.answeredPrayerDates || {}), ...answeredPrayerDates },
-          }));
+          startTransition(() => {
+            setDb((prev) => ({
+              ...prev, notes,
+              answeredPrayerKeys: answeredPrayerKeys.length > 0 ? [...new Set([...(prev.answeredPrayerKeys || []), ...answeredPrayerKeys])] : prev.answeredPrayerKeys,
+              answeredPrayerDates: { ...(prev.answeredPrayerDates || {}), ...answeredPrayerDates },
+            }));
+          });
         }
       } else if (table === "visits") {
         const { data } = await supabase.from("visits").select("*").eq("church_id", cid).order("date", { ascending: false });
         if (data) {
-          setDb(prev => ({ ...prev, visits: data.map((r: any) => toVisit(r)) }));
+          startTransition(() => {
+            setDb((prev) => ({ ...prev, visits: data.map((r: any) => toVisit(r)) }));
+          });
         }
       } else if (table === "income") {
         const PAGE_SIZE = 1000;
@@ -219,7 +264,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         }
         const data = allRows;
         if (data) {
-          setDb(prev => ({ ...prev, income: data.map((r: any) => toIncome(r)) }));
+          startTransition(() => {
+            setDb((prev) => ({ ...prev, income: data.map((r: any) => toIncome(r)) }));
+          });
         }
       } else if (table === "expense") {
         const PAGE_SIZE = 1000;
@@ -244,39 +291,54 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         }
         const data = allRows;
         if (data) {
-          setDb(prev => ({ ...prev, expense: data.map((r: any) => toExpense(r)) }));
+          startTransition(() => {
+            setDb((prev) => ({ ...prev, expense: data.map((r: any) => toExpense(r)) }));
+          });
         }
       } else if (table === "new_family_program") {
         const { data } = await supabase.from("new_family_program").select("*").eq("church_id", cid);
         if (data) {
-          setDb(prev => ({ ...prev, newFamilyPrograms: data.map((r: any) => toNewFamilyProgram(r)) }));
+          startTransition(() => {
+            setDb((prev) => ({ ...prev, newFamilyPrograms: data.map((r: any) => toNewFamilyProgram(r)) }));
+          });
         }
       } else if (table === "plans") {
         const { data } = await supabase.from("plans").select("*").eq("church_id", cid).order("date", { ascending: true });
         if (data) {
-          setDb(prev => ({ ...prev, plans: data.map((r: any) => toPlan(r)) }));
+          startTransition(() => {
+            setDb((prev) => ({ ...prev, plans: data.map((r: any) => toPlan(r)) }));
+          });
         }
       } else if (table === "sermons") {
         const { data } = await supabase.from("sermons").select("*").eq("church_id", cid).order("date", { ascending: false });
         if (data) {
-          setDb(prev => ({ ...prev, sermons: data.map((r: any) => toSermon(r)) }));
+          startTransition(() => {
+            setDb((prev) => ({ ...prev, sermons: data.map((r: any) => toSermon(r)) }));
+          });
         }
       } else if (table === "settings") {
         const { data } = await supabase.from("settings").select("*").eq("church_id", cid).limit(1);
         if (data?.[0]) {
           const s = data[0] as Record<string, unknown>;
-          setDb(prev => ({
-            ...prev,
-            settings: {
-              churchName: (s.church_name as string) ?? prev.settings.churchName,
-              depts: (s.depts as string) ?? prev.settings.depts,
-              fiscalStart: (s.fiscal_start as string) ?? prev.settings.fiscalStart,
-              denomination: (s.denomination as string | undefined) ?? prev.settings.denomination,
-              address: (s.address as string | undefined) ?? prev.settings.address,
-              pastor: (s.pastor as string | undefined) ?? prev.settings.pastor,
-              businessNumber: (s.business_number as string | undefined) ?? prev.settings.businessNumber,
-            },
-          }));
+          startTransition(() => {
+            setDb((prev) => ({
+              ...prev,
+              settings: {
+                churchName: (s.church_name as string) ?? prev.settings.churchName,
+                depts: (s.depts as string) ?? prev.settings.depts,
+                fiscalStart: (s.fiscal_start as string) ?? prev.settings.fiscalStart,
+                denomination: (s.denomination as string | undefined) ?? prev.settings.denomination,
+                baptismTerminology: (() => {
+                  const raw = s.baptism_terminology as string | undefined;
+                  if (raw === "chimrye" || raw === "seryae") return raw;
+                  return prev.settings.baptismTerminology ?? "auto";
+                })(),
+                address: (s.address as string | undefined) ?? prev.settings.address,
+                pastor: (s.pastor as string | undefined) ?? prev.settings.pastor,
+                businessNumber: (s.business_number as string | undefined) ?? prev.settings.businessNumber,
+              },
+            }));
+          });
         }
       } else if (table === "budget") {
         const { data } = await supabase.from("budget").select("*").eq("church_id", cid).eq("fiscal_year", String(CURRENT_YEAR));
@@ -289,7 +351,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
               budget[r.category as string] = Number(r.annual_total ?? r.amount) ?? 0;
             }
           });
-          setDb(prev => ({ ...prev, budget }));
+          startTransition(() => {
+            setDb((prev) => ({ ...prev, budget }));
+          });
         }
       } else if (table === "school_departments") {
         const { data } = await supabase.from("school_departments").select("*").eq("church_id", cid).order("sort_order");
@@ -321,6 +385,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (e) {
       console.error(`[AppData] partial refresh ${table} failed:`, e);
+    } finally {
+      partialRefreshInflightRef.current.delete(table);
     }
   }, []);
 
@@ -538,10 +604,19 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     refreshBackground();
   }, [refreshCore, refreshBackground]);
 
-  const debouncedPartialRefresh = useMemo(
-    () => debounceByKey((table: string) => partialRefresh(table), 500),
-    [partialRefresh],
-  );
+  const partialRefreshRef = useRef(partialRefresh);
+  partialRefreshRef.current = partialRefresh;
+
+  useEffect(() => {
+    coalescedRefreshRef.current = createCoalescedTableRefresh(
+      (table) => { void partialRefreshRef.current(table); },
+      REALTIME_COALESCE_MS,
+    );
+    return () => {
+      coalescedRefreshRef.current?.dispose();
+      coalescedRefreshRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!churchId) {
@@ -558,6 +633,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!churchId || !supabase) return;
 
+    const onVisibility = () => {
+      coalescedRefreshRef.current?.setPaused(document.hidden);
+    };
+    onVisibility();
+    document.addEventListener("visibilitychange", onVisibility);
+
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
     }
@@ -569,46 +650,59 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     let channel = supabase.channel(`app-data-${churchId}`);
 
-    WATCHED_TABLES.forEach(table => {
+    WATCHED_TABLES.forEach((table) => {
       channel = channel.on(
         "postgres_changes" as any,
         { event: "*", schema: "public", table, filter: `church_id=eq.${churchId}` },
         () => {
-          debouncedPartialRefresh(table);
-        }
+          coalescedRefreshRef.current?.schedule(table);
+        },
       );
     });
 
-    channel.subscribe((status: string) => {
-      console.log("[Realtime] subscription status:", status);
-    });
+    channel.subscribe();
 
     channelRef.current = channel;
 
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
       if (channelRef.current && supabase) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [churchId, debouncedPartialRefresh]);
+  }, [churchId]);
 
   const saveDb = useCallback(async (d: DB) => {
     await saveDBToSupabase(d);
   }, []);
 
-  const value: AppDataContextType = {
-    db, setDb, saveDb, loading, loadError,
-    rawAttendance, schoolDepartments, schoolClasses, schoolEnrollments,
-    workflows, workflowSteps, workflowCards,
-    ceremonyTemplates, ceremonySteps, ceremonySessions,
-    refreshAll, refreshMembers, refreshAttendance, refreshNotes,
-    refreshVisits, refreshIncome, refreshExpense, refreshNewFamilyPrograms,
-    refreshPlans, refreshSermons, refreshSettings, refreshBudget,
-    refreshSchoolDepartments, refreshSchoolClasses, refreshSchoolEnrollments,
-    refreshWorkflows, refreshWorkflowSteps, refreshWorkflowCards,
-    refreshCeremonyTemplates, refreshCeremonySteps, refreshCeremonySessions,
-  };
+  const value = useMemo<AppDataContextType>(
+    () => ({
+      db, setDb, saveDb, loading, loadError,
+      rawAttendance, schoolDepartments, schoolClasses, schoolEnrollments,
+      workflows, workflowSteps, workflowCards,
+      ceremonyTemplates, ceremonySteps, ceremonySessions,
+      refreshAll, refreshMembers, refreshAttendance, refreshNotes,
+      refreshVisits, refreshIncome, refreshExpense, refreshNewFamilyPrograms,
+      refreshPlans, refreshSermons, refreshSettings, refreshBudget,
+      refreshSchoolDepartments, refreshSchoolClasses, refreshSchoolEnrollments,
+      refreshWorkflows, refreshWorkflowSteps, refreshWorkflowCards,
+      refreshCeremonyTemplates, refreshCeremonySteps, refreshCeremonySessions,
+    }),
+    [
+      db, saveDb, loading, loadError,
+      rawAttendance, schoolDepartments, schoolClasses, schoolEnrollments,
+      workflows, workflowSteps, workflowCards,
+      ceremonyTemplates, ceremonySteps, ceremonySessions,
+      refreshAll, refreshMembers, refreshAttendance, refreshNotes,
+      refreshVisits, refreshIncome, refreshExpense, refreshNewFamilyPrograms,
+      refreshPlans, refreshSermons, refreshSettings, refreshBudget,
+      refreshSchoolDepartments, refreshSchoolClasses, refreshSchoolEnrollments,
+      refreshWorkflows, refreshWorkflowSteps, refreshWorkflowCards,
+      refreshCeremonyTemplates, refreshCeremonySteps, refreshCeremonySessions,
+    ],
+  );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
