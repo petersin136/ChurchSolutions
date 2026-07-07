@@ -637,9 +637,9 @@ html::before {
   stroke: var(--color-primary) !important;
 }
 
-:root[data-mode="dark"] .superplanner-root [style*="borderRadius: 999"],
+:root[data-mode="dark"] .superplanner-root [style*="borderRadius: 7"],
 :root[data-mode="dark"] .superplanner-root [style*="border-radius: 999"],
-:root[data-mode="dark"] .superplanner-root [style*="borderRadius: 20"],
+:root[data-mode="dark"] .superplanner-root [style*="borderRadius: 7"],
 :root[data-mode="dark"] .superplanner-root [style*="border-radius: 20"] {
   border: 1px solid var(--color-border) !important;
 }
@@ -779,7 +779,7 @@ html::before {
     background: var(--color-surface);
     color: var(--color-text);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: 7px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     border: 1px solid #e8e9f0;
     padding: 24px;
@@ -893,7 +893,7 @@ html::before {
   .att-dot.n { background: var(--border2); }
   .week-grid { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 12px; }
   .week-cell {
-    width: 22px; height: 22px; border-radius: 4px;
+    width: 22px; height: 22px; border-radius: 7px;
     font-size: 9px; font-weight: 600;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
     background: rgba(118,118,128,0.08); color: var(--text3); transition: all 0.15s;
@@ -924,7 +924,7 @@ html::before {
     background: var(--color-surface);
     color: var(--color-text);
     border: 1px solid var(--color-border);
-    border-radius: 16px 16px 0 0;
+    border-radius: 7px 7px 0 0;
     overflow: hidden; display: flex; flex-direction: column;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
@@ -932,7 +932,7 @@ html::before {
   }
   .modal-bg.open .modal { transform: translateY(0); }
   .modal-handle {
-    width: 36px; height: 4px; border-radius: 100px;
+    width: 36px; height: 4px; border-radius: 7px;
     background: var(--color-border-strong); margin: 10px auto 2px; flex-shrink: 0;
   }
   .modal-head {
@@ -963,7 +963,7 @@ html::before {
   }
   .modal-foot .btn {
     padding: 10px 28px;
-    border-radius: 10px;
+    border-radius: 7px;
     font-size: 15px;
     font-weight: 600;
     font-family: inherit;
@@ -1037,7 +1037,7 @@ html::before {
     color: #1e293b;
     background: #ffffff;
     border: 1px solid #c4cbe4;
-    border-radius: 10px;
+    border-radius: 7px;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
     box-sizing: border-box;
@@ -1227,7 +1227,7 @@ html::before {
     width: 100%;
     max-width: 100%;
     max-height: 100dvh;
-    border-radius: 16px 16px 0 0;
+    border-radius: 7px 7px 0 0;
     box-shadow: 0 -2px 20px rgba(30,40,80,0.1);
   }
   .modal-body {
@@ -1246,7 +1246,7 @@ html::before {
   .fi, .fs, .ft {
     font-size: 16px;
     padding: 12px 14px;
-    border-radius: 10px;
+    border-radius: 7px;
   }
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1411,7 +1411,7 @@ html::before {
     width: 100%;
     max-width: 520px;
     max-height: 85vh;
-    border-radius: 16px;
+    border-radius: 7px;
     transform: translateY(20px) scale(0.97);
     opacity: 0;
     box-shadow: 0 8px 40px rgba(30,40,80,0.15);
@@ -1486,7 +1486,7 @@ html::before {
     max-height: 32px !important;
     font-size: 11px !important;
     line-height: 1.2 !important;
-    border-radius: 6px !important;
+    border-radius: 7px !important;
     padding: 0 26px 0 8px !important;
     border: 1px solid #e0e0e0 !important;
     box-sizing: border-box !important;
@@ -1499,9 +1499,9 @@ html::before {
 
 /* ── Mobile compact utilities (목양·향후 재사용) ── */
 @media (max-width: 1024px) {
-  .mob-card { padding: 8px 10px !important; border-radius: 8px !important; }
-  .mob-card-sm { padding: 6px 8px !important; border-radius: 6px !important; }
-  .mob-input { height: 32px !important; font-size: 12px !important; border-radius: 8px !important; }
+  .mob-card { padding: 8px 10px !important; border-radius: 7px !important; }
+  .mob-card-sm { padding: 6px 8px !important; border-radius: 7px !important; }
+  .mob-input { height: 32px !important; font-size: 12px !important; border-radius: 7px !important; }
   .mob-select { height: 32px !important; font-size: 11px !important; }
   .mob-btn { height: 32px !important; font-size: 11px !important; padding: 0 10px !important; }
   .mob-btn-sm { height: 24px !important; font-size: 10px !important; padding: 0 8px !important; }
@@ -1678,8 +1678,8 @@ html:has(.superplanner-root) body {
   border: none;
   background: none;
   font-family: 'Pretendard', 'Inter', system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 500; /* 시안: 비활성도 Regular(400)보다 약간 굵은 Medium */
+  font-size: 15px;
+  font-weight: 600;
   color: #0b0c0e;
   letter-spacing: 0.35px; /* 포토샵 자간 5 */
   cursor: pointer;
@@ -1702,7 +1702,7 @@ html:has(.superplanner-root) body {
   width: calc(100% + 12px);
   height: 3px;
   background: transparent;
-  border-radius: 2px;
+  border-radius: 7px;
   pointer-events: none;
   z-index: 2;
   transition: background-color 0.12s ease;
@@ -1715,13 +1715,13 @@ html:has(.superplanner-root) body {
 
 .pc-nav-tab:hover {
   color: #0b0c0e;
-  font-weight: 600; /* hover 시 SemiBold */
+  font-weight: 700;
   background: none;
 }
 
 .pc-nav-tab.active {
   color: #0b0c0e;
-  font-weight: 600;
+  font-weight: 700;
   background: none;
 }
 
@@ -1794,9 +1794,9 @@ html:has(.superplanner-root) body {
   display: flex;
   align-items: flex-end;
   align-self: stretch;
-  gap: 8px;
+  gap: 14px;
   margin-left: auto;
-  padding-left: 16px;
+  padding-left: 24px;
   flex-shrink: 0;
 }
 
@@ -1853,7 +1853,7 @@ html:has(.superplanner-root) body {
   padding: 8px 0;
   background: #fff;
   border: 1px solid #e4e5e8;
-  border-radius: 12px;
+  border-radius: 7px;
   box-shadow: 0 12px 32px rgba(11, 12, 14, 0.12);
 }
 
@@ -1963,7 +1963,7 @@ html:has(.superplanner-root) body {
   flex-shrink: 0;
   border: 1px solid var(--topbar-search-underline);
   background: #eff0f2;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #171719;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1978,7 +1978,7 @@ html:has(.superplanner-root) body {
   flex-shrink: 0;
   border: 1px solid var(--topbar-search-underline);
   background: #eff0f2;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #171719;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2029,7 +2029,7 @@ html:has(.superplanner-root) body {
   height: 36px;
   border: 1px solid var(--pc-nav-border);
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 7px;
   color: var(--pc-nav-text);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2081,7 +2081,7 @@ html:has(.superplanner-root) body {
 .pc-right-btn {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 7px;
   border: none;
   background: transparent;
   color: var(--color-text-muted);
@@ -2248,7 +2248,7 @@ html:has(.superplanner-root) body {
 .pc-card {
   background: #ffffff;
   border: 1px solid #e2e5ef;
-  border-radius: 12px;
+  border-radius: 7px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
@@ -2256,13 +2256,13 @@ html:has(.superplanner-root) body {
 .card {
   background: #ffffff !important;
   border: 1px solid #e8e9f0 !important;
-  border-radius: 12px !important;
+  border-radius: 7px !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
 }
 
 table.tbl {
   border: 1px solid #e8e9f0;
-  border-radius: 8px;
+  border-radius: 7px;
   overflow: hidden;
 }
 
@@ -2290,7 +2290,7 @@ table.tbl tbody tr:hover {
 .btn-primary {
   background: #4466e0;
   color: #fff;
-  border-radius: 10px;
+  border-radius: 7px;
   box-shadow: 0 2px 8px rgba(68,102,224,0.2);
 }
 .btn-primary:hover {
@@ -2299,11 +2299,11 @@ table.tbl tbody tr:hover {
 
 /* 재정 탭 전용 */
 .finance-nav-btn {
-  border-radius: 8px;
+  border-radius: 7px;
   transition: all 0.15s ease;
 }
 .finance-sub-pills button {
-  border-radius: 20px;
+  border-radius: 7px;
   border: 1px solid #e2e5ef;
   transition: all 0.15s ease;
 }
@@ -2311,7 +2311,7 @@ table.tbl tbody tr:hover {
 /* 차트 캔버스 — 차트 컨테이너 안에서만 */
 .chart-wrap canvas,
 div[style*="height"] canvas {
-  border-radius: 8px;
+  border-radius: 7px;
 }
 
 /* 스크롤바 — 단일 정의 */
@@ -2324,40 +2324,40 @@ div[style*="height"] canvas {
 }
 ::-webkit-scrollbar-thumb {
   background: #c4cbe4;
-  border-radius: 3px;
+  border-radius: 7px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
 /* Planning Center 스타일 공통 클래스 (pco-*) */
-.pco-table { border-radius: 12px; overflow: hidden; background: var(--pco-card); border: 1px solid var(--pco-border); width: 100%; border-collapse: collapse; }
+.pco-table { border-radius: 7px; overflow: hidden; background: var(--pco-card); border: 1px solid var(--pco-border); width: 100%; border-collapse: collapse; }
 .pco-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--pco-text-faint); font-weight: 600; padding: 12px 16px; border-bottom: 2px solid var(--pco-border); background: none; text-align: left; }
 .pco-table td { padding: 12px 16px; border-bottom: 1px solid var(--pco-border); color: var(--pco-text); }
 .pco-table tr:last-child td { border-bottom: none; }
 .pco-table tr:hover td { background: #f8f9ff; }
 
-.pco-btn-primary { background: var(--pco-primary); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.pco-btn-primary { background: var(--pco-primary); color: #fff; border: none; border-radius: 7px; padding: 8px 16px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
 .pco-btn-primary:hover { opacity: 0.9; }
-.pco-btn-secondary { background: var(--pco-card); border: 1px solid var(--pco-border); color: var(--pco-text); border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.pco-btn-secondary { background: var(--pco-card); border: 1px solid var(--pco-border); color: var(--pco-text); border-radius: 7px; padding: 8px 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
 .pco-btn-secondary:hover { background: #f8f9ff; }
-.pco-btn-danger { background: var(--pco-danger); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.pco-btn-danger { background: var(--pco-danger); color: #fff; border: none; border-radius: 7px; padding: 8px 16px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
 .pco-btn-danger:hover { opacity: 0.9; }
 
-.pco-badge { border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 500; display: inline-block; }
+.pco-badge { border-radius: 7px; padding: 4px 12px; font-size: 12px; font-weight: 500; display: inline-block; }
 .pco-badge-blue { background: #e8f0fe; color: #2952b3; }
 .pco-badge-green { background: #dcfce7; color: #15803d; }
 .pco-badge-yellow { background: #fef3c7; color: #a16207; }
 .pco-badge-red { background: #fde8e8; color: #b91c1c; }
 
-.pco-modal { border-radius: 16px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); background: var(--pco-card); }
+.pco-modal { border-radius: 7px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); background: var(--pco-card); }
 .pco-modal-overlay { background: rgba(0,0,0,0.3); }
 
 .pco-tab { padding: 8px 16px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; color: var(--pco-text-faint); background: none; border-top: none; border-left: none; border-right: none; transition: color 0.15s; }
 .pco-tab:hover { color: var(--pco-text-sub); }
 .pco-tab-active { color: var(--pco-primary); border-bottom-color: var(--pco-primary); }
 
-.pco-card { background: var(--pco-card); border: 1px solid var(--pco-border); border-radius: 12px; padding: 24px; }
+.pco-card { background: var(--pco-card); border: 1px solid var(--pco-border); border-radius: 7px; padding: 24px; }
 .pco-card-title { font-size: 16px; font-weight: 700; color: var(--pco-text); margin: 0 0 16px 0; }
 
 /* ── 앱 공통 모달 (PcModalShell + 레거시 .modal) ── */
@@ -2383,7 +2383,7 @@ div[style*="height"] canvas {
   max-width: 100%;
   max-height: min(85vh, 720px);
   padding: 30px;
-  border-radius: 10px;
+  border-radius: 7px;
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.03);
   box-shadow: 0 2px 12px rgba(17, 17, 26, 0.05);
@@ -2401,7 +2401,7 @@ div[style*="height"] canvas {
   width: 540px;
   max-width: 100%;
   border: 1px solid rgba(0, 0, 0, 0.03);
-  border-radius: 10px;
+  border-radius: 7px;
   box-shadow: 0 2px 12px rgba(17, 17, 26, 0.05);
 }
 
@@ -2447,7 +2447,7 @@ div[style*="height"] canvas {
   height: 32px;
   border: none;
   background: transparent;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #8b909a;
   cursor: pointer;
   font-size: 18px;

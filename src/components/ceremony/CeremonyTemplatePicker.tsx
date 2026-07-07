@@ -376,7 +376,7 @@ export function CeremonyTemplatePicker({
               style={{
                 height: 30,
                 padding: mob ? "0 10px" : "0 12px",
-                borderRadius: 8,
+                borderRadius: 7,
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -401,7 +401,7 @@ export function CeremonyTemplatePicker({
           style={{
             background: C.bg,
             border: `1px dashed ${C.border}`,
-            borderRadius: 12,
+            borderRadius: 7,
             padding: mob ? 20 : 32,
             textAlign: "center",
             color: C.textMuted,
@@ -438,7 +438,7 @@ export function CeremonyTemplatePicker({
                 style={{
                   background: C.card,
                   border: `1px solid ${C.border}`,
-                  borderRadius: 10,
+                  borderRadius: 7,
                   padding: 12,
                   cursor: "pointer",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
@@ -485,7 +485,7 @@ export function CeremonyTemplatePicker({
                       color: t.is_system ? C.textMuted : C.accent,
                       background: t.is_system ? C.bg : C.accentBg,
                       padding: "1px 6px",
-                      borderRadius: 10,
+                      borderRadius: 7,
                       border: `1px solid ${t.is_system ? C.border : C.accent}`,
                       flexShrink: 0,
                       whiteSpace: "nowrap",
@@ -577,7 +577,7 @@ export function CeremonyTemplatePicker({
             padding: "12px 14px",
             background: C.accentBg,
             border: `1px solid ${C.accent}`,
-            borderRadius: 10,
+            borderRadius: 7,
           }}
         >
           <div style={{ minWidth: 0 }}>
@@ -629,7 +629,7 @@ export function CeremonyTemplatePicker({
         <div
           style={{
             padding: "10px 12px",
-            borderRadius: 8,
+            borderRadius: 7,
             background: C.dangerBg,
             border: `1px solid ${C.danger}`,
             color: C.danger,
@@ -644,7 +644,7 @@ export function CeremonyTemplatePicker({
         <div
           style={{
             padding: "10px 12px",
-            borderRadius: 8,
+            borderRadius: 7,
             background: C.dangerBg,
             border: `1px solid ${C.danger}`,
             color: C.danger,
@@ -755,7 +755,7 @@ export function CeremonyTemplatePicker({
           style={{
             background: C.bg,
             border: `1px solid ${C.border}`,
-            borderRadius: 10,
+            borderRadius: 7,
             padding: "10px 12px",
           }}
         >

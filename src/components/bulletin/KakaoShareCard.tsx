@@ -55,7 +55,7 @@ const KakaoShareCard = forwardRef<HTMLDivElement, KakaoShareCardProps>(
         style={{
           width: 360,
           backgroundColor: "var(--color-surface)",
-          borderRadius: 16,
+          borderRadius: 7,
           overflow: "hidden",
           fontFamily: "var(--font-sans)",
           boxShadow: "0 4px 24px rgba(0,0,0,0.08)",

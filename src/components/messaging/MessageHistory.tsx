@@ -59,10 +59,10 @@ export function MessageHistory({ logs = [], toast }: MessageHistoryProps) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ borderRadius: 10, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14 }} />
-        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ borderRadius: 10, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14 }} />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ borderRadius: 10, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14, background: C.card }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ borderRadius: 7, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14 }} />
+        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ borderRadius: 7, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14 }} />
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ borderRadius: 7, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14, background: C.card }}>
           <option value="">전체 상태</option>
           <option value="저장됨">저장됨</option>
           <option value="발송대기">발송대기</option>
@@ -70,7 +70,7 @@ export function MessageHistory({ logs = [], toast }: MessageHistoryProps) {
           <option value="실패">실패</option>
         </select>
       </div>
-      <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflowX: "auto", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <div style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, overflowX: "auto", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         {loading && <p style={{ padding: 12, color: C.textMuted, fontSize: 13 }}>로딩 중...</p>}
         <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
           <thead>
@@ -97,7 +97,7 @@ export function MessageHistory({ logs = [], toast }: MessageHistoryProps) {
                   <td style={{ padding: "12px 16px" }}>{log.recipient_names || `${log.recipient_ids?.length ?? 0}명`}</td>
                   <td style={{ padding: "12px 16px" }}>{log.message_type}</td>
                   <td style={{ padding: "12px 16px", maxWidth: 280 }} className="truncate">{(log.content || "").slice(0, 40)}{(log.content?.length ?? 0) > 40 ? "…" : ""}</td>
-                  <td style={{ padding: "12px 16px" }}><span style={{ display: "inline-flex", padding: "2px 8px", borderRadius: 6, fontSize: 12, background: C.bg, color: C.textMuted }}>{log.status}</span></td>
+                  <td style={{ padding: "12px 16px" }}><span style={{ display: "inline-flex", padding: "2px 8px", borderRadius: 7, fontSize: 12, background: C.bg, color: C.textMuted }}>{log.status}</span></td>
                 </tr>
               ))
             )}

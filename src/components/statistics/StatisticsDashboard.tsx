@@ -28,7 +28,7 @@ const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 function StatCard({ label, value, sub, color = C.accent }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "20px 24px", position: "relative", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+    <div style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: "20px 24px", position: "relative", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
       <div style={{ position: "absolute", top: -10, right: -10, width: 60, height: 60, borderRadius: "50%", background: `${color}15` }} />
       <div style={{ fontSize: 13, color: C.textMuted, fontWeight: 500 }}>{label}</div>
       <div style={{ fontSize: 26, fontWeight: 700, color: C.navy, letterSpacing: "-0.5px" }}>{value}</div>
@@ -321,7 +321,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            style={{ borderRadius: 10, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14, background: C.card }}
+            style={{ borderRadius: 7, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14, background: C.card }}
           >
             {[currentYear, currentYear - 1, currentYear - 2].map((y) => (
               <option key={y} value={y}>{y}년</option>
@@ -331,7 +331,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </div>
 
       {/* A5-1 교인 통계 */}
-      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <section style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
           <Users size={20} style={{ color: C.accent }} />
           교인 통계
@@ -340,7 +340,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
           <StatCard label="전체 등록 교인" value={`${fmt(memberStats.total)}명`} sub={`${year}년 기준`} color={STAT_CARD_COLORS.accent} />
           <StatCard label="올해 신규 등록" value={`${fmt(memberStats.newThisYear)}명`} sub={`${year}년`} color={STAT_CARD_COLORS.success} />
           <StatCard label="올해 이적/제적" value={`${fmt(memberStats.leftThisYear)}명`} sub={`${year}년`} color={STAT_CARD_COLORS.danger} />
-          <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "20px 24px", position: "relative", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: "20px 24px", position: "relative", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, color: C.textMuted, fontWeight: 500 }}>남녀 비율</div>
               <div style={{ fontSize: 26, fontWeight: 700, color: C.navy }}>{memberStats.male} : {memberStats.female}</div>
@@ -431,7 +431,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </section>
 
       {/* A5-2 출결 */}
-      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <section style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
           <CalendarCheck size={20} style={{ color: C.success }} />
           출결 통계
@@ -467,7 +467,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </section>
 
       {/* A5-3 재정 */}
-      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <section style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
           <DollarSign size={20} style={{ color: C.teal }} />
           재정 통계
@@ -521,7 +521,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </section>
 
       {/* A5-4 심방 */}
-      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <section style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
           <MapPin size={20} style={{ color: C.purple }} />
           심방 통계
@@ -556,7 +556,7 @@ export function StatisticsDashboard({ db }: StatisticsDashboardProps) {
       </section>
 
       {/* A5-5 새가족 */}
-      <section style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <section style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: C.navy, display: "flex", alignItems: "center", gap: 8 }}>
           <Heart size={20} style={{ color: C.danger }} />
           새가족 현황

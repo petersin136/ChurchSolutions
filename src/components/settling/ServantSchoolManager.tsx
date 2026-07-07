@@ -206,7 +206,7 @@ export function ServantSchoolManager({ members, toast }: Props) {
               style={{ marginBottom: 0 }}
               triggerStyle={
                 mob
-                  ? { fontSize: 11, minHeight: 28, height: 28, padding: "4px 8px", borderRadius: 6 }
+                  ? { fontSize: 11, minHeight: 28, height: 28, padding: "4px 8px", borderRadius: 7 }
                   : undefined
               }
             />

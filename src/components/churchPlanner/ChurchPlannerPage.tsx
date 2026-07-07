@@ -971,7 +971,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   alignItems: "center",
                   gap: 7,
                   padding: "7px 13px 7px 12px",
-                  borderRadius: 999,
+                  borderRadius: 7,
                   border: active
                     ? `1px solid ${chip.colorVar}`
                     : "1px solid rgba(0,0,0,0.08)",
@@ -1274,7 +1274,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                 gap: 6,
                                 background: `${hex}14`,
                                 border: `1px solid ${hex}28`,
-                                borderRadius: 5,
+                                borderRadius: 7,
                                 padding: "3px 8px",
                                 marginBottom: 3,
                                 cursor: "pointer",
@@ -1384,7 +1384,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                               cursor: "pointer",
                               fontWeight: 500,
                               padding: "2px 6px",
-                              borderRadius: 4,
+                              borderRadius: 7,
                               alignSelf: "flex-start",
                               transition: "background 0.15s",
                             }}
@@ -1535,7 +1535,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         border: `1.5px solid ${selectMode ? "color-mix(in srgb, var(--color-danger) 34%, var(--color-border))" : "var(--color-border)"}`,
                         fontSize: 11,
                         fontWeight: 600,
-                        borderRadius: 8,
+                        borderRadius: 7,
                         padding: "4px 8px",
                         height: 28,
                         boxSizing: "border-box",
@@ -1581,7 +1581,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         border: "1.5px solid var(--color-border)",
                         fontSize: 11,
                         fontWeight: 600,
-                        borderRadius: 8,
+                        borderRadius: 7,
                         padding: "4px 8px",
                         height: 28,
                         boxSizing: "border-box",
@@ -1600,7 +1600,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         border: "none",
                         fontSize: 11,
                         fontWeight: 700,
-                        borderRadius: 8,
+                        borderRadius: 7,
                         padding: "4px 8px",
                         height: 28,
                         boxSizing: "border-box",
@@ -1621,7 +1621,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         border: "1.5px solid var(--color-border)",
                         fontSize: 11,
                         fontWeight: 600,
-                        borderRadius: 8,
+                        borderRadius: 7,
                         padding: "5px 10px",
                         cursor: "pointer",
                         whiteSpace: "nowrap",
@@ -1648,7 +1648,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   <div
                     style={{
                       background: "#FEF2F2",
-                      borderRadius: 12,
+                      borderRadius: 7,
                       padding: "10px 16px",
                       display: "flex",
                       alignItems: "center",
@@ -1673,7 +1673,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           background: "var(--color-surface)",
                           color: C.textSub,
                           border: "1.5px solid #e8e9f0",
-                          borderRadius: 8,
+                          borderRadius: 7,
                           padding: "6px 12px",
                           fontSize: 12,
                           fontWeight: 600,
@@ -1705,7 +1705,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           background: "#EF4444",
                           color: "#fff",
                           border: "none",
-                          borderRadius: 8,
+                          borderRadius: 7,
                           padding: "6px 16px",
                           fontSize: 13,
                           fontWeight: 700,
@@ -1723,7 +1723,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 <div
                   style={{
                     border: "1px solid var(--color-border)",
-                    borderRadius: 12,
+                    borderRadius: 7,
                     overflow: "hidden",
                   }}
                 >
@@ -1734,7 +1734,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               <div
                 style={{
                   background: "var(--color-surface)",
-                  borderRadius: 20,
+                  borderRadius: 7,
                   border: "1.5px solid #e9ecf0",
                   boxShadow: "none",
                   padding: 20,
@@ -1819,7 +1819,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         border: `1.5px solid ${selectMode ? "#FECACA" : "#e9ecf0"}`,
                         fontSize: 13,
                         fontWeight: 600,
-                        borderRadius: 10,
+                        borderRadius: 7,
                         padding: "6px 14px",
                         boxSizing: "border-box",
                         cursor: "pointer",
@@ -1864,7 +1864,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         border: "1.5px solid #FECACA",
                         fontSize: 13,
                         fontWeight: 600,
-                        borderRadius: 10,
+                        borderRadius: 7,
                         padding: "6px 14px",
                         boxSizing: "border-box",
                         cursor: "pointer",
@@ -1882,7 +1882,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                         border: "none",
                         fontSize: 14,
                         fontWeight: 700,
-                        borderRadius: 10,
+                        borderRadius: 7,
                         padding: "6px 18px",
                         boxSizing: "border-box",
                         cursor: "pointer",
@@ -1898,7 +1898,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   <div
                     style={{
                       background: "#FEF2F2",
-                      borderRadius: 12,
+                      borderRadius: 7,
                       padding: "10px 16px",
                       display: "flex",
                       alignItems: "center",
@@ -1923,7 +1923,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           background: "var(--color-surface)",
                           color: C.textSub,
                           border: "1.5px solid #e8e9f0",
-                          borderRadius: 8,
+                          borderRadius: 7,
                           padding: "6px 12px",
                           fontSize: 12,
                           fontWeight: 600,
@@ -1955,7 +1955,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                           background: "#EF4444",
                           color: "#fff",
                           border: "none",
-                          borderRadius: 8,
+                          borderRadius: 7,
                           padding: "6px 16px",
                           fontSize: 13,
                           fontWeight: 700,
@@ -1973,7 +1973,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 <div
                   style={{
                     border: "1px solid var(--color-border)",
-                    borderRadius: 12,
+                    borderRadius: 7,
                     overflow: "hidden",
                   }}
                 >
@@ -1987,7 +1987,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               <div
                 style={{
                   background: "var(--color-surface)",
-                  borderRadius: 16,
+                  borderRadius: 7,
                   border: "1.5px solid var(--color-border)",
                   padding: "12px 16px",
                   marginBottom: 16,
@@ -2081,7 +2081,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       key={d.toISOString()}
                       style={{
                         background: isToday ? "var(--color-surface-elevated)" : "var(--color-surface)",
-                        borderRadius: 16,
+                        borderRadius: 7,
                         border: isToday ? `1.5px solid ${C.primary}` : "1.5px solid var(--color-border)",
                         padding: "10px 12px",
                         boxShadow: "none",
@@ -2112,7 +2112,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                               fontWeight: 700,
                               background: C.primary,
                               color: "var(--color-primary-on)",
-                              borderRadius: 6,
+                              borderRadius: 7,
                               padding: "2px 6px",
                             }}
                           >
@@ -2155,7 +2155,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                   padding: "6px 8px",
                                   background: `${hex}12`,
                                   borderLeft: `1px solid var(--color-border)`,
-                                  borderRadius: 10,
+                                  borderRadius: 7,
                                   cursor: "pointer",
                                   maxWidth: "100%",
                                   overflow: "hidden",
@@ -2229,7 +2229,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       key={d.toISOString()}
                       style={{
                         background: "var(--color-surface)",
-                        borderRadius: 16,
+                        borderRadius: 7,
                         padding: 12,
                         boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
                         minWidth: 0,
@@ -2281,7 +2281,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                                 fontSize: 12,
                                 fontWeight: 600,
                                 padding: "6px 8px",
-                                borderRadius: 8,
+                                borderRadius: 7,
                                 border: "1px solid #f0f0f0",
                                 background: `${hex}20`,
                                 color: hex,
@@ -2394,7 +2394,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     onMouseLeave={() => setYearlyHoverMonth(null)}
                     style={{
                       background: "var(--color-surface)",
-                      borderRadius: mob ? 10 : 14,
+                      borderRadius: 7,
                       border: cardBorder,
                       padding: mob ? 4 : 14,
                       cursor: "pointer",
@@ -2446,7 +2446,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                             fontWeight: 700,
                             background: "color-mix(in srgb, var(--color-primary) 16%, var(--color-surface-elevated))",
                             color: "var(--color-primary)",
-                            borderRadius: 8,
+                            borderRadius: 7,
                             padding: mob ? "0px 3px" : "2px 7px",
                           }}
                         >
@@ -2585,7 +2585,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
           <div
             style={{
               background: "var(--color-surface)",
-              borderRadius: 20,
+              borderRadius: 7,
               padding: 24,
               boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
             }}
@@ -2603,7 +2603,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   background: "var(--color-primary)",
                   color: "var(--color-primary-on)",
                   border: "none",
-                  borderRadius: 12,
+                  borderRadius: 7,
                   padding: "8px 16px",
                   fontWeight: 700,
                   cursor: "pointer",
@@ -2620,7 +2620,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     display: "flex",
                     alignItems: "center",
                     padding: "12px 16px",
-                    borderRadius: 14,
+                    borderRadius: 7,
                     border: "1.5px solid var(--color-border)",
                     background: "var(--color-surface-muted)",
                     flex: mob ? "1 1 100%" : "1 1 280px",
@@ -2662,7 +2662,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
           <div
             style={{
               background: "var(--color-surface)",
-              borderRadius: 20,
+              borderRadius: 7,
               padding: 24,
               boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
             }}
@@ -2680,7 +2680,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   background: "var(--color-primary)",
                   color: "var(--color-primary-on)",
                   border: "none",
-                  borderRadius: 12,
+                  borderRadius: 7,
                   padding: "8px 16px",
                   fontWeight: 700,
                   cursor: "pointer",
@@ -2699,7 +2699,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     alignItems: mob ? "stretch" : "center",
                     gap: 10,
                     padding: "12px 16px",
-                    borderRadius: 14,
+                    borderRadius: 7,
                     border: "1.5px solid var(--color-border)",
                     background: "var(--color-surface-muted)",
                     flex: mob ? "1 1 100%" : "1 1 300px",
@@ -2711,11 +2711,11 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>{p.name}</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                      <span style={{ fontSize: 11, padding: "4px 8px", borderRadius: 8, background: "color-mix(in srgb, var(--color-primary) 16%, var(--color-surface-elevated))", color: "var(--color-primary)", fontWeight: 600 }}>
+                      <span style={{ fontSize: 11, padding: "4px 8px", borderRadius: 7, background: "color-mix(in srgb, var(--color-primary) 16%, var(--color-surface-elevated))", color: "var(--color-primary)", fontWeight: 600 }}>
                         수용 {p.capacity ?? "—"}
                       </span>
                       {(p.equipment ?? []).map((eq) => (
-                        <span key={eq} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 8, background: "var(--color-surface-elevated)", color: "var(--color-text-muted)" }}>
+                        <span key={eq} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 7, background: "var(--color-surface-elevated)", color: "var(--color-text-muted)" }}>
                           {eq}
                         </span>
                       ))}
@@ -2804,7 +2804,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
               style={{
                 background: briefingEvent.departments?.color || "#94a3b8",
                 padding: mob ? "16px 14px 14px" : "18px 18px 16px",
-                borderRadius: 12,
+                borderRadius: 7,
                 marginBottom: 16,
               }}
             >
@@ -2825,7 +2825,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       fontSize: mob ? 11 : 12,
                       fontWeight: 600,
                       padding: "3px 10px",
-                      borderRadius: 6,
+                      borderRadius: 7,
                       wordBreak: "break-word",
                       overflowWrap: "break-word",
                       maxWidth: "100%",
@@ -2842,7 +2842,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       fontSize: mob ? 11 : 12,
                       fontWeight: 500,
                       padding: "3px 10px",
-                      borderRadius: 6,
+                      borderRadius: 7,
                       wordBreak: "break-word",
                       overflowWrap: "break-word",
                       maxWidth: "100%",
@@ -2877,7 +2877,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   style={{
                     width: 32,
                     height: 32,
-                    borderRadius: 8,
+                    borderRadius: 7,
                     background: "#f1f5f9",
                     display: "flex",
                     alignItems: "center",
@@ -2938,7 +2938,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     style={{
                       width: 32,
                       height: 32,
-                      borderRadius: 8,
+                      borderRadius: 7,
                       background: "#f1f5f9",
                       display: "flex",
                       alignItems: "center",
@@ -2988,7 +2988,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                     style={{
                       width: 32,
                       height: 32,
-                      borderRadius: 8,
+                      borderRadius: 7,
                       background: "#f1f5f9",
                       display: "flex",
                       alignItems: "center",
@@ -3046,7 +3046,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       style={{
                         width: 32,
                         height: 32,
-                        borderRadius: 8,
+                        borderRadius: 7,
                         background: "#f1f5f9",
                         display: "flex",
                         alignItems: "center",
@@ -3109,7 +3109,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                       maxWidth: "100%",
                       background: "#f8f9fc",
                       padding: "10px 12px",
-                      borderRadius: 10,
+                      borderRadius: 7,
                     }}
                   >
                     {briefingEvent.memo ?? briefingEvent.description}
@@ -3199,7 +3199,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   style={{
                     background: "var(--color-surface-elevated)",
                     border: "1.5px solid var(--color-border)",
-                    borderRadius: mob ? 8 : 10,
+                    borderRadius: 7,
                     padding: "0 10px",
                     fontSize: mob ? 11 : 12,
                     color: C.textSub,
@@ -3317,7 +3317,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                   style={{
                     background: "var(--color-surface-elevated)",
                     border: "1.5px solid var(--color-border)",
-                    borderRadius: mob ? 8 : 10,
+                    borderRadius: 7,
                     padding: "0 10px",
                     fontSize: mob ? 11 : 12,
                     color: C.textSub,
@@ -3392,7 +3392,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 background: "var(--color-surface)",
                 color: "var(--color-danger)",
                 border: "1.5px solid color-mix(in srgb, var(--color-danger) 34%, var(--color-border))",
-                borderRadius: 14,
+                borderRadius: 7,
                 fontSize: mob ? 13 : 14,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -3541,7 +3541,7 @@ export function PlannerPage({ toast }: { toast: PlannerToast }) {
                 textAlign: "left",
                 padding: "12px 14px",
                 marginBottom: 8,
-                borderRadius: 12,
+                borderRadius: 7,
                 border: "1px solid var(--color-border)",
                 background: "#fafafa",
                 cursor: "pointer",
@@ -3610,7 +3610,7 @@ function plannerFieldControl(mob: boolean): CSSProperties {
     height: mob ? 38 : 44,
     fontSize: mob ? 13 : 14,
     padding: mob ? "0 10px" : "0 14px",
-    borderRadius: mob ? 8 : 10,
+    borderRadius: 7,
     border: "1.5px solid var(--color-border)",
     boxSizing: "border-box",
     outline: "none",
@@ -3626,7 +3626,7 @@ function plannerPrimaryButton(mob: boolean): CSSProperties {
     height: mob ? 42 : 48,
     background: "var(--color-primary)",
     color: "var(--color-primary-on)",
-    borderRadius: mob ? 10 : 14,
+    borderRadius: 7,
     fontSize: mob ? 14 : 15,
     fontWeight: 700,
     cursor: "pointer",
@@ -3648,7 +3648,7 @@ const sel: CSSProperties = {
   height: 44,
   fontSize: 14,
   border: "1.5px solid var(--color-border)",
-  borderRadius: 12,
+  borderRadius: 7,
   padding: "0 14px",
   boxSizing: "border-box",
   outline: "none",
@@ -3660,7 +3660,7 @@ const btnPrimary: CSSProperties = {
   height: 48,
   background: "var(--color-primary)",
   color: "var(--color-primary-on)",
-  borderRadius: 14,
+  borderRadius: 7,
   fontSize: 16,
   fontWeight: 700,
   cursor: "pointer",
@@ -3674,7 +3674,7 @@ const btnGhost: CSSProperties = {
   background: "transparent",
   color: C.textSub,
   border: "1.5px solid var(--color-border)",
-  borderRadius: 14,
+  borderRadius: 7,
   fontSize: 14,
   marginTop: 8,
   cursor: "pointer",

@@ -216,7 +216,7 @@ export function AttendanceDashboard({
       <div className={mob ? "grid grid-cols-2 gap-1.5" : "grid grid-cols-2 gap-3"} style={{ gridAutoRows: "1fr" }}>
         <div
           className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
-          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
+          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 주 출석</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: ts.gap.xs }}>
@@ -235,14 +235,14 @@ export function AttendanceDashboard({
         </div>
         <div
           className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
-          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
+          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 주 출석률</div>
           <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{attendanceRate}%</span>
         </div>
         <div
           className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
-          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
+          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 달 평균 출석률</div>
           <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{monthlyRate}%</span>
@@ -255,7 +255,7 @@ export function AttendanceDashboard({
               ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white text-left shadow-sm transition hover:shadow-md"
               : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center text-left hover:shadow-md transition"
           }
-          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: mob ? 6 : undefined }}
+          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
         >
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>3주 연속 결석</div>
           <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{consecutiveAbsent.length}명</span>
@@ -329,7 +329,7 @@ export function AttendanceDashboard({
                 style={{
                   width: mob ? "100%" : undefined,
                   aspectRatio: mob ? "1" : undefined,
-                  borderRadius: mob ? 10 : undefined,
+                  borderRadius: 7,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",

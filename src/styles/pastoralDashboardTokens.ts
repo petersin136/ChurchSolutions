@@ -69,7 +69,7 @@ export const DASH_SIDEBAR = {
   /** hover/active 흰색 라운드 박스 */
   hoverBoxWidth: 200,
   hoverBoxHeight: 40,
-  hoverBoxRadius: 8,
+  hoverBoxRadius: 7,
   hoverBoxPaddingX: 12,
   /** 메뉴 항목 사이 세로 간격 — 40px 박스 + gap = 한 줄 리듬 */
   itemRowGap: 36,
@@ -81,7 +81,7 @@ export const DASH_SIDEBAR = {
   dateToMenuGap: 56,
   /** 하단 프로필 아이콘 — 실제 앱 아이콘(검정 up 로고) */
   profileIconSize: 44,
-  profileIconRadius: 10,
+  profileIconRadius: 7,
   profileIconBg: "#c2c5cc",
   /** lighten 블렌드 시 up 글자 크기(박스 대비) — 접힘 헤더 등 */
   profileIconInnerRatio: 0.78,
@@ -97,7 +97,7 @@ export const DASH_SIDEBAR = {
 
 /** 상단 메인 메뉴바 */
 export const DASH_MENUBAR = {
-  fontSize: 14,
+  fontSize: 15,
   color: "#0b0c0e",
   letterSpacing: 0.35,
   itemGap: 56,
@@ -110,11 +110,11 @@ export const DASH_MENUBAR = {
   /** 활성/hover 인디케이터 — 글씨보다 좌우 6px 더 길게, 끝 곡률 */
   indicatorHeight: 3,
   indicatorExtend: 6,
-  indicatorRadius: 2,
+  indicatorRadius: 7,
   indicatorColor: "#4E5159",
-  /** 비활성 탭 Medium(500), 활성 SemiBold(600) */
-  fontWeight: 500,
-  fontWeightActive: 600,
+  /** 비활성 탭 SemiBold(600), 활성 Bold(700) */
+  fontWeight: 600,
+  fontWeightActive: 700,
 } as const;
 
 /** 카드 차트 색상 — 디자이너 시안 PNG에서 픽셀 추출 (추측값 아님) */
@@ -165,7 +165,7 @@ export const DASH_ATT_CHART_CTRL = {
   periodBtnSizeMob: 34,
   periodBtnFontSize: 16,
   periodBtnFontSizeMob: 14,
-  periodBtnRadius: 8,
+  periodBtnRadius: 7,
   periodBtnGap: 6,
   periodActiveBg: "#d8dce3",
   periodInactiveBg: "#eceef1",
@@ -209,9 +209,9 @@ export function dashChartBarWidths(chartWidth: number, mob: boolean) {
 /** 대시보드 카드 공통 radius */
 export const DASH_RADIUS = {
   /** 큰 카드(금주출석률/전체성도/출석통계/부서별/현황보고) */
-  card: 8,
+  card: 7,
   /** 중간 4카드 */
-  mid: 8,
+  mid: 7,
 } as const;
 
 /** 중간 4카드(새가족/위험휴면/심방/기도) 배경 — 시안 픽셀 추출 */
@@ -235,7 +235,7 @@ export const DASH_FEED_CARD = {
   padding: 24,
   /** 제목(현황 보고) ↔ 리스트 사이 */
   headerListGap: 40,
-  badgeRadius: 20,
+  badgeRadius: 7,
   badgePaddingY: 6,
   badgePaddingX: 8,
   /** 모든 태그 동일 크기 (가장 긴 라벨 기준) */
@@ -326,7 +326,7 @@ export const DASH_LAYOUT = {
   attendanceBarHeight: 68,
   /** 금주 출석률 세그먼트 간격·모서리 — 시안 픽셀 추출 */
   attendanceBarGap: 6,
-  attendanceBarRadius: 2,
+  attendanceBarRadius: 7,
   /** 2행(새가족·위험·심방·기도) — 1행과 같은 높이. 값↑ = 카드↓ (3행에 여유 확보) */
   midCardAspectRatio: "1.62 / 1",
   midCardPadding: 22,
@@ -339,6 +339,9 @@ export const DASH_LAYOUT = {
   bottomRightFr: 1,
   /** 출석 통계 차트 본문 — flex 확장 시 너무 작아지지 않게 하는 하한 */
   attendanceChartMinHeight: 160,
+  /** 연간(Y) 차트 — 시안 픽셀 기준 고정 높이 (카드 flex 채움 방지) */
+  attendanceYearPlotHeight: 172,
+  attendanceYearMaxBarHeight: 156,
   /** 데스크톱 대시보드 — 상단바·콘텐츠 패딩 (100dvh 계산용) */
   dashboardViewportOffset: 96,
   /** 전체 성도 dot — 시안 고정(px), 화면 크기와 무관 동일 형태 */
@@ -346,6 +349,21 @@ export const DASH_LAYOUT = {
   memberDotGap: 6,
   memberDotCols: 25,
   memberDotRows: 4,
+} as const;
+
+/** 연간(Y) 출석 통계 — 3년 겹침 블록 (1440 시안) */
+export const DASH_ATT_YEAR_CHART = {
+  maxBarHeight: DASH_LAYOUT.attendanceYearMaxBarHeight,
+  /** 헤더 아래 차트 영역 세로 패딩 합 */
+  bodyPadY: 32,
+  blockRadius: 7,
+  /** 좌(높음) · 중(낮음·뒤) · 우(넓음·앞) — left+width 합이 100% 넘어도 겹침 허용 */
+  blockLayout: [
+    { leftPct: 0, widthPct: 29, zIndex: 1 },
+    { leftPct: 18, widthPct: 32, zIndex: 2 },
+    { leftPct: 26, widthPct: 50, zIndex: 3 },
+  ] as const,
+  designBlockWidth: 200,
 } as const;
 
 /** 금주 출석률 카드 타이포·간격 — 120% 스케일 */
@@ -409,13 +427,13 @@ export const DASH_SECTION = {
   chartWeekPadLeft: 14,
   chartAxis: 15,
   chartAxisTiny: 13,
-  chartYearValue: 80,
-  chartYearValueMob: 56,
-  chartYearSub: 26,
-  chartYearLabel: 22,
-  chartYearPadTop: 22,
-  chartYearPadLeft: 20,
-  chartYearPadBottom: 18,
+  chartYearValue: 52,
+  chartYearValueMob: 36,
+  chartYearSub: 17,
+  chartYearLabel: 14,
+  chartYearPadTop: 14,
+  chartYearPadLeft: 14,
+  chartYearPadBottom: 12,
   /** 데이터 없는 연도 — 연도만 표시하는 최소 블록 높이 */
   chartYearEmptyMinH: 52,
   feedBadgeWidth: 92,
@@ -430,7 +448,7 @@ export const DASH_DEPT_CARD = {
   bodyPaddingY: 28,
   bodyPaddingX: 24,
   headerPaddingBottom: 8,
-  barRadius: 10,
+  barRadius: 7,
   labelInset: 16,
   countMinWidth: 52,
   countGap: 14,

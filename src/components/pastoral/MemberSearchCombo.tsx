@@ -55,7 +55,7 @@ export function MemberSearchCombo({
           display: "flex",
           alignItems: "center",
           height: MEMBER_MGMT.searchHeight,
-          borderRadius: MEMBER_MGMT.searchRadius,
+          borderRadius: MEMBER_MGMT.radius,
           border: `1px solid ${MEMBER_MGMT.searchBorder}`,
           background: MEMBER_MGMT.searchBg,
           overflow: "hidden",
@@ -77,6 +77,7 @@ export function MemberSearchCombo({
             padding: `0 ${MEMBER_MGMT.searchPadX}px`,
             fontFamily: MEMBER_MGMT.fontKR,
             fontSize: MEMBER_MGMT.searchFontSize,
+            lineHeight: MEMBER_MGMT.searchLineHeight,
             color: MEMBER_MGMT.searchText,
             background: "transparent",
             boxSizing: "border-box",
@@ -91,14 +92,14 @@ export function MemberSearchCombo({
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            width: 44,
+            width: 40,
             height: "100%",
             border: "none",
-            borderLeft: `1px solid ${MEMBER_MGMT.searchBorder}`,
             background: "transparent",
             color: MEMBER_MGMT.searchPlaceholder,
             cursor: "pointer",
             flexShrink: 0,
+            padding: "0 12px 0 4px",
           }}
         >
           <ChevronDown size={18} style={{ transform: open ? "rotate(180deg)" : undefined, transition: "transform 0.15s" }} />
@@ -116,7 +117,7 @@ export function MemberSearchCombo({
             overflowY: "auto",
             background: MEMBER_MGMT.dropdownBg,
             border: `1px solid ${MEMBER_MGMT.dropdownBorder}`,
-            borderRadius: MEMBER_MGMT.dropdownRadius,
+            borderRadius: MEMBER_MGMT.radius,
             boxShadow: MEMBER_MGMT.dropdownShadow,
             padding: "8px 0",
           }}

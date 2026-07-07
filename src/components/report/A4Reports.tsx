@@ -97,7 +97,7 @@ function SectionTitle({ num, title }: { num: string; title: string }) {
 
 function StatBox({ label, value, unit }: { label: string; value: string | number; unit: string }) {
   return (
-    <div style={{ padding: 14, border: "1px solid var(--color-border)", borderRadius: 6 }}>
+    <div style={{ padding: 14, border: "1px solid var(--color-border)", borderRadius: 7 }}>
       <p style={{ fontSize: 10, color: "var(--color-text-muted)", margin: "0 0 4px" }}>{label}</p>
       <p style={{ fontSize: 22, fontWeight: 700, lineHeight: 1, margin: 0 }}>{value}<span style={{ fontSize: 11, fontWeight: 400, color: "var(--color-text-muted)" }}>{unit}</span></p>
     </div>
@@ -351,7 +351,7 @@ export function MembersReport({ db, churchName }: { db: DB; churchName: string }
         <SectionTitle num="02" title="부서별 현황" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
           {Object.entries(deptMap).sort((a, b) => b[1] - a[1]).map(([dept, cnt]) => (
-            <div key={dept} style={{ padding: 12, border: "1px solid var(--color-border)", borderRadius: 8 }}>
+            <div key={dept} style={{ padding: 12, border: "1px solid var(--color-border)", borderRadius: 7 }}>
               <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 2px" }}>{dept}</p>
               <p style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{cnt}<span style={{ fontSize: 12, fontWeight: 400, color: "#6b7280" }}>명</span></p>
             </div>
@@ -650,7 +650,7 @@ export function PrayerReport({ db, churchName, churchId }: { db: DB; churchName:
                 {p.content}
               </p>
               <span style={{
-                fontSize: 10, padding: "2px 8px", borderRadius: 4,
+                fontSize: 10, padding: "2px 8px", borderRadius: 7,
                 background: p.answered ? "#dcfce7" : "#f3f4f6",
                 color: p.answered ? "#166534" : "#6b7280",
               }}>
@@ -743,7 +743,7 @@ export function ReportPreviewModal({
         padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={onClose} style={{ padding: 8, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", color: "var(--color-text-muted)" }}>
+          <button onClick={onClose} style={{ padding: 8, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", color: "var(--color-text-muted)" }}>
             <ArrowLeft size={20} />
           </button>
           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)" }}>{def.title}</span>
@@ -751,13 +751,13 @@ export function ReportPreviewModal({
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button onClick={handlePrint} style={{
             display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, color: "var(--color-text)",
-            background: "var(--color-surface-elevated)", border: "1px solid var(--color-border)", borderRadius: 8, cursor: "pointer",
+            background: "var(--color-surface-elevated)", border: "1px solid var(--color-border)", borderRadius: 7, cursor: "pointer",
           }}>
             <Printer size={16} />인쇄
           </button>
           <button onClick={handleDownloadPDF} disabled={downloading} style={{
             display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, color: "var(--color-primary-on)",
-            background: downloading ? "var(--color-text-faint)" : "var(--color-primary)", border: "none", borderRadius: 8, cursor: downloading ? "default" : "pointer",
+            background: downloading ? "var(--color-text-faint)" : "var(--color-primary)", border: "none", borderRadius: 7, cursor: downloading ? "default" : "pointer",
           }}>
             <Download size={16} />{downloading ? "생성중..." : "PDF 다운로드"}
           </button>

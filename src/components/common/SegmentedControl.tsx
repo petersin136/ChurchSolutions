@@ -46,7 +46,7 @@ export default function SegmentedControl({
       : {
           height: sm ? tokens.height.mobileSegment : tokens.height.desktopSegment,
         }),
-    borderRadius: 8,
+    borderRadius: 7,
     fontSize: sm ? 10 : 13,
     fontWeight: 600,
     border: active ? "1px solid var(--color-primary)" : "1px solid var(--color-border)",

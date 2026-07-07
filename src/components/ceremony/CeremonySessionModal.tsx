@@ -798,7 +798,7 @@ export function CeremonySessionModal({
           color: sb.fg,
           background: sb.bg,
           padding: "3px 10px",
-          borderRadius: 14,
+          borderRadius: 7,
           border: `1px solid ${sb.border}`,
           flexShrink: 0,
           whiteSpace: "nowrap",
@@ -823,7 +823,7 @@ export function CeremonySessionModal({
         padding: "10px 12px",
         background: C.bg,
         border: `1px solid ${C.border}`,
-        borderRadius: 10,
+        borderRadius: 7,
       }}
     >
       {/* 좌측: 진행률 */}
@@ -836,7 +836,7 @@ export function CeremonySessionModal({
           style={{
             height: 6,
             background: C.card,
-            borderRadius: 3,
+            borderRadius: 7,
             overflow: "hidden",
             border: `1px solid ${C.border}`,
           }}
@@ -980,7 +980,7 @@ export function CeremonySessionModal({
       style={{
         background: C.card,
         border: `1px solid ${C.border}`,
-        borderRadius: 10,
+        borderRadius: 7,
         padding: mob ? 12 : 14,
       }}
     >
@@ -1153,7 +1153,7 @@ export function CeremonySessionModal({
       style={{
         background: C.card,
         border: `1px solid ${C.border}`,
-        borderRadius: 10,
+        borderRadius: 7,
         padding: mob ? 12 : 14,
       }}
     >
@@ -1188,7 +1188,7 @@ export function CeremonySessionModal({
           style={{
             background: C.bg,
             border: `1px dashed ${C.border}`,
-            borderRadius: 8,
+            borderRadius: 7,
             padding: 20,
             textAlign: "center",
             color: C.textMuted,
@@ -1229,7 +1229,7 @@ export function CeremonySessionModal({
                 style={{
                   background: isChecked ? C.successBg : C.card,
                   border: `1px solid ${isChecked ? C.success : C.border}`,
-                  borderRadius: 10,
+                  borderRadius: 7,
                   overflow: "hidden",
                   transition: "background 0.15s, border-color 0.15s",
                 }}
@@ -1264,7 +1264,7 @@ export function CeremonySessionModal({
                     style={{
                       width: 22,
                       height: 22,
-                      borderRadius: 6,
+                      borderRadius: 7,
                       border: `2px solid ${isChecked ? C.success : C.border}`,
                       background: isChecked ? C.success : C.card,
                       display: "flex",
@@ -1437,7 +1437,7 @@ export function CeremonySessionModal({
                               style={{
                                 background: C.bg,
                                 border: `1px solid ${C.border}`,
-                                borderRadius: 8,
+                                borderRadius: 7,
                                 padding: "10px 12px",
                                 fontSize: 13,
                                 color: C.text,
@@ -1497,7 +1497,7 @@ export function CeremonySessionModal({
       style={{
         background: C.card,
         border: `1px solid ${C.border}`,
-        borderRadius: 10,
+        borderRadius: 7,
         padding: mob ? 12 : 14,
       }}
     >
@@ -1570,7 +1570,7 @@ export function CeremonySessionModal({
                 style={{
                   background: C.bg,
                   border: `1px solid ${C.border}`,
-                  borderRadius: 8,
+                  borderRadius: 7,
                   padding: "10px 12px",
                 }}
               >
@@ -1703,7 +1703,7 @@ function ContentSection({
             width: 3,
             height: 12,
             background: C.accent,
-            borderRadius: 1.5,
+            borderRadius: 7,
           }}
         />
         {title}

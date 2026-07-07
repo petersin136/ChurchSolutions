@@ -113,21 +113,21 @@ export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <div style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <input
             type="text"
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
             placeholder="명단 이름"
-            style={{ borderRadius: 10, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14, width: 192 }}
+            style={{ borderRadius: 7, border: `1px solid ${C.border}`, padding: "8px 12px", fontSize: 14, width: 192 }}
           />
-          <button type="button" onClick={handleAdd} style={{ padding: "8px 16px", borderRadius: 12, background: C.navy, color: "white", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }}>
+          <button type="button" onClick={handleAdd} style={{ padding: "8px 16px", borderRadius: 7, background: C.navy, color: "white", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }}>
             + 추가
           </button>
         </div>
       </div>
-      <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <div style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         {loading ? (
           <p style={{ padding: 32, textAlign: "center", color: C.textMuted, fontSize: 14 }}>로딩 중...</p>
         ) : list.length === 0 ? (
@@ -141,10 +141,10 @@ export function FrequentGroups({ groups, onSave, toast }: FrequentGroupsProps) {
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    style={{ borderRadius: 8, border: `1px solid ${C.border}`, padding: "6px 10px", fontSize: 14, flex: 1, maxWidth: 240 }}
+                    style={{ borderRadius: 7, border: `1px solid ${C.border}`, padding: "6px 10px", fontSize: 14, flex: 1, maxWidth: 240 }}
                   />
-                  <button type="button" onClick={saveEdit} style={{ marginLeft: 8, padding: "6px 12px", borderRadius: 8, background: C.navy, color: "white", fontSize: 14, border: "none", cursor: "pointer" }}>저장</button>
-                  <button type="button" onClick={() => { setEditingId(null); setEditName(""); }} style={{ marginLeft: 4, padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 14, background: C.card, cursor: "pointer" }}>취소</button>
+                  <button type="button" onClick={saveEdit} style={{ marginLeft: 8, padding: "6px 12px", borderRadius: 7, background: C.navy, color: "white", fontSize: 14, border: "none", cursor: "pointer" }}>저장</button>
+                  <button type="button" onClick={() => { setEditingId(null); setEditName(""); }} style={{ marginLeft: 4, padding: "6px 12px", borderRadius: 7, border: `1px solid ${C.border}`, fontSize: 14, background: C.card, cursor: "pointer" }}>취소</button>
                 </>
               ) : (
                 <>

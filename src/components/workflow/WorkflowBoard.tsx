@@ -156,7 +156,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
         style={{
           background: C.card,
           border: `1px dashed ${C.border}`,
-          borderRadius: 16,
+          borderRadius: 7,
           padding: mob ? 24 : 40,
           textAlign: "center",
           boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
@@ -167,9 +167,9 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
           아직 활성화된 사역흐름이 없습니다.
         </div>
         <div style={{ fontSize: 12, color: C.textMuted }}>
-          <code style={{ background: C.bg, padding: "1px 6px", borderRadius: 4 }}>supabase/workflow_system.sql</code>
+          <code style={{ background: C.bg, padding: "1px 6px", borderRadius: 7 }}>supabase/workflow_system.sql</code>
           {" + "}
-          <code style={{ background: C.bg, padding: "1px 6px", borderRadius: 4 }}>supabase/seeds/workflow_templates.sql</code>
+          <code style={{ background: C.bg, padding: "1px 6px", borderRadius: 7 }}>supabase/seeds/workflow_templates.sql</code>
           {" 실행이 필요합니다."}
         </div>
       </div>
@@ -214,7 +214,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
             gap: 6,
             height: mob ? 32 : 38,
             padding: mob ? "0 12px" : "0 16px",
-            borderRadius: mob ? 8 : 10,
+            borderRadius: 7,
             background: C.accent,
             color: "var(--color-primary-on)",
             border: "none",
@@ -249,7 +249,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
               style={{
                 height: 34,
                 padding: mob ? "0 14px" : "0 16px",
-                borderRadius: 10,
+                borderRadius: 7,
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -288,7 +288,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
             style={{
               background: C.card,
               border: `1px solid ${C.border}`,
-              borderRadius: 16,
+              borderRadius: 7,
               padding: mob ? "8px 10px" : "14px 18px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
               boxSizing: "border-box",
@@ -341,7 +341,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
               onClick={() => setStageFilter(f.id)}
               style={{
                 padding: mob ? "4px 10px" : "8px 14px",
-                borderRadius: 8,
+                borderRadius: 7,
                 fontSize: mob ? 10 : 13,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -365,7 +365,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
           style={{
             background: C.card,
             border: `1px dashed ${C.border}`,
-            borderRadius: 16,
+            borderRadius: 7,
             padding: mob ? 24 : 40,
             textAlign: "center",
             boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
@@ -383,7 +383,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
               gap: 6,
               height: 36,
               padding: "0 14px",
-              borderRadius: 10,
+              borderRadius: 7,
               background: C.accent,
               color: "var(--color-primary-on)",
               border: "none",
@@ -428,7 +428,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
                 style={{
                   background: C.card,
                   border: `1px solid ${C.border}`,
-                  borderRadius: 12,
+                  borderRadius: 7,
                   padding: 16,
                   cursor: "pointer",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
@@ -536,7 +536,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
                             flex: 1,
                             height: mob ? 4 : 6,
                             background: C.bg,
-                            borderRadius: 3,
+                            borderRadius: 7,
                             overflow: "hidden",
                           }}
                         >
@@ -545,7 +545,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
                               height: "100%",
                               width: `${progressPct}%`,
                               background: c.stage === "completed" ? C.success : C.accent,
-                              borderRadius: 3,
+                              borderRadius: 7,
                               transition: "width 0.3s ease",
                             }}
                           />
@@ -575,7 +575,7 @@ export function WorkflowBoard({ initialWorkflowId, toast }: WorkflowBoardProps) 
                     color: sb.fg,
                     background: sb.bg,
                     padding: mob ? "3px 10px" : "4px 12px",
-                    borderRadius: 20,
+                    borderRadius: 7,
                     border: `1px solid ${sb.fg}`,
                     flexShrink: 0,
                     alignSelf: mob ? "flex-start" : "center",

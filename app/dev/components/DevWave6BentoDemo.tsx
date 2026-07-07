@@ -20,7 +20,7 @@ function Sparkline({ color = "#E76F51" }: { color?: string }) {
 const cardBase: React.CSSProperties = {
   background: "#FFFFFF",
   border: "1px solid #E8E2D8",
-  borderRadius: 16,
+  borderRadius: 7,
   padding: 20,
   boxShadow: "0 1px 2px rgba(60,40,20,0.04), 0 4px 12px rgba(60,40,20,0.06)",
   display: "flex",
@@ -49,13 +49,13 @@ const trendUp: React.CSSProperties = {
   color: "#2D7A4A",
   background: "#EAF4EC",
   padding: "2px 6px",
-  borderRadius: 4,
+  borderRadius: 7,
 };
 
 const iconBox = (bg: string, fg: string): React.CSSProperties => ({
   width: 36,
   height: 36,
-  borderRadius: 10,
+  borderRadius: 7,
   background: bg,
   color: fg,
   display: "inline-flex",

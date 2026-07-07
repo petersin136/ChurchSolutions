@@ -85,7 +85,7 @@ export function PastoralFeedDetailModal({ item, db, onClose }: PastoralFeedDetai
               fontWeight: 600,
               color: badge.fg,
               background: badge.bg,
-              borderRadius: 6,
+              borderRadius: 7,
               padding: "4px 10px",
               lineHeight: 1.2,
             }}
@@ -140,7 +140,7 @@ export function PastoralFeedDetailModal({ item, db, onClose }: PastoralFeedDetai
                   fontWeight: 600,
                   color: "#6d7280",
                   background: "#ececf0",
-                  borderRadius: 6,
+                  borderRadius: 7,
                   padding: "3px 8px",
                 }}
               >

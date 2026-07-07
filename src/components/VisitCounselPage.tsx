@@ -354,7 +354,7 @@ function Card({ children, style, onClick }: { children: ReactNode; style?: CSSPr
       onClick={onClick}
       style={{
         background: C.card,
-        borderRadius: mob ? 8 : 12,
+        borderRadius: 7,
         border: `1px solid ${C.border}`,
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         overflow: "hidden",
@@ -372,7 +372,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style, icon,
   onClick?: (e?: React.MouseEvent) => void; style?: CSSProperties; icon?: ReactNode; disabled?: boolean;
 }) {
   const mob = useIsMobile();
-  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: mob ? 8 : 10, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap", opacity: disabled ? 0.6 : 1 };
+  const base: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 7, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap", opacity: disabled ? 0.6 : 1 };
   const sizes: Record<string, CSSProperties> = {
     sm: { padding: mob ? "6px 12px" : "6px 14px", fontSize: mob ? 12 : 13 },
     md: { padding: mob ? "8px 16px" : "10px 20px", fontSize: mob ? 13 : 14 },
@@ -411,7 +411,7 @@ function FInput({ value, onChange, placeholder, type = "text", style }: { value:
         width: "100%",
         padding: "10px 14px",
         border: `1px solid ${C.border}`,
-        borderRadius: mob ? 8 : 10,
+        borderRadius: 7,
         fontSize: 14,
         fontFamily: "inherit",
         background: C.bg,
@@ -432,7 +432,7 @@ function FSelect({ value, onChange, children, style }: { value: string; onChange
         width: "100%",
         padding: "10px 14px",
         border: `1px solid ${C.border}`,
-        borderRadius: mob ? 8 : 10,
+        borderRadius: 7,
         fontSize: 14,
         fontFamily: "inherit",
         background: C.bg,
@@ -457,7 +457,7 @@ function FTextarea({ value, onChange, placeholder, style }: { value: string; onC
         width: "100%",
         padding: "10px 14px",
         border: `1px solid ${C.border}`,
-        borderRadius: mob ? 8 : 10,
+        borderRadius: 7,
         fontSize: 14,
         fontFamily: "inherit",
         background: C.bg,
@@ -491,7 +491,7 @@ function StatCard({
         padding: compact ? "8px 12px" : mob ? "10px 14px" : "16px 20px",
         minHeight: compact ? 52 : mob ? 60 : 84,
         backgroundColor: "var(--color-surface)",
-        borderRadius: 12,
+        borderRadius: 7,
         border: "1px solid var(--color-border)",
         borderLeft: "1px solid var(--color-border)",
         boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
@@ -515,7 +515,7 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       style={{
         height: mob ? 30 : 34,
         padding: mob ? "0 12px" : "0 16px",
-        borderRadius: 10,
+        borderRadius: 7,
         fontSize: mob ? 12 : 13,
         fontWeight: 600,
         cursor: "pointer",
@@ -566,7 +566,7 @@ function ListViewToggle({
           fontSize: mob ? 11 : 13,
           fontWeight: 600,
           border: mode === "list" ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
-          borderRadius: 10,
+          borderRadius: 7,
           background: mode === "list" ? C.accentBg : C.card,
           color: mode === "list" ? C.accent : C.textMuted,
           cursor: "pointer",
@@ -586,7 +586,7 @@ function ListViewToggle({
           fontSize: mob ? 11 : 13,
           fontWeight: 600,
           border: mode === "byGroup" ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
-          borderRadius: 10,
+          borderRadius: 7,
           background: mode === "byGroup" ? C.accentBg : C.card,
           color: mode === "byGroup" ? C.accent : C.textMuted,
           cursor: "pointer",
@@ -724,7 +724,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                       alignItems: "center",
                       gap: 12,
                       padding: "10px 12px",
-                      borderRadius: 8,
+                      borderRadius: 7,
                       marginBottom: 8,
                       border: `1px solid ${C.border}`,
                       background: "var(--color-surface)",
@@ -767,13 +767,13 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                   >
                     {k}
                   </span>
-                  <div style={{ flex: 1, height: 16, background: "var(--color-border-soft)", borderRadius: 4, overflow: "hidden", minWidth: 40 }}>
+                  <div style={{ flex: 1, height: 16, background: "var(--color-border-soft)", borderRadius: 7, overflow: "hidden", minWidth: 40 }}>
                     <div
                       style={{
                         height: "100%",
                         width: `${(v.count / maxCnt) * 100}%`,
                         background: "#4466e0",
-                        borderRadius: 4,
+                        borderRadius: 7,
                         minWidth: v.count > 0 ? 8 : 0,
                       }}
                     />
@@ -816,7 +816,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                       gap: 10,
                       padding: "10px 12px",
                       marginBottom: 8,
-                      borderRadius: 8,
+                      borderRadius: 7,
                       border: `1px solid ${C.border}`,
                       background: "var(--color-surface)",
                       cursor: "pointer",
@@ -842,7 +842,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                         <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{vt.label}</span>
+                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 7, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{vt.label}</span>
                       </div>
                       <div style={{ fontSize: mob ? 11 : 13, color: "var(--color-text-faint)" }}>
                         {fmtDate(v.date)} {v.time || ""} · {v.location || ""}
@@ -853,7 +853,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     </div>
                     <div style={{ flexShrink: 0, textAlign: "right" }}>
                       <div style={{ fontSize: mob ? 11 : 13, color: "var(--color-text-faint)", fontWeight: 600 }}>{relDate(v.date)}</div>
-                      <span style={{ fontSize: mob ? 10 : 12, fontWeight: 600, padding: mob ? "2px 8px" : "3px 10px", borderRadius: 6, background: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))", color: "var(--color-text-muted)", marginTop: 4, display: "inline-block" }}>{STATUS_LABELS[v.status]}</span>
+                      <span style={{ fontSize: mob ? 10 : 12, fontWeight: 600, padding: mob ? "2px 8px" : "3px 10px", borderRadius: 7, background: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))", color: "var(--color-text-muted)", marginTop: 4, display: "inline-block" }}>{STATUS_LABELS[v.status]}</span>
                     </div>
                   </div>
                 );
@@ -891,7 +891,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                       gap: 10,
                       padding: "10px 12px",
                       marginBottom: 8,
-                      borderRadius: 8,
+                      borderRadius: 7,
                       border: `1px solid ${C.border}`,
                       background: "var(--color-surface)",
                       cursor: "pointer",
@@ -917,7 +917,7 @@ function DashSub({ db, goPage, openVisitModal, openCounselModal, loading, merged
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                         <span style={{ fontSize: mob ? 13 : 15, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{ct.label}</span>
+                        <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 7, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{ct.label}</span>
                         {c.confidential && (
                           <span style={{ fontSize: mob ? 10 : 12, color: "var(--color-text-muted)", fontWeight: 600, flexShrink: 0 }}>비공개</span>
                         )}
@@ -1013,7 +1013,7 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
               fontSize: mob ? 12 : 14,
               background: "var(--color-surface)",
               border: `1px solid ${C.border}`,
-              borderRadius: mob ? 6 : 10,
+              borderRadius: 7,
               outline: "none",
               color: C.text,
               boxSizing: "border-box",
@@ -1028,7 +1028,7 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
             padding: mob ? "0 12px" : "0 20px",
             fontSize: mob ? 11 : 14,
             fontWeight: 600,
-            borderRadius: mob ? 6 : 10,
+            borderRadius: 7,
             background: "#4466e0",
             color: "#fff",
             border: "none",
@@ -1067,7 +1067,7 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                     gap: mob ? 10 : 14,
                     padding: mob ? "10px 12px" : "16px 20px",
                     marginBottom: 8,
-                    borderRadius: mob ? 8 : 14,
+                    borderRadius: 7,
                     border: `1px solid ${C.border}`,
                     background: "var(--color-surface)",
                     cursor: "pointer",
@@ -1093,7 +1093,7 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                       <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{vt.label}</span>
+                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 7, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{vt.label}</span>
                     </div>
                     <div style={{ fontSize: mob ? 11 : 13, color: "var(--color-text-faint)" }}>
                       {fmtDateFull(v.date)} {v.time || ""} · {v.location || ""}
@@ -1105,7 +1105,7 @@ function VisitListSub({ db, openVisitModal, loading }: { db: VCDB; openVisitModa
                   </div>
                   <div style={{ flexShrink: 0, textAlign: "right" }}>
                     <div style={{ fontSize: mob ? 11 : 13, color: "var(--color-text-faint)", fontWeight: 600 }}>{relDate(v.date)}</div>
-                    <span style={{ fontSize: mob ? 10 : 13, fontWeight: 600, padding: mob ? "2px 8px" : "3px 10px", borderRadius: mob ? 6 : 8, background: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))", color: "var(--color-primary)", marginTop: 4, display: "inline-block" }}>{STATUS_LABELS[v.status]}</span>
+                    <span style={{ fontSize: mob ? 10 : 13, fontWeight: 600, padding: mob ? "2px 8px" : "3px 10px", borderRadius: 7, background: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))", color: "var(--color-primary)", marginTop: 4, display: "inline-block" }}>{STATUS_LABELS[v.status]}</span>
                   </div>
                 </div>
               );
@@ -1204,7 +1204,7 @@ function MainDBVisitList({
           gap: 10,
           padding: "10px 12px",
           marginBottom: 8,
-          borderRadius: 8,
+          borderRadius: 7,
           border: `1px solid ${C.border}`,
           background: "var(--color-surface)",
         }}
@@ -1229,7 +1229,7 @@ function MainDBVisitList({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-            <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{v.type}</span>
+            <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 7, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{v.type}</span>
           </div>
           <div style={{ fontSize: 11, color: "var(--color-text-faint)" }}>{fmtDateFull(v.date)}</div>
           {v.content && (
@@ -1263,7 +1263,7 @@ function MainDBVisitList({
               fontSize: 12,
               background: "var(--color-surface)",
               border: `1px solid ${C.border}`,
-              borderRadius: 6,
+              borderRadius: 7,
               outline: "none",
               color: C.text,
               boxSizing: "border-box",
@@ -1278,7 +1278,7 @@ function MainDBVisitList({
             padding: "0 12px",
             fontSize: 11,
             fontWeight: 600,
-            borderRadius: 6,
+            borderRadius: 7,
             background: "#4466e0",
             color: "#fff",
             border: "none",
@@ -1401,7 +1401,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
               fontSize: mob ? 12 : 14,
               background: "var(--color-surface)",
               border: `1px solid ${C.border}`,
-              borderRadius: mob ? 6 : 10,
+              borderRadius: 7,
               outline: "none",
               color: C.text,
               boxSizing: "border-box",
@@ -1416,7 +1416,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
             padding: mob ? "0 12px" : "0 20px",
             fontSize: mob ? 11 : 14,
             fontWeight: 600,
-            borderRadius: mob ? 6 : 10,
+            borderRadius: 7,
             background: "#4466e0",
             color: "#fff",
             border: "none",
@@ -1454,7 +1454,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                     gap: mob ? 10 : 14,
                     padding: mob ? "10px 12px" : "16px 20px",
                     marginBottom: 8,
-                    borderRadius: mob ? 8 : 14,
+                    borderRadius: 7,
                     border: `1px solid ${C.border}`,
                     background: "var(--color-surface)",
                     cursor: "pointer",
@@ -1480,7 +1480,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, minWidth: 0, flexWrap: "wrap" }}>
                       <span style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 20, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{ct.label}</span>
+                      <span style={{ fontSize: mob ? 9 : 12, fontWeight: 600, padding: mob ? "2px 6px" : "3px 10px", borderRadius: 7, background: C.primaryLight, color: C.primary, flexShrink: 0 }}>{ct.label}</span>
                       {c.confidential && <span style={{ fontSize: mob ? 10 : 13, color: "var(--color-text-muted)", fontWeight: 600, flexShrink: 0 }}>비공개</span>}
                     </div>
                     <div style={{ fontSize: mob ? 11 : 13, color: "var(--color-text-faint)" }}>{fmtDateFull(c.date)}</div>
@@ -1496,7 +1496,7 @@ function CounselListSub({ db, openCounselModal }: { db: VCDB; openCounselModal: 
                           fontSize: mob ? 10 : 13,
                           fontWeight: 600,
                           padding: mob ? "2px 8px" : "3px 10px",
-                          borderRadius: mob ? 6 : 8,
+                          borderRadius: 7,
                           background: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))",
                           color: daysFromNow(c.followUpDate) < 0 ? C.danger : "#555",
                           marginTop: 4,
@@ -1577,7 +1577,7 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
               color: tab === t.id ? "#fff" : "#555",
               background: tab === t.id ? "var(--color-primary)" : "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))",
               border: "1px solid var(--color-border)",
-              borderRadius: 6,
+              borderRadius: 7,
               cursor: "pointer",
               fontFamily: "inherit",
               whiteSpace: "nowrap",
@@ -1604,7 +1604,7 @@ function FollowUpSub({ db, setDb, persist, toast, openVisitModal, openCounselMod
                     alignItems: "center",
                     gap: 12,
                     padding: "10px 12px",
-                    borderRadius: 8,
+                    borderRadius: 7,
                     marginBottom: 8,
                     border: `1px solid ${C.border}`,
                     background: "var(--color-surface)",
@@ -1689,7 +1689,7 @@ function PrayersSub({
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200 }}>
           <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex" }}><Icons.Search /></span>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름, 기도제목 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이름, 기도제목 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 7, outline: "none", color: C.text }} />
         </div>
         <Btn variant="primary" size="sm" onClick={openPrayerModal}>＋ 기도제목 등록</Btn>
       </div>
@@ -1712,8 +1712,8 @@ function PrayersSub({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, minWidth: 0, flexWrap: "wrap" }}>
                       <span style={{ fontSize: mob ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: C.borderLight, color: C.textMuted, flexShrink: 0 }}>{PRAYER_CATEGORIES[p.category]}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12, background: isActive ? C.purpleBg : C.greenBg, color: isActive ? C.purple : C.green }}>{PRAYER_STATUS_LABELS[p.status]}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 7, background: C.borderLight, color: C.textMuted, flexShrink: 0 }}>{PRAYER_CATEGORIES[p.category]}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 7, background: isActive ? C.purpleBg : C.greenBg, color: isActive ? C.purple : C.green }}>{PRAYER_STATUS_LABELS[p.status]}</span>
                     </div>
                     <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{p.text}</div>
                     <div style={{ fontSize: 12, color: C.textFaint, marginTop: 6 }}>{fmtDate(p.date)}</div>
@@ -1742,7 +1742,7 @@ function MembersSub({ db, openMemberDetail }: { db: VCDB; openMemberDetail: (id:
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ position: "relative" }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex" }}><Icons.Search /></span>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="성도 이름 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="성도 이름 검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 7, outline: "none", color: C.text }} />
       </div>
       {members.length === 0 ? (
         <div style={{ textAlign: "center", padding: 48, color: C.textFaint }}><div style={{ opacity: 0.3, marginBottom: 12, display: "flex", justifyContent: "center" }}><User size={40} strokeWidth={1.5} /></div><div style={{ fontSize: 14 }}>검색 결과가 없습니다</div></div>
@@ -1803,7 +1803,7 @@ function TimelineSub({ db, openVisitModal, openCounselModal }: { db: VCDB; openV
       <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200 }}>
           <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textFaint, display: "flex" }}><Icons.Search /></span>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, outline: "none", color: C.text }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="검색..." style={{ width: "100%", height: mob ? 36 : 40, padding: "0 14px 0 38px", fontFamily: "inherit", fontSize: mob ? 13 : 14, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 7, outline: "none", color: C.text }} />
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <Chip label="전체" active={filter === "all"} onClick={() => setFilter("all")} />
@@ -1829,13 +1829,13 @@ function TimelineSub({ db, openVisitModal, openCounselModal }: { db: VCDB; openV
                   <div key={item.id + item._kind} style={{ position: "relative", paddingBottom: 24 }}>
                     <div style={{ position: "absolute", left: -28, top: 2, width: 16, height: 16, borderRadius: "50%", border: `3px solid ${completed ? C.green : dotColor}`, background: completed ? C.green : "#fff", zIndex: 1 }} />
                     <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>{fmtDateFull(item._date)} {vItem ? vItem.time || "" : ""}</div>
-                    <div onClick={() => isVisit ? openVisitModal(item.id) : openCounselModal(item.id)} style={{ background: C.bg, borderRadius: 8, padding: "12px 16px", marginTop: 6, border: `1px solid ${C.borderLight}`, cursor: "pointer", transition: "all 0.2s" }}>
+                    <div onClick={() => isVisit ? openVisitModal(item.id) : openCounselModal(item.id)} style={{ background: C.bg, borderRadius: 7, padding: "12px 16px", marginTop: 6, border: `1px solid ${C.borderLight}`, cursor: "pointer", transition: "all 0.2s" }}>
                       <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>{isVisit ? <Icons.Visit /> : <Icons.Counsel />} {m.name} · {vItem ? (VISIT_TYPES[vItem.type]?.label || "") : ((COUNSEL_TYPES[cItem!.type]?.label || "") + " 상담")}{cItem?.confidential ? <><Icons.Lock /> </> : null}</div>
                       {item.summary && <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4, lineHeight: 1.5 }}>{item.summary}</div>}
                       <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-                        {vItem && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 12, background: VISIT_TYPES[vItem.type]?.bg, color: VISIT_TYPES[vItem.type]?.color }}>{VISIT_TYPES[vItem.type]?.label}</span>}
-                        {vItem && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 12, background: STATUS_COLORS[vItem.status]?.bg, color: STATUS_COLORS[vItem.status]?.color }}>{STATUS_LABELS[vItem.status]}</span>}
-                        {cItem && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 12, background: COUNSEL_TYPES[cItem.type]?.bg, color: COUNSEL_TYPES[cItem.type]?.color }}>{COUNSEL_TYPES[cItem.type]?.label}</span>}
+                        {vItem && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 7, background: VISIT_TYPES[vItem.type]?.bg, color: VISIT_TYPES[vItem.type]?.color }}>{VISIT_TYPES[vItem.type]?.label}</span>}
+                        {vItem && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 7, background: STATUS_COLORS[vItem.status]?.bg, color: STATUS_COLORS[vItem.status]?.color }}>{STATUS_LABELS[vItem.status]}</span>}
+                        {cItem && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 7, background: COUNSEL_TYPES[cItem.type]?.bg, color: COUNSEL_TYPES[cItem.type]?.color }}>{COUNSEL_TYPES[cItem.type]?.label}</span>}
                       </div>
                     </div>
                   </div>
@@ -1915,8 +1915,8 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
             {Object.entries(vTypes).map(([k, v]) => (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-muted)", width: 72, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k}</span>
-                <div style={{ flex: 1, height: 16, background: "var(--color-border-soft)", borderRadius: 4, overflow: "hidden", minWidth: 40 }}>
-                  <div style={{ height: "100%", width: `${(v / Math.max(...Object.values(vTypes), 1)) * 100}%`, background: "#4466e0", borderRadius: 4, minWidth: v > 0 ? 8 : 0 }} />
+                <div style={{ flex: 1, height: 16, background: "var(--color-border-soft)", borderRadius: 7, overflow: "hidden", minWidth: 40 }}>
+                  <div style={{ height: "100%", width: `${(v / Math.max(...Object.values(vTypes), 1)) * 100}%`, background: "#4466e0", borderRadius: 7, minWidth: v > 0 ? 8 : 0 }} />
                 </div>
                 <span style={{ fontSize: 11, color: "var(--color-text-muted)", width: 32, flexShrink: 0, textAlign: "right" }}>{v}건</span>
               </div>
@@ -1928,8 +1928,8 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
             {Object.entries(cTypes).map(([k, v]) => (
               <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-muted)", width: 72, textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k}</span>
-                <div style={{ flex: 1, height: 16, background: "var(--color-border-soft)", borderRadius: 4, overflow: "hidden", minWidth: 40 }}>
-                  <div style={{ height: "100%", width: `${(v / Math.max(...Object.values(cTypes), 1)) * 100}%`, background: "#4466e0", borderRadius: 4, minWidth: v > 0 ? 8 : 0 }} />
+                <div style={{ flex: 1, height: 16, background: "var(--color-border-soft)", borderRadius: 7, overflow: "hidden", minWidth: 40 }}>
+                  <div style={{ height: "100%", width: `${(v / Math.max(...Object.values(cTypes), 1)) * 100}%`, background: "#4466e0", borderRadius: 7, minWidth: v > 0 ? 8 : 0 }} />
                 </div>
                 <span style={{ fontSize: 11, color: "var(--color-text-muted)", width: 32, flexShrink: 0, textAlign: "right" }}>{v}건</span>
               </div>
@@ -1940,7 +1940,7 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
           <div style={{ marginBottom: 24 }}>
             {completed.length ? completed.map(v => {
               const m = getMember(v.memberId);
-              return <div key={v.id} style={{ padding: 12, background: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))", borderRadius: 8, marginBottom: 8, border: "1px solid var(--color-border)" }}><div style={{ fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 12, color: "#6b7b9e", marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 4 }}>기도: {v.prayerNote}</div>}</div>;
+              return <div key={v.id} style={{ padding: 12, background: "color-mix(in srgb, var(--color-primary) 14%, var(--color-surface-elevated))", borderRadius: 7, marginBottom: 8, border: "1px solid var(--color-border)" }}><div style={{ fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name} · {VISIT_TYPES[v.type]?.label} · {fmtDate(v.date)}</div><div style={{ fontSize: 12, color: "#6b7b9e", marginTop: 4 }}>{v.summary || "기록 없음"}</div>{v.prayerNote && <div style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 4 }}>기도: {v.prayerNote}</div>}</div>;
             }) : <div style={{ color: "var(--color-text-faint)" }}>완료된 심방 없음</div>}
           </div>
 
@@ -1948,7 +1948,7 @@ function ReportSub({ db, toast, loading }: { db: VCDB; toast: (m: string) => voi
           <div>
             {allFU.length ? allFU.map(f => {
               const m = getMember(f.memberId);
-              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: "var(--color-surface)", borderRadius: 8, border: "1px solid var(--color-border)" }}><span style={{ fontSize: 13, fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span><span style={{ fontSize: 11, color: "var(--color-text-muted)", flex: 1, minWidth: 0 }}>{f.note || f.originType}</span><span style={{ fontSize: 11, fontWeight: 600, color: daysFromNow(f.date) < 0 ? C.danger : "#555" }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
+              return <div key={f.refId + f.kind} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, padding: "8px 12px", background: "var(--color-surface)", borderRadius: 7, border: "1px solid var(--color-border)" }}><span style={{ fontSize: 13, fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span><span style={{ fontSize: 11, color: "var(--color-text-muted)", flex: 1, minWidth: 0 }}>{f.note || f.originType}</span><span style={{ fontSize: 11, fontWeight: 600, color: daysFromNow(f.date) < 0 ? C.danger : "#555" }}>{fmtDate(f.date)} ({relDate(f.date)})</span></div>;
             }) : <div style={{ color: "var(--color-text-faint)" }}>모든 후속 조치 완료</div>}
           </div>
         </div>
@@ -2569,7 +2569,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           style={{
             width: 32,
             height: 32,
-            borderRadius: 8,
+            borderRadius: 7,
             background: "#4466e0",
             color: "#fff",
             border: "none",
@@ -2611,7 +2611,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         <FormField label="심방 유형">
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {Object.entries(VISIT_TYPES).map(([k, v]) => (
-              <span key={k} onClick={() => setVType(k as VisitType)} style={{ padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${vType === k ? "#4466e0" : C.border}`, background: vType === k ? "#4466e0" : "#f6f7fd", color: vType === k ? "#fff" : "#555", transition: "all 0.2s", display: "inline-flex", alignItems: "center" }}>{v.label}</span>
+              <span key={k} onClick={() => setVType(k as VisitType)} style={{ padding: "6px 12px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${vType === k ? "#4466e0" : C.border}`, background: vType === k ? "#4466e0" : "#f6f7fd", color: vType === k ? "#fff" : "#555", transition: "all 0.2s", display: "inline-flex", alignItems: "center" }}>{v.label}</span>
             ))}
           </div>
         </FormField>
@@ -2651,7 +2651,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
         <FormField label="상담 유형">
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {Object.entries(COUNSEL_TYPES).map(([k, v]) => (
-              <span key={k} onClick={() => setCType(k as CounselType)} style={{ padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${cType === k ? "#4466e0" : C.border}`, background: cType === k ? "#4466e0" : "#f6f7fd", color: cType === k ? "#fff" : "#555", transition: "all 0.2s", display: "inline-flex", alignItems: "center" }}>{v.label}</span>
+              <span key={k} onClick={() => setCType(k as CounselType)} style={{ padding: "6px 12px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${cType === k ? "#4466e0" : C.border}`, background: cType === k ? "#4466e0" : "#f6f7fd", color: cType === k ? "#fff" : "#555", transition: "all 0.2s", display: "inline-flex", alignItems: "center" }}>{v.label}</span>
             ))}
           </div>
         </FormField>
@@ -2689,7 +2689,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           ].sort((a, b) => b._date.localeCompare(a._date));
           return (
             <>
-              <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 16, background: C.bg, borderRadius: 12, marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 16, background: C.bg, borderRadius: 7, marginBottom: 16 }}>
                 <div style={{ width: 64, height: 64, borderRadius: "50%", background: C.accentLight, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, flexShrink: 0 }}>{detailMember.name[0]}</div>
                 <div>
                   <div style={{ fontSize: 20, fontWeight: 700 }}>{detailMember.name}</div>
@@ -2712,7 +2712,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
                         <div key={item.id + item._kind} style={{ position: "relative", paddingBottom: 20 }}>
                           <div style={{ position: "absolute", left: -28, top: 2, width: 16, height: 16, borderRadius: "50%", border: `3px solid ${dotColor}`, background: completed ? C.green : "#fff", zIndex: 1 }} />
                           <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>{fmtDateFull(item._date)}</div>
-                          <div style={{ background: bgColor, borderRadius: 8, padding: "12px 16px", marginTop: 6, border: `1px solid ${C.borderLight}` }}>
+                          <div style={{ background: bgColor, borderRadius: 7, padding: "12px 16px", marginTop: 6, border: `1px solid ${C.borderLight}` }}>
                             {isMemo ? (
                               <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}><Icons.Memo /> 메모 · {MEMO_CATEGORIES[("category" in item ? item.category : "other") as MemoCategory]}</div>
                             ) : (
@@ -2751,7 +2751,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
           <Btn onClick={saveMemo}>저장</Btn>
         </div>
       }>
-        <FormField label="성도">{detailMemberId ? <div style={{ padding: "10px 14px", background: C.bg, borderRadius: 8, fontSize: 14 }}>{getMember(detailMemberId).name}</div> : <FSelect value={mMemberId} onChange={setMMemberId}><option value="">-- 선택 --</option>{(db.members ?? []).map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect>}</FormField>
+        <FormField label="성도">{detailMemberId ? <div style={{ padding: "10px 14px", background: C.bg, borderRadius: 7, fontSize: 14 }}>{getMember(detailMemberId).name}</div> : <FSelect value={mMemberId} onChange={setMMemberId}><option value="">-- 선택 --</option>{(db.members ?? []).map(m => <option key={m.id} value={m.id}>{m.name} ({m.role}·{m.group})</option>)}</FSelect>}</FormField>
         <FormField label="메모 내용"><FTextarea value={mText} onChange={setMText} placeholder="행정 메모, 구역 배정, 멘토 연결 등" style={{ minHeight: 100 }} /></FormField>
         <FormField label="분류"><FSelect value={mCategory} onChange={v => setMCategory(v as MemoCategory)}>{Object.entries(MEMO_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</FSelect></FormField>
         <FormField label="날짜"><CalendarDropdown value={mDate} onChange={setMDate} /></FormField>
@@ -2760,7 +2760,7 @@ export function VisitCounselPage({ mainDb, setMainDb, saveMain }: VisitCounselPa
       {/* Toasts */}
       <div style={{ position: "fixed", top: mob ? 8 : 20, right: mob ? 8 : 20, left: mob ? 8 : "auto", zIndex: 2000, display: "flex", flexDirection: "column", gap: 8 }}>
         {toasts.map(t => (
-          <div key={t.id} style={{ background: "#4466e0", color: "#fff", padding: "12px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, boxShadow: "0 8px 30px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", gap: 8 }}>{t.msg}</div>
+          <div key={t.id} style={{ background: "#4466e0", color: "#fff", padding: "12px 20px", borderRadius: 7, fontSize: 12, fontWeight: 600, boxShadow: "0 8px 30px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", gap: 8 }}>{t.msg}</div>
         ))}
       </div>
 

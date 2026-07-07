@@ -108,7 +108,7 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
           <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 600, color: C.navy }}>수신자 선택</h3>
           <div className="flex flex-wrap gap-2 mb-3">
             <input
@@ -133,7 +133,7 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
             <button type="button" onClick={selectAll} className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm">전체 선택</button>
             <button type="button" onClick={clearAll} className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm">해제</button>
           </div>
-          <div style={{ maxHeight: 256, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 12 }}>
+          <div style={{ maxHeight: 256, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 7 }}>
             {sourceList.map((m) => (
               <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", cursor: "pointer", borderBottom: `1px solid ${C.borderLight}` }} className="hover:bg-opacity-80" onMouseEnter={(e) => { e.currentTarget.style.background = C.bg; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                 <input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => toggle(m.id)} className="rounded" />
@@ -145,20 +145,20 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
           <p style={{ fontSize: 12, color: C.textMuted, marginTop: 8 }}>선택: {selectedIds.size}명</p>
         </div>
 
-        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div style={{ background: C.card, borderRadius: 7, border: `1px solid ${C.border}`, padding: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
           <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 600, color: C.navy }}>메시지 작성</h3>
           <p style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>&#123;이름&#125; 입력 시 수신자별 이름으로 치환됩니다. · SMS 90바이트 / LMS 2000바이트</p>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="내용을 입력하세요..."
-            style={{ width: "100%", borderRadius: 10, border: `1px solid ${C.border}`, padding: "10px 12px", fontSize: 14, minHeight: 120, resize: "vertical" }}
+            style={{ width: "100%", borderRadius: 7, border: `1px solid ${C.border}`, padding: "10px 12px", fontSize: 14, minHeight: 120, resize: "vertical" }}
             maxLength={LMS_MAX + 500}
           />
           <div style={{ fontSize: 14, marginTop: 8, color: isOver ? C.danger : C.textMuted }}>
             {byteLength} / {maxByte} byte ({messageType})
           </div>
-          <div style={{ marginTop: 12, padding: 12, background: C.bg, borderRadius: 12, fontSize: 14, color: C.text }}>
+          <div style={{ marginTop: 12, padding: 12, background: C.bg, borderRadius: 7, fontSize: 14, color: C.text }}>
             <p style={{ fontWeight: 500, color: C.textMuted, marginBottom: 4 }}>미리보기</p>
             <p className="whitespace-pre-wrap">{preview || "(내용 없음)"}</p>
           </div>
@@ -166,7 +166,7 @@ export function SendMessage({ members, onSend, toast }: SendMessageProps) {
             type="button"
             onClick={handleSend}
             disabled={selectedIds.size === 0 || isOver || sending}
-            style={{ marginTop: 16, padding: "10px 16px", borderRadius: 12, background: C.navy, color: "white", fontSize: 14, fontWeight: 600, opacity: selectedIds.size === 0 || isOver || sending ? 0.5 : 1, cursor: selectedIds.size === 0 || isOver || sending ? "not-allowed" : "pointer", border: "none" }}
+            style={{ marginTop: 16, padding: "10px 16px", borderRadius: 7, background: C.navy, color: "white", fontSize: 14, fontWeight: 600, opacity: selectedIds.size === 0 || isOver || sending ? 0.5 : 1, cursor: selectedIds.size === 0 || isOver || sending ? "not-allowed" : "pointer", border: "none" }}
           >
             {sending ? "저장 중…" : "발송 (저장)"}
           </button>

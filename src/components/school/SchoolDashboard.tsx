@@ -125,7 +125,7 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
       <div
         style={{
           background: BG,
-          borderRadius: 12,
+          borderRadius: 7,
           border: `1px solid ${BORDER}`,
           borderLeft: `1px solid ${BORDER}`,
           boxShadow: "0 1px 4px color-mix(in srgb, var(--color-text) 6%, transparent)",
@@ -162,7 +162,7 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
         <StatCard label="이번 달 신규 등록" value={`${newThisMonth}명`} sub="신규 등록" color="var(--color-warning)" />
       </div>
 
-      <div style={{ background: BG, borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+      <div style={{ background: BG, borderRadius: 7, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
         <div style={{ padding: mob ? "12px 14px" : "16px 20px", borderBottom: `1px solid ${BORDER}` }}>
           <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NAVY }}>부서별 현황</h4>
         </div>
@@ -184,7 +184,7 @@ export function SchoolDashboard({ toast }: SchoolDashboardProps) {
                 key={d.id}
                 style={{
                   background: BG,
-                  borderRadius: mob ? 8 : 16,
+                  borderRadius: 7,
                   border: `1px solid ${BORDER}`,
                   borderLeft: `1px solid ${BORDER}`,
                   padding: mob ? "10px 12px" : "16px 20px",

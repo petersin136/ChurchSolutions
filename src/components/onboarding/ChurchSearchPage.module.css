@@ -63,7 +63,7 @@
   width: 100%;
   height: 52px;
   padding: 0 16px 0 42px;
-  border-radius: 4px;
+  border-radius: 7px;
   border: 1px solid transparent;
   background: var(--color-border-soft);
   color: var(--color-black);
@@ -85,7 +85,7 @@
   flex-shrink: 0;
   height: 52px;
   padding: 0 18px;
-  border-radius: 4px;
+  border-radius: 7px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-black);
@@ -113,7 +113,7 @@
 .selectedCard {
   margin-bottom: 10px;
   padding: 12px 14px;
-  border-radius: 4px;
+  border-radius: 7px;
   border: 1px solid var(--color-black);
   background: var(--color-border-soft);
 }
@@ -141,7 +141,7 @@
 .btnOutline {
   width: 100%;
   height: 52px;
-  border-radius: 4px;
+  border-radius: 7px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-black);
@@ -178,7 +178,7 @@
 .btnModalSecondary {
   flex: 1;
   height: 48px;
-  border-radius: 4px;
+  border-radius: 7px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-black);
@@ -200,7 +200,7 @@
   width: 100%;
   text-align: left;
   padding: 14px 16px;
-  border-radius: 4px;
+  border-radius: 7px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   cursor: pointer;
@@ -292,7 +292,7 @@
   justify-content: center;
   padding: 32px 16px;
   text-align: center;
-  border-radius: 4px;
+  border-radius: 7px;
   background: var(--color-border-soft);
 }
 
@@ -318,7 +318,7 @@
 .btnPrimary {
   width: 100%;
   height: 52px;
-  border-radius: 4px;
+  border-radius: 7px;
   border: none;
   background: var(--color-black);
   color: var(--color-primary-on);

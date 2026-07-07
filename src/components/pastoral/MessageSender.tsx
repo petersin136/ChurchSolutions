@@ -104,7 +104,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
   const card: React.CSSProperties = {
     background: "var(--color-surface)",
     border: "1px solid #f3f4f6",
-    borderRadius: 16,
+    borderRadius: 7,
     padding: 24,
     boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
   };
@@ -125,7 +125,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
               color: selectedIds.size > 0 ? "#4361ee" : "#6b7b9e",
               background: selectedIds.size > 0 ? "#eef0ff" : "#f3f4f6",
               padding: "4px 12px",
-              borderRadius: 20,
+              borderRadius: 7,
             }}
           >
             {selectedIds.size}명 선택
@@ -143,7 +143,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
               style={{
                 width: "100%",
                 padding: "9px 12px 9px 32px",
-                borderRadius: 10,
+                borderRadius: 7,
                 border: "1px solid var(--color-border)",
                 fontSize: 14,
                 outline: "none",
@@ -164,7 +164,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
             maxHeight: 260,
             overflowY: "auto",
             border: "1px solid #f3f4f6",
-            borderRadius: 12,
+            borderRadius: 7,
           }}
         >
           {filtered.length === 0 && (
@@ -219,7 +219,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
               onClick={() => applyTemplate(i)}
               style={{
                 padding: "7px 14px",
-                borderRadius: 20,
+                borderRadius: 7,
                 border: activeTemplate === i ? "1.5px solid #4361ee" : "1px solid #e2e5ef",
                 background: activeTemplate === i ? "#eef0ff" : "#ffffff",
                 color: activeTemplate === i ? "#4361ee" : "#374151",
@@ -245,7 +245,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
             width: "100%",
             minHeight: 140,
             padding: "12px 14px",
-            borderRadius: 12,
+            borderRadius: 7,
             border: "1px solid var(--color-border)",
             fontSize: 14,
             lineHeight: 1.6,
@@ -273,7 +273,7 @@ export function MessageSender({ db, toast }: MessageSenderProps) {
 
 const btnOutline: React.CSSProperties = {
   padding: "8px 14px",
-  borderRadius: 10,
+  borderRadius: 7,
   border: "1px solid var(--color-border)",
   background: "var(--color-surface)",
   fontSize: 13,
@@ -288,7 +288,7 @@ const btnCopy: React.CSSProperties = {
   alignItems: "center",
   gap: 6,
   padding: "10px 20px",
-  borderRadius: 12,
+  borderRadius: 7,
   border: "none",
   background: "var(--color-primary)",
   color: "#ffffff",
@@ -302,7 +302,7 @@ const btnKakao: React.CSSProperties = {
   alignItems: "center",
   gap: 6,
   padding: "10px 20px",
-  borderRadius: 12,
+  borderRadius: 7,
   border: "none",
   background: "#FEE500",
   color: "#191919",

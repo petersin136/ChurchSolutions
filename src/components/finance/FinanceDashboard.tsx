@@ -97,7 +97,7 @@ export function FinanceDashboard({
     minHeight: mob ? 56 : 90,
     background: "var(--color-surface)",
     border: `1px solid ${BORDER}`,
-    borderRadius: mob ? 8 : 16,
+    borderRadius: 7,
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
@@ -133,7 +133,7 @@ export function FinanceDashboard({
         </div>
       </div>
 
-      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 24 }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: 7, border: `1px solid ${BORDER}`, padding: mob ? 12 : 24 }}>
         <h4 style={{ margin: mob ? "0 0 10px" : "0 0 16px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>월별 수입/지출 추이</h4>
         <LazyChart height={260}>
           <ResponsiveContainer width="100%" height="100%">

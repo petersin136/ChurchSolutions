@@ -378,7 +378,7 @@ export function WorkflowCardModal({ open, cardId, onClose, onToast }: WorkflowCa
             color: sb.fg,
             background: sb.bg,
             padding: mob ? "3px 10px" : "4px 12px",
-            borderRadius: 20,
+            borderRadius: 7,
             border: `1px solid ${sb.fg}`,
             flexShrink: 0,
             whiteSpace: "nowrap",
@@ -403,7 +403,7 @@ export function WorkflowCardModal({ open, cardId, onClose, onToast }: WorkflowCa
           bottom: 12,
           width: 2,
           background: C.border,
-          borderRadius: 1,
+          borderRadius: 7,
         }}
       />
       {steps.length === 0 ? (
@@ -448,7 +448,7 @@ export function WorkflowCardModal({ open, cardId, onClose, onToast }: WorkflowCa
                   padding: mob ? 12 : 16,
                   background: C.card,
                   border: `1px solid ${isCurrent ? C.accent : C.border}`,
-                  borderRadius: 12,
+                  borderRadius: 7,
                   boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                 }}
               >

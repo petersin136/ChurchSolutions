@@ -7,7 +7,7 @@ const passwordInputStyle: React.CSSProperties = {
   width: "100%",
   height: 52,
   padding: "0 44px 0 16px",
-  borderRadius: 4,
+  borderRadius: 7,
   border: "1px solid transparent",
   background: "#ebebeb",
   color: "var(--color-black)",

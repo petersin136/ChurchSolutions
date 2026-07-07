@@ -63,7 +63,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
           width: "min(900px, 90vw)",
           maxHeight: "80vh",
           background: "var(--color-surface)",
-          borderRadius: 16,
+          borderRadius: 7,
           boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
           display: "flex",
           flexDirection: "column",
@@ -88,7 +88,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
               onClick={onDownloadExcel}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "8px 16px", borderRadius: 8, border: "none",
+                padding: "8px 16px", borderRadius: 7, border: "none",
                 background: "#2563EB", color: "#fff", fontSize: 14, fontWeight: 600,
                 cursor: "pointer", fontFamily: "inherit",
               }}
@@ -99,7 +99,7 @@ export function ReportModal({ title, columns, data, onClose, onDownloadExcel, pa
               type="button"
               onClick={onClose}
               style={{
-                padding: "8px 16px", borderRadius: 8, border: "none",
+                padding: "8px 16px", borderRadius: 7, border: "none",
                 background: "#F3F4F6", color: "#374151", fontSize: 14, fontWeight: 600,
                 cursor: "pointer", fontFamily: "inherit",
               }}
@@ -235,7 +235,7 @@ function PgBtn({ children, disabled, onClick }: { children: React.ReactNode; dis
       style={{
         minWidth: 48,
         height: 32,
-        borderRadius: 8,
+        borderRadius: 7,
         border: "1px solid var(--color-border)",
         display: "inline-flex",
         alignItems: "center",

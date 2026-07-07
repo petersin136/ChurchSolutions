@@ -255,7 +255,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
             fontSize: 13,
             fontWeight: 600,
             padding: "0 16px",
-            borderRadius: 8,
+            borderRadius: 7,
             background: NAVY,
             color: "var(--color-primary-on)",
             border: "none",
@@ -267,7 +267,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div style={{ background: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <div style={{ background: CARD, borderRadius: 7, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
           <table className="w-full" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -307,7 +307,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                         fontSize: 12,
                         color: NAVY,
                         border: `1px solid ${BORDER}`,
-                        borderRadius: 6,
+                        borderRadius: 7,
                         padding: "5px 12px",
                         background: "var(--color-surface-elevated)",
                         fontWeight: 600,
@@ -339,7 +339,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
           </table>
         </div>
 
-        <div style={{ background: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: 20 }}>
+        <div style={{ background: CARD, borderRadius: 7, border: `1px solid ${BORDER}`, padding: 20 }}>
           {selectedDept ? (
             <>
               <div className="flex items-center justify-between mb-4">
@@ -347,7 +347,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                 <button
                   type="button"
                   onClick={() => setAddClassOpen(true)}
-                  style={{ height: 36, fontSize: 13, fontWeight: 600, padding: "0 16px", borderRadius: 8, background: NAVY, color: "var(--color-primary-on)", border: "none", cursor: "pointer" }}
+                  style={{ height: 36, fontSize: 13, fontWeight: 600, padding: "0 16px", borderRadius: 7, background: NAVY, color: "var(--color-primary-on)", border: "none", cursor: "pointer" }}
                 >
                   반 추가
                 </button>
@@ -364,7 +364,7 @@ export function DepartmentManagement({ db: _db, toast }: DepartmentManagementPro
                         <button
                           type="button"
                           onClick={() => { setEditClassOpen(c); setEditClassName(c.name); }}
-                          style={{ fontSize: 12, color: "var(--color-text)", border: `1px solid ${BORDER}`, borderRadius: 6, padding: "5px 12px", background: "var(--color-surface-elevated)", cursor: "pointer", fontWeight: 600 }}
+                          style={{ fontSize: 12, color: "var(--color-text)", border: `1px solid ${BORDER}`, borderRadius: 7, padding: "5px 12px", background: "var(--color-surface-elevated)", cursor: "pointer", fontWeight: 600 }}
                         >
                           수정
                         </button>

@@ -12,6 +12,19 @@ export function getThisSundayStr(from: Date = new Date()): string {
   return `${y}-${String(m).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
 }
 
+/** 주차(1–52)와 연도로 해당 주 일요일 날짜(YYYY-MM-DD) 반환. db.attendance 주차 기준과 동일. */
+export function getSundayForWeekNum(year: number, weekNum: number): string {
+  const jan1 = new Date(year, 0, 1);
+  const firstSunday = new Date(jan1);
+  firstSunday.setDate(1 - jan1.getDay());
+  const weekSunday = new Date(firstSunday);
+  weekSunday.setDate(firstSunday.getDate() + (weekNum - 1) * 7);
+  const y = weekSunday.getFullYear();
+  const m = weekSunday.getMonth() + 1;
+  const d = weekSunday.getDate();
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
 /** 출석 체크·통계 대상 성도 (졸업/전출 제외, 활동 성도) */
 export function isChurchActiveMember(m: Member): boolean {
   if (m.status === "졸업/전출") return false;

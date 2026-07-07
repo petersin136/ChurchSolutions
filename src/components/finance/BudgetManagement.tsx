@@ -95,7 +95,7 @@ const inputCompactStyle = (mob: boolean): CSSProperties => ({
   padding: mob ? "0 8px" : "0 12px",
   fontSize: mob ? 12 : 14,
   textAlign: "right",
-  borderRadius: mob ? 5 : 7,
+  borderRadius: 7,
   border: `1px solid ${BORDER}`,
   outline: "none",
   boxShadow: "none",
@@ -480,7 +480,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
 
   const btnH = mob ? 34 : 38;
   const btnFs = mob ? 13 : 14;
-  const btnBr = mob ? 8 : 10;
+  const btnBr = 7;
   const toolbarRow = (
     <div
       style={{
@@ -534,7 +534,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
           height: 38,
           fontSize: 14,
           padding: "0 20px",
-          borderRadius: 10,
+          borderRadius: 7,
           background: "var(--color-primary)",
           color: "#fff",
           border: "none",
@@ -571,7 +571,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
     <div
       style={{
         background: "var(--color-surface)",
-        borderRadius: mob ? 8 : 16,
+        borderRadius: 7,
         border: `1px solid ${BORDER}`,
         overflow: "hidden",
       }}
@@ -651,7 +651,7 @@ export function BudgetManagement({ fiscalYear = String(new Date().getFullYear())
       <div
         style={{
           background: "var(--color-surface)",
-          borderRadius: mob ? 8 : 16,
+          borderRadius: 7,
           border: `1px solid ${BORDER}`,
           padding: mob ? "14px 16px" : "20px 24px",
           display: "flex",

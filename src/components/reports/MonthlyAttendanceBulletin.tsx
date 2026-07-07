@@ -843,7 +843,7 @@ export function MonthlyAttendanceBulletin() {
               width: "100%",
               margin: "0 auto",
               background: "#fff",
-              borderRadius: 8,
+              borderRadius: 7,
               overflow: "hidden",
               boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
             }}
@@ -923,7 +923,7 @@ function ReportPage({
               height: 36,
               background: COLORS.headerBg,
               color: "#fff",
-              borderRadius: 8,
+              borderRadius: 7,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -951,7 +951,7 @@ function ReportPage({
               background: COLORS.blueSoft,
               color: COLORS.blue,
               padding: "3px 8px",
-              borderRadius: 10,
+              borderRadius: 7,
               letterSpacing: "0.05em",
               fontWeight: 600,
               marginBottom: 4,
@@ -1096,7 +1096,7 @@ function ReportPage({
                   display: "inline-block",
                   width: 8,
                   height: 8,
-                  borderRadius: 2,
+                  borderRadius: 7,
                   background: COLORS.blue,
                   marginRight: 4,
                   verticalAlign: "middle",
@@ -1203,7 +1203,7 @@ function KpiCard({
       style={{
         background: "#fff",
         border: `1px solid ${COLORS.line}`,
-        borderRadius: 10,
+        borderRadius: 7,
         padding: "9px 12px",
         position: "relative",
         overflow: "hidden",
@@ -1275,7 +1275,7 @@ function ChartBox({
       style={{
         background: "#fff",
         border: `1px solid ${COLORS.line}`,
-        borderRadius: 10,
+        borderRadius: 7,
         padding: "8px 12px",
         display: "flex",
         flexDirection: "column",
@@ -1522,7 +1522,7 @@ function ThreeMonthTrend({
     alignItems: "center",
     padding: "7px 10px",
     background: COLORS.bgSoft,
-    borderRadius: 6,
+    borderRadius: 7,
   };
 
   return (
@@ -1627,7 +1627,7 @@ function DonutDistribution({
         {segs.map((s, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
             <span
-              style={{ width: 10, height: 10, borderRadius: 2, background: s.color, flexShrink: 0 }}
+              style={{ width: 10, height: 10, borderRadius: 7, background: s.color, flexShrink: 0 }}
             />
             <span style={{ flex: 1, color: COLORS.inkSoft }}>{s.label}</span>
             <span style={{ fontFamily: FONT_NUM, fontWeight: 700, color: COLORS.ink }}>{s.count}명</span>
@@ -1680,7 +1680,7 @@ function HBarList({
               style={{
                 background: COLORS.bgSoft,
                 height: barH,
-                borderRadius: 4,
+                borderRadius: 7,
                 overflow: "hidden",
                 position: "relative",
               }}
@@ -1690,7 +1690,7 @@ function HBarList({
                   height: "100%",
                   width: `${Math.max(Math.min(item.rate, 100), 1)}%`,
                   background: color,
-                  borderRadius: 4,
+                  borderRadius: 7,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "flex-end",
@@ -1730,7 +1730,7 @@ function HighlightBox({ items }: { items: { text: string }[] }) {
         background: "linear-gradient(135deg, #F9FAFB, #FFFFFF)",
         border: `1px solid ${COLORS.line}`,
         borderLeft: `4px solid ${COLORS.amber}`,
-        borderRadius: 8,
+        borderRadius: 7,
         padding: "12px 16px",
         display: "flex",
         flexDirection: "column",
@@ -1860,14 +1860,14 @@ const toolbarStyle: React.CSSProperties = {
   padding: "10px 14px",
   background: "var(--color-surface, #fff)",
   border: "1px solid var(--color-border, #e5e7eb)",
-  borderRadius: 12,
+  borderRadius: 7,
   marginBottom: 14,
 };
 
 const frameStyle: React.CSSProperties = {
   background: "#4B5563",
   padding: "16px 16px 40px",
-  borderRadius: 12,
+  borderRadius: 7,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -1902,7 +1902,7 @@ const pillStyle: React.CSSProperties = {
   padding: "2px 8px",
   background: COLORS.bgSoft,
   border: `1px solid ${COLORS.line}`,
-  borderRadius: 10,
+  borderRadius: 7,
   fontSize: 10.5,
   color: COLORS.ink,
   fontWeight: 500,
@@ -1913,7 +1913,7 @@ const deptCardStyle: React.CSSProperties = {
   color: COLORS.ink,
   border: `1px solid ${COLORS.line}`,
   borderLeft: "6px solid #3B82F6", // 부서별로 동적 override (borderLeftColor)
-  borderRadius: 10,
+  borderRadius: 7,
   padding: "12px 18px",
   display: "flex",
   justifyContent: "space-between",
@@ -1941,7 +1941,7 @@ const btnBase: React.CSSProperties = {
   gap: 6,
   height: 34,
   padding: "0 14px",
-  borderRadius: 8,
+  borderRadius: 7,
   fontSize: 13,
   fontWeight: 600,
   cursor: "pointer",

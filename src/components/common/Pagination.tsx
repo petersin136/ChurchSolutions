@@ -84,7 +84,7 @@ export function Pagination({
   const desktopLoose = !tight && !comfortable && !mob;
   const btnBase: React.CSSProperties = {
     padding: comfortable ? "7px 16px" : tight ? "3px 8px" : desktopLoose ? "8px 14px" : "6px 12px",
-    borderRadius: comfortable ? 8 : tight ? 6 : 8,
+    borderRadius: 7,
     border: "1px solid var(--color-border)",
     background: "#fff",
     color: comfortable ? "var(--color-text)" : "var(--color-text-muted)",

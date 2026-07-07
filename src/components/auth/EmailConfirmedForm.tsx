@@ -89,7 +89,7 @@ function EmailConfirmedFormInner() {
         style={{
           width: "100%",
           height: 52,
-          borderRadius: 4,
+          borderRadius: 7,
           background: "var(--color-black)",
           color: "#ffffff",
           fontSize: 15,

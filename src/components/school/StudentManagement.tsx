@@ -139,7 +139,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
     fontSize: mob ? 11 : 13,
     fontWeight: 600,
     padding: mob ? "0 10px" : "0 14px",
-    borderRadius: mob ? 6 : 10,
+    borderRadius: 7,
     whiteSpace: "nowrap",
     flexShrink: 0,
     cursor: "pointer",
@@ -199,7 +199,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
             fontSize: mob ? 11 : 14,
             fontWeight: 600,
             padding: mob ? "0 12px" : "0 20px",
-            borderRadius: mob ? 6 : 10,
+            borderRadius: 7,
             background: NAVY,
             color: "var(--color-primary-on)",
             border: "none",
@@ -210,7 +210,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
         </button>
       </div>
 
-      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflowX: "auto" }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: 7, border: `1px solid ${BORDER}`, overflowX: "auto" }}>
         <table className="w-full" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -240,7 +240,7 @@ export function StudentManagement({ toast }: StudentManagementProps) {
                       <button
                         type="button"
                         onClick={() => { setEditOpen(e); setEditClassId(e.class_id ?? ""); setEditRole(e.role); }}
-                        style={{ marginRight: 8, fontSize: mob ? 10 : 13, color: "var(--color-text)", border: `1px solid ${BORDER}`, borderRadius: mob ? 4 : 8, padding: mob ? "2px 8px" : "6px 12px", background: "var(--color-surface-elevated)", cursor: "pointer", fontWeight: 600 }}
+                        style={{ marginRight: 8, fontSize: mob ? 10 : 13, color: "var(--color-text)", border: `1px solid ${BORDER}`, borderRadius: 7, padding: mob ? "2px 8px" : "6px 12px", background: "var(--color-surface-elevated)", cursor: "pointer", fontWeight: 600 }}
                       >
                         수정
                       </button>

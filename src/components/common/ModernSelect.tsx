@@ -9,7 +9,7 @@ const TEXT_MUTED = "#8E8E93";
 const BORDER = "#c7d2e8";
 const BORDER_FOCUS = "#007AFF";
 const BLUE_LIGHT = "#E8F2FF";
-const RADIUS = 8;
+const RADIUS = 7;
 
 export interface ModernSelectOption {
   value: string;
@@ -59,7 +59,7 @@ export function ModernSelect({
   const FILTER_BORDER = "#e2e5ef";
   const pad = u32 || u30 ? "0 26px 0 8px" : u28 ? "0 22px 0 6px" : compact ? "4px 28px 4px 8px" : "10px 40px 10px 14px";
   const fs = u32 ? 11 : u30 ? 12 : compact ? 11 : 14;
-  const br = u32 || u30 || u28 ? 6 : compact ? 4 : RADIUS;
+  const br = 7;
   const chev = u32 || u30 ? 15 : compact ? 14 : 16;
   const chevRight = u32 || u30 ? 8 : u28 ? 6 : compact ? 8 : 12;
   const optPad = u30 || compact ? "8px 10px" : "10px 14px";

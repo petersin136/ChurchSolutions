@@ -174,7 +174,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
         <div
           style={{
             background: "var(--color-surface)",
-            borderRadius: mob ? 8 : 16,
+            borderRadius: 7,
             border: "1px solid var(--color-border)",
             padding: mob ? "8px 10px" : "16px 20px",
             minHeight: mob ? 56 : 90,
@@ -187,7 +187,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
         <div
           style={{
             background: "var(--color-surface)",
-            borderRadius: mob ? 8 : 16,
+            borderRadius: 7,
             border: "1px solid var(--color-border)",
             padding: mob ? "8px 10px" : "16px 20px",
             minHeight: mob ? 56 : 90,
@@ -214,7 +214,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
         <div
           style={{
             background: "var(--color-surface)",
-            borderRadius: mob ? 8 : 16,
+            borderRadius: 7,
             border: "1px solid var(--color-border)",
             padding: mob ? "6px 8px" : "16px 20px",
             minHeight: mob ? 48 : 90,
@@ -228,7 +228,7 @@ export function DonorStatistics({ year, offerings, donors, categories, toast, re
         <div
           style={{
             background: "var(--color-surface)",
-            borderRadius: mob ? 8 : 16,
+            borderRadius: 7,
             border: "1px solid var(--color-border)",
             padding: mob ? "6px 8px" : "16px 20px",
             minHeight: mob ? 48 : 90,

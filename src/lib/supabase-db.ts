@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { getChurchId, filterByChurch } from "@/lib/tenant";
+import { getSundayForWeekNum } from "@/lib/attendance-utils";
 import type { DB, Member, Note, NewFamilyProgram, Plan, Sermon, Visit, Income, Expense, AttStatus, WeekChecks } from "@/types/db";
 import { CATS_INCOME, DEFAULT_DB } from "@/types/db";
 
@@ -370,7 +371,7 @@ export async function clearPastoralInSupabase(confirmExplicitReset?: { onlyFromR
   const churchId = getChurchId();
   const { error: e1 } = await supabase.from("attendance").delete().eq("church_id", churchId).gte("week_num", 0);
   if (e1) throw new Error(`attendance 초기화 실패: ${e1.message}`);
-  const { error: e2 } = await supabase.from("notes").delete().eq("church_id", churchId).neq("member_id", MATCH_ALL_ID);
+  const { error: e2 } = await supabase.from("notes").delete().eq("church_id", churchId);
   if (e2) throw new Error(`notes 초기화 실패: ${e2.message}`);
   const { error: e3 } = await supabase.from("members").delete().eq("church_id", churchId).neq("id", MATCH_ALL_ID);
   if (e3) throw new Error(`members 초기화 실패: ${e3.message}`);
@@ -455,7 +456,30 @@ async function deleteChurchScopedRows(
   if (error) throw new Error(`${table} 기존 데이터 삭제 실패: ${error.message}`);
 }
 
+/** notes 일괄 저장 전: 해당 교회 notes 전부 삭제 (다른 교회 데이터는 건드리지 않음) */
+async function deleteNotesForChurch(churchId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("notes").delete().eq("church_id", churchId);
+  if (error) throw new Error(`notes 기존 데이터 삭제 실패: ${error.message}`);
+}
+
+/** 일괄 저장 전: 해당 교회의 테이블 행 전부 삭제 (church_id만으로 확실히 삭제, 다른 교회 보존) */
+async function deleteAllRowsForChurch(table: string, churchId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from(table).delete().eq("church_id", churchId);
+  if (error) throw new Error(`${table} 기존 데이터 삭제 실패: ${error.message}`);
+}
+
 const SAVE_INSERT_BATCH_SIZE = 500;
+
+async function upsertRowsInBatches(table: string, rows: Record<string, unknown>[], onConflict: string): Promise<void> {
+  if (!supabase || rows.length === 0) return;
+  for (let i = 0; i < rows.length; i += SAVE_INSERT_BATCH_SIZE) {
+    const chunk = rows.slice(i, i + SAVE_INSERT_BATCH_SIZE);
+    const { error } = await supabase.from(table).upsert(chunk, { onConflict });
+    if (error) throw new Error(`${table} 저장 실패: ${error.message}`);
+  }
+}
 
 async function insertRowsInBatches(table: string, rows: Record<string, unknown>[]): Promise<void> {
   if (!supabase || rows.length === 0) return;
@@ -469,7 +493,11 @@ async function insertRowsInBatches(table: string, rows: Record<string, unknown>[
 /**
  * DB 전체를 Supabase에 저장 (일괄 저장·복원용).
  * settings는 saveSettingsToSupabase에서 별도 저장.
- * attendance / notes / budget / checklist 는 church_id 범위 delete 후 insert (중복 방지).
+ * notes / budget / checklist 는 church_id 범위 delete 후 insert (중복 방지).
+ * attendance 는 (member_id, date, service_type) 고유 제약 기준 upsert — delete 없음.
+ *   db.attendance에는 최근 연도만 로드되므로 delete 시 과거 연도가 유실됨 → upsert로 과거 데이터 보존.
+ *   date는 week_num에서 getSundayForWeekNum으로 계산해 채움.
+ * notes 삭제는 church_id로 해당 교회 notes 전부 삭제 후 insert.
  * members / plans / sermons / visits / income / expense 등은 id 기준 upsert.
  */
 export async function saveDBToSupabase(db: DB): Promise<void> {
@@ -483,7 +511,8 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   }
 
   for (const m of db.members) {
-    const isUuid = /^[0-9a-f-]{36}$/i.test(m.id);
+    // 비-UUID id는 순수 insert 시 저장마다 중복 생성되므로 skip (upsert만 허용)
+    if (!/^[0-9a-f-]{36}$/i.test(m.id)) continue;
     const payload = {
       name: m.name,
       dept: m.dept ?? null,
@@ -519,58 +548,38 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       talent: m.talent ?? null,
       is_prospect: m.is_prospect ?? null,
     };
-    if (isUuid) {
-      await supabase.from("members").upsert({ id: m.id, ...payload, church_id: churchId }, { onConflict: "id" });
-    } else {
-      await supabase.from("members").insert({ ...payload, church_id: churchId });
-    }
+    await supabase.from("members").upsert({ id: m.id, ...payload, church_id: churchId }, { onConflict: "id" });
   }
 
   for (const p of db.plans) {
-    if (/^[0-9a-f-]{36}$/i.test(p.id)) {
-      await supabase.from("plans").upsert(
-        { id: p.id, title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null, church_id: churchId },
-        { onConflict: "id" }
-      );
-    } else {
-      await supabase.from("plans").insert(
-        { title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null, church_id: churchId }
-      );
-    }
+    // 비-UUID id는 순수 insert 시 저장마다 중복 생성되므로 skip (upsert만 허용)
+    if (!/^[0-9a-f-]{36}$/i.test(p.id)) continue;
+    await supabase.from("plans").upsert(
+      { id: p.id, title: p.title, date: p.date, time: p.time ?? null, cat: p.cat ?? null, memo: p.memo ?? null, church_id: churchId },
+      { onConflict: "id" }
+    );
   }
 
   for (const s of db.sermons) {
-    if (/^[0-9a-f-]{36}$/i.test(s.id)) {
-      await supabase.from("sermons").upsert(
-        {
-          id: s.id, date: s.date, service: s.service ?? null, bible_text: s.text ?? null,
-          title: s.title ?? null, core: s.core ?? null, status: s.status ?? null, notes: s.notes ?? null,
-          church_id: churchId,
-        },
-        { onConflict: "id" }
-      );
-    } else {
-      await supabase.from("sermons").insert(
-        {
-          date: s.date, service: s.service ?? null, bible_text: s.text ?? null,
-          title: s.title ?? null, core: s.core ?? null, status: s.status ?? null, notes: s.notes ?? null,
-          church_id: churchId,
-        }
-      );
-    }
+    // 비-UUID id는 순수 insert 시 저장마다 중복 생성되므로 skip (upsert만 허용)
+    if (!/^[0-9a-f-]{36}$/i.test(s.id)) continue;
+    await supabase.from("sermons").upsert(
+      {
+        id: s.id, date: s.date, service: s.service ?? null, bible_text: s.text ?? null,
+        title: s.title ?? null, core: s.core ?? null, status: s.status ?? null, notes: s.notes ?? null,
+        church_id: churchId,
+      },
+      { onConflict: "id" }
+    );
   }
 
   for (const v of db.visits) {
-    if (/^[0-9a-f-]{36}$/i.test(v.id)) {
-      await supabase.from("visits").upsert(
-        { id: v.id, date: v.date, member_id: v.memberId || null, type: v.type ?? null, content: v.content, church_id: churchId },
-        { onConflict: "id" }
-      );
-    } else {
-      await supabase.from("visits").insert(
-        { date: v.date, member_id: v.memberId || null, type: v.type ?? null, content: v.content, church_id: churchId }
-      );
-    }
+    // 비-UUID id는 순수 insert 시 저장마다 중복 생성되므로 skip (upsert만 허용)
+    if (!/^[0-9a-f-]{36}$/i.test(v.id)) continue;
+    await supabase.from("visits").upsert(
+      { id: v.id, date: v.date, member_id: v.memberId || null, type: v.type ?? null, content: v.content, church_id: churchId },
+      { onConflict: "id" }
+    );
   }
 
   for (const p of db.newFamilyPrograms ?? []) {
@@ -593,52 +602,50 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
   }
 
   for (const i of db.income) {
-    if (/^[0-9a-f-]{36}$/i.test(i.id)) {
-      await supabase.from("income").upsert(
-        { id: i.id, date: i.date, type: i.type, amount: i.amount, donor: i.donor ?? null, method: i.method ?? null, memo: i.memo ?? null, church_id: churchId },
-        { onConflict: "id" }
-      );
-    } else {
-      await supabase.from("income").insert(
-        { date: i.date, type: i.type, amount: i.amount, donor: i.donor ?? null, method: i.method ?? null, memo: i.memo ?? null, church_id: churchId }
-      );
-    }
+    // 비-UUID id는 순수 insert 시 저장마다 중복 생성되므로 skip (upsert만 허용)
+    if (!/^[0-9a-f-]{36}$/i.test(i.id)) continue;
+    await supabase.from("income").upsert(
+      { id: i.id, date: i.date, type: i.type, amount: i.amount, donor: i.donor ?? null, method: i.method ?? null, memo: i.memo ?? null, church_id: churchId },
+      { onConflict: "id" }
+    );
   }
 
   for (const e of db.expense) {
-    if (/^[0-9a-f-]{36}$/i.test(e.id)) {
-      await supabase.from("expense").upsert(
-        { id: e.id, date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null, church_id: churchId },
-        { onConflict: "id" }
-      );
-    } else {
-      await supabase.from("expense").insert(
-        { date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null, church_id: churchId }
-      );
-    }
+    // 비-UUID id는 순수 insert 시 저장마다 중복 생성되므로 skip (upsert만 허용)
+    if (!/^[0-9a-f-]{36}$/i.test(e.id)) continue;
+    await supabase.from("expense").upsert(
+      { id: e.id, date: e.date, category: e.category, item: e.item ?? null, amount: e.amount, resolution: e.resolution ?? null, memo: e.memo ?? null, church_id: churchId },
+      { onConflict: "id" }
+    );
   }
 
+  const attendanceYear = CURRENT_YEAR;
   const attendanceRows: Record<string, unknown>[] = [];
   for (const [memberId, weeks] of Object.entries(db.attendance)) {
     if (!isMemberUuid(memberId)) continue;
     for (const [weekStr, status] of Object.entries(weeks)) {
       const week_num = Number(weekStr);
-      if (!Number.isFinite(week_num)) continue;
+      if (!Number.isFinite(week_num) || week_num < 1 || week_num > 52) continue;
       const reason = db.attendanceReasons?.[memberId]?.[week_num];
       const note = reason?.trim() || null;
+      const date = getSundayForWeekNum(attendanceYear, week_num);
       attendanceRows.push({
         member_id: memberId,
         week_num,
-        year: CURRENT_YEAR,
+        year: attendanceYear,
+        date,
+        service_type: "주일예배",
         status,
         note,
         church_id: churchId,
       });
     }
   }
-  await deleteChurchScopedRows("attendance", churchId, { column: "week_num", op: "gte", value: 0 });
+  // delete-then-insert 금지: db.attendance에는 최근 연도만 로드되므로 delete하면 과거 연도가 유실됨.
+  // (member_id, date, service_type) 고유 제약(idx_attendance_unique_member_date_service) 기준 upsert로
+  // 과거 데이터를 건드리지 않고 동일 회원·날짜·예배만 갱신한다.
   if (attendanceRows.length > 0) {
-    await insertRowsInBatches("attendance", attendanceRows);
+    await upsertRowsInBatches("attendance", attendanceRows, "member_id,date,service_type");
   }
 
   const noteRows: Record<string, unknown>[] = [];
@@ -654,7 +661,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       });
     }
   }
-  await deleteChurchScopedRows("notes", churchId, { column: "member_id", op: "neq", value: MATCH_ALL_ID });
+  await deleteNotesForChurch(churchId);
   if (noteRows.length > 0) {
     await insertRowsInBatches("notes", noteRows);
   }
@@ -688,7 +695,7 @@ export async function saveDBToSupabase(db: DB): Promise<void> {
       });
     });
   }
-  await deleteChurchScopedRows("checklist", churchId, { column: "week_key", op: "neq", value: "__none__" });
+  await deleteAllRowsForChurch("checklist", churchId);
   if (checklistRows.length > 0) {
     await insertRowsInBatches("checklist", checklistRows);
   }

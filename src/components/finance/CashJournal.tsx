@@ -88,7 +88,7 @@ function toEntryFromExpense(e: Expense): CashJournalEntry {
 const selStyle = (mob: boolean): CSSProperties => ({
   height: mob ? 32 : 40,
   fontSize: mob ? 11 : 14,
-  borderRadius: mob ? 6 : 10,
+  borderRadius: 7,
   border: `1px solid ${BORDER}`,
   padding: mob ? "0 8px" : "0 14px",
   background: "var(--color-surface)",
@@ -221,7 +221,7 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20 }}>
+      <div style={{ background: "var(--color-surface)", borderRadius: 7, border: `1px solid ${BORDER}`, padding: mob ? 12 : 20 }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ ...selStyle(mob), flex: "0 0 auto" }} />
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ ...selStyle(mob), flex: "0 0 auto" }} />
@@ -254,13 +254,13 @@ export function CashJournal({ toast, typeFilter: typeFilterProp, onExportPdf }: 
           </div>
         )}
         {onExportPdf && (
-          <button type="button" onClick={() => onExportPdf(filtered)} style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, padding: mob ? "0 12px" : "0 18px", borderRadius: mob ? 6 : 10, border: `1px solid ${BORDER}`, background: "var(--color-primary-soft)", color: TEXT, cursor: "pointer" }}>
+          <button type="button" onClick={() => onExportPdf(filtered)} style={{ height: mob ? 32 : 40, fontSize: mob ? 11 : 14, padding: mob ? "0 12px" : "0 18px", borderRadius: 7, border: `1px solid ${BORDER}`, background: "var(--color-primary-soft)", color: TEXT, cursor: "pointer" }}>
             PDF
           </button>
         )}
       </div>
 
-      <div style={{ overflowX: "auto", background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}` }}>
+      <div style={{ overflowX: "auto", background: "var(--color-surface)", borderRadius: 7, border: `1px solid ${BORDER}` }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>

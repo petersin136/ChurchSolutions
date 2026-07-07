@@ -229,7 +229,7 @@ export function WorkflowTemplatePicker({
         <div
           style={{
             padding: "10px 12px",
-            borderRadius: 8,
+            borderRadius: 7,
             background: C.dangerBg,
             border: `1px solid ${C.danger}`,
             color: C.danger,
@@ -246,7 +246,7 @@ export function WorkflowTemplatePicker({
           <div
             style={{
               padding: "10px 12px",
-              borderRadius: 8,
+              borderRadius: 7,
               background: `color-mix(in srgb, ${C.warning} 15%, transparent)`,
               border: `1px solid ${C.warning}`,
               color: C.text,
@@ -284,7 +284,7 @@ export function WorkflowTemplatePicker({
             style={{
               padding: "10px 14px",
               border: `1px solid ${C.border}`,
-              borderRadius: 8,
+              borderRadius: 7,
               background: C.bg,
               color: C.text,
               fontSize: 14,

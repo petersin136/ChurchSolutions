@@ -11,8 +11,18 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)"],
       },
+      borderRadius: {
+        none: "0",
+        sm: "7px",
+        DEFAULT: "7px",
+        md: "7px",
+        lg: "7px",
+        xl: "7px",
+        "2xl": "7px",
+        "3xl": "7px",
+        full: "9999px",
+      },
       colors: {
-        bg: "var(--bg)",
         surface: "var(--surface)",
         blue: "var(--blue)",
         green: "var(--green)",

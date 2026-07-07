@@ -424,8 +424,8 @@ export function AttendanceCheck({
               style={{ marginBottom: 0 }}
               triggerStyle={
                 mob
-                  ? { fontSize: 11, height: 28, minHeight: 28, padding: "4px 8px", borderRadius: 6 }
-                  : { fontSize: 14, minHeight: 40, padding: "8px 12px", borderRadius: 8 }
+                  ? { fontSize: 11, height: 28, minHeight: 28, padding: "4px 8px", borderRadius: 7 }
+                  : { fontSize: 14, minHeight: 40, padding: "8px 12px", borderRadius: 7 }
               }
             />
           </div>

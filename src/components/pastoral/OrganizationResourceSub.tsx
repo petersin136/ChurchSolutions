@@ -587,7 +587,7 @@ function OrgPlaceFormModal({
                     style={{
                       width: ORG_RESOURCE.placeCheckboxSize,
                       height: ORG_RESOURCE.placeCheckboxSize,
-                      borderRadius: 4,
+                      borderRadius: 7,
                       background: checked ? "#0b0c0e" : "#ffffff",
                       border: checked ? "2px solid #0b0c0e" : "2px solid #d5d6da",
                       display: "inline-flex",
@@ -1583,7 +1583,7 @@ export function OrgDeptEditModal({
                       onMouseLeave={() => setHoverDeleteId(null)}
                       style={{
                         border: "none",
-                        borderRadius: 8,
+                        borderRadius: 7,
                         width: ORG_RESOURCE.deptModalDeleteBtnSize,
                         height: ORG_RESOURCE.deptModalDeleteBtnSize,
                         display: "inline-flex",
@@ -1864,7 +1864,7 @@ function OrgMokjangWizardModal({
                     onMouseLeave={() => setHoverDeleteId(null)}
                     style={{
                       border: "none",
-                      borderRadius: 8,
+                      borderRadius: 7,
                       width: ORG_RESOURCE.deptModalDeleteBtnSize,
                       height: ORG_RESOURCE.deptModalDeleteBtnSize,
                       display: "inline-flex",

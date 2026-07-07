@@ -61,7 +61,7 @@ function SubTabButton({
         height: mob ? 30 : 40,
         fontSize: mob ? 10 : 14,
         fontWeight: 600,
-        borderRadius: mob ? 6 : 10,
+        borderRadius: 7,
         border: active ? "none" : `1px solid ${BORDER}`,
         padding: mob ? "0 8px" : "0 16px",
         cursor: "pointer",
@@ -233,7 +233,7 @@ export function SchoolAttendanceSub({ db, toast }: SchoolAttendanceSubProps) {
             textAlign: "center",
             color: UNSEL_TEXT,
             background: "var(--color-surface)",
-            borderRadius: mob ? 8 : 16,
+            borderRadius: 7,
             border: `1px solid ${BORDER}`,
           }}
         >

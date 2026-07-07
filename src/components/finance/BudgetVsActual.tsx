@@ -61,7 +61,7 @@ function togglePill(selected: boolean, mob = true): CSSProperties {
     padding: mob ? "0 4px" : "0 8px",
     fontSize: mob ? 10 : 13,
     fontWeight: 600,
-    borderRadius: mob ? 6 : 8,
+    borderRadius: 7,
     border: selected ? "none" : `1px solid ${BORDER}`,
     background: selected ? NAVY : "#f5f8ff",
     color: selected ? "#fff" : "#555",
@@ -258,7 +258,7 @@ export function BudgetVsActual({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20, maxWidth: "100%" }}>
-        <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <div style={{ background: "var(--color-surface)", borderRadius: 7, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
           <h4
             style={{
               margin: 0,
@@ -304,7 +304,7 @@ export function BudgetVsActual({
             </table>
           </div>
         </div>
-        <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+        <div style={{ background: "var(--color-surface)", borderRadius: 7, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
           <h4
             style={{
               margin: 0,
@@ -353,7 +353,7 @@ export function BudgetVsActual({
       </div>
 
       {chartData.length > 0 && (
-        <div style={{ background: "var(--color-surface)", borderRadius: mob ? 8 : 16, border: `1px solid ${BORDER}`, padding: mob ? 16 : 24 }}>
+        <div style={{ background: "var(--color-surface)", borderRadius: 7, border: `1px solid ${BORDER}`, padding: mob ? 16 : 24 }}>
           <h4 style={{ margin: "0 0 12px", fontSize: mob ? 13 : 16, fontWeight: 700, color: NAVY }}>카테고리별 예산 vs 실적</h4>
           <LazyChart height={300}>
             <ResponsiveContainer width="100%" height="100%">

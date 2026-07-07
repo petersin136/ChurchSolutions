@@ -28,7 +28,7 @@ import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Sett
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
 import { PastoralFeedDetailModal } from "@/components/pastoral/PastoralFeedDetailModal";
 import { APP_MODAL } from "@/styles/appModalTokens";
 import { MemberDotGrid } from "@/components/pastoral/MemberDotGrid";
@@ -48,6 +48,7 @@ import { tokens } from "@/styles/tokens";
 import { APP_HISTORY_KEYS, mergePushAppHistory, mergeReplaceAppHistory, readAppHistoryState } from "@/lib/appHistory";
 import { OrganizationResourceSub, OrgDeptEditModal, OrgDeleteModal, deptMemberIds, inferDeptLeaderId, type OrgDeptWizardState } from "@/components/pastoral/OrganizationResourceSub";
 import { ORG_RESOURCE } from "@/styles/orgResourceTokens";
+import { getMemberContentTopGap } from "@/styles/memberManagementTokens";
 
 const MOB_PANEL_MIN_H = tokens.layout.mobPastoralPanelMinHeight;
 
@@ -180,7 +181,7 @@ function Card({ children, style, onClick }: { children: ReactNode; style?: CSSPr
       onClick={onClick}
       style={{
         background: C.card,
-        borderRadius: mob ? 8 : 12,
+        borderRadius: 7,
         border: `1px solid ${C.border}`,
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         padding: mob ? "10px 12px" : 24,
@@ -204,7 +205,7 @@ function SBadge({ children, variant = "gray", style }: { children: ReactNode; va
         alignItems: "center",
         gap: mob ? 2 : 4,
         padding: mob ? "2px 8px" : "4px 12px",
-        borderRadius: 20,
+        borderRadius: 7,
         fontSize: mob ? 10 : 12,
         fontWeight: 600,
         color,
@@ -241,7 +242,7 @@ function Btn({
     alignItems: "center",
     gap: mob ? 4 : 6,
     border: "none",
-    borderRadius: mob ? 6 : 10,
+    borderRadius: 7,
     cursor: disabled ? "not-allowed" : "pointer",
     fontWeight: 600,
     fontFamily: "inherit",
@@ -278,7 +279,7 @@ function FormInput({ label, ...props }: { label?: string; [k: string]: unknown }
         style={{
           width: "100%",
           padding: mob ? "6px 10px" : "10px 14px",
-          borderRadius: mob ? 6 : 10,
+          borderRadius: 7,
           border: `1px solid ${C.border}`,
           fontSize: mob ? 12 : 14,
           fontFamily: "inherit",
@@ -314,7 +315,7 @@ function FormTextarea({ label, ...props }: { label?: string; [k: string]: unknow
   return (
     <div style={{ marginBottom: 16 }}>
       {label && <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>{label}</label>}
-      <textarea {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", color: C.text, background: C.card, outline: "none", resize: "vertical", minHeight: 72, ...(props.style as CSSProperties || {}) }} />
+      <textarea {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)} style={{ width: "100%", padding: "10px 14px", borderRadius: 7, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: "inherit", color: C.text, background: C.card, outline: "none", resize: "vertical", minHeight: 72, ...(props.style as CSSProperties || {}) }} />
     </div>
   );
 }
@@ -463,7 +464,7 @@ function DateWheelPicker({ value, onChange, onConfirm }: { value: string; onChan
   }, [year, month, onChange]);
 
   return (
-    <div style={{ background: C.card, borderRadius: 16, overflow: "hidden", position: "relative" }}>
+    <div style={{ background: C.card, borderRadius: 7, overflow: "hidden", position: "relative" }}>
       <div style={{ display: "flex", width: "100%" }}>
         <WheelColumn items={years} selected={year} onChange={handleYearChange} format={(n) => `${n}년`} />
         <WheelColumn items={months} selected={month} onChange={handleMonthChange} format={(n) => `${n}월`} />
@@ -476,7 +477,7 @@ function DateWheelPicker({ value, onChange, onConfirm }: { value: string; onChan
             onChange(toStr(year, month, Math.min(day, getDaysInMonth(year, month))));
             onConfirm();
           }}
-          style={{ width: "100%", padding: "12px", background: C.primary, color: "var(--color-primary-on)", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: "pointer" }}
+          style={{ width: "100%", padding: "12px", background: C.primary, color: "var(--color-primary-on)", border: "none", borderRadius: 7, fontSize: 15, fontWeight: 600, cursor: "pointer" }}
         >
           확인
         </button>
@@ -520,7 +521,7 @@ function StatCard({ label, value, sub, color = C.accent, compact, dense }: { lab
         flexDirection: "column",
         gap: dense ? 2 : 4,
         padding: pad,
-        borderRadius: 16,
+        borderRadius: 7,
         border: `1px solid ${C.border}`,
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         minHeight: dense ? 52 : compact ? 64 : 80,
@@ -590,7 +591,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered, hi
       onMouseLeave={() => setHover(false)}
       style={{
         background: highlighted ? "color-mix(in srgb, var(--color-primary) 10%, #ffffff)" : C.card,
-        borderRadius: 16,
+        borderRadius: 7,
         border: highlighted ? "1px solid color-mix(in srgb, var(--color-primary) 35%, transparent)" : `1px solid ${C.border}`,
         boxShadow: hover ? "0 4px 12px rgba(0,0,0,0.08)" : highlighted ? "0 0 0 2px color-mix(in srgb, var(--color-primary) 12%, transparent)" : "0 1px 3px rgba(0,0,0,0.04)",
         padding: mob ? "10px 12px" : "16px 20px",
@@ -620,7 +621,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered, hi
             </span>
           )}
           {mbrDept && (
-            <span style={{ display: "inline-flex", alignItems: "center", padding: badgePad, borderRadius: 9999, fontSize: badgeFs, fontWeight: 600, background: C.accentBg, color: C.accent }}>
+            <span style={{ display: "inline-flex", alignItems: "center", padding: badgePad, borderRadius: 7, fontSize: badgeFs, fontWeight: 600, background: C.accentBg, color: C.accent }}>
               {mbrDept}
             </span>
           )}
@@ -665,7 +666,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered, hi
               padding: typePad,
               fontSize: typeFs,
               border: "none",
-              borderRadius: 9999,
+              borderRadius: 7,
               cursor: "pointer",
               fontWeight: 500,
               background: "transparent",
@@ -681,7 +682,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered, hi
               display: "inline-flex",
               alignItems: "center",
               padding: badgePad,
-              borderRadius: 9999,
+              borderRadius: 7,
               fontSize: typeFs,
               fontWeight: 500,
               background: C.accentBg,
@@ -698,7 +699,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered, hi
               alignItems: "center",
               gap: 4,
               padding: badgePad,
-              borderRadius: 9999,
+              borderRadius: 7,
               fontSize: typeFs,
               fontWeight: 500,
               background: badgeBg[n.type === "visit" ? "teal" : n.type === "event" ? "pink" : "gray"]?.[1] ?? "rgba(107,123,158,0.1)",
@@ -715,7 +716,7 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered, hi
 
 function DetailRow({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 14px", background: C.bg, borderRadius: 8, marginBottom: 6 }}>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 14px", background: C.bg, borderRadius: 7, marginBottom: 6 }}>
       <span style={{ fontSize: 17, flexShrink: 0, marginTop: 1 }}>{icon}</span>
       <div><div style={{ fontSize: 11, color: C.textMuted, fontWeight: 500 }}>{label}</div><div style={{ fontSize: 14, color: C.text, marginTop: 1 }}>{value}</div></div>
     </div>
@@ -985,6 +986,28 @@ function truncateFeedBody(text: string, max = 72): string {
   return `${t.slice(0, max)}…`;
 }
 
+function pastoralFeedDedupeKey(item: PastoralFeedItem): string {
+  if (item.kind === "note") {
+    return `note:${item.memberId ?? ""}:${item.noteDate ?? ""}:${item.noteType ?? ""}:${item.noteCreatedAt ?? ""}:${item.body}`;
+  }
+  if (item.kind === "prayer") {
+    return `prayer:${item.memberId ?? ""}:${item.body}`;
+  }
+  return item.id;
+}
+
+function comparePastoralFeedItems(a: PastoralFeedItem, b: PastoralFeedItem): number {
+  const byTime = b.timestamp.localeCompare(a.timestamp);
+  if (byTime !== 0) return byTime;
+  const byCreated = (b.noteCreatedAt ?? "").localeCompare(a.noteCreatedAt ?? "");
+  if (byCreated !== 0) return byCreated;
+  const byMember = (a.memberName ?? "").localeCompare(b.memberName ?? "", "ko");
+  if (byMember !== 0) return byMember;
+  const byBody = a.body.localeCompare(b.body, "ko");
+  if (byBody !== 0) return byBody;
+  return a.id.localeCompare(b.id);
+}
+
 function DashboardSub({
   db,
   setDb,
@@ -1043,7 +1066,7 @@ function DashboardSub({
     return {
       week: typoScale * dashChartBarTypoScale(widths.week, DASH_ATT_CHART_BAR.weekBarDesignWidth),
       month: typoScale * dashChartBarTypoScale(widths.month, DASH_ATT_CHART_BAR.monthBarDesignWidth),
-      year: typoScale * dashChartBarTypoScale(widths.year, DASH_ATT_CHART_BAR.yearBlockDesignWidth),
+      year: typoScale * dashChartBarTypoScale(widths.year, DASH_ATT_YEAR_CHART.designBlockWidth),
     };
   }, [attChartWidth, mob, typoScale]);
 
@@ -1364,21 +1387,34 @@ function DashboardSub({
       const mbrName = mid === NOTE_TARGET_CHURCH ? "교회 전체" : (mbr?.name || "?");
       (db.notes[mid] || []).forEach(n => all.push({ ...n, mbrName, mbrId: mid, mbrDept: mbr?.dept || "" }));
     });
-    return all.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""));
-  }, [db]);
+    return all.sort(
+      (a, b) =>
+        (b.date || "").localeCompare(a.date || "") ||
+        (b.createdAt || "").localeCompare(a.createdAt || "") ||
+        (a.mbrId || "").localeCompare(b.mbrId || "") ||
+        ((a as { content?: string }).content || "").localeCompare((b as { content?: string }).content || "", "ko"),
+    );
+  }, [db.notes, db.members]);
 
   const pastoralFeed = useMemo(() => {
     const items: PastoralFeedItem[] = [];
+    const seen = new Set<string>();
+    const pushUnique = (item: PastoralFeedItem) => {
+      const key = pastoralFeedDedupeKey(item);
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push(item);
+    };
 
     recentNotes.forEach((n) => {
       const content = (n as { text?: string }).text || n.content || "";
-      items.push({
-        id: `note-${n.mbrId}-${n.date}-${n.type}-${n.createdAt ?? ""}-${content.slice(0, 24)}`,
+      pushUnique({
+        id: `note-${n.mbrId}-${n.date}-${n.type}-${n.createdAt ?? ""}-${content}`,
         kind: "note",
         icon: (n.type as "memo" | "prayer" | "visit" | "event") || "memo",
         title: n.mbrName || "이름 없음",
         body: content,
-        timestamp: n.date || n.createdAt || new Date().toISOString(),
+        timestamp: n.createdAt || n.date || new Date().toISOString(),
         memberName: n.mbrName,
         memberId: n.mbrId,
         noteType: n.type,
@@ -1401,7 +1437,7 @@ function DashboardSub({
 
     newcomers.forEach((m) => {
       const mm = m as { group?: string; mokjang?: string; firstVisitDate?: string; first_visit_date?: string; createdAt?: string; created_at?: string };
-      items.push({
+      pushUnique({
         id: `newcomer-${m.id}`,
         kind: "newcomer",
         icon: "newcomer",
@@ -1426,7 +1462,7 @@ function DashboardSub({
       const pr = (mm.prayer || "").trim();
       const alreadyInNotes = (db.notes[m.id] || []).some(n => n.type === "prayer" && n.content === pr);
       if (alreadyInNotes) return;
-      items.push({
+      pushUnique({
         id: `prayer-${m.id}`,
         kind: "prayer",
         icon: "prayer",
@@ -1441,16 +1477,20 @@ function DashboardSub({
     });
 
     return items
-      .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+      .sort(comparePastoralFeedItems)
       .slice(0, 60);
   }, [recentNotes, db.members]);
 
   const feedItemsPerPage = DASH_FEED_CARD.itemsPerPage;
   const feedTotalPages = Math.max(1, Math.ceil(pastoralFeed.length / feedItemsPerPage));
   const feedSafePage = Math.min(feedPage, feedTotalPages);
-  const feedPageItems = pastoralFeed.slice(
-    (feedSafePage - 1) * feedItemsPerPage,
-    feedSafePage * feedItemsPerPage,
+  const feedPageItems = useMemo(
+    () =>
+      pastoralFeed.slice(
+        (feedSafePage - 1) * feedItemsPerPage,
+        feedSafePage * feedItemsPerPage,
+      ),
+    [pastoralFeed, feedSafePage, feedItemsPerPage],
   );
 
   useEffect(() => {
@@ -1549,7 +1589,7 @@ function DashboardSub({
               onClick={card.nav}
               style={{
                 background: "var(--color-surface-muted)",
-                borderRadius: 10,
+                borderRadius: 7,
                 border: `1px solid ${C.border}`,
                 padding: "10px 12px",
                 minHeight: 60,
@@ -1877,6 +1917,8 @@ function DashboardSub({
                   gridColumn: "1 / span 2",
                   gridRow: 1,
                   minHeight: attendanceBlockMinH,
+                  height: attendanceBlockMinH,
+                  alignSelf: "stretch",
                 }),
           }}
         >
@@ -1888,7 +1930,7 @@ function DashboardSub({
             flex: mob ? undefined : 1,
             display: "flex",
             flexDirection: "column",
-            minHeight: mob ? undefined : 0,
+            minHeight: mob ? undefined : "100%",
             height: mob ? undefined : "100%",
             border: "none",
             boxShadow: DASH_CARD.floatShadow,
@@ -1945,12 +1987,13 @@ function DashboardSub({
             style={{
               padding: mob ? "8px 10px" : "16px 20px",
               flex: mob ? undefined : 1,
-              height: mob ? tokens.height.mobileChart : undefined,
               minHeight: mob ? tokens.height.mobileChart : DASH_LAYOUT.attendanceChartMinHeight,
               boxSizing: "border-box",
               overflow: mob ? "auto" : "hidden",
               display: "flex",
               flexDirection: "column",
+              justifyContent: "flex-start",
+              alignItems: "stretch",
             }}
           >
             {(() => {
@@ -2032,17 +2075,9 @@ function DashboardSub({
                 { bg: DASH_CHART.statBarYearMid, text: DASH_CHART.statTextYearMid, sub: DASH_CHART.statSubYearMid, textShadow: "0 1px 1px rgba(255,255,255,0.55)" },
                 { bg: DASH_CHART.statBarHighlight, text: DASH_CHART.statTextYearHighlight, sub: DASH_CHART.statSubYearHighlight, textShadow: "0 1px 1px rgba(255,255,255,0.45)" },
               ] as const;
-              const yearThreeWide = yearlyTrend.length >= 3;
-              const yearBlockWidth = mob ? "50%" : "48%";
-              const yearBlockOverlap = mob ? "-24%" : "-22%";
-              /** 3년: 첫 블록은 세 번째 블록 앞(왼쪽)을 살짝만 지나는 너비 */
-              const yearLastWidthPct = mob ? 44 : 42;
-              const yearLastInsetPx = mob ? 10 : 16;
-              const yearPassPx = mob ? 14 : 24;
-              const yearFirstWidth = `calc(${100 - yearLastWidthPct}% - ${yearLastInsetPx}px + ${yearPassPx}px)`;
-              const yearMidWidth = mob ? "40%" : "38%";
-              const yearLastWidth = `${yearLastWidthPct}%`;
-              const yearMidLeft = mob ? "24%" : "22%";
+              const yc = DASH_ATT_YEAR_CHART;
+              const yrScale = attChartBarScale.year;
+              const blockRadius = dashScalePx(yc.blockRadius, yrScale);
               const yearLabelStyle = (palette: (typeof yearBlockStyles)[number], isFront: boolean): CSSProperties => ({
                 fontSize: yearChartTypo.label,
                 color: palette.sub,
@@ -2054,42 +2089,41 @@ function DashboardSub({
                 overflow: "hidden",
               });
               return (
-                <div style={{ position: "relative", display: "flex", alignItems: "stretch", width: "100%", flex: 1, minHeight: 0, paddingTop: mob ? 8 : 10, boxSizing: "border-box" }}>
+                <div
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "stretch",
+                    width: "100%",
+                    flex: 1,
+                    minHeight: dashScalePx(yc.maxBarHeight, yrScale),
+                    paddingTop: mob ? 8 : 10,
+                    boxSizing: "border-box",
+                  }}
+                >
                   {yearlyTrend.map((y, i) => {
                     const palette = yearBlockStyles[i] ?? yearBlockStyles[yearBlockStyles.length - 1];
                     const isFront = i === yearlyTrend.length - 1;
+                    const layout = yc.blockLayout[i] ?? yc.blockLayout[yc.blockLayout.length - 1];
                     const visualRate = Math.min(y.rate, 100);
                     const hasData = visualRate > 0;
                     const spacerFlex = Math.max(0, yearChartFullRate - (hasData ? visualRate : 0));
                     const barFlex = hasData ? visualRate : 0;
-                    const shellStyle: CSSProperties = yearThreeWide
-                      ? {
-                          position: "absolute",
-                          top: 0,
-                          bottom: 0,
-                          display: "flex",
-                          flexDirection: "column",
-                          minHeight: 0,
-                          zIndex: i + 1,
-                          ...(i === 0 ? { left: 0, width: yearFirstWidth } : {}),
-                          ...(i === 1 ? { left: yearMidLeft, width: yearMidWidth } : {}),
-                          ...(i >= 2 ? { right: yearLastInsetPx, width: yearLastWidth } : {}),
-                        }
-                      : {
-                          flex: `0 0 ${yearBlockWidth}`,
-                          width: yearBlockWidth,
-                          marginLeft: i > 0 ? yearBlockOverlap : 0,
-                          zIndex: i + 1,
-                          position: "relative",
-                          display: "flex",
-                          flexDirection: "column",
-                          minHeight: 0,
-                          alignSelf: "stretch",
-                        };
                     return (
                       <div
                         key={y.year}
-                        style={shellStyle}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          bottom: 0,
+                          left: `${layout.leftPct}%`,
+                          width: `${layout.widthPct}%`,
+                          zIndex: layout.zIndex,
+                          display: "flex",
+                          flexDirection: "column",
+                          minHeight: 0,
+                          boxSizing: "border-box",
+                        }}
                       >
                         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, justifyContent: "flex-end" }}>
                           {spacerFlex > 0 && <div style={{ flex: spacerFlex, minHeight: 0 }} />}
@@ -2097,7 +2131,7 @@ function DashboardSub({
                             style={{
                               flex: barFlex > 0 ? barFlex : undefined,
                               minHeight: hasData ? 0 : yearChartTypo.emptyMinH,
-                              borderRadius: 16,
+                              borderRadius: `${blockRadius}px ${blockRadius}px 0 0`,
                               background: palette.bg,
                               display: "flex",
                               flexDirection: "column",
@@ -2187,12 +2221,6 @@ function DashboardSub({
               className="scrollbar-hide"
               onTouchStart={(e) => handleFeedSwipeStart(e.touches[0].clientX)}
               onTouchEnd={(e) => handleFeedSwipeEnd(e.changedTouches[0].clientX)}
-              onPointerDown={(e) => {
-                if (e.pointerType === "mouse") handleFeedSwipeStart(e.clientX);
-              }}
-              onPointerUp={(e) => {
-                if (e.pointerType === "mouse") handleFeedSwipeEnd(e.clientX);
-              }}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -2240,7 +2268,7 @@ function DashboardSub({
                   const isHover = feedHoverId === item.id;
                   return (
                     <div
-                      key={item.id}
+                      key={`${feedSafePage}-${idx}-${item.id}`}
                       role={clickable ? "button" : undefined}
                       tabIndex={clickable ? 0 : undefined}
                       onClick={clickable ? (e) => handleFeedItemClick(item, e) : undefined}
@@ -2258,7 +2286,7 @@ function DashboardSub({
                         borderBottom: idx < feedPageItems.length - 1 ? "1px solid var(--color-border-soft)" : "none",
                         alignItems: "center",
                         cursor: clickable ? "pointer" : "default",
-                        borderRadius: 8,
+                        borderRadius: 7,
                         background: isHover ? "color-mix(in srgb, var(--color-primary) 8%, transparent)" : "transparent",
                         transition: "background 0.15s ease",
                       }}
@@ -2552,10 +2580,10 @@ const ROLE_PRIORITY: Record<string, number> = {
   "영아": 15,
 };
 
-function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openDetail, openNoteModal, openQuickNote, churchId }: {
+function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openNoteModal, openQuickNote, churchId }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
   toast: (m: string, t?: string) => void; currentWeek: number;
-  openMemberModal: (id?: string) => void; openDetail: (id: string) => void; openNoteModal: (id: string) => void;
+  openMemberModal: (id?: string) => void; openNoteModal: (id: string) => void;
   openQuickNote: (memberId: string, memberName: string, type: "note" | "prayer") => void;
   churchId: string | null;
 }) {
@@ -2573,7 +2601,9 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   const [statusF, setStatusF] = useState("all");
   const [riskDormantOnly, setRiskDormantOnly] = useState(false);
   const [pageList, setPageList] = useState(1);
-  const PAGE_SIZE_MEM = tabletOrLess ? 10 : 15;
+  // 화면 높이에 맞춰 자동 계산되는 페이지 크기 (초기값은 화면폭 기준 추정치)
+  const [pageCapacity, setPageCapacity] = useState(tabletOrLess ? 10 : 18);
+  const PAGE_SIZE_MEM = pageCapacity;
   const depts = getDepts(db);
 
   /* 성도 목록: churchId 없으면 쿼리하지 않음. churchId가 준비되면 그때 로드. (setDb는 ref로 넣어 의존성에서 제외해 불필요한 재실행 방지) */
@@ -2686,7 +2716,6 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
   return (
     <MembersManagementPanel
       mob={mob}
-      mobPanelMinH={MOB_PANEL_MIN_H}
       searchQuery={searchQuery}
       onSearchChange={(v) => {
         setSearchQuery(v);
@@ -2716,9 +2745,10 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       currentPage={currentPageList}
       totalItems={filtered.length}
       onPageChange={setPageList}
-      onOpenDetail={openDetail}
       onOpenQuickPrayer={(id, name) => openQuickNote(id, name, "prayer")}
+      onOpenQuickMemo={(id, name) => openQuickNote(id, name, "note")}
       onOpenActivity={openNoteModal}
+      onCapacityChange={setPageCapacity}
     />
   );
 }
@@ -2870,7 +2900,7 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
               fontSize: mob ? 12 : 14,
               background: C.card,
               border: `1px solid ${searchFocused ? "var(--color-primary)" : C.border}`,
-              borderRadius: 16,
+              borderRadius: 7,
               color: "var(--color-text)",
               outline: "none",
               boxShadow: searchFocused ? "0 0 0 2px color-mix(in srgb, var(--color-primary) 22%, transparent)" : "none",
@@ -2890,12 +2920,12 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
           <option value="visit">심방</option>
         </select>
         {typeF === "all" && (
-          <span style={{ display: "inline-flex", alignItems: "center", padding: mob ? "3px 8px" : "6px 12px", borderRadius: 9999, fontSize: mob ? 10 : 12, fontWeight: 600, background: C.successBg, color: C.success }}>
+          <span style={{ display: "inline-flex", alignItems: "center", padding: mob ? "3px 8px" : "6px 12px", borderRadius: 7, fontSize: mob ? 10 : 12, fontWeight: 600, background: C.successBg, color: C.success }}>
             전체
           </span>
         )}
         {typeF === "visit" && (
-          <span style={{ display: "inline-flex", alignItems: "center", padding: mob ? "3px 8px" : "6px 12px", borderRadius: 9999, fontSize: mob ? 10 : 12, fontWeight: 600, background: C.tealBg, color: C.teal }}>
+          <span style={{ display: "inline-flex", alignItems: "center", padding: mob ? "3px 8px" : "6px 12px", borderRadius: 7, fontSize: mob ? 10 : 12, fontWeight: 600, background: C.tealBg, color: C.teal }}>
             심방
           </span>
         )}
@@ -3129,10 +3159,10 @@ function PrayerModal({
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>기도제목</label>
-              <textarea value={addContent} onChange={e => setAddContent(e.target.value)} placeholder="기도제목을 입력하세요..." style={{ width: "100%", padding: "12px 14px", border: `1px solid ${C.border}`, borderRadius: 12, fontSize: 15, minHeight: 48, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
+              <textarea value={addContent} onChange={e => setAddContent(e.target.value)} placeholder="기도제목을 입력하세요..." style={{ width: "100%", padding: "12px 14px", border: `1px solid ${C.border}`, borderRadius: 7, fontSize: 15, minHeight: 48, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }} />
             </div>
             <div style={{ flex: "0 0 auto", alignSelf: "flex-end" }}>
-              <Btn variant="accent" size="sm" onClick={addPrayer} style={{ borderRadius: 10, padding: "12px 20px" }}>등록</Btn>
+              <Btn variant="accent" size="sm" onClick={addPrayer} style={{ borderRadius: 7, padding: "12px 20px" }}>등록</Btn>
             </div>
           </div>
         </div>
@@ -3145,7 +3175,7 @@ function PrayerModal({
           <div>
             <span style={{ fontSize: 17, fontWeight: 700, color: C.text }}>{member.name}</span>
             {member.dept && (
-              <span style={{ marginLeft: 8, display: "inline-flex", alignItems: "center", padding: "2px 10px", borderRadius: 9999, fontSize: 12, fontWeight: 500, background: C.accentBg, color: C.text }}>
+              <span style={{ marginLeft: 8, display: "inline-flex", alignItems: "center", padding: "2px 10px", borderRadius: 7, fontSize: 12, fontWeight: 500, background: C.accentBg, color: C.text }}>
                 {member.dept}
               </span>
             )}
@@ -3160,7 +3190,7 @@ function PrayerModal({
               onClick={() => setFilter(f)}
               style={{
                 padding: "8px 16px",
-                borderRadius: 8,
+                borderRadius: 7,
                 border: "none",
                 fontSize: 13,
                 fontWeight: 600,
@@ -3197,7 +3227,7 @@ function PrayerModal({
                     onMouseLeave={() => setHoverCardKey(null)}
                     style={{
                       background: isFocused ? "color-mix(in srgb, var(--color-primary) 10%, #ffffff)" : answered ? C.successBg : C.card,
-                      borderRadius: 16,
+                      borderRadius: 7,
                       border: isFocused ? "1px solid color-mix(in srgb, var(--color-primary) 35%, transparent)" : `1px solid ${C.border}`,
                       padding: 16,
                       transition: "background 0.2s, border-color 0.2s",
@@ -3210,7 +3240,7 @@ function PrayerModal({
                         <button
                           type="button"
                           onClick={e => { e.stopPropagation(); toggleAnswered(key); }}
-                          style={{ padding: "4px 10px", fontSize: 12, border: "none", borderRadius: 9999, cursor: "pointer", fontWeight: 600, background: answered ? C.success : "transparent", color: answered ? "var(--color-primary-on)" : C.textMuted }}
+                          style={{ padding: "4px 10px", fontSize: 12, border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 600, background: answered ? C.success : "transparent", color: answered ? "var(--color-primary-on)" : C.textMuted }}
                         >
                           {answered ? "✓ 응답완료" : "기도중"}
                         </button>
@@ -3224,7 +3254,7 @@ function PrayerModal({
                     </div>
                     {isEditing ? (
                       <div style={{ marginTop: 8 }}>
-                        <textarea value={editContent} onChange={e => setEditContent(e.target.value)} style={{ width: "100%", padding: 10, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 14, minHeight: 80, resize: "vertical" }} />
+                        <textarea value={editContent} onChange={e => setEditContent(e.target.value)} style={{ width: "100%", padding: 10, border: `1px solid ${C.border}`, borderRadius: 7, fontSize: 14, minHeight: 80, resize: "vertical" }} />
                         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                           <Btn variant="ghost" size="sm" onClick={() => setEditingKey(null)}>취소</Btn>
                           <Btn variant="accent" size="sm" onClick={() => saveEdit(n)}>저장</Btn>
@@ -3384,7 +3414,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
             style={{
               height: mob ? 34 : 34,
               padding: mob ? "0 14px" : "0 16px",
-              borderRadius: 10,
+              borderRadius: 7,
               fontSize: mob ? 13 : 13,
               fontWeight: 600,
               cursor: "pointer",
@@ -3417,7 +3447,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
             style={{
               background: C.card,
               border: `1px solid ${C.border}`,
-              borderRadius: 16,
+              borderRadius: 7,
               padding: mob ? "8px 10px" : "14px 18px",
               boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
               boxSizing: "border-box",
@@ -3434,7 +3464,7 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
         <div style={{ display: "flex", flexWrap: "wrap", gap: mob ? 8 : 8, marginBottom: mob ? 12 : 16, ...(mob ? { flexShrink: 0 } : {}) }}>
           {(["all", "진행중", "수료", "중단", "no_mentor"] as const).map(f => (
             <button key={f} type="button" onClick={() => { setFilter(f); setCurrentPage(1); }} style={{
-              padding: mob ? "4px 10px" : "8px 14px", borderRadius: 8, fontSize: mob ? 10 : 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box",
+              padding: mob ? "4px 10px" : "8px 14px", borderRadius: 7, fontSize: mob ? 10 : 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box",
               background: filter === f ? C.accentBg : C.card,
               color: filter === f ? C.accent : C.textMuted,
               border: filter === f ? "1px solid var(--color-primary)" : `1px solid ${C.border}`,
@@ -3480,12 +3510,12 @@ CREATE INDEX IF NOT EXISTS idx_new_family_program_status ON new_family_program(s
                         </div>
                       </div>
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: nfBadgeColor, background: "color-mix(in srgb, currentColor 12%, var(--color-surface-elevated))", border: `1px solid ${C.border}`, padding: "2px 8px", borderRadius: 6, flexShrink: 0 }}>{nfBadgeLabel}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: nfBadgeColor, background: "color-mix(in srgb, currentColor 12%, var(--color-surface-elevated))", border: `1px solid ${C.border}`, padding: "2px 8px", borderRadius: 7, flexShrink: 0 }}>{nfBadgeLabel}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                     {mentor ? <span style={{ fontSize: mob ? 11 : 13, color: C.textMuted }}>섬김이: {mentor.name}</span> : <span style={{ fontSize: mob ? 11 : 13, fontWeight: 600, color: C.textFaint }}>섬김이 미배정</span>}
                   </div>
-                  <div style={{ height: mob ? 4 : 6, background: C.border, borderRadius: 3, overflow: "hidden", display: "flex" }}>
+                  <div style={{ height: mob ? 4 : 6, background: C.border, borderRadius: 7, overflow: "hidden", display: "flex" }}>
                     {[1, 2, 3, 4].map(i => (
                       <div key={i} style={{ flex: 1, height: "100%", background: [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed][i - 1] ? C.accent : "var(--color-border-soft)", marginRight: i < 4 ? 2 : 0 }} />
                     ))}
@@ -3622,7 +3652,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
       </div>
 
       <div style={{ position: "relative", paddingLeft: 24 }}>
-        <div style={{ position: "absolute", left: 11, top: 12, bottom: 12, width: 2, background: C.border, borderRadius: 1 }} />
+        <div style={{ position: "absolute", left: 11, top: 12, bottom: 12, width: 2, background: C.border, borderRadius: 7 }} />
         {WEEK_CONFIG.map((week, wi) => {
           const completed = [program.week1_completed, program.week2_completed, program.week3_completed, program.week4_completed][wi];
           const isCurrent = currentWeekNum === wi + 1 && program.status === "진행중";
@@ -3633,7 +3663,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
           return (
             <div key={wi} style={{ position: "relative", marginBottom: 20 }}>
               <div style={{ position: "absolute", left: -24, top: 4, width: 24, height: 24, borderRadius: "50%", background: completed ? "var(--color-success)" : isCurrent ? "var(--color-primary)" : "var(--color-border-strong)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-primary-on)", fontSize: 12, fontWeight: 700, boxShadow: isCurrent ? "0 0 0 3px color-mix(in srgb, var(--color-primary) 30%, transparent)" : undefined, animation: isCurrent ? "pulse 1.5s ease-in-out infinite" : undefined }}>{completed ? "✓" : wi + 1}</div>
-              <Card style={{ padding: 16, background: C.card, borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+              <Card style={{ padding: 16, background: C.card, borderRadius: 7, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
                 <div style={{ fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 6 }}>{week.title}</div>
                 <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>{week.desc}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
@@ -3646,7 +3676,7 @@ function NewFamilyProgramDetailModal({ db, setDb, memberId, onClose, onSaved, sa
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ marginBottom: 0 }}><CalendarDropdown label="완료일" value={dateVal || ""} onChange={(v) => { updateProgram({ [dateKey]: v || null }); if (weekChecks[wi].every(Boolean) && v) setWeekCompletedFromChecks(wi as 0 | 1 | 2 | 3, v, noteVal); }} /></div>
-                  <textarea placeholder="메모" value={noteVal || ""} onChange={e => updateProgram({ [noteKey]: e.target.value || null })} style={{ width: "100%", padding: 10, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, minHeight: 60, resize: "vertical" }} />
+                  <textarea placeholder="메모" value={noteVal || ""} onChange={e => updateProgram({ [noteKey]: e.target.value || null })} style={{ width: "100%", padding: 10, border: `1px solid ${C.border}`, borderRadius: 7, fontSize: 13, minHeight: 60, resize: "vertical" }} />
                   {wi === 3 && <div style={{ marginTop: 8 }}><FormInput label="구역/셀 배정" value={program.cell_group_assigned || ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProgram({ cell_group_assigned: e.target.value || null })} placeholder="예: 1구역 A셀" /></div>}
                 </div>
               </Card>
@@ -3761,7 +3791,7 @@ function ReportsSub({ db, currentWeek, toast, churchId }: { db: DB; currentWeek:
               padding: mob ? 16 : 20,
               background: C.card,
               border: `1px solid ${C.border}`,
-              borderRadius: 12,
+              borderRadius: 7,
               cursor: "pointer",
               textAlign: "left",
               minHeight: mob ? 100 : 120,
@@ -3857,10 +3887,10 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
   };
 
   const formInMob: CSSProperties | undefined = mob
-    ? { height: 32, fontSize: 12, padding: "6px 10px", borderRadius: 8, boxSizing: "border-box" }
+    ? { height: 32, fontSize: 12, padding: "6px 10px", borderRadius: 7, boxSizing: "border-box" }
     : undefined;
-  const mokRowBtnPrimary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "var(--color-primary)", color: "var(--color-primary-on)", boxSizing: "border-box" };
-  const mokRowBtnSecondary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: `1px solid ${C.border}`, borderRadius: 6, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: C.bg, color: C.textMuted, boxSizing: "border-box" };
+  const mokRowBtnPrimary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: "var(--color-primary)", color: "var(--color-primary-on)", boxSizing: "border-box" };
+  const mokRowBtnSecondary: CSSProperties = { padding: mob ? "4px 10px" : "4px 12px", fontSize: mob ? 11 : 12, border: `1px solid ${C.border}`, borderRadius: 7, cursor: "pointer", fontWeight: 600, fontFamily: "inherit", background: C.bg, color: C.textMuted, boxSizing: "border-box" };
   const mokRowBtnMuted: CSSProperties = { ...mokRowBtnSecondary, color: C.textFaint };
 
   return (
@@ -3885,8 +3915,8 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
       <Card
         style={
           mob
-            ? { padding: "10px 12px", borderRadius: 16, border: `1px solid ${C.border}`, background: C.card, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }
-            : { border: `1px solid ${C.border}`, background: C.card, borderRadius: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }
+            ? { padding: "10px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: C.card, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }
+            : { border: `1px solid ${C.border}`, background: C.card, borderRadius: 7, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }
         }
       >
         <h4 style={{ fontSize: mob ? 13 : 16, fontWeight: 700, color: "var(--color-text)", margin: 0, marginBottom: mob ? 8 : 16 }}>목장 관리</h4>
@@ -3923,7 +3953,7 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
             height: mob ? 32 : 36,
             fontSize: mob ? 12 : 13,
             padding: mob ? "0 12px" : "0 14px",
-            borderRadius: mob ? 6 : 8,
+            borderRadius: 7,
             background: "var(--color-primary)",
             color: "var(--color-primary-on)",
             border: "none",
@@ -3945,14 +3975,14 @@ function SettingsSub({ db, setDb, persist, toast, saveDb, mokjangOnly = false }:
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>현재 그룹원</label>
             {db.members.filter(m => ((m.mokjang ?? m.group) || "") === mokjangManage).length === 0 ? (
-              <div style={{ padding: 12, background: C.bg, borderRadius: 8, fontSize: 13, color: C.textMuted }}>아직 배정된 성도가 없습니다. 아래에서 추가하세요.</div>
+              <div style={{ padding: 12, background: C.bg, borderRadius: 7, fontSize: 13, color: C.textMuted }}>아직 배정된 성도가 없습니다. 아래에서 추가하세요.</div>
             ) : (
               <ul style={{ margin: 0, padding: 0, listStyle: "none", maxHeight: 200, overflowY: "auto" }}>
                 {db.members.filter(m => ((m.mokjang ?? m.group) || "") === mokjangManage).map(m => (
                   <li key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: `1px solid ${C.borderLight}`, fontSize: 14, minWidth: 0 }}>
                     <span style={{ fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{m.name}</span>
                     <span style={{ fontSize: 12, color: C.textMuted }}>{m.dept || ""} {m.role || ""}</span>
-                    <button type="button" onClick={() => removeMemberFromMokjang(m.id)} style={{ padding: "4px 10px", fontSize: 12, border: `1px solid ${C.border}`, background: C.bg, color: C.textFaint, borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>목장에서 제거</button>
+                    <button type="button" onClick={() => removeMemberFromMokjang(m.id)} style={{ padding: "4px 10px", fontSize: 12, border: `1px solid ${C.border}`, background: C.bg, color: C.textFaint, borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>목장에서 제거</button>
                   </li>
                 ))}
               </ul>
@@ -4486,20 +4516,61 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     setQuickNoteOpen(true);
   }, []);
 
-  const handleQuickNoteSaved = useCallback((memberId: string, type: "memo" | "prayer", items: QuickNoteItem[], latestPrayerContent?: string) => {
+  const handleQuickNoteSaved = useCallback((memberId: string, type: "memo" | "prayer", items: QuickNoteItem[], latestContent?: string) => {
     setDb(prev => {
       const notes = { ...prev.notes };
       const current = notes[memberId] || [];
       const others = current.filter(n => n.type !== type);
-      const merged = [...others, ...items.map(it => ({ date: it.date, type, content: it.content, createdAt: it.created_at }))];
+      const merged = [
+        ...others,
+        ...items.map(it => ({
+          date: it.date,
+          type,
+          content: it.content,
+          createdAt: it.created_at || it.date,
+        })),
+      ];
       notes[memberId] = merged;
       let members = prev.members;
-      if (type === "prayer" && latestPrayerContent !== undefined) {
-        members = members.map(m => m.id === memberId ? { ...m, prayer: latestPrayerContent } : m);
+      if (latestContent !== undefined) {
+        members = members.map(m =>
+          m.id === memberId
+            ? { ...m, ...(type === "prayer" ? { prayer: latestContent } : { memo: latestContent }) }
+            : m,
+        );
       }
       return { ...prev, notes, members };
     });
   }, [setDb]);
+
+  const handleTogglePrayerAnswered = useCallback((key: string, noteId?: string | number) => {
+    let nextAnswered = false;
+    setDb((prev) => {
+      const list = prev.answeredPrayerKeys || [];
+      nextAnswered = !list.includes(key);
+      const next = nextAnswered ? [...list, key] : list.filter((k) => k !== key);
+      const dates = { ...(prev.answeredPrayerDates || {}) };
+      if (nextAnswered) dates[key] = todayStr();
+      else delete dates[key];
+      return { ...prev, answeredPrayerKeys: next, answeredPrayerDates: dates };
+    });
+    const cid = churchId ?? getChurchId();
+    if (supabase && cid && noteId != null) {
+      const isRemoteId =
+        typeof noteId === "number" ||
+        (typeof noteId === "string" && !noteId.startsWith("local-"));
+      if (isRemoteId) {
+        void supabase
+          .from("notes")
+          .update({
+            answered: nextAnswered,
+            answered_at: nextAnswered ? todayStr() : null,
+          })
+          .eq("church_id", cid)
+          .eq("id", noteId);
+      }
+    }
+  }, [churchId, setDb]);
 
   const openNoteModal = useCallback((id?: string) => {
     setNoteTargetId(id || null);
@@ -4594,6 +4665,24 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
   const info = PAGE_INFO[activeSub];
   const detailMember = detailId ? db.members.find(x => x.id === detailId) : null;
+  const quickNoteMember = useMemo(
+    () => db.members.find((m) => m.id === quickNoteMemberId),
+    [db.members, quickNoteMemberId],
+  );
+  const quickNoteLocalSeed = useMemo((): QuickNoteItem[] => {
+    if (!quickNoteMemberId) return [];
+    const noteType = quickNoteType === "prayer" ? "prayer" : "memo";
+    return (db.notes[quickNoteMemberId] ?? [])
+      .filter((n) => n.type === noteType)
+      .map((n, i) => ({
+        id: `local-${n.createdAt ?? n.date}-${i}`,
+        date: n.date,
+        content: n.content,
+        created_at: n.createdAt ?? n.date,
+      }));
+  }, [db.notes, quickNoteMemberId, quickNoteType]);
+  const quickNoteProfileContent =
+    quickNoteType === "prayer" ? quickNoteMember?.prayer : quickNoteMember?.memo;
   const orgResourceLayout = activeSub === "settings";
 
   const navSections = [{ sectionLabel: "목양", items: NAV_ITEMS.map((n) => ({ id: n.id, label: n.label, Icon: n.Icon })) }];
@@ -4616,12 +4705,12 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       }
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
-      contentBg={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.bg : undefined}
-      contentPaddingLeft={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadLeft : undefined}
-      contentPaddingRight={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadRight : undefined}
-      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : undefined}
-      contentTopGap={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadTop : undefined}
-      contentFontFamily={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.fontKR : undefined}
+      contentBg={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" ? DASH_GLOBAL.bg : undefined}
+      contentPaddingLeft={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" ? DASH_GLOBAL.contentPadLeft : undefined}
+      contentPaddingRight={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" ? DASH_GLOBAL.contentPadRight : undefined}
+      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "members" ? 20 : undefined}
+      contentTopGap={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" ? getMemberContentTopGap() : undefined}
+      contentFontFamily={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" ? DASH_GLOBAL.fontKR : undefined}
       hideHeader={activeSub === "dashboard" || orgResourceLayout || activeSub === "members"}
     >
           {activeSub === "dashboard" && (
@@ -4638,7 +4727,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               onFeedItemOpen={setFeedDetailItem}
             />
           )}
-          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openDetail={openDetail} openNoteModal={openNoteModal} openQuickNote={openQuickNote} churchId={churchId} />}
+          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openNoteModal={openNoteModal} openQuickNote={openQuickNote} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>
               <div
@@ -4686,7 +4775,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                                 height: 34,
                                 fontSize: 11,
                                 fontWeight: 600,
-                                borderRadius: 8,
+                                borderRadius: 7,
                                 border: active ? "1px solid var(--color-primary)" : `1px solid ${C.border}`,
                                 fontFamily: "inherit",
                                 cursor: "pointer",
@@ -4714,7 +4803,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                           style={{
                             height: 34,
                             padding: "0 16px",
-                            borderRadius: 10,
+                            borderRadius: 7,
                             border: active ? "1px solid var(--color-primary)" : `1px solid ${C.border}`,
                             background: active ? C.accentBg : C.card,
                             color: active ? C.accent : C.textMuted,
@@ -4898,7 +4987,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       </Modal>
 
       {/* New Family Program Detail Modal */}
-      {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} onSaved={() => setDb(prev => { void saveDb?.(prev); return prev; })} saveDb={saveDb} toast={toast} mob={mob} churchId={churchId} />}
+      {programDetailMemberId && <NewFamilyProgramDetailModal db={db} setDb={fn => setDb(fn)} memberId={programDetailMemberId} onClose={() => setProgramDetailMemberId(null)} onSaved={() => { void saveDb?.(db); }} saveDb={saveDb} toast={toast} mob={mob} churchId={churchId} />}
 
       {/* 현황 보고 — 대시보드 리스트 클릭 시 상세 모달 (페이지 이동 없음) */}
       {feedDetailItem ? (
@@ -4955,8 +5044,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>대상</label>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => setNoteTargetType("all")} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${noteTargetType === "all" ? C.primary : C.border}`, background: noteTargetType === "all" ? C.primary : "#fff", color: noteTargetType === "all" ? "var(--color-primary-on)" : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>전체</button>
-            <button type="button" onClick={() => setNoteTargetType("individual")} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${noteTargetType === "individual" ? C.primary : C.border}`, background: noteTargetType === "individual" ? C.primary : "#fff", color: noteTargetType === "individual" ? "var(--color-primary-on)" : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>개인</button>
+            <button type="button" onClick={() => setNoteTargetType("all")} style={{ padding: "8px 16px", borderRadius: 7, border: `1px solid ${noteTargetType === "all" ? C.primary : C.border}`, background: noteTargetType === "all" ? C.primary : "#fff", color: noteTargetType === "all" ? "var(--color-primary-on)" : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>전체</button>
+            <button type="button" onClick={() => setNoteTargetType("individual")} style={{ padding: "8px 16px", borderRadius: 7, border: `1px solid ${noteTargetType === "individual" ? C.primary : C.border}`, background: noteTargetType === "individual" ? C.primary : "#fff", color: noteTargetType === "individual" ? "var(--color-primary-on)" : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>개인</button>
           </div>
         </div>
         {noteTargetType === "individual" && (() => {
@@ -4969,9 +5058,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           return (
             <div ref={noteMemberDropdownRef} style={{ marginBottom: 16, position: "relative" }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>성도 선택</label>
-              <button type="button" onClick={() => setNoteMemberDropdownOpen(v => !v)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.card, fontSize: 14, textAlign: "left", cursor: "pointer", color: selected ? C.text : C.textFaint }}>{selected ? (selected.departmentName ? `${selected.name} (${selected.departmentName})` : selected.name) : "선택하세요"}</button>
+              <button type="button" onClick={() => setNoteMemberDropdownOpen(v => !v)} style={{ width: "100%", padding: "10px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: C.card, fontSize: 14, textAlign: "left", cursor: "pointer", color: selected ? C.text : C.textFaint }}>{selected ? (selected.departmentName ? `${selected.name} (${selected.departmentName})` : selected.name) : "선택하세요"}</button>
               {noteMemberDropdownOpen && (
-                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10 }}>
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 7, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 10 }}>
                   <input type="text" placeholder="이름 검색" value={noteMemberSearchText} onChange={e => setNoteMemberSearchText(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "none", borderBottom: `1px solid ${C.border}`, borderRadius: "8px 8px 0 0", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
                   <div style={{ maxHeight: 200, overflowY: "auto" }}>
                     {filteredMembers.length === 0 ? <div style={{ padding: 12, color: C.textFaint, fontSize: 13 }}>검색 결과 없음</div> : filteredMembers.map(m => (
@@ -5005,24 +5094,25 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         </div>
       </Modal>
 
-      {/* Quick Note/Prayer Modal — 성도별 메모·기도 제목 빠른 추가 */}
-      {churchId && (
-        <QuickNoteModal
-          isOpen={quickNoteOpen}
-          onClose={() => setQuickNoteOpen(false)}
-          title={quickNoteType === "prayer" ? "기도 제목" : "메모"}
-          memberName={quickNoteMemberName}
-          memberId={quickNoteMemberId}
-          churchId={churchId}
-          type={quickNoteType}
-          onSaved={handleQuickNoteSaved}
-        />
-      )}
+      {/* Quick Note/Prayer Modal — 성도별 메모·기도 제목 */}
+      <QuickNoteModal
+        isOpen={quickNoteOpen}
+        onClose={() => setQuickNoteOpen(false)}
+        memberName={quickNoteMemberName}
+        memberId={quickNoteMemberId}
+        churchId={churchId ?? ""}
+        type={quickNoteType}
+        profileContent={quickNoteProfileContent ?? undefined}
+        localSeedItems={quickNoteLocalSeed}
+        answeredPrayerKeys={db.answeredPrayerKeys}
+        onTogglePrayerAnswered={quickNoteType === "prayer" ? handleTogglePrayerAnswered : undefined}
+        onSaved={handleQuickNoteSaved}
+      />
 
       {/* Toasts */}
       <div style={{ position: "fixed", top: mob ? 8 : 20, right: mob ? 8 : 32, left: mob ? 8 : "auto", zIndex: 2000, display: "flex", flexDirection: "column", gap: 8 }}>
         {toasts.map(t => (
-          <div key={t.id} style={{ padding: "12px 20px", borderRadius: 10, fontSize: 14, fontWeight: 500, color: "var(--color-primary-on)", boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)", display: "flex", alignItems: "center", gap: 8, background: t.type === "ok" ? C.success : t.type === "err" ? C.danger : C.orange, animation: "toastIn 0.3s forwards" }}>
+          <div key={t.id} style={{ padding: "12px 20px", borderRadius: 7, fontSize: 14, fontWeight: 500, color: "var(--color-primary-on)", boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)", display: "flex", alignItems: "center", gap: 8, background: t.type === "ok" ? C.success : t.type === "err" ? C.danger : C.orange, animation: "toastIn 0.3s forwards" }}>
             <span>{t.type === "ok" ? "✓" : t.type === "err" ? "✕" : "⚠"}</span> {t.msg}
           </div>
         ))}

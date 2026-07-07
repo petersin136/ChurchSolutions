@@ -82,7 +82,7 @@ function PortalSelect({
         zIndex: 9999,
         background: "var(--color-surface)",
         border: "1px solid var(--color-border)",
-        borderRadius: 8,
+        borderRadius: 7,
         boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         maxHeight: 280,
         overflowY: "auto",
@@ -493,7 +493,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                   padding: "0 12px",
                   fontSize: 11,
                   fontWeight: 600,
-                  borderRadius: 6,
+                  borderRadius: 7,
                   whiteSpace: "nowrap",
                   flexShrink: 0,
                   border: on ? "none" : "1px solid #e8e9f0",
@@ -557,7 +557,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                             onClick={() => toggleAttendance(e.member_id, "출석")}
                             style={{
                               padding: "6px 12px",
-                              borderRadius: 6,
+                              borderRadius: 7,
                               fontSize: 11,
                               fontWeight: 600,
                               border: status === "출석" ? "none" : "1px solid #e8e9f0",
@@ -572,7 +572,7 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                             onClick={() => toggleAttendance(e.member_id, "결석")}
                             style={{
                               padding: "6px 12px",
-                              borderRadius: 6,
+                              borderRadius: 7,
                               fontSize: 11,
                               fontWeight: 600,
                               border: status === "결석" ? "none" : "1px solid #e8e9f0",

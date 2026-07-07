@@ -46,7 +46,7 @@ export function BaptismTerminologyField({
                 alignItems: "flex-start",
                 gap: 10,
                 padding: "10px 12px",
-                borderRadius: 10,
+                borderRadius: 7,
                 border: `1px solid ${checked ? "var(--color-primary)" : "var(--pc-border)"}`,
                 background: checked ? "var(--color-primary-soft, #eef2ff)" : "var(--pc-bg)",
                 cursor: "pointer",

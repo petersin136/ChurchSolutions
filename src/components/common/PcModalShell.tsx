@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import {
@@ -29,6 +29,8 @@ export type PcModalShellProps = {
   bodyClassName?: string;
   closeOnBackdrop?: boolean;
   zIndex?: number;
+  /** Nested dialogs (e.g. delete confirm) can anchor to this card element */
+  cardRef?: RefObject<HTMLDivElement>;
 };
 
 /**
@@ -50,6 +52,7 @@ export function PcModalShell({
   bodyClassName,
   closeOnBackdrop = true,
   zIndex,
+  cardRef,
 }: PcModalShellProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -91,6 +94,7 @@ export function PcModalShell({
       }}
     >
       <div
+        ref={cardRef}
         className={`app-modal-card ${modalClassName}`.trim()}
         style={appModalCardStyle({ width: cardWidth, height })}
         role="dialog"
@@ -157,7 +161,7 @@ export function PcModalShell({
               marginTop: -4,
               border: "none",
               background: "transparent",
-              borderRadius: 8,
+              borderRadius: 7,
               cursor: "pointer",
               color: APP_MODAL.labelMuted,
               display: "inline-flex",

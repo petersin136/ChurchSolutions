@@ -26,7 +26,7 @@ const LAYOUT = {
   sidebarHeaderPadding: "24px 20px",
   sidebarHeaderBorder: "1px solid #dde2f0",
   sidebarHeaderIconSize: 36,
-  sidebarHeaderIconRadius: 10,
+  sidebarHeaderIconRadius: 7,
   sidebarHeaderTitleFontSize: 18,
   sidebarHeaderSubFontSize: 12,
   sidebarNavPadding: "12px 10px",
@@ -79,9 +79,9 @@ const SIDEBAR_NAV_AREA = {
 /** 사이드바 메뉴 항목 — 디자이너 시안(목양 대시보드) 기준 */
 const SIDEBAR_MENU_ITEM = {
   fontSize: DASH_SIDEBAR.menuFontSize,
-  /** 기본 Regular, hover/active만 SemiBold */
-  fontWeight: 400,
-  fontWeightActive: 600,
+  /** 기본 SemiBold, hover/active Bold */
+  fontWeight: 600,
+  fontWeightActive: 700,
   gap: DASH_SIDEBAR.iconGap,
   iconSize: DASH_SIDEBAR.iconSize,
   lineHeight: "1.4",
@@ -471,7 +471,7 @@ export function UnifiedPageLayout({
                   >
                     <Icon
                       size={SIDEBAR_MENU_ITEM.iconSize}
-                      strokeWidth={1.75}
+                      strokeWidth={2.25}
                       color={SIDEBAR_MENU_ITEM.color}
                       style={{
                         width: SIDEBAR_MENU_ITEM.iconSize,
@@ -488,7 +488,7 @@ export function UnifiedPageLayout({
                           color: "#fff",
                           fontSize: 11,
                           padding: "1px 7px",
-                          borderRadius: 10,
+                          borderRadius: 7,
                           fontWeight: 600,
                         }}
                       >

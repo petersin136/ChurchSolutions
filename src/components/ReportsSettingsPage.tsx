@@ -42,7 +42,7 @@ const reportFilterDateTrigger: React.CSSProperties = {
   minHeight: 32,
   maxHeight: 32,
   fontSize: 11,
-  borderRadius: 6,
+  borderRadius: 7,
   border: `1px solid ${BORDER}`,
   padding: "0 6px",
   boxSizing: "border-box",
@@ -396,7 +396,7 @@ function ThemeSettingsCard() {
                     gap: 8,
                     height: 40,
                     padding: "0 12px",
-                    borderRadius: 10,
+                    borderRadius: 7,
                     border: selected ? `2px solid ${option.color}` : "1px solid var(--color-border)",
                     background: selected ? "var(--color-primary-soft)" : "var(--color-surface)",
                     color: "var(--color-text)",
@@ -424,7 +424,7 @@ function ThemeSettingsCard() {
             width: "100%",
             minHeight: 44,
             padding: "10px 12px",
-            borderRadius: 10,
+            borderRadius: 7,
             border: "1px solid var(--color-border)",
             background: "var(--color-surface)",
             color: "var(--color-text)",
@@ -442,7 +442,7 @@ function ThemeSettingsCard() {
               width: 44,
               height: 24,
               padding: 2,
-              borderRadius: 999,
+              borderRadius: 7,
               background: dark ? "var(--color-primary)" : "var(--color-border-strong)",
               transition: "background 0.15s",
             }}
@@ -757,7 +757,7 @@ function ReportPagination({
             height: 32,
             padding: "0 12px",
             fontSize: 13,
-            borderRadius: 6,
+            borderRadius: 7,
             border: `1px solid ${BORDER}`,
             background: WHITE,
             color: page <= 1 ? FOOT_MUTED : TEXT,
@@ -779,7 +779,7 @@ function ReportPagination({
             height: 32,
             padding: "0 12px",
             fontSize: 13,
-            borderRadius: 6,
+            borderRadius: 7,
             border: `1px solid ${BORDER}`,
             background: WHITE,
             color: page >= totalPages ? FOOT_MUTED : TEXT,
@@ -988,7 +988,7 @@ function MemberListPrintBody({
 }) {
   const card: React.CSSProperties = {
     padding: "18px 20px",
-    borderRadius: 10,
+    borderRadius: 7,
     background: BG_SUMMARY,
     border: `1px solid ${BORDER}`,
   };
@@ -1042,7 +1042,7 @@ function MemberListPrintBody({
                   flex: 1,
                   height: 22,
                   background: BAR_TRACK,
-                  borderRadius: 6,
+                  borderRadius: 7,
                   overflow: "hidden",
                   minWidth: 40,
                 }}
@@ -1052,7 +1052,7 @@ function MemberListPrintBody({
                     width: `${dept.barPct}%`,
                     height: "100%",
                     background: NAVY,
-                    borderRadius: 6,
+                    borderRadius: 7,
                   }}
                 />
               </div>
@@ -1142,7 +1142,7 @@ function AttendancePrintBody({
 
   const card: React.CSSProperties = {
     padding: "18px 20px",
-    borderRadius: 10,
+    borderRadius: 7,
     background: BG_SUMMARY,
     border: `1px solid ${BORDER}`,
   };
@@ -1194,7 +1194,7 @@ function AttendancePrintBody({
                   flex: 1,
                   height: 22,
                   background: BAR_TRACK,
-                  borderRadius: 6,
+                  borderRadius: 7,
                   overflow: "hidden",
                   minWidth: 40,
                   position: "relative",
@@ -1205,7 +1205,7 @@ function AttendancePrintBody({
                     width: `${d.avg}%`,
                     height: "100%",
                     background: NAVY,
-                    borderRadius: 6,
+                    borderRadius: 7,
                   }}
                 />
               </div>
@@ -1790,7 +1790,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
                 style={{
                   display: "inline-block",
                   padding: "4px 10px",
-                  borderRadius: 999,
+                  borderRadius: 7,
                   fontSize: 12,
                   fontWeight: 600,
                   background: p.status === "수료" ? "#eaf6ec" : p.status === "중단" ? "#fdecec" : "#eaf1ff",
@@ -2085,7 +2085,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
                       height: 36,
                       padding: "0 14px",
                       fontSize: 14,
-                      borderRadius: 8,
+                      borderRadius: 7,
                       border: `1px solid ${BORDER}`,
                       background: WHITE,
                       color: TEXT,
@@ -2110,7 +2110,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
                       padding: "0 18px",
                       fontSize: 14,
                       fontWeight: 600,
-                      borderRadius: 8,
+                      borderRadius: 7,
                       background: pdfBusy !== "idle" ? "#9aa3b7" : NAVY,
                       color: WHITE,
                       border: "none",
@@ -2129,7 +2129,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
                     id="report-print-area"
                     style={{
                       background: WHITE,
-                      borderRadius: 12,
+                      borderRadius: 7,
                       border: `1px solid ${BORDER}`,
                       padding: "32px 36px",
                       minHeight: 200,
@@ -2211,7 +2211,7 @@ export function ReportsSettingsPage(props: ReportsSettingsPageProps) {
               width: "min(96vw, 1000px)",
               height: "min(96vh, 1200px)",
               background: WHITE,
-              borderRadius: 14,
+              borderRadius: 7,
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
