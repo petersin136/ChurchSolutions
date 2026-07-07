@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAnonSupabase, getServiceSupabase } from "@/lib/supabase";
+import { isValidAuthEmail, toKoreanAuthError } from "@/lib/authErrors";
 
 interface RegisterBody {
   email: string;
@@ -21,9 +22,21 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    if (password.length < 6) {
+    if (!isValidAuthEmail(email)) {
       return NextResponse.json(
-        { error: "비밀번호는 6자 이상이어야 합니다." },
+        { error: "올바른 이메일 형식을 입력해주세요. (예: name@example.com)" },
+        { status: 400 }
+      );
+    }
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: "비밀번호는 8자 이상이어야 합니다." },
+        { status: 400 }
+      );
+    }
+    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: "비밀번호는 영문과 숫자를 모두 포함해야 합니다." },
         { status: 400 }
       );
     }
@@ -38,16 +51,14 @@ export async function POST(request: Request) {
     });
 
     if (signUpError || !signUpData.user?.id) {
-      const msg = signUpError?.message ?? "";
-      if (msg.includes("already registered") || msg.includes("already been registered")) {
-        return NextResponse.json(
-          { error: "이미 등록된 이메일입니다." },
-          { status: 400 }
-        );
-      }
       return NextResponse.json(
-        { error: msg || "사용자 생성에 실패했습니다." },
-        { status: 500 }
+        {
+          error: toKoreanAuthError(
+            signUpError?.message ?? signUpError,
+            "회원가입에 실패했습니다. 입력 정보를 확인해주세요."
+          ),
+        },
+        { status: 400 }
       );
     }
     createdUserId = signUpData.user.id;

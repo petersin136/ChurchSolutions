@@ -572,7 +572,7 @@ function fmtFeedDate(timestamp: string | number | Date): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: { n: Note; mbrName?: string; mbrDept?: string; onClick?: () => void; answered?: boolean; onToggleAnswered?: () => void }) {
+function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered, highlighted }: { n: Note; mbrName?: string; mbrDept?: string; onClick?: () => void; answered?: boolean; onToggleAnswered?: () => void; highlighted?: boolean }) {
   const mob = useIsMobile();
   const [hover, setHover] = useState(false);
   const isPrayer = n.type === "prayer";
@@ -587,10 +587,10 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: 
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        background: C.card,
+        background: highlighted ? "color-mix(in srgb, var(--color-primary) 10%, #ffffff)" : C.card,
         borderRadius: 16,
-        border: `1px solid ${C.border}`,
-        boxShadow: hover ? "0 4px 12px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.04)",
+        border: highlighted ? "1px solid color-mix(in srgb, var(--color-primary) 35%, transparent)" : `1px solid ${C.border}`,
+        boxShadow: hover ? "0 4px 12px rgba(0,0,0,0.08)" : highlighted ? "0 0 0 2px color-mix(in srgb, var(--color-primary) 12%, transparent)" : "0 1px 3px rgba(0,0,0,0.04)",
         padding: mob ? "10px 12px" : "16px 20px",
         marginBottom: mob ? 6 : 12,
         cursor: onClick ? "pointer" : "default",
@@ -632,10 +632,14 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered }: 
           color: C.text,
           textDecoration: answered ? "line-through" : undefined,
           opacity: answered ? 0.85 : 1,
-          display: "-webkit-box",
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
+          ...((highlighted || n.type === "memo" || n.type === "visit")
+            ? { whiteSpace: "pre-wrap" as const, wordBreak: "break-word" as const }
+            : {
+                display: "-webkit-box",
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: "vertical" as const,
+                overflow: "hidden",
+              }),
         }}
       >
         {n.content}
@@ -927,7 +931,57 @@ type PastoralFeedItem = {
   body: string;
   timestamp: string;
   memberName?: string;
+  memberId?: string;
+  noteType?: Note["type"];
+  noteDate?: string;
+  noteCreatedAt?: string;
+  isProfilePrayer?: boolean;
 };
+
+const PASTORAL_FEED_FOCUS_KEY = "pastoral_feed_focus";
+const PASTORAL_OPEN_NEWFAMILY_KEY = "pastoral_open_newfamily";
+
+type PastoralFeedFocus =
+  | {
+      target: "notes";
+      memberId: string;
+      noteType: Note["type"];
+      content: string;
+      date?: string;
+      createdAt?: string;
+      isProfilePrayer?: boolean;
+    }
+  | { target: "newfamily"; memberId: string };
+
+function getNoteFocusDomKey(n: {
+  mbrId: string;
+  date?: string;
+  type?: string;
+  createdAt?: string;
+  content: string;
+  isProfilePrayer?: boolean;
+}): string {
+  return `${n.mbrId}|${n.date ?? ""}|${n.type ?? ""}|${n.createdAt ?? ""}|${n.content}|${n.isProfilePrayer ? "profile" : ""}`;
+}
+
+function notesMatchFocus(
+  n: Note & { mbrId: string; isProfilePrayer?: boolean },
+  focus: Extract<PastoralFeedFocus, { target: "notes" }>,
+): boolean {
+  if (n.mbrId !== focus.memberId) return false;
+  if (n.type !== focus.noteType) return false;
+  if (n.content !== focus.content) return false;
+  if (focus.date && n.date !== focus.date) return false;
+  if (focus.createdAt && (n.createdAt ?? "") !== focus.createdAt) return false;
+  if (focus.isProfilePrayer && !n.isProfilePrayer) return false;
+  return true;
+}
+
+function truncateFeedBody(text: string, max = 72): string {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max)}…`;
+}
 
 function DashboardSub({
   db,
@@ -1280,21 +1334,26 @@ function DashboardSub({
       const mbrName = mid === NOTE_TARGET_CHURCH ? "교회 전체" : (mbr?.name || "?");
       (db.notes[mid] || []).forEach(n => all.push({ ...n, mbrName, mbrId: mid, mbrDept: mbr?.dept || "" }));
     });
-    return all.sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 6);
+    return all.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""));
   }, [db]);
 
   const pastoralFeed = useMemo(() => {
     const items: PastoralFeedItem[] = [];
 
-    recentNotes.forEach((n, i) => {
+    recentNotes.forEach((n) => {
+      const content = (n as { text?: string }).text || n.content || "";
       items.push({
-        id: `note-${i}`,
+        id: `note-${n.mbrId}-${n.date}-${n.type}-${n.createdAt ?? ""}-${content.slice(0, 24)}`,
         kind: "note",
         icon: (n.type as "memo" | "prayer" | "visit" | "event") || "memo",
         title: n.mbrName || "이름 없음",
-        body: (n as { text?: string }).text || n.content || "",
+        body: content,
         timestamp: n.date || n.createdAt || new Date().toISOString(),
         memberName: n.mbrName,
+        memberId: n.mbrId,
+        noteType: n.type,
+        noteDate: n.date,
+        noteCreatedAt: n.createdAt,
       });
     });
 
@@ -1320,6 +1379,7 @@ function DashboardSub({
         body: mm.group || mm.mokjang || "부서 미지정",
         timestamp: mm.firstVisitDate || mm.first_visit_date || mm.createdAt || mm.created_at || new Date().toISOString(),
         memberName: m.name,
+        memberId: m.id,
       });
     });
 
@@ -1329,20 +1389,24 @@ function DashboardSub({
         const da = (a as { updatedAt?: string; updated_at?: string; createdAt?: string; created_at?: string }).updatedAt || (a as { updated_at?: string }).updated_at || (a as { createdAt?: string; created_at?: string }).createdAt || (a as { created_at?: string }).created_at || "";
         const dbb = (b as { updatedAt?: string; updated_at?: string; createdAt?: string; created_at?: string }).updatedAt || (b as { updated_at?: string }).updated_at || (b as { createdAt?: string; created_at?: string }).createdAt || (b as { created_at?: string }).created_at || "";
         return dbb.localeCompare(da);
-      })
-      .slice(0, 5);
+      });
 
     withPrayer.forEach((m) => {
       const mm = m as { prayer?: string; updatedAt?: string; updated_at?: string; createdAt?: string; created_at?: string };
-      const pr = mm.prayer || "";
+      const pr = (mm.prayer || "").trim();
+      const alreadyInNotes = (db.notes[m.id] || []).some(n => n.type === "prayer" && n.content === pr);
+      if (alreadyInNotes) return;
       items.push({
         id: `prayer-${m.id}`,
         kind: "prayer",
         icon: "prayer",
         title: `${m.name || "이름 없음"}님 기도제목`,
-        body: pr.substring(0, 60) + (pr.length > 60 ? "…" : ""),
+        body: pr,
         timestamp: mm.updatedAt || mm.updated_at || mm.createdAt || mm.created_at || new Date().toISOString(),
         memberName: m.name,
+        memberId: m.id,
+        noteType: "prayer",
+        isProfilePrayer: true,
       });
     });
 
@@ -1379,6 +1443,28 @@ function DashboardSub({
     if (dx < 0) setFeedPage((p) => Math.min(feedTotalPages, p + 1));
     else setFeedPage((p) => Math.max(1, p - 1));
   };
+
+  const handleFeedItemClick = useCallback((item: PastoralFeedItem) => {
+    if (item.kind === "newcomer" && item.memberId) {
+      sessionStorage.setItem(PASTORAL_OPEN_NEWFAMILY_KEY, item.memberId);
+      onNavSub?.("newfamily");
+      return;
+    }
+    if (!item.memberId || !item.noteType) return;
+    const focus: PastoralFeedFocus = {
+      target: "notes",
+      memberId: item.memberId,
+      noteType: item.noteType,
+      content: item.body,
+      date: item.noteDate,
+      createdAt: item.noteCreatedAt,
+      isProfilePrayer: item.isProfilePrayer,
+    };
+    sessionStorage.setItem(PASTORAL_FEED_FOCUS_KEY, JSON.stringify(focus));
+    onNavSub?.("notes");
+  }, [onNavSub]);
+
+  const [feedHoverId, setFeedHoverId] = useState<string | null>(null);
 
   const summaryCards = useMemo(
     () => [
@@ -2106,9 +2192,17 @@ function DashboardSub({
                     DASH_BADGE.memo;
                   const rawName = item.memberName || item.title || "";
                   const name = rawName === "교회 전체" || /님$/.test(rawName) ? rawName : `${rawName}님`;
+                  const clickable = !!(item.memberId && (item.noteType || item.kind === "newcomer"));
+                  const isHover = feedHoverId === item.id;
                   return (
                     <div
                       key={item.id}
+                      role={clickable ? "button" : undefined}
+                      tabIndex={clickable ? 0 : undefined}
+                      onClick={clickable ? () => handleFeedItemClick(item) : undefined}
+                      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleFeedItemClick(item); } } : undefined}
+                      onMouseEnter={() => clickable && setFeedHoverId(item.id)}
+                      onMouseLeave={() => setFeedHoverId(null)}
                       style={{
                         display: "grid",
                         gridTemplateColumns: `${dashScalePx(DASH_FEED_CARD.badgeWidth, typoScale)}px ${dashTypo.section.feedNameWidth}px minmax(0, 1fr) ${dashTypo.section.feedTimeMinWidth}px`,
@@ -2119,6 +2213,10 @@ function DashboardSub({
                         padding: `${dashScalePx(DASH_FEED_CARD.rowPaddingY, typoScale)}px 8px`,
                         borderBottom: idx < feedPageItems.length - 1 ? "1px solid var(--color-border-soft)" : "none",
                         alignItems: "center",
+                        cursor: clickable ? "pointer" : "default",
+                        borderRadius: 8,
+                        background: isHover ? "color-mix(in srgb, var(--color-primary) 8%, transparent)" : "transparent",
+                        transition: "background 0.15s ease",
                       }}
                     >
                       <span
@@ -2145,8 +2243,8 @@ function DashboardSub({
                       <span style={{ fontSize: dashTypo.section.bodySize, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {name}
                       </span>
-                      <span style={{ fontSize: dashTypo.section.bodySize, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {item.body}
+                      <span style={{ fontSize: dashTypo.section.bodySize, color: isHover ? C.text : C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {truncateFeedBody(item.body)}
                       </span>
                       <span style={{ fontSize: dashTypo.section.smallSize, color: C.textMuted, textAlign: "right", whiteSpace: "nowrap" }}>
                         {fmtFeedDate(item.timestamp)}
@@ -3163,12 +3261,25 @@ function getPrayerAnsweredKey(n: Note & { mbrId: string; isProfilePrayer?: boole
 }
 
 /* ====== Notes ====== */
-function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; openPrayerModal: (id: string) => void; openNoteModal: (id?: string) => void }) {
+function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; openPrayerModal: (id: string, focusContent?: string) => void; openNoteModal: (id?: string) => void }) {
   const mob = useIsMobile();
   const listRefNotes = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [typeF, setTypeF] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
+  const [pendingFeedFocus, setPendingFeedFocus] = useState<Extract<PastoralFeedFocus, { target: "notes" }> | null>(() => {
+    if (typeof window === "undefined") return null;
+    const raw = sessionStorage.getItem(PASTORAL_FEED_FOCUS_KEY);
+    if (!raw) return null;
+    sessionStorage.removeItem(PASTORAL_FEED_FOCUS_KEY);
+    try {
+      const parsed = JSON.parse(raw) as PastoralFeedFocus;
+      return parsed.target === "notes" ? parsed : null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3227,6 +3338,37 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
   }, [allNotes, search, typeF]);
 
   const paginatedNotes = useMemo(() => filtered.slice((currentPage - 1) * 10, currentPage * 10), [filtered, currentPage]);
+
+  useEffect(() => {
+    if (!pendingFeedFocus) return;
+    const type = pendingFeedFocus.noteType === "event" ? "all" : pendingFeedFocus.noteType;
+    setTypeF(type);
+    setSearch("");
+
+    let list = [...allNotes];
+    if (type !== "all") list = list.filter(n => n.type === type);
+    const idx = list.findIndex(n => notesMatchFocus(n, pendingFeedFocus));
+    if (idx < 0) {
+      setPendingFeedFocus(null);
+      return;
+    }
+    const page = Math.floor(idx / 10) + 1;
+    setCurrentPage(page);
+    const matched = list[idx];
+    const domKey = getNoteFocusDomKey(matched);
+    setHighlightKey(domKey);
+    if (pendingFeedFocus.noteType === "prayer") {
+      openPrayerModal(pendingFeedFocus.memberId, pendingFeedFocus.content);
+    }
+    setPendingFeedFocus(null);
+    window.requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        const el = document.getElementById(`pastoral-note-${domKey}`);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 120);
+    });
+    window.setTimeout(() => setHighlightKey(null), 3200);
+  }, [pendingFeedFocus, allNotes, openPrayerModal]);
 
   const toggleAnswered = (key: string) => {
     const list = db.answeredPrayerKeys || [];
@@ -3302,16 +3444,22 @@ function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: 
               {paginatedNotes.map((n, i) => {
                 const key = getPrayerAnsweredKey(n);
                 const answered = n.type === "prayer" && answeredSet.has(key);
+                const domKey = getNoteFocusDomKey(n);
+                const highlighted = highlightKey === domKey;
                 return (
-                  <NoteCard
-                    key={`${n.mbrId}-${n.date}-${n.type}-${n.createdAt}-${i}`}
-                    n={n}
-                    mbrName={n.mbrName}
-                    mbrDept={n.mbrDept}
-                    onClick={() => openPrayerModal(n.mbrId)}
-                    answered={n.type === "prayer" ? answered : undefined}
-                    onToggleAnswered={n.type === "prayer" ? () => toggleAnswered(key) : undefined}
-                  />
+                  <div key={`${n.mbrId}-${n.date}-${n.type}-${n.createdAt}-${i}`} id={`pastoral-note-${domKey}`}>
+                    <NoteCard
+                      n={n}
+                      mbrName={n.mbrName}
+                      mbrDept={n.mbrDept}
+                      highlighted={highlighted}
+                      onClick={() => {
+                        if (n.type === "prayer") openPrayerModal(n.mbrId, n.content);
+                      }}
+                      answered={n.type === "prayer" ? answered : undefined}
+                      onToggleAnswered={n.type === "prayer" ? () => toggleAnswered(key) : undefined}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -3339,6 +3487,7 @@ function PrayerModal({
   toast,
   onClose,
   churchId,
+  highlightContent,
 }: {
   memberId: string;
   member: Member;
@@ -3348,6 +3497,7 @@ function PrayerModal({
   toast: (m: string, t?: string) => void;
   onClose: () => void;
   churchId: string | null;
+  highlightContent?: string | null;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<"all" | "active" | "answered">("all");
@@ -3356,6 +3506,7 @@ function PrayerModal({
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [hoverCardKey, setHoverCardKey] = useState<string | null>(null);
+  const [focusCardKey, setFocusCardKey] = useState<string | null>(null);
 
   const answeredSet = useMemo(() => new Set(db.answeredPrayerKeys || []), [db.answeredPrayerKeys]);
   const answeredDates = db.answeredPrayerDates || {};
@@ -3386,6 +3537,23 @@ function PrayerModal({
       return !answered;
     });
   }, [prayerList, filter, answeredSet, memberId]);
+
+  useEffect(() => {
+    if (!highlightContent?.trim()) return;
+    const target = highlightContent.trim();
+    const idx = prayerList.findIndex(n => n.content === target);
+    if (idx < 0) return;
+    const match = prayerList[idx];
+    const cardKey = `${match.date}-${match.createdAt}-${idx}`;
+    setFocusCardKey(cardKey);
+    window.requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        const el = document.getElementById(`prayer-card-${memberId}-${cardKey}`);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    });
+    window.setTimeout(() => setFocusCardKey(null), 3200);
+  }, [highlightContent, prayerList, memberId]);
 
   const toggleAnswered = (key: string) => {
     const list = db.answeredPrayerKeys || [];
@@ -3550,17 +3718,20 @@ function PrayerModal({
                 const cardKey = `${n.date}-${n.createdAt}-${i}`;
                 const isHover = hoverCardKey === cardKey;
                 const isEditing = editingKey === cardKey;
+                const isFocused = focusCardKey === cardKey;
                 return (
                   <div
                     key={cardKey}
+                    id={`prayer-card-${memberId}-${cardKey}`}
                     onMouseEnter={() => setHoverCardKey(cardKey)}
                     onMouseLeave={() => setHoverCardKey(null)}
                     style={{
-                      background: answered ? C.successBg : C.card,
+                      background: isFocused ? "color-mix(in srgb, var(--color-primary) 10%, #ffffff)" : answered ? C.successBg : C.card,
                       borderRadius: 16,
-                      border: `1px solid ${C.border}`,
+                      border: isFocused ? "1px solid color-mix(in srgb, var(--color-primary) 35%, transparent)" : `1px solid ${C.border}`,
                       padding: 16,
-                      transition: "background 0.2s",
+                      transition: "background 0.2s, border-color 0.2s",
+                      boxShadow: isFocused ? "0 0 0 2px color-mix(in srgb, var(--color-primary) 12%, transparent)" : undefined,
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
@@ -4421,6 +4592,14 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     return () => window.removeEventListener(PASTORAL_SET_SUB_EVENT, handler as EventListener);
   }, []);
   useEffect(() => {
+    if (activeSub !== "newfamily") return;
+    const id = sessionStorage.getItem(PASTORAL_OPEN_NEWFAMILY_KEY);
+    if (!id) return;
+    sessionStorage.removeItem(PASTORAL_OPEN_NEWFAMILY_KEY);
+    setProgramDetailMemberId(id);
+  }, [activeSub]);
+
+  useEffect(() => {
     const openMember = (memberId: string) => {
       setActiveSubState("members");
       setDetailId(memberId);
@@ -4450,6 +4629,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
   const [prayerModalMemberId, setPrayerModalMemberId] = useState<string | null>(null);
+  const [prayerModalFocusContent, setPrayerModalFocusContent] = useState<string | null>(null);
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
   const [quickNoteMemberId, setQuickNoteMemberId] = useState("");
   const [quickNoteMemberName, setQuickNoteMemberName] = useState("");
@@ -4793,7 +4973,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   };
 
   const openDetail = useCallback((id: string) => { setDetailId(id); setShowDetailModal(true); }, []);
-  const openPrayerModal = useCallback((id: string) => { setPrayerModalMemberId(id); }, []);
+  const openPrayerModal = useCallback((id: string, focusContent?: string) => {
+    setPrayerModalMemberId(id);
+    setPrayerModalFocusContent(focusContent?.trim() || null);
+  }, []);
 
   const deleteMember = async (id: string) => {
     if (typeof window !== "undefined" && !window.confirm("삭제하시겠습니까?")) return;
@@ -5261,8 +5444,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
             setDb={setDb}
             persist={persist}
             toast={toast}
-            onClose={() => setPrayerModalMemberId(null)}
+            onClose={() => { setPrayerModalMemberId(null); setPrayerModalFocusContent(null); }}
             churchId={churchId}
+            highlightContent={prayerModalFocusContent}
           />
         ) : null;
       })()}
