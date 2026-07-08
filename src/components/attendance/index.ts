@@ -1,4 +1,4 @@
 export { AttendanceDashboard } from "./AttendanceDashboard";
 export { AttendanceCheck } from "./AttendanceCheck";
 export { AbsenteeManagement } from "./AbsenteeManagement";
-export { AttendanceStatistics } from "./AttendanceStatistics";
+export { AttendanceStatistics, AttendanceDeptMonthlySummary } from "./AttendanceStatistics";

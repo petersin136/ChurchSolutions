@@ -4,6 +4,9 @@ import {
   activityRecordOverlayStyle,
   activityRecordShellStyle,
 } from "@/styles/activityRecordModalTokens";
+import { PRAYER_HISTORY_MODAL } from "@/styles/prayerHistoryModalTokens";
+
+export { answeredPearlStyle as memoImportantPearlStyle } from "@/styles/prayerHistoryModalTokens";
 
 const R = APP_MODAL.radius;
 
@@ -59,19 +62,21 @@ export const MEMO_HISTORY_MODAL = {
   nodeBorder: "#d1d5db",
   nodeBg: "#ffffff",
   nodeIcon: "#9ca0a8",
-  /** 중요 핀 — 연한 분홍 배경 + 빨간 테두리(레퍼런스 1) */
-  pinBorder: "#e55c5c",
-  pinBg: "#fff0f0",
-  pinIcon: "#e55c5c",
-  pinRadius: 6,
+  /** 중요 표시 — 기도 히스토리 응답완료와 동일 세련된 붉은 계열 */
+  checkBorder: PRAYER_HISTORY_MODAL.checkBorder,
+  importantAccent: PRAYER_HISTORY_MODAL.answeredAccent,
+  importantCheckBg: PRAYER_HISTORY_MODAL.checkAnsweredBg,
   cardRadius: R,
   cardInnerRadius: Math.max(R - 2, 4),
   cardBezel: 2,
   cardHeaderBg: "#e8eaee",
   cardHeaderPadY: 10,
   cardHeaderPadX: 12,
+  cardHeaderImportantText: PRAYER_HISTORY_MODAL.cardHeaderAnsweredText,
   cardBodyBg: "#ffffff",
   cardBodyBorder: "#e5e6ea",
+  cardBodyImportantBg: PRAYER_HISTORY_MODAL.cardBodyAnsweredBg,
+  cardBodyImportantBorder: PRAYER_HISTORY_MODAL.cardBodyAnsweredBorder,
   cardBodyPadY: 14,
   cardBodyPadX: 14,
   cardDateFontSize: 13,

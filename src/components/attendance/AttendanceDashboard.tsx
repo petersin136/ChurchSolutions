@@ -9,15 +9,159 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
 } from "recharts";
+import type { CSSProperties } from "react";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
 import { tokens } from "@/styles/tokens";
+import { DASH_CHART } from "@/styles/pastoralDashboardTokens";
 import LazyChart from "../common/LazyChart";
 
-const { color: tc, fontSize: tf, height: th, space: ts, radius: tr, fontWeight: tw } = tokens;
+const { color: tc, fontSize: tf, height: th, space: ts, fontWeight: tw } = tokens;
+
+type DeptRateRow = { dept: string; rate: number; present: number; total: number };
+
+function DashDeptAxisLabel({ text, hot, fontSize }: { text: string; hot: boolean; fontSize: number }) {
+  const color = hot ? DASH_CHART.statBarHighlight : DASH_CHART.statSubGray;
+  const fw = hot ? 900 : 700;
+  const base: CSSProperties = {
+    fontSize,
+    color,
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    textAlign: "center",
+    lineHeight: 1.2,
+    width: "100%",
+    letterSpacing: hot ? "-0.02em" : "-0.01em",
+    fontWeight: fw,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+  return <span style={base}>{text}</span>;
+}
+
+function DashStyleDeptBarChart({ items, mob, height }: { items: DeptRateRow[]; mob: boolean; height: number }) {
+  const maxRate = 100;
+  const barMin = mob ? 40 : 52;
+  const valueSize = mob ? 30 : 44;
+  const subSize = mob ? 11 : 17;
+  const axisSize = mob ? 11 : 15;
+  const padTop = mob ? 8 : 18;
+  const padLeft = mob ? 8 : 14;
+
+  const hasData = items.some((i) => i.rate > 0);
+  if (!hasData) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height,
+          color: tc.labelMuted,
+          fontSize: mob ? 12 : 14,
+        }}
+      >
+        출석 데이터가 없습니다.
+      </div>
+    );
+  }
+
+  const hotIndex = items.reduce(
+    (best, item, i) => (item.rate >= (items[best]?.rate ?? -1) ? i : best),
+    0,
+  );
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "stretch",
+        gap: mob ? 8 : 16,
+        height,
+        paddingTop: 8,
+        boxSizing: "border-box",
+      }}
+    >
+      {items.map((item, i) => {
+        const hot = i === hotIndex && item.rate > 0;
+        const spacerFlex = Math.max(0, maxRate - item.rate);
+        const barFlex = item.rate;
+        const pctColor = hot ? DASH_CHART.statTextYearHighlight : DASH_CHART.statTextGray;
+        const subColor = hot ? DASH_CHART.statSubYearHighlight : DASH_CHART.statSubGray;
+        const pctShadow = hot ? "0 1px 1px rgba(255,255,255,0.45)" : "0 1px 1px rgba(255,255,255,0.55)";
+        return (
+          <div
+            key={item.dept}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "stretch",
+              gap: 8,
+              minWidth: 0,
+              minHeight: 0,
+            }}
+          >
+            <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+              {spacerFlex > 0 && <div style={{ flex: spacerFlex, minHeight: 0 }} />}
+              {item.rate > 0 && (
+                <div
+                  style={{
+                    flex: barFlex,
+                    minHeight: barMin,
+                    width: "100%",
+                    borderRadius: "12px 12px 0 0",
+                    background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    padding: `${padTop}px ${padLeft}px 0`,
+                    boxSizing: "border-box",
+                    overflow: "hidden",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: valueSize,
+                      fontWeight: 900,
+                      color: pctColor,
+                      letterSpacing: "-0.04em",
+                      lineHeight: 1,
+                      textShadow: pctShadow,
+                      fontFeatureSettings: '"tnum"',
+                      maxWidth: "100%",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {item.rate}%
+                  </span>
+                  <span
+                    style={{
+                      fontSize: subSize,
+                      color: subColor,
+                      marginTop: Math.max(4, Math.round(padTop * 0.4)),
+                      fontWeight: 800,
+                      letterSpacing: "-0.02em",
+                      textShadow: pctShadow,
+                      maxWidth: "100%",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {item.present}/{item.total}명
+                  </span>
+                </div>
+              )}
+            </div>
+            <DashDeptAxisLabel text={item.dept} hot={hot} fontSize={axisSize} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function useIsMobile(bp = 768) {
   const [m, setM] = useState(false);
@@ -33,6 +177,8 @@ function useIsMobile(bp = 768) {
 export interface AttendanceDashboardProps {
   members: Member[];
   attendanceList: Attendance[];
+  /** 출석 체크 하단 임베드 — 요약 카드·차트 2개만 (히트맵·결석자 카드 제외) */
+  embedded?: boolean;
   onOpenCheck?: () => void;
   onOpenAbsentee?: () => void;
   onOpenAbsenteeList?: (memberIds: string[]) => void;
@@ -69,9 +215,24 @@ function getSundayOfWeek(dateStr: string): string {
   return fmtDate(sun);
 }
 
+/** 기간 내 주일 날짜 목록 */
+function getSundaysBetween(start: string, end: string): string[] {
+  const out: string[] = [];
+  const s = new Date(start + "T12:00:00");
+  const e = new Date(end + "T12:00:00");
+  const d = new Date(s);
+  while (d.getDay() !== 0) d.setDate(d.getDate() + 1);
+  while (d <= e) {
+    out.push(fmtDate(d));
+    d.setDate(d.getDate() + 7);
+  }
+  return out;
+}
+
 export function AttendanceDashboard({
   members,
   attendanceList,
+  embedded = false,
   onOpenAbsenteeList,
 }: AttendanceDashboardProps) {
   const mob = useIsMobile();
@@ -177,6 +338,47 @@ export function AttendanceDashboard({
   }, [byWeekService, recentSundays]);
 
   const deptRates = useMemo(() => {
+    // embedded(출석 체크 하단): 아래 부서별 요약 표와 동일 — 올해 주일 평균 출석률
+    if (embedded) {
+      const year = new Date().getFullYear();
+      const sundays = getSundaysBetween(`${year}-01-01`, thisWeek);
+      const totalSundays = sundays.length;
+      if (totalSundays === 0) return [];
+
+      const byMemberWeek: Record<string, Record<string, string>> = {};
+      attendanceList.forEach((a) => {
+        if (!a.date) return;
+        const st = a.service_type || "주일예배";
+        if (st !== "주일예배" && st !== "주일1부예배") return;
+        const weekKey = getSundayOfWeek(a.date);
+        if (!byMemberWeek[a.member_id]) byMemberWeek[a.member_id] = {};
+        const status = a.status === "출석" || a.status === "온라인" ? "출석" : a.status;
+        if (!byMemberWeek[a.member_id][weekKey] || status === "출석") byMemberWeek[a.member_id][weekKey] = status;
+      });
+
+      const deptMap: Record<string, { sumRate: number; count: number; presentSlots: number }> = {};
+      activeMembers.forEach((m) => {
+        const byWeek = byMemberWeek[m.id] || {};
+        let present = 0;
+        sundays.forEach((d) => {
+          if (byWeek[d] === "출석") present += 1;
+        });
+        const rate = Math.round((present / totalSundays) * 100);
+        const dept = m.dept || "기타";
+        if (!deptMap[dept]) deptMap[dept] = { sumRate: 0, count: 0, presentSlots: 0 };
+        deptMap[dept].sumRate += rate;
+        deptMap[dept].count += 1;
+        deptMap[dept].presentSlots += present;
+      });
+
+      return Object.entries(deptMap).map(([dept, v]) => ({
+        dept,
+        rate: v.count > 0 ? Math.round(v.sumRate / v.count) : 0,
+        present: v.presentSlots,
+        total: v.count * totalSundays,
+      }));
+    }
+
     const deptMap: Record<string, { present: number; total: number }> = {};
     const list = byWeekService[thisWeek]?.["주일예배"] || [];
     const presentIds = new Set(list.filter((a) => a.status === "출석" || a.status === "온라인").map((a) => a.member_id));
@@ -192,7 +394,7 @@ export function AttendanceDashboard({
       present,
       total,
     }));
-  }, [activeMembers, byWeekService, thisWeek]);
+  }, [activeMembers, attendanceList, byWeekService, embedded, thisWeek]);
 
   const heatmapData = useMemo(() => {
     const weeks = recentSundays.slice(-8);
@@ -240,27 +442,48 @@ export function AttendanceDashboard({
           <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 주 출석률</div>
           <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{attendanceRate}%</span>
         </div>
-        <div
-          className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
-          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
-        >
-          <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 달 평균 출석률</div>
-          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{monthlyRate}%</span>
-        </div>
-        <button
-          type="button"
-          onClick={() => onOpenAbsenteeList?.(consecutiveAbsent)}
-          className={
-            mob
-              ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white text-left shadow-sm transition hover:shadow-md"
-              : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center text-left hover:shadow-md transition"
-          }
-          style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
-        >
-          <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>3주 연속 결석</div>
-          <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{consecutiveAbsent.length}명</span>
-          <div style={{ fontSize: mSub, color: tc.labelMuted, marginTop: ts.gap.xxs }}>클릭 시 명단</div>
-        </button>
+        {embedded ? (
+          <div
+            className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
+            style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
+          >
+            <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>지난 주 출석률</div>
+            <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{prevRate}%</span>
+          </div>
+        ) : (
+          <div
+            className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
+            style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
+          >
+            <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>이번 달 평균 출석률</div>
+            <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{monthlyRate}%</span>
+          </div>
+        )}
+        {embedded ? (
+          <div
+            className={mob ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center"}
+            style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
+          >
+            <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>등록 성도 전체</div>
+            <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{totalActive}명</span>
+            <div style={{ fontSize: mSub, color: tc.labelMuted, marginTop: ts.gap.xxs }}>전체 성도 합계</div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onOpenAbsenteeList?.(consecutiveAbsent)}
+            className={
+              mob
+                ? "flex flex-col justify-center rounded-lg border border-gray-100 bg-white text-left shadow-sm transition hover:shadow-md"
+                : "bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center text-left hover:shadow-md transition"
+            }
+            style={{ padding: metricPad, minHeight: metricMinH, borderRadius: 7 }}
+          >
+            <div style={{ fontSize: mLabel, color: tc.labelMuted, marginBottom: ts.gap.xxs }}>3주 연속 결석</div>
+            <span style={{ fontSize: mValue, fontWeight: tw.extrabold, color: "var(--color-text)" }}>{consecutiveAbsent.length}명</span>
+            <div style={{ fontSize: mSub, color: tc.labelMuted, marginTop: ts.gap.xxs }}>클릭 시 명단</div>
+          </button>
+        )}
       </div>
 
       <div className={mob ? "grid grid-cols-1 gap-2" : "grid grid-cols-1 gap-6 lg:grid-cols-2"}>
@@ -288,22 +511,13 @@ export function AttendanceDashboard({
           style={{ maxHeight: chartH + (mob ? 56 : 80) }}
         >
           <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "var(--color-text)" }}>
-            부서별 출석률
+            {embedded ? "부서별 평균 출석률 (올해)" : "부서별 출석률 (이번 주)"}
           </h4>
-          <LazyChart height={chartH}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={deptRates} layout="vertical" margin={{ top: 5, right: 10, left: mob ? -14 : -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={tc.chartGrid} />
-                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: mob ? 8 : tf.scale.xs }} />
-                <YAxis type="category" dataKey="dept" width={mob ? 44 : 60} tick={{ fontSize: mob ? 8 : tf.scale.xs }} />
-                <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
-                <Bar dataKey="rate" name="출석률" fill={tc.navyEmphasis} radius={[0, tr.xs, tr.xs, 0]} maxBarSize={28} />
-              </BarChart>
-            </ResponsiveContainer>
-          </LazyChart>
+          <DashStyleDeptBarChart items={deptRates} mob={mob} height={chartH} />
         </div>
       </div>
 
+      {!embedded && (
       <div className={mob ? "rounded-lg border border-gray-100 bg-white p-2 shadow-sm" : "bg-white rounded-xl shadow-sm border border-gray-100 p-4"}>
         <h4 className={mob ? "mb-1.5 text-[12px] font-semibold" : "mb-4 text-sm font-semibold"} style={{ color: "var(--color-text)" }}>
           월별 출석 히트맵 (최근 8주)
@@ -362,6 +576,7 @@ export function AttendanceDashboard({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

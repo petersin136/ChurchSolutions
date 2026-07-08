@@ -1,16 +1,182 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect, useRef, type CSSProperties } from "react";
+import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef, type CSSProperties } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { tokens } from "@/styles/tokens";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { isChurchActiveMember } from "@/lib/attendance-utils";
 import type { Member } from "@/types/db";
+import type { Attendance } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { MemberPhoto, MemberPhotoCircle } from "@/components/common/MemberPhoto";
 import { MEMBER_MGMT } from "@/styles/memberManagementTokens";
+import { MemberSearchCombo } from "@/components/pastoral/MemberSearchCombo";
+import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard";
+import { AttendanceDeptMonthlySummary } from "@/components/attendance/AttendanceStatistics";
+
+const ATTENDANCE_DATE_FIELD_WIDTH = 256;
+
+function formatDeptMokjang(member: Member): string {
+  const dept = (member.dept || "").trim();
+  const mokjang = ((member.mokjang ?? member.group) || "").trim();
+  if (dept && mokjang) return `${dept}/${mokjang}`;
+  return dept || mokjang || "-";
+}
+
+/** 성도 관리 앞 4열 동일 + 출석 상태·사유 */
+const ATTENDANCE_COL_TEMPLATE = "48px 176px 96px 152px 180px minmax(280px, 1.4fr)";
+const ATTENDANCE_COL_MIN_WIDTH = 932;
+const ATTENDANCE_HEADER_COLUMNS = ["번호", "이름", "직분", "부서/목장", "출석 상태", "사유"] as const;
+
+const attendanceGridColumns: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: ATTENDANCE_COL_TEMPLATE,
+  alignItems: "center",
+  width: "100%",
+  minWidth: ATTENDANCE_COL_MIN_WIDTH,
+  boxSizing: "border-box",
+};
+
+const attendanceRowGridStyle: CSSProperties = {
+  ...attendanceGridColumns,
+  paddingLeft: MEMBER_MGMT.gridPadX,
+  paddingRight: MEMBER_MGMT.gridPadX,
+};
+
+const attendanceHeaderBandStyle: CSSProperties = {
+  boxSizing: "border-box",
+  width: "100%",
+  paddingLeft: MEMBER_MGMT.tableBorderWidth + MEMBER_MGMT.gridPadX,
+  paddingRight: MEMBER_MGMT.tableBorderWidth + MEMBER_MGMT.gridPadX,
+};
+
+const ATTENDANCE_COL_LAYOUT = [
+  { align: "left" as const },
+  { align: "left" as const },
+  { align: "left" as const },
+  { align: "left" as const },
+  { align: "center" as const },
+  { align: "left" as const },
+];
+
+function attendanceCellPadStyle(colIndex: number): CSSProperties {
+  const col = ATTENDANCE_COL_LAYOUT[colIndex];
+  return { textAlign: col.align, minWidth: 0, overflow: "hidden" };
+}
+
+function attendanceColumnOffsetX(colIndex: number): number {
+  const offsets: Record<number, number> = {
+    0: MEMBER_MGMT.headerNumOffsetX,
+    1: MEMBER_MGMT.headerNameOffsetX,
+    2: MEMBER_MGMT.headerRoleOffsetX,
+    3: MEMBER_MGMT.headerDeptOffsetX,
+  };
+  return offsets[colIndex] ?? 0;
+}
+
+function columnNudgeStyle(offsetX: number): CSSProperties | undefined {
+  if (offsetX === 0) return undefined;
+  return {
+    display: "inline-block",
+    position: "relative",
+    left: offsetX,
+    maxWidth: "none",
+  };
+}
+
+function attendanceHeaderCellOverflow(colIndex: number): CSSProperties["overflow"] {
+  if (colIndex === 0) return "visible";
+  if (colIndex <= 3 && attendanceColumnOffsetX(colIndex) !== 0) return "visible";
+  return "hidden";
+}
+
+function emptyCellDashStyle(): CSSProperties {
+  return {
+    color: MEMBER_MGMT.rowText,
+    fontSize: MEMBER_MGMT.cellFontSize,
+    fontWeight: MEMBER_MGMT.contentFontWeight,
+  };
+}
+
+const ATTENDANCE_PRESENT_ACTIVE = "#33473b";
+const ATTENDANCE_ABSENT_ACTIVE = "#c94c4c";
+const ATTENDANCE_STATUS_IDLE_BG = "#f3f4f6";
+const ATTENDANCE_STATUS_IDLE_TEXT = "#6b7280";
+
+function attendanceStatusButtonClass(): string {
+  return "h-6 rounded-md px-2.5 text-[11px] font-medium leading-none transition-colors border-0 hover:opacity-90";
+}
+
+function attendanceStatusButtonStyle(status: AttStatusUI, target: AttStatusUI): CSSProperties {
+  const active = status === target;
+  if (active) {
+    return {
+      background: target === "출석" ? ATTENDANCE_PRESENT_ACTIVE : ATTENDANCE_ABSENT_ACTIVE,
+      color: "#ffffff",
+    };
+  }
+  return {
+    background: ATTENDANCE_STATUS_IDLE_BG,
+    color: ATTENDANCE_STATUS_IDLE_TEXT,
+  };
+}
+
+function attendanceDateTriggerStyle(): CSSProperties {
+  return {
+    width: "100%",
+    height: MEMBER_MGMT.searchHeight,
+    minHeight: MEMBER_MGMT.searchHeight,
+    borderRadius: MEMBER_MGMT.radius,
+    background: MEMBER_MGMT.searchBg,
+    border: `1px solid ${MEMBER_MGMT.searchBorder}`,
+    padding: "0 14px",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    cursor: "pointer",
+    fontWeight: 500,
+    fontFamily: MEMBER_MGMT.fontKR,
+    fontSize: MEMBER_MGMT.searchFontSize,
+    color: MEMBER_MGMT.searchText,
+    boxSizing: "border-box",
+  };
+}
+
+/** 성도 관리(MembersSub) 검색과 동일한 정규화·매칭 */
+function normMemberSearchText(s: string): string {
+  return (s ?? "").toLowerCase().replace(/\s+/g, "").replace(/[,\uFF0C./]/g, "");
+}
+
+function filterMembersByMgmtSearchQuery(members: Member[], query: string): Member[] {
+  const q = query.trim().replace(/[,\uFF0C]+$/g, "").trim();
+  if (!q) return members;
+  const qn = normMemberSearchText(q);
+  const digits = q.replace(/\D/g, "");
+  if (digits.length === 0 && q.length < 2) return [];
+  return members.filter((m) => {
+    const nameN = normMemberSearchText(m.name || "");
+    const phoneN = (m.phone || "").replace(/\D/g, "");
+    const deptN = normMemberSearchText(m.dept || "");
+    const mokjangN = normMemberSearchText((m.mokjang ?? m.group) || "");
+    const roleN = normMemberSearchText(m.role || "");
+    const addrN = normMemberSearchText(m.address || "");
+    const memoN = normMemberSearchText(m.memo || "");
+    const prayerN = normMemberSearchText(m.prayer || "");
+    if (nameN === qn) return true;
+    return (
+      nameN.includes(qn) ||
+      deptN.includes(qn) ||
+      mokjangN.includes(qn) ||
+      roleN.includes(qn) ||
+      (digits.length > 0 ? phoneN.includes(digits) : false) ||
+      addrN.includes(qn) ||
+      memoN.includes(qn) ||
+      prayerN.includes(qn)
+    );
+  });
+}
 
 /** 성도 관리(MembersManagementPanel)와 동일한 행 호버 그라데이션 */
 function rowHoverBackground(isHovered: boolean): string {
@@ -31,7 +197,7 @@ function toDateStr(d: Date): string {
 
 const STATUSES = ["출석", "결석"] as const;
 type AttStatusUI = (typeof STATUSES)[number];
-const ATTENDANCE_CHECK_PAGE_SIZE = 15;
+const ATTENDANCE_CHECK_DEFAULT_PAGE_SIZE = 18;
 
 function memberMokjangLabel(m: Member): string {
   return (m.mokjang ?? m.group ?? "").trim();
@@ -261,6 +427,7 @@ const DB_TO_UI_STATUS: Record<string, AttStatusUI> = {
 
 export interface AttendanceCheckProps {
   members: Member[];
+  attendanceList?: Attendance[];
   /** 토스트 (Supabase 저장 결과) */
   toast: (msg: string, type?: "ok" | "err" | "warn") => void;
   getCurrentUserId?: () => string | null;
@@ -285,11 +452,13 @@ function useIsMobile(bp = 768) {
 
 export function AttendanceCheck({
   members,
+  attendanceList = [],
   toast,
   getCurrentUserId,
   onAttendanceSaved,
 }: AttendanceCheckProps) {
   const mob = useIsMobile();
+  const tabletOrLess = useIsMobile(1024);
   const SERVICE_TYPE = "주일예배";
   const todaySunday = useMemo(() => toDateStr(getLastSunday(new Date())), []);
   const [selectedDate, setSelectedDate] = useState(todaySunday);
@@ -303,6 +472,10 @@ export function AttendanceCheck({
   const [mokjangFilter, setMokjangFilter] = useState("");
   const [searchName, setSearchName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageCapacity, setPageCapacity] = useState(tabletOrLess ? 10 : ATTENDANCE_CHECK_DEFAULT_PAGE_SIZE);
+  const PAGE_SIZE = pageCapacity;
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const pagerRef = useRef<HTMLDivElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
@@ -335,28 +508,65 @@ export function AttendanceCheck({
       ...Array.from(set).sort(compareMokjangOrder).map((name) => ({ value: name, label: name })),
     ];
   }, [activeMembers]);
+  const deptOptionsForCombo = useMemo(
+    () => [{ value: "all", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))],
+    [depts],
+  );
+  const mokjangOptionsForCombo = useMemo(
+    () => mokjangSelectOptions.map((o) => (o.value === "" ? { value: "all", label: o.label } : o)),
+    [mokjangSelectOptions],
+  );
+  const roleOptionsForCombo = useMemo(() => {
+    const set = new Set<string>();
+    activeMembers.forEach((m) => {
+      if (m.role) set.add(m.role);
+    });
+    return [{ value: "all", label: "전체" }, ...Array.from(set).sort().map((r) => ({ value: r, label: r }))];
+  }, [activeMembers]);
 
   const filteredMembers = useMemo(() => {
     let list = activeMembers;
     if (deptFilter) list = list.filter((m) => m.dept === deptFilter);
     if (mokjangFilter === "__none__") list = list.filter((m) => !memberMokjangLabel(m));
     else if (mokjangFilter) list = list.filter((m) => memberMokjangLabel(m) === mokjangFilter);
-    if (searchName.trim()) {
-      const q = searchName.trim().toLowerCase();
-      list = list.filter((m) => (m.name || "").toLowerCase().includes(q));
-    }
+    list = filterMembersByMgmtSearchQuery(list, searchName);
     return list;
   }, [activeMembers, deptFilter, mokjangFilter, searchName]);
 
+  const hasSearchQuery = searchName.trim().length > 0;
+
   const pagedMembers = useMemo(
-    () => filteredMembers.slice((currentPage - 1) * ATTENDANCE_CHECK_PAGE_SIZE, currentPage * ATTENDANCE_CHECK_PAGE_SIZE),
-    [filteredMembers, currentPage]
+    () => filteredMembers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filteredMembers, currentPage, PAGE_SIZE]
   );
-  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / ATTENDANCE_CHECK_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / PAGE_SIZE));
 
   useEffect(() => {
     setCurrentPage(1);
   }, [deptFilter, mokjangFilter, searchName, selectedDate]);
+
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(p, totalPages));
+  }, [totalPages]);
+
+  // 성도 관리(MembersManagementPanel)와 동일: 화면 높이에 맞춰 한 페이지 행 수 자동 조절
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const compute = () => {
+      const card = cardRef.current;
+      if (!card) return;
+      const cardTop = card.getBoundingClientRect().top;
+      const pagerH = pagerRef.current?.offsetHeight ?? 90;
+      const bottomPad = MEMBER_MGMT.toolbarPadBottom + 8;
+      const avail = window.innerHeight - cardTop - pagerH - bottomPad;
+      const rows = Math.max(4, Math.min(40, Math.floor(avail / MEMBER_MGMT.rowHeight)));
+      if (Number.isFinite(rows) && rows > 0) setPageCapacity(rows);
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mob]);
 
   const loadAttendance = useCallback(async (date: string, serviceType: string) => {
     if (!supabase) {
@@ -534,98 +744,138 @@ export function AttendanceCheck({
 
   return (
     <div
-      className={mob ? "space-y-2" : "space-y-6"}
+      className={mob ? "space-y-2" : undefined}
       style={
         mob
           ? {
               minHeight: tokens.layout.mobPastoralPanelMinHeight,
               minWidth: 0,
             }
-          : undefined
+          : {
+              display: "flex",
+              flexDirection: "column",
+              width: "100%",
+              maxWidth: "100%",
+              minWidth: 0,
+              boxSizing: "border-box",
+              fontFamily: MEMBER_MGMT.fontKR,
+              paddingTop: MEMBER_MGMT.toolbarPadTop,
+              paddingBottom: MEMBER_MGMT.toolbarPadBottom,
+            }
       }
     >
-      <div
-        className={
-          mob
-            ? "flex flex-wrap items-center gap-2 bg-white rounded-xl shadow-sm border border-gray-100 p-2"
-            : "flex flex-nowrap items-center gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden"
-        }
-        style={
-          mob
-            ? undefined
-            : {
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-                fontFamily: MEMBER_MGMT.fontKR,
-                border: `1px solid ${MEMBER_MGMT.searchBorder}`,
-                borderRadius: MEMBER_MGMT.radius,
-                background: MEMBER_MGMT.searchBg,
-                padding: "8px 16px",
-              }
-        }
-      >
-        <label className={mob ? "flex shrink-0 items-center gap-1.5" : "flex shrink-0 items-center gap-2"}>
-          <span className={mob ? "whitespace-nowrap text-[10px] text-gray-500" : "whitespace-nowrap text-sm text-gray-600"}>
-            날짜
-          </span>
-          <div className={mob ? "min-w-[130px]" : "min-w-[160px]"}>
+      {mob ? (
+      <div className="flex flex-wrap items-center gap-2 bg-white rounded-xl shadow-sm border border-gray-100 p-2">
+        <label className="flex shrink-0 items-center gap-1.5">
+          <span className="whitespace-nowrap text-[10px] text-gray-500">날짜</span>
+          <div className="min-w-[200px]" style={{ width: "100%", maxWidth: ATTENDANCE_DATE_FIELD_WIDTH }}>
             <CalendarDropdown
               value={selectedDate}
               onChange={handleDateChange}
               compact
-              style={{ marginBottom: 0 }}
-              triggerStyle={
-                mob
-                  ? { fontSize: 11, height: 28, minHeight: 28, padding: "4px 8px", borderRadius: 7 }
-                  : { fontSize: 14, minHeight: 40, padding: "8px 12px", borderRadius: 7 }
-              }
+              displayVariant="activity"
+              style={{ marginBottom: 0, width: "100%" }}
+              triggerStyle={{
+                width: "100%",
+                fontSize: 11,
+                height: 28,
+                minHeight: 28,
+                padding: "4px 14px",
+                borderRadius: MEMBER_MGMT.radius,
+                border: `1px solid ${MEMBER_MGMT.searchBorder}`,
+                background: MEMBER_MGMT.searchBg,
+                fontWeight: 500,
+                color: MEMBER_MGMT.searchText,
+              }}
             />
           </div>
         </label>
-        <span
-          className={
-            mob
-              ? "rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#1e40af]"
-              : "rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-600"
-          }
-        >
-          주일예배
-        </span>
-        <label className={mob ? "flex shrink-0 items-center gap-1.5" : "flex shrink-0 items-center gap-2"}>
-          <span className={mob ? "whitespace-nowrap text-[10px] text-gray-500" : "whitespace-nowrap text-sm text-gray-600"}>
-            이름 검색
-          </span>
+        <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#1e40af]">주일예배</span>
+        <label className="flex shrink-0 items-center gap-1.5">
+          <span className="whitespace-nowrap text-[10px] text-gray-500">이름 검색</span>
           <input
             type="search"
             placeholder="이름 검색"
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
-            className={
-              mob
-                ? "h-6 w-20 rounded border border-gray-200 px-1.5 py-0.5 text-[10px]"
-                : "h-auto w-32 rounded-lg border border-gray-200 px-3 py-2 text-sm"
-            }
+            className="h-6 w-20 rounded border border-gray-200 px-1.5 py-0.5 text-[10px]"
           />
         </label>
-        <label className={`flex shrink-0 items-center gap-1 ${mob ? "text-[10px] text-gray-600" : "gap-2 text-sm text-gray-600"}`}>
+        <label className="flex shrink-0 items-center gap-1 text-[10px] text-gray-600">
           <span className="whitespace-nowrap">부서</span>
           <ModernSelect
             value={deptFilter}
             onChange={setDeptFilter}
             options={[{ value: "", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))]}
-              style={{ marginBottom: 0, minWidth: mob ? 72 : 88 }}
+            style={{ marginBottom: 0, minWidth: 72 }}
           />
         </label>
-        <label className={`flex shrink-0 items-center gap-1 ${mob ? "text-[10px] text-gray-600" : "gap-2 text-sm text-gray-600"}`}>
+        <label className="flex shrink-0 items-center gap-1 text-[10px] text-gray-600">
           <span className="whitespace-nowrap">목장</span>
           <ModernSelect
             value={mokjangFilter}
             onChange={setMokjangFilter}
             options={mokjangSelectOptions}
-              style={{ marginBottom: 0, minWidth: mob ? 72 : 100 }}
+            style={{ marginBottom: 0, minWidth: 72 }}
           />
         </label>
       </div>
+      ) : (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "nowrap",
+          gap: MEMBER_MGMT.toolbarGap,
+          alignItems: "stretch",
+          width: "100%",
+          minWidth: 0,
+          flexShrink: 0,
+          fontFamily: MEMBER_MGMT.fontKR,
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <MemberSearchCombo
+            value={searchName}
+            onChange={(v) => {
+              setSearchName(v);
+              if (!v.trim()) {
+                setDeptFilter("");
+                setMokjangFilter("");
+              }
+            }}
+            deptOptions={deptOptionsForCombo}
+            mokjangOptions={mokjangOptionsForCombo}
+            roleOptions={roleOptionsForCombo}
+            onSelectDept={(v) => {
+              setDeptFilter(v === "all" ? "" : v);
+            }}
+            onSelectMokjang={(v) => {
+              if (v === "all") setMokjangFilter("");
+              else if (v === "__none__") setMokjangFilter("__none__");
+              else setMokjangFilter(v);
+            }}
+            onSelectRole={() => {}}
+          />
+        </div>
+        <div
+          style={{
+            flexShrink: 0,
+            width: ATTENDANCE_DATE_FIELD_WIDTH,
+            minWidth: ATTENDANCE_DATE_FIELD_WIDTH,
+          }}
+        >
+          <CalendarDropdown
+            value={selectedDate}
+            onChange={handleDateChange}
+            compact
+            displayVariant="activity"
+            style={{ marginBottom: 0, width: "100%" }}
+            triggerStyle={attendanceDateTriggerStyle()}
+          />
+        </div>
+      </div>
+      )}
 
       {loading ? (
         <div
@@ -636,7 +886,7 @@ export function AttendanceCheck({
         </div>
       ) : mob ? (
         <div className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-          <div className="min-h-0">
+          <div ref={cardRef} className="min-h-0">
             <div className="grid grid-cols-[24px_minmax(0,1fr)_100px_80px] items-center border-b border-gray-100 px-2 py-1 text-[10px] font-medium text-gray-400">
               <span className="text-center">#</span>
               <span className="min-w-0">교인</span>
@@ -644,14 +894,16 @@ export function AttendanceCheck({
               <span className="w-[80px] shrink-0 text-center">사유</span>
             </div>
             {filteredMembers.length === 0 ? (
-              <div className="py-8 text-center text-gray-500 text-sm">교인 목록이 없거나 검색 결과가 없습니다.</div>
+              <div className="py-8 text-center text-gray-500 text-sm">
+                {hasSearchQuery ? "검색 결과가 없습니다" : "교인 목록이 없습니다"}
+              </div>
             ) : (
-              Array.from({ length: ATTENDANCE_CHECK_PAGE_SIZE }, (_, idx) => {
+              Array.from({ length: PAGE_SIZE }, (_, idx) => {
                 const m = pagedMembers[idx];
                 if (!m) {
                   return <div key={`mob-pad-${currentPage}-${idx}`} className="grid h-9 grid-cols-[24px_minmax(0,1fr)_100px_80px] border-b border-gray-50 px-2" aria-hidden />;
                 }
-                const num = (currentPage - 1) * ATTENDANCE_CHECK_PAGE_SIZE + idx + 1;
+                const num = (currentPage - 1) * PAGE_SIZE + idx + 1;
                 const status = getStatus(m.id);
                 const isAbsent = status === "결석";
                 return (
@@ -671,37 +923,37 @@ export function AttendanceCheck({
                       <button
                         type="button"
                         onClick={() => toggleAttendance(m.id, "출석")}
-                        className={`h-5 px-2 text-[10px] rounded font-medium transition-colors ${
-                          status === "출석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-500"
-                        }`}
+                        className="h-5 rounded px-2 text-[10px] font-medium transition-colors border-0"
+                        style={attendanceStatusButtonStyle(status, "출석")}
                       >
                         출석
                       </button>
                       <button
                         type="button"
                         onClick={() => toggleAttendance(m.id, "결석")}
-                        className={`h-5 px-2 text-[10px] rounded font-medium transition-colors ${
-                          status === "결석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-500"
-                        }`}
+                        className="h-5 rounded px-2 text-[10px] font-medium transition-colors border-0"
+                        style={attendanceStatusButtonStyle(status, "결석")}
                       >
                         결석
                       </button>
                     </div>
-                    <input
-                      type="text"
-                      placeholder="사유"
-                      value={noteMap[m.id] ?? ""}
-                      onChange={(e) => handleNoteChange(m.id, e.target.value)}
-                      disabled={!isAbsent}
-                      className={`w-[80px] shrink-0 h-5 px-1.5 text-[10px] border border-gray-200 rounded box-border ${
-                        isAbsent ? "bg-white text-gray-900 placeholder:text-gray-300" : "bg-gray-50 text-gray-400 placeholder:text-gray-200 cursor-not-allowed"
-                      }`}
-                    />
+                    {isAbsent ? (
+                      <input
+                        type="text"
+                        placeholder="사유"
+                        value={noteMap[m.id] ?? ""}
+                        onChange={(e) => handleNoteChange(m.id, e.target.value)}
+                        className="box-border h-5 w-[80px] shrink-0 rounded border border-gray-200 bg-white px-1.5 text-[10px] text-gray-900 placeholder:text-gray-300"
+                      />
+                    ) : (
+                      <span className="w-[80px] shrink-0 text-[10px]" style={emptyCellDashStyle()}>-</span>
+                    )}
                   </div>
                 );
               })
             )}
           </div>
+          <div ref={pagerRef}>
           <AttendanceListPaginationBar
             compact
             page={currentPage}
@@ -709,112 +961,135 @@ export function AttendanceCheck({
             totalItems={filteredMembers.length}
             onPageChange={setCurrentPage}
           />
+          </div>
         </div>
       ) : (
-        <div className="flex flex-col">
-          {/* 헤더 — 흰 카드 밖, 배경 없음 (성도 관리 헤더 밴드와 동일) */}
-          <table
-            className="w-full table-fixed border-collapse text-sm"
-            style={{ marginBottom: MEMBER_MGMT.headerToCardGap }}
-          >
-            <colgroup>
-              <col className="w-[5%]" />
-              <col className="w-[14%]" />
-              <col className="w-[14%]" />
-              <col className="w-[14%]" />
-              <col className="w-[20%]" />
-              <col className="w-[33%]" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th
-                  className="px-2 py-3 text-center"
-                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
-                >
-                  번호
-                </th>
-                <th
-                  className="px-3 py-3 text-left"
-                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
-                >
-                  이름
-                </th>
-                <th
-                  className="px-3 py-3 text-left"
-                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
-                >
-                  부서
-                </th>
-                <th
-                  className="px-3 py-3 text-left"
-                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
-                >
-                  목장
-                </th>
-                <th
-                  className="px-3 py-3 text-center"
-                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
-                >
-                  출석 상태
-                </th>
-                <th
-                  className="px-3 py-3 text-left"
-                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
-                >
-                  사유
-                </th>
-              </tr>
-            </thead>
-          </table>
-          {/* 데이터 카드 — 흰 배경만 (헤더는 위에서 카드 밖) */}
+        <div
+          style={{
+            flex: "0 0 auto",
+            width: "100%",
+            overflowX: "auto",
+            overflowY: "visible",
+            display: "flex",
+            flexDirection: "column",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           <div
-            className="flex flex-col overflow-hidden"
-            style={{ background: MEMBER_MGMT.tableBg, borderRadius: MEMBER_MGMT.radius }}
+            style={{
+              minWidth: ATTENDANCE_COL_MIN_WIDTH + MEMBER_MGMT.gridPadX * 2,
+              width: "100%",
+              flex: "0 0 auto",
+              display: "flex",
+              flexDirection: "column",
+            }}
           >
-            <table className="w-full table-fixed border-collapse text-sm">
-              <colgroup>
-                <col className="w-[5%]" />
-                <col className="w-[14%]" />
-                <col className="w-[14%]" />
-                <col className="w-[14%]" />
-                <col className="w-[20%]" />
-                <col className="w-[33%]" />
-              </colgroup>
-            <tbody>
+            <div
+              style={{
+                width: "100%",
+                flexShrink: 0,
+                marginTop: MEMBER_MGMT.headerRowGap,
+                marginBottom: MEMBER_MGMT.headerToCardGap,
+                display: "flex",
+                alignItems: "center",
+                minHeight: MEMBER_MGMT.headerMinHeight,
+                ...attendanceHeaderBandStyle,
+              }}
+            >
+              <div style={{ ...attendanceGridColumns, alignItems: "center", width: "100%" }}>
+                {ATTENDANCE_HEADER_COLUMNS.map((h, i) => {
+                  const nudge = attendanceColumnOffsetX(i);
+                  return (
+                    <div
+                      key={h}
+                      style={{
+                        ...attendanceCellPadStyle(i),
+                        fontSize: MEMBER_MGMT.headerFontSize,
+                        fontWeight: MEMBER_MGMT.headerFontWeight,
+                        lineHeight: MEMBER_MGMT.headerLineHeight,
+                        color: MEMBER_MGMT.headerText,
+                        whiteSpace: "nowrap",
+                        overflow: attendanceHeaderCellOverflow(i),
+                        textOverflow: "ellipsis",
+                        letterSpacing: i === 0 ? "0" : "-0.01em",
+                      }}
+                    >
+                      <span style={columnNudgeStyle(nudge)}>{h}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div
+              ref={cardRef}
+              className="flex flex-col overflow-hidden"
+              style={{ background: MEMBER_MGMT.tableBg, borderRadius: MEMBER_MGMT.radius }}
+            >
               {filteredMembers.length === 0 ? (
-                <tr><td colSpan={6} className="py-8 text-center text-gray-500">교인 목록이 없거나 검색 결과가 없습니다.</td></tr>
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: PAGE_SIZE * MEMBER_MGMT.rowHeight,
+                    color: MEMBER_MGMT.memoMuted,
+                    fontSize: MEMBER_MGMT.cellFontSize,
+                  }}
+                >
+                  {hasSearchQuery ? "검색 결과가 없습니다" : "교인 목록이 없습니다"}
+                </div>
               ) : (
-                Array.from({ length: ATTENDANCE_CHECK_PAGE_SIZE }, (_, idx) => {
+                Array.from({ length: PAGE_SIZE }, (_, idx) => {
                   const m = pagedMembers[idx];
+                  const isNextHovered =
+                    idx < pagedMembers.length - 1 && hoveredRow === pagedMembers[idx + 1]?.id;
                   if (!m) {
                     return (
-                      <tr
+                      <div
                         key={`pad-${currentPage}-${idx}`}
-                        style={{ height: MEMBER_MGMT.rowHeight, borderBottom: `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}` }}
-                      >
-                        <td colSpan={6} className="p-0" style={{ height: MEMBER_MGMT.rowHeight }} aria-hidden />
-                      </tr>
+                        style={{
+                          ...attendanceRowGridStyle,
+                          height: MEMBER_MGMT.rowHeight,
+                          borderBottom: `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}`,
+                        }}
+                        aria-hidden
+                      />
                     );
                   }
-                  const num = (currentPage - 1) * ATTENDANCE_CHECK_PAGE_SIZE + idx + 1;
+                  const num = (currentPage - 1) * PAGE_SIZE + idx + 1;
                   const status = getStatus(m.id);
                   const isAbsent = status === "결석";
                   const isHovered = hoveredRow === m.id;
+                  const roleText = (m.role || "").trim() || "-";
                   return (
-                    <tr
+                    <div
                       key={m.id}
                       onMouseEnter={() => setHoveredRow(m.id)}
                       onMouseLeave={() => setHoveredRow((prev) => (prev === m.id ? null : prev))}
                       style={{
+                        ...attendanceRowGridStyle,
                         height: MEMBER_MGMT.rowHeight,
-                        borderBottom: `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}`,
+                        borderBottom:
+                          isHovered || isNextHovered
+                            ? "transparent"
+                            : `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}`,
                         background: rowHoverBackground(isHovered),
-                        transition: "background 0.12s ease",
+                        transition: "background 0.12s ease, border-color 0.12s ease",
                       }}
                     >
-                      <td className="px-2 text-center align-middle tabular-nums" style={{ color: MEMBER_MGMT.numText, fontSize: MEMBER_MGMT.cellFontSize }}>{num}</td>
-                      <td className="overflow-hidden px-3 align-middle">
-                        <div className="flex min-w-0 items-center" style={{ gap: MEMBER_MGMT.nameAvatarGap }}>
+                      <div
+                        style={{
+                          ...attendanceCellPadStyle(0),
+                          color: MEMBER_MGMT.numText,
+                          fontSize: MEMBER_MGMT.cellFontSize,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {num}
+                      </div>
+                      <div style={{ ...attendanceCellPadStyle(1), overflow: "hidden" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: MEMBER_MGMT.nameAvatarGap, minWidth: 0 }}>
                           <div
                             style={{
                               width: MEMBER_MGMT.avatarSize,
@@ -833,61 +1108,100 @@ export function AttendanceCheck({
                           >
                             <MemberPhoto photo={m.photo} name={m.name} className="h-full w-full object-cover" fallback={memberSurnameInitial(m.name)} />
                           </div>
-                          <div className="min-w-0 truncate" title={m.name} style={{ color: MEMBER_MGMT.nameText, fontSize: MEMBER_MGMT.nameFontSize, fontWeight: MEMBER_MGMT.nameFontWeight }}>{m.name}</div>
+                          <span
+                            style={{
+                              fontSize: MEMBER_MGMT.nameFontSize,
+                              fontWeight: MEMBER_MGMT.nameFontWeight,
+                              color: MEMBER_MGMT.nameText,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={m.name}
+                          >
+                            {m.name}
+                          </span>
                         </div>
-                      </td>
-                      <td className="overflow-hidden px-3 align-middle" style={{ color: MEMBER_MGMT.subText, fontSize: MEMBER_MGMT.cellFontSize, fontWeight: MEMBER_MGMT.subFontWeight }}><div className="truncate">{m.dept || "-"}</div></td>
-                      <td className="overflow-hidden px-3 align-middle" style={{ color: MEMBER_MGMT.deptText, fontSize: MEMBER_MGMT.cellFontSize, fontWeight: MEMBER_MGMT.subFontWeight }}><div className="truncate">{memberMokjangLabel(m) || "-"}</div></td>
-                      <td className="px-3 align-middle">
-                        <div className="flex justify-center gap-2">
+                      </div>
+                      <div
+                        style={{
+                          ...attendanceCellPadStyle(2),
+                          fontSize: MEMBER_MGMT.cellFontSize,
+                          fontWeight: MEMBER_MGMT.subFontWeight,
+                          color: MEMBER_MGMT.subText,
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {roleText}
+                      </div>
+                      <div
+                        style={{
+                          ...attendanceCellPadStyle(3),
+                          fontSize: MEMBER_MGMT.cellFontSize,
+                          fontWeight: MEMBER_MGMT.subFontWeight,
+                          color: MEMBER_MGMT.deptText,
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {formatDeptMokjang(m)}
+                      </div>
+                      <div style={attendanceCellPadStyle(4)}>
+                        <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
                           <button
                             type="button"
                             onClick={() => toggleAttendance(m.id, "출석")}
-                            className={`h-6 rounded-md px-2.5 text-[11px] font-medium leading-none transition-colors ${status === "출석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                            className={attendanceStatusButtonClass()}
+                            style={attendanceStatusButtonStyle(status, "출석")}
                           >
                             출석
                           </button>
                           <button
                             type="button"
                             onClick={() => toggleAttendance(m.id, "결석")}
-                            className={`h-6 rounded-md px-2.5 text-[11px] font-medium leading-none transition-colors ${status === "결석" ? "bg-slate-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                            className={attendanceStatusButtonClass()}
+                            style={attendanceStatusButtonStyle(status, "결석")}
                           >
                             결석
                           </button>
                         </div>
-                      </td>
-                      <td className="px-3 align-middle">
-                        <input
-                          type="text"
-                          placeholder="사유 (선택)"
-                          value={noteMap[m.id] ?? ""}
-                          onChange={(e) => handleNoteChange(m.id, e.target.value)}
-                          disabled={!isAbsent}
-                          className={`h-6 w-full max-w-[180px] rounded-md border border-gray-200 px-2 text-[11px] box-border ${isAbsent ? "bg-white" : "bg-gray-50 text-gray-400"}`}
-                        />
-                      </td>
-                    </tr>
+                      </div>
+                      <div style={attendanceCellPadStyle(5)}>
+                        {isAbsent ? (
+                          <input
+                            type="text"
+                            placeholder="사유 (선택)"
+                            value={noteMap[m.id] ?? ""}
+                            onChange={(e) => handleNoteChange(m.id, e.target.value)}
+                            className="box-border h-8 w-full min-w-[240px] rounded-md border border-gray-200 bg-white px-2.5 text-[14.3px] text-gray-900 placeholder:text-gray-400"
+                          />
+                        ) : (
+                          <span style={emptyCellDashStyle()}>-</span>
+                        )}
+                      </div>
+                    </div>
                   );
                 })
               )}
-            </tbody>
-            </table>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexShrink: 0,
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "32px 4px 2px",
-            }}
-          >
-            <AttendanceNumberPagination
-              totalItems={filteredMembers.length}
-              itemsPerPage={ATTENDANCE_CHECK_PAGE_SIZE}
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-            />
+            </div>
+            <div
+              ref={pagerRef}
+              style={{
+                display: "flex",
+                flexShrink: 0,
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "32px 4px 2px",
+              }}
+            >
+              <AttendanceNumberPagination
+                totalItems={filteredMembers.length}
+                itemsPerPage={PAGE_SIZE}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -895,6 +1209,17 @@ export function AttendanceCheck({
       <div className="flex justify-end px-1 text-xs text-gray-500">
         {saving ? "저장 중..." : saved ? "자동 저장됨" : saveError ? "저장 실패" : ""}
       </div>
+
+      {!loading && (
+        <>
+          <section style={{ marginTop: mob ? 16 : 40, width: "100%" }}>
+            <AttendanceDashboard embedded members={members} attendanceList={attendanceList} />
+          </section>
+          <section style={{ marginTop: mob ? 16 : 32, width: "100%", paddingBottom: mob ? 16 : 24 }}>
+            <AttendanceDeptMonthlySummary members={members} attendanceList={attendanceList} />
+          </section>
+        </>
+      )}
     </div>
   );
 }

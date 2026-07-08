@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { Check, FileText, Pin, X } from "lucide-react";
+import { Check, FileText, X } from "lucide-react";
 import { AppDeleteConfirmModal } from "@/components/common/AppDeleteConfirmModal";
 import type { QuickNoteItem } from "@/components/common/QuickNoteModal";
 import { supabase } from "@/lib/supabase";
@@ -16,6 +16,7 @@ import {
   MEMO_HISTORY_MODAL,
   memoHistoryOverlayStyle,
   memoHistoryShellStyle,
+  memoImportantPearlStyle,
 } from "@/styles/memoHistoryModalTokens";
 import { isRemoteNoteId } from "@/lib/prayerAnswers";
 
@@ -633,40 +634,37 @@ export function MemoHistoryModal({
                               flexShrink: 0,
                             }}
                           >
-                            <div
+                            <button
+                              type="button"
+                              aria-label={important ? "중요 표시됨" : "중요 표시"}
+                              onClick={() => toggleImportant(item)}
                               style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: important ? M.pinRadius : 6,
-                                border: important
-                                  ? `1.5px solid ${M.pinBorder}`
-                                  : `1.5px solid ${M.nodeBorder}`,
-                                background: important ? M.pinBg : M.nodeBg,
+                                width: 20,
+                                height: 20,
+                                borderRadius: M.radius,
+                                border: important ? "none" : `1.5px solid ${M.checkBorder}`,
+                                ...(important ? memoImportantPearlStyle(true) : { background: M.nodeBg }),
+                                color: "#ffffff",
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
+                                cursor: "pointer",
                                 flexShrink: 0,
+                                padding: 0,
                                 position: "relative",
                                 zIndex: 1,
                               }}
                             >
                               {important ? (
-                                <Pin
-                                  size={13}
-                                  strokeWidth={2.25}
-                                  style={{
-                                    color: M.pinIcon,
-                                    transform: "rotate(45deg)",
-                                  }}
-                                />
+                                <Check size={12} strokeWidth={2.5} />
                               ) : (
                                 <FileText
-                                  size={13}
+                                  size={12}
                                   strokeWidth={2}
                                   style={{ color: M.nodeIcon }}
                                 />
                               )}
-                            </div>
+                            </button>
                           </div>
 
                           {/* 카드 */}
@@ -678,7 +676,9 @@ export function MemoHistoryModal({
                             <div
                               style={{
                                 borderRadius: M.cardRadius,
-                                background: M.cardHeaderBg,
+                                ...(important
+                                  ? memoImportantPearlStyle()
+                                  : { background: M.cardHeaderBg }),
                                 paddingBottom: M.cardBezel,
                                 paddingLeft: M.cardBezel,
                                 paddingRight: M.cardBezel,
@@ -693,7 +693,7 @@ export function MemoHistoryModal({
                                   justifyContent: "space-between",
                                   gap: 8,
                                   padding: `${M.cardHeaderPadY}px ${M.cardHeaderPadX}px`,
-                                  color: M.titleColor,
+                                  color: important ? M.cardHeaderImportantText : M.titleColor,
                                 }}
                               >
                                 <span
@@ -738,14 +738,16 @@ export function MemoHistoryModal({
                                       padding: 0,
                                       boxSizing: "border-box",
                                       cursor: deletingId === item.id ? "not-allowed" : "pointer",
-                                      color: M.iconMuted,
+                                      color: important ? "rgba(255,255,255,0.9)" : M.iconMuted,
                                       display: "inline-flex",
                                       alignItems: "center",
                                       justifyContent: "center",
                                       flexShrink: 0,
                                     }}
                                     onMouseEnter={(e) => {
-                                      e.currentTarget.style.background = "rgba(255,255,255,0.75)";
+                                      e.currentTarget.style.background = important
+                                        ? "rgba(255,255,255,0.22)"
+                                        : "rgba(255,255,255,0.75)";
                                     }}
                                     onMouseLeave={(e) => {
                                       e.currentTarget.style.background = "transparent";
@@ -771,14 +773,16 @@ export function MemoHistoryModal({
                                       padding: 0,
                                       boxSizing: "border-box",
                                       cursor: "pointer",
-                                      color: important ? M.pinIcon : M.iconMuted,
+                                      color: important ? "rgba(255,255,255,0.9)" : M.iconMuted,
                                       display: "inline-flex",
                                       alignItems: "center",
                                       justifyContent: "center",
                                       flexShrink: 0,
                                     }}
                                     onMouseEnter={(e) => {
-                                      e.currentTarget.style.background = "rgba(255,255,255,0.75)";
+                                      e.currentTarget.style.background = important
+                                        ? "rgba(255,255,255,0.22)"
+                                        : "rgba(255,255,255,0.75)";
                                     }}
                                     onMouseLeave={(e) => {
                                       e.currentTarget.style.background = "transparent";
@@ -792,7 +796,8 @@ export function MemoHistoryModal({
                               {/* 카드 본문 */}
                               <div
                                 style={{
-                                  background: M.cardBodyBg,
+                                  background: important ? M.cardBodyImportantBg : M.cardBodyBg,
+                                  border: important ? `1px solid ${M.cardBodyImportantBorder}` : "none",
                                   borderRadius: M.cardInnerRadius,
                                   padding: `${M.cardBodyPadY}px ${M.cardBodyPadX}px`,
                                   boxSizing: "border-box",

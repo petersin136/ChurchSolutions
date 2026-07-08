@@ -46,7 +46,7 @@ import { PrayerMemoPanel } from "@/components/pastoral/PrayerMemoPanel";
 import { ActivityRecordModal } from "@/components/pastoral/ActivityRecordModal";
 import { PrayerHistoryModal } from "@/components/pastoral/PrayerHistoryModal";
 import { MemoHistoryModal } from "@/components/pastoral/MemoHistoryModal";
-import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics } from "@/components/attendance";
+import { AttendanceCheck } from "@/components/attendance";
 import { ReportModal } from "@/components/report/ReportModal";
 import { REPORT_DEFS, ReportPreviewModal, type ReportId } from "@/components/report/A4Reports";
 import { ModernSelect } from "@/components/common/ModernSelect";
@@ -4159,33 +4159,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   }, [schoolDepartments, schoolEnrollments]);
   const noteMemberDropdownRef = useRef<HTMLDivElement>(null);
 
-  // 출결 Phase 3: 예배별 출결
-  type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics";
-  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "statistics", "check", "absentee"];
-  const [attendanceSubTab, setAttendanceSubTabState] = useState<AttendanceSubTab>(() => {
-    if (typeof window === "undefined") return "dashboard";
-    const v = localStorage.getItem("pastoral_attendance_sub_tab");
-    if (v === "weekly") return "check";
-    if (v === "bulletin") return "dashboard";
-    return (ATTENDANCE_SUB_IDS.includes(v as AttendanceSubTab) ? v : "dashboard") as AttendanceSubTab;
-  });
-  const setAttendanceSubTab = useCallback((id: AttendanceSubTab) => setAttendanceSubTabState(id), []);
   const openAttendanceStatistics = useCallback(() => {
-    setAttendanceSubTab("statistics");
     navigateToSub("attendance");
-  }, [navigateToSub, setAttendanceSubTab]);
-  const attendanceSegmentItems = useMemo(
-    () => [
-      { id: "dashboard", label: "대시보드" },
-      { id: "statistics", label: "출석 통계" },
-      { id: "check", label: "출석 체크" },
-      { id: "absentee", label: "결석자 관리" },
-    ],
-    [],
-  );
-  useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("pastoral_attendance_sub_tab", attendanceSubTab);
-  }, [attendanceSubTab]);
+  }, [navigateToSub]);
   const [dateBasedAttendance, setDateBasedAttendance] = useState<Attendance[]>([]);
 
   // 출석부 대시보드/결석자/통계: Supabase attendance 테이블(date + service_type)에서 로드 (출석 체크 탭과 동일 소스)
@@ -4222,9 +4198,9 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   }, [churchId]);
 
   useEffect(() => {
-    if (!churchId) return;
+    if (!churchId || activeSub !== "attendance") return;
     fetchDateBasedAttendance();
-  }, [churchId, activeSub, attendanceSubTab, fetchDateBasedAttendance]);
+  }, [churchId, activeSub, fetchDateBasedAttendance]);
 
   /** 출석 체크 저장 후 호출: db.attendance(주차별)와 dateBasedAttendance를 재조회해 성도 관리 등에 즉시 반영 */
   const refetchAttendanceAfterSave = useCallback(() => {
@@ -4931,12 +4907,12 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       }
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
-      contentBg={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" ? DASH_GLOBAL.bg : undefined}
-      contentPaddingLeft={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" ? DASH_GLOBAL.contentPadLeft : undefined}
-      contentPaddingRight={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" ? DASH_GLOBAL.contentPadRight : undefined}
-      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "members" || activeSub === "notes" ? 20 : undefined}
-      contentTopGap={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" || activeSub === "notes" ? getMemberContentTopGap() : undefined}
-      contentFontFamily={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" ? DASH_GLOBAL.fontKR : undefined}
+      contentBg={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.bg : undefined}
+      contentPaddingLeft={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.contentPadLeft : undefined}
+      contentPaddingRight={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.contentPadRight : undefined}
+      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? 20 : undefined}
+      contentTopGap={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? getMemberContentTopGap() : undefined}
+      contentFontFamily={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.fontKR : undefined}
       hideHeader={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance"}
     >
           {activeSub === "dashboard" && (
@@ -4955,136 +4931,12 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           )}
           {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openNoteModal={openNoteModal} openQuickNote={openQuickNote} openActivityModal={openActivityModal} churchId={churchId} />}
           {activeSub === "attendance" && (
-            <>
-              <div
-                style={{
-                  marginBottom: mob ? 6 : 16,
-                  paddingBottom: mob ? 8 : 12,
-                  borderBottom: "none",
-                  boxSizing: "border-box",
-                  ...(mob
-                    ? {}
-                    : {
-                        position: "static",
-                        background: "transparent",
-                        paddingTop: 0,
-                        paddingBottom: 0,
-                      }),
-                }}
-              >
-                {mob ? (
-                  <>
-                    {([
-                      { gridTemplateColumns: "1fr 1fr", slice: [0, 2] as const },
-                      { gridTemplateColumns: "1fr 1fr", slice: [2, 4] as const },
-                    ] as const).map((row, rowIdx) => (
-                      <div
-                        key={rowIdx}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: row.gridTemplateColumns,
-                          gap: 6,
-                          marginBottom: 6,
-                          width: "100%",
-                          minWidth: 0,
-                        }}
-                      >
-                        {attendanceSegmentItems.slice(row.slice[0], row.slice[1]).map((item) => {
-                          const active = attendanceSubTab === item.id;
-                          return (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => setAttendanceSubTab(item.id as AttendanceSubTab)}
-                              style={{
-                                width: "100%",
-                                height: 34,
-                                fontSize: 11,
-                                fontWeight: 600,
-                                borderRadius: 7,
-                                border: active ? "1px solid var(--color-primary)" : `1px solid ${C.border}`,
-                                fontFamily: "inherit",
-                                cursor: "pointer",
-                                boxSizing: "border-box",
-                                background: active ? C.accentBg : C.card,
-                                color: active ? C.accent : C.textMuted,
-                              }}
-                            >
-                              {item.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-                    {attendanceSegmentItems.map((item) => {
-                      const active = attendanceSubTab === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setAttendanceSubTab(item.id as AttendanceSubTab)}
-                          style={{
-                            height: 34,
-                            padding: "0 16px",
-                            borderRadius: 7,
-                            border: active ? "1px solid var(--color-primary)" : `1px solid ${C.border}`,
-                            background: active ? C.accentBg : C.card,
-                            color: active ? C.accent : C.textMuted,
-                            fontSize: 13,
-                            fontWeight: 600,
-                            fontFamily: "inherit",
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                            boxSizing: "border-box",
-                          }}
-                        >
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              {attendanceSubTab === "dashboard" && (
-                <div style={{ width: "100%", minHeight: mob ? undefined : 520 }}>
-                  <AttendanceDashboard
-                    members={db.members}
-                    attendanceList={attendanceListForDashboard}
-                    onOpenCheck={() => setAttendanceSubTab("check")}
-                    onOpenAbsentee={() => setAttendanceSubTab("absentee")}
-                    onOpenAbsenteeList={() => setAttendanceSubTab("absentee")}
-                  />
-                </div>
-              )}
-              {attendanceSubTab === "check" && (
-                <AttendanceCheck
-                  members={db.members}
-                  toast={toast}
-                  onAttendanceSaved={refetchAttendanceAfterSave}
-                />
-              )}
-              {attendanceSubTab === "absentee" && (
-                <AbsenteeManagement
-                  members={db.members}
-                  attendanceList={attendanceListForDashboard}
-                  consecutiveWeeks={3}
-                  toast={toast}
-                  onAddVisit={(memberId) => { setNoteTargetId(memberId); setShowNoteModal(true); toast("심방 등록은 기도/메모에서 기록해 주세요", "ok"); }}
-                />
-              )}
-              {attendanceSubTab === "statistics" && (
-                <div style={{ width: "100%", minHeight: mob ? undefined : 520 }}>
-                  <AttendanceStatistics
-                    members={db.members}
-                    attendanceList={attendanceListForDashboard}
-                    toast={toast}
-                  />
-                </div>
-              )}
-            </>
+            <AttendanceCheck
+              members={db.members}
+              attendanceList={attendanceListForDashboard}
+              toast={toast}
+              onAttendanceSaved={refetchAttendanceAfterSave}
+            />
           )}
           {activeSub === "notes" && (
             <NotesSub

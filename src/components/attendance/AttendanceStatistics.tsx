@@ -679,3 +679,153 @@ export function AttendanceStatistics({
     </div>
   );
 }
+
+/** 출석 체크 하단 — 부서별 요약 + 월별 출석률 추이만 */
+export function AttendanceDeptMonthlySummary({
+  members,
+  attendanceList,
+}: {
+  members: Member[];
+  attendanceList: Attendance[];
+}) {
+  const mob = useIsMobile();
+  const thisYear = new Date().getFullYear();
+  const currentWeekNum = getWeekNum();
+  const endDate = getSundayForWeekNum(thisYear, currentWeekNum);
+  const startDate = `${thisYear}-01-01`;
+
+  const activeMembers = useMemo(() => getActiveMembers(members), [members]);
+  const sundays = useMemo(() => getSundaysBetween(startDate, endDate), [startDate, endDate]);
+  const totalSundays = sundays.length;
+
+  const byMemberWeek = useMemo(() => {
+    const map: Record<string, Record<string, string>> = {};
+    attendanceList.forEach((a) => {
+      if (!a.date) return;
+      const st = a.service_type || "주일예배";
+      if (st !== "주일예배" && st !== "주일1부예배") return;
+      const weekKey = getSundayOfWeek(a.date);
+      if (!map[a.member_id]) map[a.member_id] = {};
+      const status = a.status === "출석" || a.status === "온라인" ? "출석" : a.status;
+      if (!map[a.member_id][weekKey] || status === "출석") map[a.member_id][weekKey] = status;
+    });
+    return map;
+  }, [attendanceList]);
+
+  const tableRows = useMemo(() => {
+    return activeMembers.map((m) => {
+      const byWeek = byMemberWeek[m.id] || {};
+      let 출석 = 0;
+      sundays.forEach((d) => {
+        if (byWeek[d] === "출석") 출석++;
+      });
+      const rate = totalSundays > 0 ? Math.round((출석 / totalSundays) * 100) : 0;
+      return { member: m, 출석률: rate };
+    });
+  }, [activeMembers, byMemberWeek, sundays, totalSundays]);
+
+  const deptSummary = useMemo(() => {
+    const deptMap: Record<string, { sumRate: number; count: number }> = {};
+    tableRows.forEach((r) => {
+      const dept = r.member.dept || "기타";
+      if (!deptMap[dept]) deptMap[dept] = { sumRate: 0, count: 0 };
+      deptMap[dept].sumRate += r.출석률;
+      deptMap[dept].count += 1;
+    });
+    return Object.entries(deptMap).map(([dept, v]) => ({
+      부서: dept,
+      등록인원: v.count,
+      평균출석률: v.count > 0 ? Math.round(v.sumRate / v.count) : 0,
+    }));
+  }, [tableRows]);
+
+  const monthlyChart = useMemo(() => {
+    const byMonth: Record<string, { present: number; total: number }> = {};
+    sundays.forEach((d) => {
+      const monthKey = d.slice(0, 7);
+      if (!byMonth[monthKey]) byMonth[monthKey] = { present: 0, total: 0 };
+      byMonth[monthKey].total += activeMembers.length;
+      activeMembers.forEach((m) => {
+        const byWeek = byMemberWeek[m.id] || {};
+        const s = byWeek[d];
+        if (s === "출석" || s === "온라인") byMonth[monthKey].present += 1;
+      });
+    });
+    return Object.entries(byMonth).map(([month, v]) => ({
+      month,
+      rate: v.total > 0 ? Math.round((v.present / v.total) * 100) : 0,
+    }));
+  }, [sundays, activeMembers, byMemberWeek]);
+
+  const chartH = mob ? 140 : 260;
+
+  return (
+    <div className={mob ? "grid grid-cols-1 gap-2" : "grid grid-cols-1 gap-6 lg:grid-cols-2"}>
+      <div className={mob ? "rounded-lg border border-gray-100 bg-white p-2" : "rounded-xl border border-gray-100 bg-white p-4 shadow-sm"}>
+        <h4 className={mob ? "mb-2 text-[12px] font-semibold text-[#1e40af]" : "mb-4 text-sm font-semibold text-[#1e40af]"}>
+          부서별 요약
+        </h4>
+        {mob ? (
+          <div className="space-y-0">
+            <div className="flex border-b border-gray-100 px-1 py-1 text-[9px] font-semibold text-[#1e40af]">
+              <span className="min-w-0 flex-1">부서</span>
+              <span className="w-[40px] shrink-0 text-right">인원</span>
+              <span className="w-[44px] shrink-0 text-right">평균</span>
+            </div>
+            {deptSummary.map((row) => (
+              <div key={row.부서} className="flex border-b border-gray-50 px-1 py-1 text-[10px] last:border-0">
+                <span className="min-w-0 flex-1 truncate">{row.부서}</span>
+                <span className="w-[40px] shrink-0 text-right tabular-nums">{fmt(row.등록인원)}</span>
+                <span className="w-[44px] shrink-0 text-right font-medium tabular-nums">{row.평균출석률}%</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="py-2 text-left font-semibold text-[#1e40af]">부서</th>
+                <th className="py-2 text-right font-semibold text-[#1e40af]">등록 인원</th>
+                <th className="py-2 text-right font-semibold text-[#1e40af]">평균 출석률</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deptSummary.map((row) => (
+                <tr key={row.부서} className="border-b border-gray-100">
+                  <td className="py-2">{row.부서}</td>
+                  <td className="py-2 text-right">{fmt(row.등록인원)}</td>
+                  <td className="py-2 text-right font-medium">{row.평균출석률}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div
+        className={mob ? "rounded-lg border border-gray-100 bg-white p-2" : "rounded-xl border border-gray-100 bg-white p-4 shadow-sm"}
+        style={{ minHeight: mob ? chartH + 48 : 280 }}
+      >
+        <h4 className={mob ? "mb-1.5 text-[12px] font-semibold text-[#1e40af]" : "mb-4 text-sm font-semibold text-[#1e40af]"}>
+          월별 출석률 추이
+        </h4>
+        {monthlyChart.length === 0 ? (
+          <div className={mob ? "text-[11px] text-gray-500" : "text-sm text-gray-500"}>출석 데이터가 없습니다.</div>
+        ) : (
+          <div className={mob ? "h-[140px]" : ""}>
+            <LazyChart height={chartH}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis dataKey="month" tick={{ fontSize: mob ? 9 : 11 }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: mob ? 9 : 11 }} width={mob ? 28 : undefined} />
+                  <Tooltip formatter={(v: number | string | undefined) => [`${v ?? 0}%`, "출석률"]} />
+                  <Bar dataKey="rate" name="출석률" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </LazyChart>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
