@@ -47,7 +47,6 @@ import { ActivityRecordModal } from "@/components/pastoral/ActivityRecordModal";
 import { PrayerHistoryModal } from "@/components/pastoral/PrayerHistoryModal";
 import { MemoHistoryModal } from "@/components/pastoral/MemoHistoryModal";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics } from "@/components/attendance";
-import { MonthlyAttendanceBulletin } from "@/components/reports/MonthlyAttendanceBulletin";
 import { ReportModal } from "@/components/report/ReportModal";
 import { REPORT_DEFS, ReportPreviewModal, type ReportId } from "@/components/report/A4Reports";
 import { ModernSelect } from "@/components/common/ModernSelect";
@@ -4161,12 +4160,13 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const noteMemberDropdownRef = useRef<HTMLDivElement>(null);
 
   // 출결 Phase 3: 예배별 출결
-  type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics" | "bulletin";
-  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "statistics", "check", "absentee", "bulletin"];
+  type AttendanceSubTab = "dashboard" | "check" | "absentee" | "statistics";
+  const ATTENDANCE_SUB_IDS: AttendanceSubTab[] = ["dashboard", "statistics", "check", "absentee"];
   const [attendanceSubTab, setAttendanceSubTabState] = useState<AttendanceSubTab>(() => {
     if (typeof window === "undefined") return "dashboard";
     const v = localStorage.getItem("pastoral_attendance_sub_tab");
     if (v === "weekly") return "check";
+    if (v === "bulletin") return "dashboard";
     return (ATTENDANCE_SUB_IDS.includes(v as AttendanceSubTab) ? v : "dashboard") as AttendanceSubTab;
   });
   const setAttendanceSubTab = useCallback((id: AttendanceSubTab) => setAttendanceSubTabState(id), []);
@@ -4180,7 +4180,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       { id: "statistics", label: "출석 통계" },
       { id: "check", label: "출석 체크" },
       { id: "absentee", label: "결석자 관리" },
-      { id: "bulletin", label: "월간 게시판" },
     ],
     [],
   );
@@ -5083,11 +5082,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
                     attendanceList={attendanceListForDashboard}
                     toast={toast}
                   />
-                </div>
-              )}
-              {attendanceSubTab === "bulletin" && (
-                <div style={{ width: "100%", minHeight: mob ? undefined : 520 }}>
-                  <MonthlyAttendanceBulletin />
                 </div>
               )}
             </>
