@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 import {
   PRAYER_HISTORY_FRAME_PATH,
   PRAYER_HISTORY_MODAL,
+  answeredPearlStyle,
   prayerHistoryOverlayStyle,
   prayerHistoryShellStyle,
 } from "@/styles/prayerHistoryModalTokens";
@@ -80,6 +81,43 @@ function memberSubtitle(name: string, role?: string): string {
   return `${n} ${r}`;
 }
 
+const P = PRAYER_HISTORY_MODAL;
+
+function ReplyThreadConnector() {
+  const w = P.replyConnectorWidth;
+  const h = P.replyConnectorHeight;
+  const stroke = P.replyThreadLine;
+  const stemX = 10;
+  const bendY = h - 14;
+  const armEndX = w - 2;
+  return (
+    <svg
+      aria-hidden
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      style={{ flexShrink: 0, display: "block", marginTop: 2 }}
+    >
+      <path
+        d={`M ${stemX} 0 V ${bendY} H ${armEndX - 7}`}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={`M ${armEndX - 13} ${bendY - 4} L ${armEndX - 5} ${bendY} L ${armEndX - 13} ${bendY + 4}`}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export interface PrayerHistoryModalProps {
   open: boolean;
   onClose: () => void;
@@ -127,6 +165,7 @@ export function PrayerHistoryModal({
   const [savingEdit, setSavingEdit] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [editingCommentKey, setEditingCommentKey] = useState<string | null>(null);
+  const [savingCommentKey, setSavingCommentKey] = useState<string | null>(null);
 
   const answeredSet = useMemo(() => {
     const set = new Set(answeredPrayerKeys);
@@ -157,6 +196,7 @@ export function PrayerHistoryModal({
     setEditDraft("");
     setCommentDrafts({});
     setEditingCommentKey(null);
+    setSavingCommentKey(null);
   }, [open, memberId]);
 
   const fetchList = useCallback(async () => {
@@ -317,13 +357,12 @@ export function PrayerHistoryModal({
           style={prayerHistoryShellStyle()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* 삭제 확인 시 뒤 모달은 filter blur (backdrop-filter는 SVG 프레임을 깨뜨림) */}
+          {/* 삭제 확인 시 뒤 모달 클릭 막기 — 블러는 nested 오버레이 backdrop-filter */}
           <div
             style={{
               position: "absolute",
               inset: 0,
               zIndex: 1,
-              filter: pendingDeleteId != null ? "blur(5px)" : undefined,
               pointerEvents: pendingDeleteId != null ? "none" : undefined,
             }}
           >
@@ -639,7 +678,7 @@ export function PrayerHistoryModal({
                               height: 20,
                               borderRadius: PRAYER_HISTORY_MODAL.radius,
                               border: answered ? "none" : `1.5px solid ${PRAYER_HISTORY_MODAL.checkBorder}`,
-                              background: answered ? PRAYER_HISTORY_MODAL.checkAnsweredBg : "#ffffff",
+                              ...(answered ? answeredPearlStyle(true) : { background: "#ffffff" }),
                               color: "#ffffff",
                               display: "inline-flex",
                               alignItems: "center",
@@ -663,9 +702,9 @@ export function PrayerHistoryModal({
                           <div
                             style={{
                               borderRadius: PRAYER_HISTORY_MODAL.cardRadius,
-                              background: answered
-                                ? PRAYER_HISTORY_MODAL.cardHeaderAnsweredBg
-                                : PRAYER_HISTORY_MODAL.cardHeaderBg,
+                              ...(answered
+                                ? answeredPearlStyle()
+                                : { background: PRAYER_HISTORY_MODAL.cardHeaderBg }),
                               paddingBottom: PRAYER_HISTORY_MODAL.cardBezel,
                               paddingLeft: PRAYER_HISTORY_MODAL.cardBezel,
                               paddingRight: PRAYER_HISTORY_MODAL.cardBezel,
@@ -862,100 +901,172 @@ export function PrayerHistoryModal({
                                   </p>
                                   {answered && tab === "answered" ? (
                                     <div style={{ marginTop: 12 }}>
-                                      <div
-                                        style={{
-                                          fontSize: 12,
-                                          fontWeight: 600,
-                                          color: PRAYER_HISTORY_MODAL.commentLabelColor,
-                                          marginBottom: 6,
-                                        }}
-                                      >
-                                        {PRAYER_HISTORY_MODAL.commentLabel}
-                                      </div>
-                                      {commentText.trim() &&
-                                      editingCommentKey !== key ? (
+                                      {commentText.trim() && editingCommentKey !== key ? (
                                         <div
                                           style={{
-                                            background: PRAYER_HISTORY_MODAL.commentBubbleBg,
-                                            border: `1px solid ${PRAYER_HISTORY_MODAL.commentBubbleBorder}`,
-                                            borderRadius: PRAYER_HISTORY_MODAL.cardInnerRadius,
-                                            padding: "10px 12px",
-                                            boxSizing: "border-box",
+                                            display: "flex",
+                                            gap: 6,
+                                            alignItems: "flex-start",
+                                            marginBottom: 10,
                                           }}
                                         >
-                                          <p
-                                            style={{
-                                              margin: 0,
-                                              fontSize: 13,
-                                              lineHeight: 1.55,
-                                              color: PRAYER_HISTORY_MODAL.cardContentColor,
-                                              whiteSpace: "pre-wrap",
-                                            }}
-                                          >
-                                            {commentText}
-                                          </p>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setEditingCommentKey(key);
-                                              setCommentDrafts((prev) => ({
-                                                ...prev,
-                                                [key]: commentText,
-                                              }));
-                                            }}
-                                            style={{
-                                              marginTop: 8,
-                                              border: "none",
-                                              background: "transparent",
-                                              padding: 0,
-                                              cursor: "pointer",
-                                              fontSize: 12,
-                                              fontWeight: 600,
-                                              color: PRAYER_HISTORY_MODAL.commentLabelColor,
-                                              fontFamily: PRAYER_HISTORY_MODAL.fontKR,
-                                            }}
-                                          >
-                                            수정
-                                          </button>
+                                          <ReplyThreadConnector />
+                                          <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                alignItems: "baseline",
+                                                justifyContent: "space-between",
+                                                gap: 8,
+                                              }}
+                                            >
+                                              <div
+                                                style={{
+                                                  display: "flex",
+                                                  alignItems: "baseline",
+                                                  gap: 6,
+                                                  flexWrap: "wrap",
+                                                  minWidth: 0,
+                                                }}
+                                              >
+                                                <span
+                                                  style={{
+                                                    fontSize: 13,
+                                                    fontWeight: 600,
+                                                    color: P.replyUsernameColor,
+                                                  }}
+                                                >
+                                                  응답
+                                                </span>
+                                                <span
+                                                  style={{
+                                                    fontSize: 12,
+                                                    color: P.replyMetaColor,
+                                                  }}
+                                                >
+                                                  {formatDisplayDate(
+                                                    answeredEnd || item.date,
+                                                  )}
+                                                </span>
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setEditingCommentKey(key);
+                                                  setCommentDrafts((prev) => ({
+                                                    ...prev,
+                                                    [key]: commentText,
+                                                  }));
+                                                }}
+                                                style={{
+                                                  border: "none",
+                                                  background: "transparent",
+                                                  padding: 0,
+                                                  cursor: "pointer",
+                                                  fontSize: 12,
+                                                  fontWeight: 600,
+                                                  color: P.replyActionColor,
+                                                  fontFamily: P.fontKR,
+                                                  flexShrink: 0,
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                  e.currentTarget.style.color =
+                                                    P.replyActionHover;
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                  e.currentTarget.style.color =
+                                                    P.replyActionColor;
+                                                }}
+                                              >
+                                                수정
+                                              </button>
+                                            </div>
+                                            <p
+                                              style={{
+                                                margin: "4px 0 0",
+                                                fontSize: 13,
+                                                lineHeight: 1.5,
+                                                color: P.replyTextColor,
+                                                whiteSpace: "pre-wrap",
+                                              }}
+                                            >
+                                              {commentText}
+                                            </p>
+                                          </div>
                                         </div>
-                                      ) : (
-                                        <div>
-                                          <textarea
-                                            value={
-                                              commentDrafts[key] ??
-                                              commentText
-                                            }
-                                            onChange={(e) =>
-                                              setCommentDrafts((prev) => ({
-                                                ...prev,
-                                                [key]: e.target.value,
-                                              }))
-                                            }
-                                            placeholder={PRAYER_HISTORY_MODAL.commentPlaceholder}
-                                            rows={2}
-                                            style={{
-                                              width: "100%",
-                                              boxSizing: "border-box",
-                                              border: `1px solid ${PRAYER_HISTORY_MODAL.commentInputBorder}`,
-                                              borderRadius: PRAYER_HISTORY_MODAL.cardInnerRadius,
-                                              padding: "10px 12px",
-                                              fontFamily: PRAYER_HISTORY_MODAL.fontKR,
-                                              fontSize: 13,
-                                              lineHeight: 1.5,
-                                              color: PRAYER_HISTORY_MODAL.cardContentColor,
-                                              background: PRAYER_HISTORY_MODAL.commentInputBg,
-                                              resize: "vertical",
-                                              outline: "none",
-                                            }}
-                                          />
+                                      ) : null}
+
+                                      {(editingCommentKey === key ||
+                                        !commentText.trim()) ? (
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            gap: 6,
+                                            alignItems: "center",
+                                          }}
+                                        >
+                                          <ReplyThreadConnector />
                                           <div
                                             style={{
+                                              flex: 1,
+                                              minWidth: 0,
                                               display: "flex",
-                                              justifyContent: "flex-end",
+                                              alignItems: "center",
                                               gap: 8,
-                                              marginTop: 8,
                                             }}
                                           >
+                                            <div
+                                              style={{
+                                                flex: 1,
+                                                minWidth: 0,
+                                                display: "flex",
+                                                alignItems: "flex-end",
+                                                background: P.replyInputBg,
+                                                borderRadius: P.replyInputRadius,
+                                                border: `1px solid ${P.replyInputBorder}`,
+                                                padding: "8px 12px",
+                                                boxSizing: "border-box",
+                                              }}
+                                            >
+                                              <textarea
+                                                value={
+                                                  commentDrafts[key] ??
+                                                  commentText
+                                                }
+                                                onChange={(e) =>
+                                                  setCommentDrafts((prev) => ({
+                                                    ...prev,
+                                                    [key]: e.target.value,
+                                                  }))
+                                                }
+                                                placeholder={
+                                                  P.commentPlaceholder
+                                                }
+                                                rows={1}
+                                                style={{
+                                                  flex: 1,
+                                                  minWidth: 0,
+                                                  border: "none",
+                                                  background: "transparent",
+                                                  resize: "none",
+                                                  outline: "none",
+                                                  fontFamily: P.fontKR,
+                                                  fontSize: 13,
+                                                  lineHeight: 1.45,
+                                                  color: P.replyTextColor,
+                                                  padding: 0,
+                                                  margin: 0,
+                                                  maxHeight: 88,
+                                                  overflowY: "auto",
+                                                }}
+                                                onInput={(e) => {
+                                                  const el =
+                                                    e.currentTarget;
+                                                  el.style.height = "auto";
+                                                  el.style.height = `${Math.min(el.scrollHeight, 88)}px`;
+                                                }}
+                                              />
+                                            </div>
                                             {editingCommentKey === key ? (
                                               <button
                                                 type="button"
@@ -968,14 +1079,15 @@ export function PrayerHistoryModal({
                                                   });
                                                 }}
                                                 style={{
-                                                  border: `1px solid ${PRAYER_HISTORY_MODAL.cardBodyBorder}`,
-                                                  background: "#fff",
-                                                  borderRadius: PRAYER_HISTORY_MODAL.radius,
-                                                  padding: "6px 12px",
+                                                  border: "none",
+                                                  background: "transparent",
+                                                  padding: "6px 4px",
+                                                  cursor: "pointer",
                                                   fontSize: 12,
                                                   fontWeight: 600,
-                                                  cursor: "pointer",
-                                                  fontFamily: PRAYER_HISTORY_MODAL.fontKR,
+                                                  color: P.replyActionColor,
+                                                  fontFamily: P.fontKR,
+                                                  flexShrink: 0,
                                                 }}
                                               >
                                                 취소
@@ -983,53 +1095,65 @@ export function PrayerHistoryModal({
                                             ) : null}
                                             <button
                                               type="button"
+                                              disabled={
+                                                savingCommentKey === key ||
+                                                !(
+                                                  commentDrafts[key] ??
+                                                  commentText
+                                                ).trim()
+                                              }
                                               onClick={() => {
                                                 const text = (
                                                   commentDrafts[key] ??
                                                   commentText
                                                 ).trim();
-                                                onSavePrayerComment?.(key, text, item.id);
+                                                if (!text) return;
+                                                setSavingCommentKey(key);
+                                                onSavePrayerComment?.(
+                                                  key,
+                                                  text,
+                                                  item.id,
+                                                );
                                                 setEditingCommentKey(null);
                                                 setCommentDrafts((prev) => {
                                                   const next = { ...prev };
                                                   delete next[key];
                                                   return next;
                                                 });
+                                                setSavingCommentKey(null);
                                               }}
-                                              disabled={
-                                                !(
-                                                  commentDrafts[key] ??
-                                                  commentText
-                                                ).trim()
-                                              }
                                               style={{
                                                 border: "none",
-                                                background: PRAYER_HISTORY_MODAL.commentBtnBg,
-                                                color: PRAYER_HISTORY_MODAL.commentBtnText,
-                                                borderRadius: PRAYER_HISTORY_MODAL.radius,
-                                                padding: "6px 12px",
+                                                flexShrink: 0,
+                                                ...((
+                                                  commentDrafts[key] ??
+                                                  commentText
+                                                ).trim()
+                                                  ? answeredPearlStyle(true)
+                                                  : { background: P.replyPostBtnMuted }),
+                                                color: P.replyPostBtnText,
+                                                borderRadius: P.replyInputRadius,
+                                                padding: "8px 14px",
                                                 fontSize: 12,
-                                                fontWeight: 600,
-                                                cursor: !(
-                                                  commentDrafts[key] ??
-                                                  commentText
-                                                ).trim()
-                                                  ? "not-allowed"
-                                                  : "pointer",
-                                                opacity: !(
-                                                  commentDrafts[key] ??
-                                                  commentText
-                                                ).trim()
-                                                  ? 0.5
-                                                  : 1,
-                                                fontFamily: PRAYER_HISTORY_MODAL.fontKR,
+                                                fontWeight: 700,
+                                                cursor:
+                                                  savingCommentKey === key ||
+                                                  !(
+                                                    commentDrafts[key] ??
+                                                    commentText
+                                                  ).trim()
+                                                    ? "not-allowed"
+                                                    : "pointer",
+                                                fontFamily: P.fontKR,
                                               }}
                                             >
-                                              남기기
+                                              {savingCommentKey === key
+                                                ? "게시 중..."
+                                                : "게시"}
                                             </button>
                                           </div>
                                         </div>
-                                      )}
+                                      ) : null}
                                     </div>
                                   ) : null}
                                 </>

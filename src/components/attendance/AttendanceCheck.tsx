@@ -8,9 +8,16 @@ import { isChurchActiveMember } from "@/lib/attendance-utils";
 import type { Member } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
-import { MemberPhotoCircle } from "@/components/common/MemberPhoto";
+import { MemberPhoto, MemberPhotoCircle } from "@/components/common/MemberPhoto";
+import { MEMBER_MGMT } from "@/styles/memberManagementTokens";
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
+
+/** 성도 관리(MembersManagementPanel)와 동일한 행 호버 그라데이션 */
+function rowHoverBackground(isHovered: boolean): string {
+  if (!isHovered) return "transparent";
+  return `linear-gradient(to bottom, ${MEMBER_MGMT.rowHoverTopLine} 0px, ${MEMBER_MGMT.rowHoverTopFade} 2px, ${MEMBER_MGMT.rowHover} 3px, ${MEMBER_MGMT.rowHover} 100%)`;
+}
 
 function getLastSunday(date: Date): Date {
   const d = new Date(date);
@@ -151,6 +158,7 @@ export function AttendanceCheck({
   const [loading, setLoading] = useState(true);
   const [statusMap, setStatusMap] = useState<Record<string, AttStatusUI>>({});
   const [noteMap, setNoteMap] = useState<Record<string, string>>({});
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const requestIdRef = useRef(0);
   const loadingRef = useRef(false);
   const toastRef = useRef(toast);
@@ -582,7 +590,10 @@ export function AttendanceCheck({
           />
         </div>
       ) : (
-        <div className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+        <div
+          className="flex flex-col overflow-hidden"
+          style={{ background: MEMBER_MGMT.tableBg, borderRadius: MEMBER_MGMT.radius }}
+        >
           <table className="w-full table-fixed border-collapse text-sm">
             <colgroup>
               <col className="w-[5%]" />
@@ -592,14 +603,44 @@ export function AttendanceCheck({
               <col className="w-[20%]" />
               <col className="w-[33%]" />
             </colgroup>
-            <thead className="border-b border-gray-200 bg-gray-50/95">
-              <tr>
-                <th className="px-2 py-3 text-center font-semibold text-[#1e40af]">번호</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#1e40af]">이름</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#1e40af]">부서</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#1e40af]">목장</th>
-                <th className="px-3 py-3 text-center font-semibold text-[#1e40af]">출석 상태</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#1e40af]">사유</th>
+            <thead>
+              <tr style={{ borderBottom: `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}` }}>
+                <th
+                  className="px-2 py-3 text-center"
+                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
+                >
+                  번호
+                </th>
+                <th
+                  className="px-3 py-3 text-left"
+                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
+                >
+                  이름
+                </th>
+                <th
+                  className="px-3 py-3 text-left"
+                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
+                >
+                  부서
+                </th>
+                <th
+                  className="px-3 py-3 text-left"
+                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
+                >
+                  목장
+                </th>
+                <th
+                  className="px-3 py-3 text-center"
+                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
+                >
+                  출석 상태
+                </th>
+                <th
+                  className="px-3 py-3 text-left"
+                  style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
+                >
+                  사유
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -610,31 +651,56 @@ export function AttendanceCheck({
                   const m = pagedMembers[idx];
                   if (!m) {
                     return (
-                      <tr key={`pad-${currentPage}-${idx}`} className="h-12 border-b border-gray-50">
-                        <td colSpan={6} className="h-12 p-0" aria-hidden />
+                      <tr
+                        key={`pad-${currentPage}-${idx}`}
+                        style={{ height: MEMBER_MGMT.rowHeight, borderBottom: `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}` }}
+                      >
+                        <td colSpan={6} className="p-0" style={{ height: MEMBER_MGMT.rowHeight }} aria-hidden />
                       </tr>
                     );
                   }
                   const num = (currentPage - 1) * ATTENDANCE_CHECK_PAGE_SIZE + idx + 1;
                   const status = getStatus(m.id);
                   const isAbsent = status === "결석";
+                  const isHovered = hoveredRow === m.id;
                   return (
-                    <tr key={m.id} className="h-12 border-b border-gray-50 hover:bg-gray-50/50">
-                      <td className="px-2 py-3 text-center align-middle tabular-nums text-gray-500">{num}</td>
-                      <td className="overflow-hidden px-3 py-3 align-middle font-medium">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <MemberPhotoCircle
-                            photo={m.photo}
-                            name={m.name}
-                            getInitial={memberSurnameInitial}
-                            imageClassName="h-7 w-7 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
-                            fallbackClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-semibold text-gray-600"
-                          />
-                          <div className="min-w-0 truncate" title={m.name}>{m.name}</div>
+                    <tr
+                      key={m.id}
+                      onMouseEnter={() => setHoveredRow(m.id)}
+                      onMouseLeave={() => setHoveredRow((prev) => (prev === m.id ? null : prev))}
+                      style={{
+                        height: MEMBER_MGMT.rowHeight,
+                        borderBottom: `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}`,
+                        background: rowHoverBackground(isHovered),
+                        transition: "background 0.12s ease",
+                      }}
+                    >
+                      <td className="px-2 py-3 text-center align-middle tabular-nums" style={{ color: MEMBER_MGMT.numText, fontSize: MEMBER_MGMT.cellFontSize }}>{num}</td>
+                      <td className="overflow-hidden px-3 py-3 align-middle">
+                        <div className="flex min-w-0 items-center" style={{ gap: MEMBER_MGMT.nameAvatarGap }}>
+                          <div
+                            style={{
+                              width: MEMBER_MGMT.avatarSize,
+                              height: MEMBER_MGMT.avatarSize,
+                              borderRadius: "50%",
+                              background: MEMBER_MGMT.avatarBg,
+                              color: MEMBER_MGMT.avatarText,
+                              fontSize: MEMBER_MGMT.avatarFontSize,
+                              fontWeight: MEMBER_MGMT.avatarFontWeight,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              overflow: "hidden",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <MemberPhoto photo={m.photo} name={m.name} className="h-full w-full object-cover" fallback={memberSurnameInitial(m.name)} />
+                          </div>
+                          <div className="min-w-0 truncate" title={m.name} style={{ color: MEMBER_MGMT.nameText, fontSize: MEMBER_MGMT.nameFontSize, fontWeight: MEMBER_MGMT.nameFontWeight }}>{m.name}</div>
                         </div>
                       </td>
-                      <td className="overflow-hidden px-3 py-3 align-middle text-gray-600"><div className="truncate">{m.dept || "-"}</div></td>
-                      <td className="overflow-hidden px-3 py-3 align-middle text-gray-600"><div className="truncate">{memberMokjangLabel(m) || "-"}</div></td>
+                      <td className="overflow-hidden px-3 py-3 align-middle" style={{ color: MEMBER_MGMT.subText, fontSize: MEMBER_MGMT.cellFontSize, fontWeight: MEMBER_MGMT.subFontWeight }}><div className="truncate">{m.dept || "-"}</div></td>
+                      <td className="overflow-hidden px-3 py-3 align-middle" style={{ color: MEMBER_MGMT.deptText, fontSize: MEMBER_MGMT.cellFontSize, fontWeight: MEMBER_MGMT.subFontWeight }}><div className="truncate">{memberMokjangLabel(m) || "-"}</div></td>
                       <td className="px-3 py-3 align-middle">
                         <div className="flex justify-center gap-2">
                           <button

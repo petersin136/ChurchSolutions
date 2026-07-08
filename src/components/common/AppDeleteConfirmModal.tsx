@@ -31,7 +31,7 @@ function deleteConfirmOverlayStyle(
   placement: "viewport" | "nested",
 ): CSSProperties {
   if (placement === "nested") {
-    // CSS .app-modal-overlay 의 backdrop-filter가 부모 흰 프레임을 깨뜨리므로 명시적으로 끔
+    // 부모 모달 위에 얇은 블러만 — 진한 딤은 쓰지 않음 (뒤 모달이 자연스럽게 보이도록)
     return {
       position: "absolute",
       inset: 0,
@@ -41,9 +41,9 @@ function deleteConfirmOverlayStyle(
       justifyContent: "center",
       padding: 16,
       boxSizing: "border-box",
-      background: "rgba(17, 17, 26, 0.42)",
-      backdropFilter: "none",
-      WebkitBackdropFilter: "none",
+      background: "rgba(255, 255, 255, 0.28)",
+      backdropFilter: "blur(5px)",
+      WebkitBackdropFilter: "blur(5px)",
       borderRadius: APP_MODAL.radius,
       overflow: "hidden",
     };

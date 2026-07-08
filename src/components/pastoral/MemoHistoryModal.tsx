@@ -346,13 +346,12 @@ export function MemoHistoryModal({
           style={memoHistoryShellStyle()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* 삭제 확인 시 뒤 모달은 filter blur */}
+          {/* 삭제 확인 시 뒤 모달 클릭 막기 — 블러는 nested 오버레이 backdrop-filter */}
           <div
             style={{
               position: "absolute",
               inset: 0,
               zIndex: 1,
-              filter: pendingDeleteId != null ? "blur(5px)" : undefined,
               pointerEvents: pendingDeleteId != null ? "none" : undefined,
             }}
           >

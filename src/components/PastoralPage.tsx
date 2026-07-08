@@ -4673,19 +4673,36 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     const cid = churchId ?? getChurchId();
     const remoteId = isRemoteNoteId(noteId) ? String(noteId) : null;
     const stableKey = remoteId ? `id\t${remoteId}` : key;
+    const answeredAt = todayStr();
 
     setDb((prev) => {
       const comments = { ...(prev.answeredPrayerComments || {}) };
       const byNoteId = { ...(prev.answeredPrayerByNoteId || {}) };
       const dates = { ...(prev.answeredPrayerDates || {}) };
+      const keys = new Set(prev.answeredPrayerKeys || []);
+      const notes = { ...prev.notes };
+
       if (trimmed) {
         comments[stableKey] = trimmed;
+        keys.add(stableKey);
+        dates[stableKey] = dates[stableKey] || answeredAt;
         if (remoteId) {
-          const prevRec = byNoteId[remoteId];
           byNoteId[remoteId] = {
-            answeredAt: prevRec?.answeredAt || dates[stableKey] || todayStr(),
+            answeredAt: byNoteId[remoteId]?.answeredAt || dates[stableKey] || answeredAt,
             comment: trimmed,
           };
+          for (const mid of Object.keys(notes)) {
+            notes[mid] = notes[mid].map((n) =>
+              String(n.id) === remoteId
+                ? {
+                    ...n,
+                    answered: true,
+                    answeredAt: n.answeredAt || dates[stableKey] || answeredAt,
+                    answeredComment: trimmed,
+                  }
+                : n,
+            );
+          }
         }
       } else {
         delete comments[stableKey];
@@ -4693,11 +4710,21 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         if (remoteId && byNoteId[remoteId]) {
           const { comment: _c, ...rest } = byNoteId[remoteId];
           byNoteId[remoteId] = rest;
+          for (const mid of Object.keys(notes)) {
+            notes[mid] = notes[mid].map((n) =>
+              String(n.id) === remoteId
+                ? { ...n, answeredComment: undefined }
+                : n,
+            );
+          }
         }
       }
       if (cid) saveAnsweredPrayersToStorage(cid, byNoteId);
       return {
         ...prev,
+        notes,
+        answeredPrayerKeys: [...keys],
+        answeredPrayerDates: dates,
         answeredPrayerComments: comments,
         answeredPrayerByNoteId: byNoteId,
       };
@@ -4706,12 +4733,23 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     if (supabase && cid && remoteId) {
       void supabase
         .from("notes")
-        .update({ answered_comment: trimmed || null })
+        .update({
+          answered: true,
+          answered_at: answeredAt,
+          answered_comment: trimmed || null,
+        })
         .eq("church_id", cid)
         .eq("id", remoteId)
         .then(({ error }) => {
-          if (error) console.warn("응답 내용 저장 실패:", error.message);
+          if (error) {
+            console.warn(
+              "[handleSavePrayerComment] DB 저장 실패 — Supabase에서 answered_comment 컬럼 추가 SQL을 실행했는지 확인하세요:",
+              error.message,
+            );
+          }
         });
+    } else if (!remoteId) {
+      console.warn("[handleSavePrayerComment] 원격 note id 없음 — localStorage만 반영됨", { key, noteId });
     }
   }, [churchId, setDb]);
 

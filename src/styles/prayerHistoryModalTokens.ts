@@ -74,7 +74,10 @@ export const PRAYER_HISTORY_MODAL = {
   timelineWidth: 22,
   timelineDot: "#d4d6db",
   checkBorder: "#d1d5db",
-  checkAnsweredBg: "#5dba4d",
+  /** 응답완료 액센트 — iPhone 17 Cosmic Orange (펄 베이스) */
+  answeredAccent: "#E86A1F",
+  answeredAccentDark: "#C95512",
+  checkAnsweredBg: "#F77E2D",
   cardRadius: R,
   /** 흰 창 안쪽 곡률 — 바깥 틀보다 살짝 작게 */
   cardInnerRadius: Math.max(R - 2, 4),
@@ -83,12 +86,12 @@ export const PRAYER_HISTORY_MODAL = {
   cardHeaderBg: "#e8eaee",
   cardHeaderPadY: 10,
   cardHeaderPadX: 12,
-  cardHeaderAnsweredBg: "#5dba4d",
+  cardHeaderAnsweredBg: "#F77E2D",
   cardHeaderAnsweredText: "#ffffff",
   cardBodyBg: "#ffffff",
   cardBodyBorder: "#e5e6ea",
-  cardBodyAnsweredBg: "#f3faf2",
-  cardBodyAnsweredBorder: "#b8ddb4",
+  cardBodyAnsweredBg: "#FFF8F3",
+  cardBodyAnsweredBorder: "#F5C9A8",
   cardBodyPadY: 14,
   cardBodyPadX: 14,
   cardDateFontSize: 13,
@@ -99,18 +102,63 @@ export const PRAYER_HISTORY_MODAL = {
   cardGap: 14,
   iconMuted: "#9ca0a8",
   iconHover: APP_MODAL.ink,
-  /** 응답완료 탭 — 응답 내용 댓글 */
+  /** 응답완료 탭 — 대댓글 연결선 (검정 ㄱ자 화살표) */
   commentLabel: "응답 내용",
-  commentLabelColor: "#5dba4d",
-  commentBubbleBg: "#ffffff",
-  commentBubbleBorder: "#b8ddb4",
+  commentLabelColor: "#E86A1F",
+  replyThreadLine: "#111111",
+  replyThreadArrow: "#111111",
+  replyConnectorWidth: 31,
+  replyConnectorHeight: 28,
+  replyUsernameColor: "#262626",
+  replyMetaColor: "#8e8e8e",
+  replyTextColor: "#262626",
+  replyActionColor: "#8e8e8e",
+  replyActionHover: "#E86A1F",
+  replyInputBg: "#f7f7f8",
+  replyInputBorder: "#ebebeb",
+  replyInputFocusBorder: "#E86A1F",
+  replyInputRadius: 7,
+  replyPostBtnBg: "#F77E2D",
+  replyPostBtnText: "#ffffff",
+  replyPostBtnMuted: "#FBC08A",
   commentPlaceholder: "응답이 어떻게 이루어졌는지 남겨 주세요",
-  commentInputBg: "#ffffff",
-  commentInputBorder: "#cfe8cc",
-  commentBtnBg: "#5dba4d",
-  commentBtnText: "#ffffff",
   commentEmptyHint: "#9ca0a8",
+  /** @deprecated 레거시 — reply 스레드로 대체 */
+  commentBubbleBg: "#ffffff",
+  commentBubbleBorder: "#F5C9A8",
+  commentInputBg: "#ffffff",
+  commentInputBorder: "#F5C9A8",
+  commentBtnBg: "#F77E2D",
+  commentBtnText: "#ffffff",
 } as const;
+
+/** iPhone Cosmic Orange — 펄/메탈 (단색 베이스 + 스페큘러 하이라이트, 그레이데이션 띠 없음) */
+export function answeredPearlStyle(compact = false): CSSProperties {
+  const base = compact ? "#F07830" : "#EE6E28";
+  const highlights = compact
+    ? [
+        "radial-gradient(ellipse 85% 75% at 30% 20%, rgba(255,255,255,0.78) 0%, transparent 54%)",
+        "radial-gradient(ellipse 65% 55% at 78% 85%, rgba(255,190,110,0.32) 0%, transparent 50%)",
+        "linear-gradient(180deg, rgba(255,255,255,0.32) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.1) 100%)",
+      ]
+    : [
+        "radial-gradient(ellipse 50% 85% at 14% 10%, rgba(255,255,255,0.7) 0%, transparent 52%)",
+        "radial-gradient(ellipse 38% 55% at 72% 18%, rgba(255,255,255,0.28) 0%, transparent 58%)",
+        "radial-gradient(ellipse 42% 65% at 86% 90%, rgba(255,165,85,0.28) 0%, transparent 48%)",
+        "linear-gradient(180deg, rgba(255,255,255,0.24) 0%, transparent 16%, transparent 84%, rgba(0,0,0,0.09) 100%)",
+      ];
+
+  return {
+    backgroundColor: base,
+    backgroundImage: highlights.join(", "),
+    border: compact
+      ? "1px solid rgba(255,255,255,0.28)"
+      : "1px solid rgba(255,255,255,0.22)",
+    boxShadow: compact
+      ? "inset 0 1.5px 0 rgba(255,255,255,0.75), inset 0 -1px 0 rgba(0,0,0,0.14), 0 1px 2px rgba(0,0,0,0.06)"
+      : "inset 0 2px 0 rgba(255,255,255,0.55), inset 0 -1.5px 0 rgba(0,0,0,0.11), 0 2px 8px rgba(232,90,24,0.14)",
+  };
+}
 
 export function prayerTabLabelStyle(kind: "praying" | "answered"): CSSProperties {
   const activeLook = kind === "praying";
