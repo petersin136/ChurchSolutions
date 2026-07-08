@@ -45,13 +45,14 @@ import { MembersManagementPanel } from "@/components/pastoral/MembersManagementP
 import { PrayerMemoPanel } from "@/components/pastoral/PrayerMemoPanel";
 import { ActivityRecordModal } from "@/components/pastoral/ActivityRecordModal";
 import { PrayerHistoryModal } from "@/components/pastoral/PrayerHistoryModal";
+import { MemoHistoryModal } from "@/components/pastoral/MemoHistoryModal";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics } from "@/components/attendance";
 import { MonthlyAttendanceBulletin } from "@/components/reports/MonthlyAttendanceBulletin";
 import { ReportModal } from "@/components/report/ReportModal";
 import { REPORT_DEFS, ReportPreviewModal, type ReportId } from "@/components/report/A4Reports";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { ServantSchoolManager } from "@/components/settling/ServantSchoolManager";
-import { QuickNoteModal, type QuickNoteItem } from "@/components/common/QuickNoteModal";
+import type { QuickNoteItem } from "@/components/common/QuickNoteModal";
 import { PcModalShell } from "@/components/common/PcModalShell";
 import { tokens } from "@/styles/tokens";
 import { APP_HISTORY_KEYS, mergePushAppHistory, mergeReplaceAppHistory, readAppHistoryState } from "@/lib/appHistory";
@@ -4121,10 +4122,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [prayerModalMemberId, setPrayerModalMemberId] = useState<string | null>(null);
   const [prayerModalFocusContent, setPrayerModalFocusContent] = useState<string | null>(null);
   const [feedDetailItem, setFeedDetailItem] = useState<PastoralFeedItem | null>(null);
-  const [quickNoteOpen, setQuickNoteOpen] = useState(false);
-  const [quickNoteMemberId, setQuickNoteMemberId] = useState("");
-  const [quickNoteMemberName, setQuickNoteMemberName] = useState("");
-  const [quickNoteType, setQuickNoteType] = useState<"note" | "prayer">("note");
   const [activityRecordOpen, setActivityRecordOpen] = useState(false);
   const [activityMemberId, setActivityMemberId] = useState("");
   const [activityMemberName, setActivityMemberName] = useState("");
@@ -4132,6 +4129,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [activitySaving, setActivitySaving] = useState(false);
   const [prayerHistoryOpen, setPrayerHistoryOpen] = useState(false);
   const [prayerHistoryMemberId, setPrayerHistoryMemberId] = useState("");
+  const [memoHistoryOpen, setMemoHistoryOpen] = useState(false);
+  const [memoHistoryMemberId, setMemoHistoryMemberId] = useState("");
 
   // Member form
   const [fName, setFName] = useState(""); const [fDept, setFDept] = useState(""); const [fRole, setFRole] = useState("");
@@ -4513,10 +4512,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       void refreshNotes();
       return;
     }
-    setQuickNoteMemberId(memberId);
-    setQuickNoteMemberName(memberName);
-    setQuickNoteType(type);
-    setQuickNoteOpen(true);
+    // type === "note": open MemoHistoryModal
+    setMemoHistoryMemberId(memberId);
+    setMemoHistoryOpen(true);
+    void refreshNotes();
   }, [refreshNotes]);
 
   const openActivityModal = useCallback((memberId: string, memberName: string, memberRole?: string) => {
@@ -4843,21 +4842,6 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
   const info = PAGE_INFO[activeSub];
   const detailMember = detailId ? db.members.find(x => x.id === detailId) : null;
-  const quickNoteMember = useMemo(
-    () => db.members.find((m) => m.id === quickNoteMemberId),
-    [db.members, quickNoteMemberId],
-  );
-  const quickNoteLocalSeed = useMemo((): QuickNoteItem[] => {
-    if (!quickNoteMemberId) return [];
-    return (db.notes[quickNoteMemberId] ?? [])
-      .filter((n) => n.type === "memo")
-      .map((n, i) => ({
-        id: n.id ?? `local-${n.createdAt ?? n.date}-${i}`,
-        date: n.date,
-        content: n.content,
-        created_at: n.createdAt ?? n.date,
-      }));
-  }, [db.notes, quickNoteMemberId]);
   const prayerHistoryMember = useMemo(
     () => db.members.find((m) => m.id === prayerHistoryMemberId),
     [db.members, prayerHistoryMemberId],
@@ -4873,6 +4857,21 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         created_at: n.createdAt ?? n.date,
       }));
   }, [db.notes, prayerHistoryMemberId]);
+  const memoHistoryMember = useMemo(
+    () => db.members.find((m) => m.id === memoHistoryMemberId),
+    [db.members, memoHistoryMemberId],
+  );
+  const memoHistoryLocalSeed = useMemo((): QuickNoteItem[] => {
+    if (!memoHistoryMemberId) return [];
+    return (db.notes[memoHistoryMemberId] ?? [])
+      .filter((n) => n.type === "memo")
+      .map((n, i) => ({
+        id: n.id ?? `local-${n.createdAt ?? n.date}-${i}`,
+        date: n.date,
+        content: n.content,
+        created_at: n.createdAt ?? n.date,
+      }));
+  }, [db.notes, memoHistoryMemberId]);
   const orgResourceLayout = activeSub === "settings";
 
   const navSections = [{ sectionLabel: "목양", items: NAV_ITEMS.map((n) => ({ id: n.id, label: n.label, Icon: n.Icon })) }];
@@ -5326,18 +5325,19 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         }
       />
 
-      {/* Quick Note Modal — 성도별 메모 */}
-        <QuickNoteModal
-          isOpen={quickNoteOpen}
-          onClose={() => setQuickNoteOpen(false)}
-          memberName={quickNoteMemberName}
-          memberId={quickNoteMemberId}
+      <MemoHistoryModal
+        open={memoHistoryOpen}
+        onClose={() => setMemoHistoryOpen(false)}
+        memberId={memoHistoryMemberId}
+        memberName={memoHistoryMember?.name || "?"}
+        memberRole={memoHistoryMember?.role}
         churchId={churchId ?? ""}
-        type="note"
-        profileContent={quickNoteMember?.memo ?? undefined}
-        localSeedItems={quickNoteLocalSeed}
-          onSaved={handleQuickNoteSaved}
-        />
+        localSeedItems={memoHistoryLocalSeed}
+        profileMemo={memoHistoryMember?.memo}
+        onSaved={(memberId, items, latestContent) =>
+          handleQuickNoteSaved(memberId, "memo", items, latestContent)
+        }
+      />
 
       {/* Toasts */}
       <div style={{ position: "fixed", top: mob ? 8 : 20, right: mob ? 8 : 32, left: mob ? 8 : "auto", zIndex: 2000, display: "flex", flexDirection: "column", gap: 8 }}>
