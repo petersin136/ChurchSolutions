@@ -34,6 +34,16 @@ function displayValue(value: string): string {
   return `${y}. ${parseInt(m ?? "0", 10)}. ${parseInt(d ?? "0", 10)}.`;
 }
 
+function displayValueActivity(value: string): string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+  const d = parseYMD(value);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const wd = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][d.getDay()];
+  return `${y}. ${m}. ${day}. ${wd}`;
+}
+
 function WheelColumn({
   items,
   value,
@@ -166,6 +176,8 @@ interface CalendarDropdownProps {
   compact?: boolean;
   /** 트리거 버튼에 병합 (모바일 전용 fontSize/height 등) */
   triggerStyle?: React.CSSProperties;
+  /** activity — "2026. 07. 08. WED" 형식 */
+  displayVariant?: "default" | "activity";
 }
 
 export function CalendarDropdown({
@@ -180,6 +192,7 @@ export function CalendarDropdown({
   style,
   compact = false,
   triggerStyle,
+  displayVariant = "default",
 }: CalendarDropdownProps) {
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState(() => (value ? parseYMD(value) : new Date()));
@@ -354,7 +367,11 @@ export function CalendarDropdown({
               : {}),
           }}
         >
-          {value ? displayValue(value) : "날짜 선택"}
+          {value
+            ? displayVariant === "activity"
+              ? displayValueActivity(value)
+              : displayValue(value)
+            : "날짜 선택"}
         </span>
         <svg width={calendarIconSize} height={calendarIconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />

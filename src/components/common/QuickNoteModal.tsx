@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, type CSSProperties } from "react";
 import { Check, ChevronDown, FileText, Heart } from "lucide-react";
 import { PcModalShell } from "@/components/common/PcModalShell";
 import { AppDeleteConfirmModal } from "@/components/common/AppDeleteConfirmModal";
@@ -154,7 +154,6 @@ export function QuickNoteModal({
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | number | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const modalCardRef = useRef<HTMLDivElement>(null);
 
   const noteType = type === "prayer" ? "prayer" : "memo";
   const isPrayer = type === "prayer";
@@ -329,7 +328,15 @@ export function QuickNoteModal({
         onClose={onClose}
         height={APP_MODAL.tallHeight}
         bodyClassName="scrollbar-hide"
-        cardRef={modalCardRef}
+        nestedOverlay={
+          <AppDeleteConfirmModal
+            placement="nested"
+            open={pendingDeleteId != null}
+            onClose={() => setPendingDeleteId(null)}
+            onConfirm={confirmDelete}
+            description={deleteDescription}
+          />
+        }
         title={
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             {type === "note" ? (
@@ -582,14 +589,6 @@ export function QuickNoteModal({
           </div>
         </div>
       </PcModalShell>
-
-      <AppDeleteConfirmModal
-        open={pendingDeleteId != null}
-        onClose={() => setPendingDeleteId(null)}
-        onConfirm={confirmDelete}
-        description={deleteDescription}
-        anchorRef={modalCardRef}
-      />
     </>
   );
 }

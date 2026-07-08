@@ -48,13 +48,12 @@ export const MEMBER_MGMT = {
    */
   gridPadX: 24,
   tableBorderWidth: 0,
-  colTemplate: "48px 176px 96px 152px minmax(240px, 1fr) 112px minmax(180px, 0.85fr) minmax(80px, 80px)",
-  colMinWidth: 1084,
-  /** +N 배지 — 다음 열(최recent심방·활동기록)과의 간격 */
-  badgeBeforeNextColGap: "4cm",
+  /** 기도제목·메모 — 완전히 동일한 폭(minmax·fr) → 배지 기준선·축소 비율 동일 */
+  colTemplate: "48px 176px 96px 152px minmax(220px, 1fr) 112px minmax(220px, 1fr) minmax(120px, 120px)",
+  colMinWidth: 1164,
+  /** +N 배지 — 칸 오른쪽 끝(다음 열 경계) 직전 고정 간격 (px, 기도·메모 동일) */
+  badgeBeforeNextColGap: 16,
   badgeTextGap: 8,
-  /** 기도제목 +N 배지 — 최recent심방 열 직전 고정 위치(음수 = 왼쪽) */
-  prayerBadgeOffsetX: -100,
   /** 목록 미리보기 최대 글자 수 (칸 너비 + 말줄임) */
   prayerPreviewMaxChars: 45,
   memoPreviewMaxChars: 35,
@@ -74,8 +73,8 @@ export const MEMBER_MGMT = {
   headerRoleOffsetX: 0, // 직분
   headerDeptOffsetX: 15, // 부서/목장
   headerPrayerOffsetX: 10, // 기도제목
-  headerVisitOffsetX: -150, // 최근심방 (헤더·데이터 함께)
-  headerMemoOffsetX: -100, // 메모 (헤더·데이터 함께)
+  headerVisitOffsetX: 30, // 최근심방 (헤더·데이터·배지 함께 우측 이동)
+  headerMemoOffsetX: 50, // 메모 (헤더·데이터·배지 함께 우측 이동)
   /** 브랜드 보라 액센트 — 배지·호버·활성 상태 */
   accent: "#6c5ce7",
   accentSoft: "#ebe9fb",
@@ -112,11 +111,11 @@ export const MEMBER_MGMT = {
   /** +N 배지 — 연한 라벤더 정원, 진한 보라 글씨 (디자이너 레퍼런스) */
   prayerBadgeBg: "#cdbcfa",
   prayerBadgeText: "#6f4ad6",
-  prayerBadgeFontSize: 12,
+  prayerBadgeFontSize: 14,
   prayerBadgeFontWeight: 700,
-  prayerBadgePadX: 2,
+  prayerBadgePadX: 3,
   prayerBadgeRadius: 999,
-  prayerBadgeMinWidth: 20,
+  prayerBadgeMinWidth: 23,
   memoBadgeBg: "#cdbcfa",
   memoBadgeText: "#6f4ad6",
   memoMuted: "#c4c7cf",

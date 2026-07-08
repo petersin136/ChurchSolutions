@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import {
@@ -29,8 +29,8 @@ export type PcModalShellProps = {
   bodyClassName?: string;
   closeOnBackdrop?: boolean;
   zIndex?: number;
-  /** Nested dialogs (e.g. delete confirm) can anchor to this card element */
-  cardRef?: RefObject<HTMLDivElement>;
+  /** 부모 카드 안에 겹쳐 띄울 다이얼로그 (삭제 확인 등) */
+  nestedOverlay?: ReactNode;
 };
 
 /**
@@ -52,7 +52,7 @@ export function PcModalShell({
   bodyClassName,
   closeOnBackdrop = true,
   zIndex,
-  cardRef,
+  nestedOverlay,
 }: PcModalShellProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -94,9 +94,8 @@ export function PcModalShell({
       }}
     >
       <div
-        ref={cardRef}
         className={`app-modal-card ${modalClassName}`.trim()}
-        style={appModalCardStyle({ width: cardWidth, height })}
+        style={{ ...appModalCardStyle({ width: cardWidth, height }), position: "relative" }}
         role="dialog"
         aria-modal="true"
         aria-label={hasTitle ? undefined : ariaLabel}
@@ -198,6 +197,7 @@ export function PcModalShell({
             {footer}
           </div>
         ) : null}
+        {nestedOverlay}
       </div>
     </div>,
     document.body,

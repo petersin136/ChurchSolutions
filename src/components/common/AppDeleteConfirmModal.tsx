@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 import {
@@ -15,22 +15,25 @@ export interface AppDeleteConfirmModalProps {
   onConfirm: () => void;
   description: ReactNode;
   zIndex?: number;
-  /** Parent modal card — when set, centers inside this element instead of the viewport */
-  anchorRef?: RefObject<HTMLElement>;
+  /**
+   * viewport — 화면 중앙 (기본)
+   * nested — 부모 모달 카드 안 중앙 (PcModalShell nestedOverlay 용)
+   */
+  placement?: "viewport" | "nested";
 }
 
 const DELETE_CONFIRM_WIDTH = 360;
 const DELETE_CONFIRM_PAD = 24;
 const DELETE_BTN_HEIGHT = 42;
 
-function deleteConfirmOverlayStyle(zIndex: number, anchorRect: DOMRect | null): CSSProperties {
-  if (anchorRect) {
+function deleteConfirmOverlayStyle(
+  zIndex: number,
+  placement: "viewport" | "nested",
+): CSSProperties {
+  if (placement === "nested") {
     return {
-      position: "fixed",
-      top: anchorRect.top,
-      left: anchorRect.left,
-      width: anchorRect.width,
-      height: anchorRect.height,
+      position: "absolute",
+      inset: 0,
       zIndex,
       display: "flex",
       alignItems: "center",
@@ -84,42 +87,74 @@ function deleteConfirmBtnStyle(base: CSSProperties): CSSProperties {
   };
 }
 
+function DeleteConfirmDialog({
+  onClose,
+  onConfirm,
+  description,
+}: Pick<AppDeleteConfirmModalProps, "onClose" | "onConfirm" | "description">) {
+  return (
+    <div
+      className="app-modal-card"
+      role="alertdialog"
+      aria-modal="true"
+      aria-label="삭제 확인"
+      style={deleteConfirmCardStyle()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+        <AlertTriangle size={28} strokeWidth={1.75} color={APP_MODAL.deleteRed} />
+      </div>
+      <h2
+        style={{
+          margin: "0 0 8px",
+          fontSize: 17,
+          fontWeight: APP_MODAL.titleWeight,
+          color: APP_MODAL.ink,
+          fontFamily: APP_MODAL.fontKR,
+        }}
+      >
+        정말 삭제할까요?
+      </h2>
+      <p
+        style={{
+          margin: "0 0 20px",
+          fontSize: 13,
+          color: APP_MODAL.muted,
+          lineHeight: 1.55,
+          fontFamily: APP_MODAL.fontKR,
+        }}
+      >
+        {description}
+      </p>
+      <div style={{ display: "flex", gap: APP_MODAL.btnGap }}>
+        <button type="button" onClick={onClose} style={deleteConfirmBtnStyle(appModalBtnCancel)}>
+          취소
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          style={deleteConfirmBtnStyle({ ...appModalBtnSubmit, background: APP_MODAL.deleteRed })}
+        >
+          삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function AppDeleteConfirmModal({
   open,
   onClose,
   onConfirm,
   description,
   zIndex = APP_MODAL.zIndex + 20,
-  anchorRef,
+  placement = "viewport",
 }: AppDeleteConfirmModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useLayoutEffect(() => {
-    if (!open || !anchorRef?.current) {
-      setAnchorRect(null);
-      return;
-    }
-
-    const el = anchorRef.current;
-    const update = () => setAnchorRect(el.getBoundingClientRect());
-    update();
-
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
-    ro?.observe(el);
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-
-    return () => {
-      ro?.disconnect();
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-    };
-  }, [open, anchorRef]);
 
   useEffect(() => {
     if (!open) return;
@@ -130,64 +165,23 @@ export function AppDeleteConfirmModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open || !mounted) return null;
+  if (!open) return null;
+  if (placement === "viewport" && !mounted) return null;
 
-  return createPortal(
+  const overlay = (
     <div
       className="app-modal-overlay open"
       role="presentation"
-      style={deleteConfirmOverlayStyle(zIndex, anchorRect)}
+      style={deleteConfirmOverlayStyle(zIndex, placement)}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
-        className="app-modal-card"
-        role="alertdialog"
-        aria-modal="true"
-        aria-label="삭제 확인"
-        style={deleteConfirmCardStyle()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-          <AlertTriangle size={28} strokeWidth={1.75} color={APP_MODAL.deleteRed} />
-        </div>
-        <h2
-          style={{
-            margin: "0 0 8px",
-            fontSize: 17,
-            fontWeight: APP_MODAL.titleWeight,
-            color: APP_MODAL.ink,
-            fontFamily: APP_MODAL.fontKR,
-          }}
-        >
-          정말 삭제할까요?
-        </h2>
-        <p
-          style={{
-            margin: "0 0 20px",
-            fontSize: 13,
-            color: APP_MODAL.muted,
-            lineHeight: 1.55,
-            fontFamily: APP_MODAL.fontKR,
-          }}
-        >
-          {description}
-        </p>
-        <div style={{ display: "flex", gap: APP_MODAL.btnGap }}>
-          <button type="button" onClick={onClose} style={deleteConfirmBtnStyle(appModalBtnCancel)}>
-            취소
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            style={deleteConfirmBtnStyle({ ...appModalBtnSubmit, background: APP_MODAL.deleteRed })}
-          >
-            삭제
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+      <DeleteConfirmDialog onClose={onClose} onConfirm={onConfirm} description={description} />
+    </div>
   );
+
+  if (placement === "nested") return overlay;
+
+  return createPortal(overlay, document.body);
 }

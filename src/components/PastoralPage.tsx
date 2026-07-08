@@ -36,6 +36,7 @@ import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pa
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
 import { MembersManagementPanel } from "@/components/pastoral/MembersManagementPanel";
+import { ActivityRecordModal } from "@/components/pastoral/ActivityRecordModal";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics } from "@/components/attendance";
 import { MonthlyAttendanceBulletin } from "@/components/reports/MonthlyAttendanceBulletin";
 import { ReportModal } from "@/components/report/ReportModal";
@@ -2580,11 +2581,12 @@ const ROLE_PRIORITY: Record<string, number> = {
   "영아": 15,
 };
 
-function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openNoteModal, openQuickNote, churchId }: {
+function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openNoteModal, openQuickNote, openActivityModal, churchId }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
   toast: (m: string, t?: string) => void; currentWeek: number;
   openMemberModal: (id?: string) => void; openNoteModal: (id: string) => void;
   openQuickNote: (memberId: string, memberName: string, type: "note" | "prayer") => void;
+  openActivityModal: (memberId: string, memberName: string, memberRole?: string) => void;
   churchId: string | null;
 }) {
   const mob = useIsMobile();
@@ -2747,7 +2749,7 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       onPageChange={setPageList}
       onOpenQuickPrayer={(id, name) => openQuickNote(id, name, "prayer")}
       onOpenQuickMemo={(id, name) => openQuickNote(id, name, "note")}
-      onOpenActivity={openNoteModal}
+      onOpenActivity={openActivityModal}
       onCapacityChange={setPageCapacity}
     />
   );
@@ -4135,6 +4137,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [quickNoteMemberId, setQuickNoteMemberId] = useState("");
   const [quickNoteMemberName, setQuickNoteMemberName] = useState("");
   const [quickNoteType, setQuickNoteType] = useState<"note" | "prayer">("note");
+  const [activityRecordOpen, setActivityRecordOpen] = useState(false);
+  const [activityMemberId, setActivityMemberId] = useState("");
+  const [activityMemberName, setActivityMemberName] = useState("");
+  const [activityMemberRole, setActivityMemberRole] = useState("");
+  const [activitySaving, setActivitySaving] = useState(false);
 
   // Member form
   const [fName, setFName] = useState(""); const [fDept, setFDept] = useState(""); const [fRole, setFRole] = useState("");
@@ -4516,6 +4523,59 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     setQuickNoteOpen(true);
   }, []);
 
+  const openActivityModal = useCallback((memberId: string, memberName: string, memberRole?: string) => {
+    setActivityMemberId(memberId);
+    setActivityMemberName(memberName);
+    setActivityMemberRole(memberRole || "");
+    setActivityRecordOpen(true);
+  }, []);
+
+  const saveActivityRecord = useCallback(async ({
+    memberId,
+    date,
+    type,
+    content,
+  }: {
+    memberId: string;
+    date: string;
+    type: "prayer" | "memo";
+    content: string;
+  }) => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    setActivitySaving(true);
+    const createdAt = new Date().toISOString();
+    setDb((prev) => {
+      const notes = { ...prev.notes };
+      if (!notes[memberId]) notes[memberId] = [];
+      notes[memberId] = [...notes[memberId], { date, type, content: trimmed, createdAt }];
+      let members = prev.members;
+      if (type === "prayer") {
+        members = members.map((m) => (m.id === memberId ? { ...m, prayer: trimmed } : m));
+      } else {
+        members = members.map((m) => (m.id === memberId ? { ...m, memo: trimmed } : m));
+      }
+      return { ...prev, notes, members };
+    });
+    const cid = churchId ?? getChurchId();
+    if (supabase && cid) {
+      try {
+        await supabase.from("notes").insert({
+          member_id: memberId,
+          church_id: cid,
+          date,
+          type,
+          content: trimmed,
+        });
+      } catch (e) {
+        console.error("활동 기록 저장 실패:", e);
+      }
+    }
+    setActivitySaving(false);
+    setActivityRecordOpen(false);
+    toast("기록 저장 완료", "ok");
+  }, [churchId, setDb, toast]);
+
   const handleQuickNoteSaved = useCallback((memberId: string, type: "memo" | "prayer", items: QuickNoteItem[], latestContent?: string) => {
     setDb(prev => {
       const notes = { ...prev.notes };
@@ -4727,7 +4787,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               onFeedItemOpen={setFeedDetailItem}
             />
           )}
-          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openNoteModal={openNoteModal} openQuickNote={openQuickNote} churchId={churchId} />}
+          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openNoteModal={openNoteModal} openQuickNote={openQuickNote} openActivityModal={openActivityModal} churchId={churchId} />}
           {activeSub === "attendance" && (
             <>
               <div
@@ -5093,6 +5153,18 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           <Btn variant="accent" onClick={saveNote}>저장</Btn>
         </div>
       </Modal>
+
+      <ActivityRecordModal
+        open={activityRecordOpen}
+        onClose={() => {
+          if (!activitySaving) setActivityRecordOpen(false);
+        }}
+        memberId={activityMemberId}
+        memberName={activityMemberName}
+        memberRole={activityMemberRole}
+        saving={activitySaving}
+        onSubmit={saveActivityRecord}
+      />
 
       {/* Quick Note/Prayer Modal — 성도별 메모·기도 제목 */}
       <QuickNoteModal

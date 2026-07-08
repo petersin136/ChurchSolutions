@@ -336,16 +336,14 @@ function badgeChipStyle(variant: "prayer" | "memo"): CSSProperties {
   };
 }
 
-/** 배지 고정 앵커 — 칸 오른쪽에서 최recent심방/활동기록 직전 (행마다 동일 x) */
-function badgeAnchorRight(variant: "prayer" | "memo"): string {
-  const extraLeft = variant === "prayer" ? -MEMBER_MGMT.prayerBadgeOffsetX : 0;
-  return `calc(${MEMBER_MGMT.badgeBeforeNextColGap} + ${extraLeft}px)`;
+/** 배지 고정 앵커 — 칸 오른쪽 끝에서 동일 간격 (행마다·기도/메모 동일 x) */
+function badgeAnchorRight(): number {
+  return MEMBER_MGMT.badgeBeforeNextColGap;
 }
 
-/** 텍스트 말줄임 영역 — 배지 고정 슬롯만큼 오른쪽 여백 확보 */
-function badgeTextReserve(variant: "prayer" | "memo", showBadge: boolean): number | string {
-  if (!showBadge) return 0;
-  return `calc(${badgeAnchorRight(variant)} + ${MEMBER_MGMT.prayerBadgeMinWidth}px + ${MEMBER_MGMT.badgeTextGap}px)`;
+/** 텍스트 말줄임 영역 — 배지 유무와 무관하게 항상 동일 여백 (모든 행 오른쪽 끝 일치) */
+function badgeTextReserve(): number {
+  return badgeAnchorRight() + MEMBER_MGMT.prayerBadgeMinWidth + MEMBER_MGMT.badgeTextGap;
 }
 
 /** 텍스트 말줄임 + 배지(열 오른쪽 고정) — 기도/메모 공통 */
@@ -379,7 +377,7 @@ function BadgeColumnCell({
           whiteSpace: "nowrap",
           width: "100%",
           minWidth: 0,
-          paddingRight: badgeTextReserve(variant, showBadge),
+          paddingRight: badgeTextReserve(),
           boxSizing: "border-box",
           ...textStyle,
         }}
@@ -392,7 +390,7 @@ function BadgeColumnCell({
           style={{
             ...badgeChipStyle(variant),
             position: "absolute",
-            right: badgeAnchorRight(variant),
+            right: badgeAnchorRight(),
             top: "50%",
             transform: "translateY(-50%)",
           }}
@@ -425,7 +423,7 @@ export interface MembersManagementPanelProps {
   onPageChange: (page: number) => void;
   onOpenQuickPrayer: (id: string, name: string) => void;
   onOpenQuickMemo: (id: string, name: string) => void;
-  onOpenActivity: (id: string) => void;
+  onOpenActivity: (id: string, name: string, role?: string) => void;
   /** 화면 높이에 맞는 한 페이지 행 수를 부모로 전달 (반응형 페이지 크기) */
   onCapacityChange?: (rows: number) => void;
 }
@@ -870,7 +868,7 @@ export function MembersManagementPanel({
                       <button
                         type="button"
                         aria-label="활동기록 추가"
-                        onClick={() => onOpenActivity(m.id)}
+                        onClick={() => onOpenActivity(m.id, m.name || "?", m.role)}
                         style={{
                           width: MEMBER_MGMT.activityBtnSize,
                           height: MEMBER_MGMT.activityBtnSize,
