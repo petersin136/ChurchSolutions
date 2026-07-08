@@ -54,7 +54,7 @@ export const MEMO_HISTORY_MODAL = {
   tabActiveText: "#5a5e66",
   tabFontSize: 14,
   tabFontWeight: 600,
-  timelineWidth: 22,
+  timelineWidth: 26,
   timelineDot: "#d4d6db",
   nodeBorder: "#d1d5db",
   nodeBg: "#ffffff",

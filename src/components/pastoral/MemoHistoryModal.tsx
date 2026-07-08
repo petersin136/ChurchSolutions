@@ -636,9 +636,9 @@ export function MemoHistoryModal({
                           >
                             <div
                               style={{
-                                width: 20,
-                                height: 20,
-                                borderRadius: important ? M.pinRadius : 5,
+                                width: 24,
+                                height: 24,
+                                borderRadius: important ? M.pinRadius : 6,
                                 border: important
                                   ? `1.5px solid ${M.pinBorder}`
                                   : `1.5px solid ${M.nodeBorder}`,
@@ -653,13 +653,16 @@ export function MemoHistoryModal({
                             >
                               {important ? (
                                 <Pin
-                                  size={11}
+                                  size={13}
                                   strokeWidth={2.25}
-                                  style={{ color: M.pinIcon }}
+                                  style={{
+                                    color: M.pinIcon,
+                                    transform: "rotate(45deg)",
+                                  }}
                                 />
                               ) : (
                                 <FileText
-                                  size={11}
+                                  size={13}
                                   strokeWidth={2}
                                   style={{ color: M.nodeIcon }}
                                 />
