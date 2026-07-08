@@ -109,7 +109,7 @@ function attendanceStatusButtonClass(): string {
   return "h-6 rounded-md px-2.5 text-[11px] font-medium leading-none transition-colors border-0 hover:opacity-90";
 }
 
-function attendanceStatusButtonStyle(status: AttStatusUI, target: AttStatusUI): CSSProperties {
+function attendanceStatusButtonStyle(status: AttStatusUI | undefined, target: AttStatusUI): CSSProperties {
   const active = status === target;
   if (active) {
     return {

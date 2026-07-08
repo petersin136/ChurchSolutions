@@ -818,7 +818,7 @@ export function AttendanceDeptMonthlySummary({
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                   <XAxis dataKey="month" tick={{ fontSize: mob ? 9 : 11 }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: mob ? 9 : 11 }} width={mob ? 28 : undefined} />
-                  <Tooltip formatter={(v: number | string | undefined) => [`${v ?? 0}%`, "출석률"]} />
+                  <Tooltip formatter={(v: any) => [`${v ?? 0}%`, "출석률"]} />
                   <Bar dataKey="rate" name="출석률" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
