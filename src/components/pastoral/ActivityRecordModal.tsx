@@ -11,10 +11,15 @@ import {
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
-import { appModalOverlayStyle } from "@/styles/appModalTokens";
 import {
+  appModalBtnCancel,
+  appModalBtnSubmit,
+} from "@/styles/appModalTokens";
+import {
+  ACTIVITY_RECORD_FRAME_PATH,
   ACTIVITY_RECORD_MODAL,
-  activityRecordCardStyle,
+  activityRecordOverlayStyle,
+  activityRecordShellStyle,
 } from "@/styles/activityRecordModalTokens";
 
 export type ActivityRecordType = "prayer" | "memo";
@@ -76,9 +81,6 @@ export function ActivityRecordModal({
   const [content, setContent] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [hoverCategory, setHoverCategory] = useState<ActivityRecordType | null>(null);
-  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(
-    null,
-  );
   const categoryRef = useRef<HTMLDivElement>(null);
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
 
@@ -126,15 +128,15 @@ export function ActivityRecordModal({
   }, [categoryOpen]);
 
   useLayoutEffect(() => {
-    if (!categoryOpen) {
-      setDropdownRect(null);
-      return;
-    }
+    if (!categoryOpen || !categoryRef.current) return;
     const update = () => {
       const el = categoryRef.current;
-      if (!el) return;
+      const menu = dropdownPortalRef.current;
+      if (!el || !menu) return;
       const rect = el.getBoundingClientRect();
-      setDropdownRect({ top: rect.bottom, left: rect.left, width: rect.width });
+      menu.style.top = `${rect.bottom}px`;
+      menu.style.left = `${rect.left}px`;
+      menu.style.width = `${rect.width}px`;
     };
     update();
     window.addEventListener("resize", update);
@@ -182,56 +184,80 @@ export function ActivityRecordModal({
     fontWeight: selectedCategory ? 500 : 400,
   };
 
+  const { viewW, viewH, width, height } = ACTIVITY_RECORD_MODAL;
+
   return createPortal(
     <div
       className="app-modal-overlay open"
       role="presentation"
-      style={{ ...appModalOverlayStyle, zIndex: ACTIVITY_RECORD_MODAL.zIndex }}
+      style={activityRecordOverlayStyle()}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="app-modal-card"
         role="dialog"
         aria-modal="true"
         aria-label="활동 기록 추가"
-        style={activityRecordCardStyle()}
+        style={activityRecordShellStyle()}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* 헤더 — 흰 배경 + 우상단 회색 사선 장식 + 구분선 */}
+        {/* 헤더·쐐기 뒤 하얀 반투명 레이어 */}
         <div
+          aria-hidden
           style={{
+            position: "absolute",
+            top: ACTIVITY_RECORD_MODAL.glassLayerTop,
+            left: 0,
+            right: 0,
+            height: ACTIVITY_RECORD_MODAL.glassLayerHeight,
+            borderRadius: ACTIVITY_RECORD_MODAL.glassLayerRadius,
+            background: ACTIVITY_RECORD_MODAL.glassLayerBg,
+            ...(ACTIVITY_RECORD_MODAL.glassLayerBlur
+              ? {
+                  backdropFilter: ACTIVITY_RECORD_MODAL.glassLayerBlur,
+                  WebkitBackdropFilter: ACTIVITY_RECORD_MODAL.glassLayerBlur,
+                }
+              : {}),
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* 디자이너 SVG 프레임 */}
+        <svg
+          aria-hidden
+          width={width}
+          height={height}
+          viewBox={`0 0 ${viewW} ${viewH}`}
+          style={{
+            display: "block",
+            maxWidth: "100%",
+            filter: ACTIVITY_RECORD_MODAL.shadow,
             position: "relative",
-            height: ACTIVITY_RECORD_MODAL.headerHeight,
-            flexShrink: 0,
-            borderTopLeftRadius: ACTIVITY_RECORD_MODAL.radius,
-            borderTopRightRadius: ACTIVITY_RECORD_MODAL.radius,
-            overflow: "hidden",
+            zIndex: 1,
           }}
         >
-          <svg
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              width: ACTIVITY_RECORD_MODAL.headerWedgeWidth,
-              height: ACTIVITY_RECORD_MODAL.headerHeight,
-              pointerEvents: "none",
-            }}
-            viewBox={`0 0 ${ACTIVITY_RECORD_MODAL.headerWedgeWidth} ${ACTIVITY_RECORD_MODAL.headerHeight}`}
-            preserveAspectRatio="none"
-          >
-            <polygon
-              points={`32,0 ${ACTIVITY_RECORD_MODAL.headerWedgeWidth},0 ${ACTIVITY_RECORD_MODAL.headerWedgeWidth},${ACTIVITY_RECORD_MODAL.headerHeight}`}
-              fill={ACTIVITY_RECORD_MODAL.headerBg}
-            />
-          </svg>
+          <path fillRule="evenodd" fill="#ffffff" d={ACTIVITY_RECORD_FRAME_PATH} />
+        </svg>
+
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            boxSizing: "border-box",
+            zIndex: 2,
+          }}
+        >
+          {/* 탭 영역 (y 0 ~ shelf) */}
           <div
             style={{
-              position: "relative",
-              padding: `${ACTIVITY_RECORD_MODAL.headerPadTop}px ${ACTIVITY_RECORD_MODAL.headerPadX}px ${ACTIVITY_RECORD_MODAL.headerPadBottom}px`,
+              flexShrink: 0,
+              padding: `${ACTIVITY_RECORD_MODAL.headerPadTop}px ${ACTIVITY_RECORD_MODAL.padX}px 0`,
+              minHeight: ACTIVITY_RECORD_MODAL.headerShelfY,
+              boxSizing: "border-box",
             }}
           >
             <h2
@@ -257,145 +283,122 @@ export function ActivityRecordModal({
               {memberSubtitle(memberName, memberRole)}
             </p>
           </div>
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: ACTIVITY_RECORD_MODAL.headerPadX,
-              right: ACTIVITY_RECORD_MODAL.headerPadX,
-              height: 1,
-              background: ACTIVITY_RECORD_MODAL.dividerColor,
-            }}
-          />
-        </div>
 
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-            padding: `0 ${ACTIVITY_RECORD_MODAL.bodyPadX}px ${ACTIVITY_RECORD_MODAL.bodyPadBottom}px`,
-          }}
-        >
           <div
             style={{
+              flex: 1,
+              minHeight: 0,
               display: "flex",
-              gap: ACTIVITY_RECORD_MODAL.fieldRowGap,
-              marginTop: 16,
-              marginBottom: ACTIVITY_RECORD_MODAL.fieldToTextareaGap,
-              flexShrink: 0,
+              flexDirection: "column",
+              padding: `${ACTIVITY_RECORD_MODAL.bodyPadTop}px ${ACTIVITY_RECORD_MODAL.padX}px ${ACTIVITY_RECORD_MODAL.bodyPadBottom}px`,
+              boxSizing: "border-box",
+              borderRadius: ACTIVITY_RECORD_MODAL.radius,
+              overflow: "hidden",
             }}
           >
-            <div style={{ flex: ACTIVITY_RECORD_MODAL.dateFlex, minWidth: 0 }}>
-              <CalendarDropdown
-                value={date}
-                onChange={setDate}
-                compact
-                triggerStyle={dateTriggerStyle}
-                displayVariant="activity"
-              />
+            <div
+              style={{
+                display: "flex",
+                gap: ACTIVITY_RECORD_MODAL.fieldRowGap,
+                marginBottom: ACTIVITY_RECORD_MODAL.fieldToTextareaGap,
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ flex: ACTIVITY_RECORD_MODAL.dateFlex, minWidth: 0 }}>
+                <CalendarDropdown
+                  value={date}
+                  onChange={setDate}
+                  compact
+                  triggerStyle={dateTriggerStyle}
+                  displayVariant="activity"
+                />
+              </div>
+              <div ref={categoryRef} style={{ flex: ACTIVITY_RECORD_MODAL.categoryFlex, minWidth: 0, position: "relative" }}>
+                <button
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={categoryOpen}
+                  onClick={() => setCategoryOpen((v) => !v)}
+                  style={{
+                    ...categoryButtonStyle,
+                    borderRadius: ACTIVITY_RECORD_MODAL.fieldRadius,
+                    ...(categoryOpen
+                      ? {
+                          borderBottomLeftRadius: ACTIVITY_RECORD_MODAL.radius,
+                          borderBottomRightRadius: ACTIVITY_RECORD_MODAL.radius,
+                        }
+                      : {}),
+                  }}
+                >
+                  <span>{selectedCategory?.label ?? "구분"}</span>
+                  <ChevronDown
+                    size={18}
+                    strokeWidth={2}
+                    color="#9ca0a8"
+                    style={{
+                      flexShrink: 0,
+                      transform: categoryOpen ? "rotate(180deg)" : "none",
+                      transition: "transform 0.15s ease",
+                    }}
+                  />
+                </button>
+              </div>
             </div>
-            <div ref={categoryRef} style={{ flex: ACTIVITY_RECORD_MODAL.categoryFlex, minWidth: 0, position: "relative" }}>
+
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="기록할 내용을 입력해 주세요"
+              style={{
+                width: "100%",
+                flex: 1,
+                minHeight: ACTIVITY_RECORD_MODAL.textareaMinHeight,
+                padding: ACTIVITY_RECORD_MODAL.textareaPad,
+                boxSizing: "border-box",
+                border: `1px solid ${ACTIVITY_RECORD_MODAL.textareaBorder}`,
+                borderRadius: ACTIVITY_RECORD_MODAL.fieldRadius,
+                background: "#ffffff",
+                resize: "none",
+                outline: "none",
+                fontFamily: ACTIVITY_RECORD_MODAL.fontKR,
+                fontSize: ACTIVITY_RECORD_MODAL.textareaFontSize,
+                lineHeight: ACTIVITY_RECORD_MODAL.textareaLineHeight,
+                color: ACTIVITY_RECORD_MODAL.fieldColor,
+                marginBottom: ACTIVITY_RECORD_MODAL.textareaToButtonsGap,
+              }}
+            />
+
+            <div style={{ display: "flex", gap: ACTIVITY_RECORD_MODAL.btnGap, flexShrink: 0 }}>
               <button
                 type="button"
-                aria-haspopup="listbox"
-                aria-expanded={categoryOpen}
-                onClick={() => setCategoryOpen((v) => !v)}
+                onClick={onClose}
+                disabled={saving}
+                style={{ ...appModalBtnCancel, borderRadius: ACTIVITY_RECORD_MODAL.btnRadius }}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={!canSubmit}
                 style={{
-                  ...categoryButtonStyle,
-                  ...(categoryOpen
-                    ? {
-                        borderBottomLeftRadius: 0,
-                        borderBottomRightRadius: 0,
-                      }
-                    : {}),
+                  ...appModalBtnSubmit,
+                  borderRadius: ACTIVITY_RECORD_MODAL.btnRadius,
+                  background: canSubmit
+                    ? ACTIVITY_RECORD_MODAL.titleColor
+                    : ACTIVITY_RECORD_MODAL.btnSubmitDisabledBg,
+                  opacity: 1,
+                  cursor: !canSubmit ? "not-allowed" : "pointer",
                 }}
               >
-                <span>{selectedCategory?.label ?? "구분"}</span>
-                <ChevronDown
-                  size={18}
-                  strokeWidth={2}
-                  color="#9ca0a8"
-                  style={{
-                    flexShrink: 0,
-                    transform: categoryOpen ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.15s ease",
-                  }}
-                />
+                {saving ? "등록 중..." : "등록"}
               </button>
             </div>
-          </div>
-
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="기록할 내용을 입력해 주세요"
-            style={{
-              width: "100%",
-              flex: 1,
-              minHeight: ACTIVITY_RECORD_MODAL.textareaMinHeight,
-              padding: ACTIVITY_RECORD_MODAL.textareaPad,
-              boxSizing: "border-box",
-              border: `1px solid ${ACTIVITY_RECORD_MODAL.textareaBorder}`,
-              borderRadius: ACTIVITY_RECORD_MODAL.fieldRadius,
-              background: "#ffffff",
-              resize: "none",
-              outline: "none",
-              fontFamily: ACTIVITY_RECORD_MODAL.fontKR,
-              fontSize: ACTIVITY_RECORD_MODAL.textareaFontSize,
-              lineHeight: ACTIVITY_RECORD_MODAL.textareaLineHeight,
-              color: ACTIVITY_RECORD_MODAL.fieldColor,
-              marginBottom: ACTIVITY_RECORD_MODAL.textareaToButtonsGap,
-            }}
-          />
-
-          <div style={{ display: "flex", gap: ACTIVITY_RECORD_MODAL.btnGap, flexShrink: 0 }}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              style={{
-                flex: 1,
-                height: ACTIVITY_RECORD_MODAL.btnHeight,
-                borderRadius: ACTIVITY_RECORD_MODAL.btnRadius,
-                border: `1px solid ${ACTIVITY_RECORD_MODAL.btnCancelBorder}`,
-                background: ACTIVITY_RECORD_MODAL.btnCancelBg,
-                color: ACTIVITY_RECORD_MODAL.btnCancelColor,
-                fontSize: ACTIVITY_RECORD_MODAL.btnFontSize,
-                fontWeight: ACTIVITY_RECORD_MODAL.btnFontWeight,
-                fontFamily: ACTIVITY_RECORD_MODAL.fontKR,
-                cursor: saving ? "not-allowed" : "pointer",
-              }}
-            >
-              취소
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={!canSubmit}
-              style={{
-                flex: 1,
-                height: ACTIVITY_RECORD_MODAL.btnHeight,
-                borderRadius: ACTIVITY_RECORD_MODAL.btnRadius,
-                border: "none",
-                background: ACTIVITY_RECORD_MODAL.btnSubmitBg,
-                color: ACTIVITY_RECORD_MODAL.btnSubmitColor,
-                fontSize: ACTIVITY_RECORD_MODAL.btnFontSize,
-                fontWeight: ACTIVITY_RECORD_MODAL.btnFontWeight,
-                fontFamily: ACTIVITY_RECORD_MODAL.fontKR,
-                cursor: !canSubmit ? "not-allowed" : "pointer",
-                opacity: !canSubmit ? 0.45 : 1,
-              }}
-            >
-              {saving ? "등록 중..." : "등록"}
-            </button>
           </div>
         </div>
       </div>
 
-      {categoryOpen && dropdownRect
+      {categoryOpen && categoryRef.current
         ? createPortal(
             <div
               ref={dropdownPortalRef}
@@ -403,28 +406,28 @@ export function ActivityRecordModal({
               aria-label="구분"
               style={{
                 position: "fixed",
-                top: dropdownRect.top,
-                left: dropdownRect.left,
-                width: dropdownRect.width,
-                background: ACTIVITY_RECORD_MODAL.dropdownBg,
-                border: `1px solid ${ACTIVITY_RECORD_MODAL.dropdownBorder}`,
-                borderTop: "none",
-                borderRadius: `0 0 ${ACTIVITY_RECORD_MODAL.fieldRadius}px ${ACTIVITY_RECORD_MODAL.fieldRadius}px`,
-                boxShadow: ACTIVITY_RECORD_MODAL.dropdownShadow,
+                top: categoryRef.current.getBoundingClientRect().bottom,
+                left: categoryRef.current.getBoundingClientRect().left,
+                width: categoryRef.current.getBoundingClientRect().width,
+                background: "#ffffff",
+                border: `1px solid ${ACTIVITY_RECORD_MODAL.textareaBorder}`,
+                borderTop: `1px solid ${ACTIVITY_RECORD_MODAL.textareaBorder}`,
+                borderRadius: ACTIVITY_RECORD_MODAL.fieldRadius,
+                marginTop: 4,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
                 zIndex: ACTIVITY_RECORD_MODAL.zIndex + 2,
                 overflow: "hidden",
                 boxSizing: "border-box",
               }}
             >
               {CATEGORY_OPTIONS.map((opt) => {
-                const active = type === opt.value;
                 const hovered = hoverCategory === opt.value;
                 return (
                   <button
                     key={opt.value}
                     type="button"
                     role="option"
-                    aria-selected={active}
+                    aria-selected={type === opt.value}
                     onMouseEnter={() => setHoverCategory(opt.value)}
                     onMouseLeave={() => setHoverCategory(null)}
                     onClick={() => {
@@ -434,11 +437,8 @@ export function ActivityRecordModal({
                     style={{
                       width: "100%",
                       border: "none",
-                      background:
-                        hovered || active
-                          ? ACTIVITY_RECORD_MODAL.dropdownItemHoverBg
-                          : "#ffffff",
-                      padding: `${ACTIVITY_RECORD_MODAL.dropdownItemPadY}px ${ACTIVITY_RECORD_MODAL.dropdownItemPadX}px`,
+                      background: hovered ? ACTIVITY_RECORD_MODAL.dropdownItemHoverBg : "#ffffff",
+                      padding: "12px 16px",
                       textAlign: "left",
                       fontFamily: ACTIVITY_RECORD_MODAL.fontKR,
                       fontSize: ACTIVITY_RECORD_MODAL.fieldFontSize,

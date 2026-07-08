@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -9,6 +9,33 @@ const YEAR_MIN = 1940;
 const YEAR_MAX = 2030;
 /** 앱 테마와 통일 (남색) */
 const ACCENT = "var(--color-primary)";
+/** 활동 기록 모달 톤 — 흑·회색 미니멀 */
+const ACTIVITY_CAL = {
+  ink: "#0b0c0e",
+  muted: "#9ca0a8",
+  faint: "#c8cad0",
+  sun: "#e55c5c",
+  surface: "#ffffff",
+  border: "#e5e6ea",
+  hover: "#f4f4f6",
+  selectedBg: "#0b0c0e",
+  shadow: "0 12px 36px rgba(17, 17, 26, 0.12)",
+  radius: 7,
+  font: "'Pretendard', system-ui, -apple-system, sans-serif",
+} as const;
+
+const activityNavBtnStyle: CSSProperties = {
+  width: 28,
+  height: 28,
+  border: "none",
+  background: "transparent",
+  cursor: "pointer",
+  color: ACTIVITY_CAL.muted,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: ACTIVITY_CAL.radius,
+};
 const ITEM_H = 40;
 const VISIBLE = 5;
 
@@ -198,7 +225,12 @@ export function CalendarDropdown({
   const [sel, setSel] = useState(() => (value ? parseYMD(value) : new Date()));
   const [mode, setMode] = useState<"calendar" | "wheel">("calendar");
   const [alignRight, setAlignRight] = useState(false);
-  const [portalPosition, setPortalPosition] = useState<{ top: number; left?: number; right?: number } | null>(null);
+  const [portalPosition, setPortalPosition] = useState<{
+    top: number;
+    left?: number;
+    right?: number;
+    width?: number;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
   const POPUP_WIDTH = 320;
@@ -214,6 +246,8 @@ export function CalendarDropdown({
     if (!open) setMode("calendar");
   }, [open]);
 
+  const isActivity = displayVariant === "activity";
+
   useLayoutEffect(() => {
     if (!open) {
       setPortalPosition(null);
@@ -221,22 +255,23 @@ export function CalendarDropdown({
     }
     if (typeof window === "undefined" || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
+    const popupW = isActivity ? rect.width : POPUP_WIDTH;
     const spaceOnRight = window.innerWidth - rect.right;
     const spaceOnLeft = rect.left;
-    const useRight = spaceOnRight < POPUP_WIDTH && spaceOnLeft >= POPUP_WIDTH;
+    const useRight = !isActivity && spaceOnRight < popupW && spaceOnLeft >= popupW;
     setAlignRight(useRight);
-    const top = rect.bottom + 8;
-    const maxW = Math.min(window.innerWidth - 24, 360);
+    const top = rect.bottom + (isActivity ? 6 : 8);
+    const maxW = isActivity ? rect.width : Math.min(window.innerWidth - 24, 360);
     if (useRight) {
       const right = Math.max(12, window.innerWidth - rect.right);
-      setPortalPosition({ top, right });
+      setPortalPosition({ top, right, width: maxW });
     } else {
       let left = rect.left;
-      if (left + maxW > window.innerWidth - 12) left = window.innerWidth - maxW - 12;
+      if (!isActivity && left + maxW > window.innerWidth - 12) left = window.innerWidth - maxW - 12;
       if (left < 12) left = 12;
-      setPortalPosition({ top, left });
+      setPortalPosition({ top, left, width: maxW });
     }
-  }, [open]);
+  }, [open, isActivity]);
 
   useEffect(() => {
     if (!open) return;
@@ -304,9 +339,25 @@ export function CalendarDropdown({
     setSel((prev) => new Date(prev.getFullYear(), prev.getMonth(), d));
   }, []);
 
-  const selectDate = useCallback((ymd: string) => {
-    setSel(parseYMD(ymd));
-  }, []);
+  const selectDate = useCallback(
+    (ymd: string) => {
+      if (isActivity) {
+        onChange(ymd);
+        setOpen(false);
+        return;
+      }
+      setSel(parseYMD(ymd));
+    },
+    [isActivity, onChange],
+  );
+
+  const goToToday = useCallback(() => {
+    const now = new Date();
+    const ymd = toYMD(now);
+    setSel(now);
+    onChange(ymd);
+    setOpen(false);
+  }, [onChange]);
 
   const prevMonth = useCallback(() => {
     setSel((v) => { const n = new Date(v); n.setMonth(n.getMonth() - 1); return n; });
@@ -316,6 +367,7 @@ export function CalendarDropdown({
   }, []);
 
   const selYMD = toYMD(sel);
+  const highlightYMD = isActivity && value ? value : selYMD;
 
   const triggerH = triggerStyle?.minHeight ?? triggerStyle?.height;
   const triggerDense =
@@ -382,6 +434,136 @@ export function CalendarDropdown({
       </button>
 
       {open && portalPosition && typeof document !== "undefined" && createPortal(
+        isActivity ? (
+          <div
+            ref={portalRef}
+            style={{
+              position: "fixed",
+              top: portalPosition.top,
+              ...(portalPosition.left != null ? { left: portalPosition.left } : {}),
+              ...(portalPosition.right != null ? { right: portalPosition.right } : {}),
+              width: portalPosition.width,
+              background: ACTIVITY_CAL.surface,
+              borderRadius: ACTIVITY_CAL.radius,
+              border: `1px solid ${ACTIVITY_CAL.border}`,
+              boxShadow: ACTIVITY_CAL.shadow,
+              zIndex: 100000,
+              overflow: "hidden",
+              fontFamily: ACTIVITY_CAL.font,
+            }}
+          >
+            <div
+              style={{
+                padding: "14px 14px 10px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 15, fontWeight: 600, color: ACTIVITY_CAL.ink, letterSpacing: "-0.02em" }}>
+                {year}년 {month + 1}월
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <button
+                  type="button"
+                  onClick={goToToday}
+                  style={{
+                    border: "none",
+                    background: ACTIVITY_CAL.hover,
+                    color: ACTIVITY_CAL.muted,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: "6px 10px",
+                    borderRadius: ACTIVITY_CAL.radius,
+                    cursor: "pointer",
+                    fontFamily: ACTIVITY_CAL.font,
+                  }}
+                >
+                  오늘
+                </button>
+                <button
+                  type="button"
+                  onClick={prevMonth}
+                  aria-label="이전 달"
+                  style={activityNavBtnStyle}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  aria-label="다음 달"
+                  style={activityNavBtnStyle}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div style={{ padding: "0 10px 12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 6 }}>
+                {DAY_KR.map((d, i) => (
+                  <div
+                    key={d}
+                    style={{
+                      textAlign: "center",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: i === 0 ? ACTIVITY_CAL.sun : ACTIVITY_CAL.muted,
+                      padding: "2px 0",
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    {d}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
+                {grid.map(({ d, current, ymd }) => {
+                  const selected = highlightYMD === ymd;
+                  const isToday = todayYMD === ymd;
+                  return (
+                    <button
+                      key={ymd}
+                      type="button"
+                      onClick={() => selectDate(ymd)}
+                      style={{
+                        width: "100%",
+                        aspectRatio: "1",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: isToday && !selected ? `1.5px solid ${ACTIVITY_CAL.ink}` : "1.5px solid transparent",
+                        borderRadius: ACTIVITY_CAL.radius,
+                        background: selected ? ACTIVITY_CAL.selectedBg : "transparent",
+                        color: selected ? "#fff" : current ? ACTIVITY_CAL.ink : ACTIVITY_CAL.faint,
+                        fontSize: 13,
+                        fontWeight: selected || isToday ? 600 : 400,
+                        cursor: "pointer",
+                        fontFamily: ACTIVITY_CAL.font,
+                        padding: 0,
+                        transition: "background 0.12s ease, color 0.12s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!selected) e.currentTarget.style.background = ACTIVITY_CAL.hover;
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!selected) e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
         <div
           ref={portalRef}
           style={{
@@ -451,7 +633,7 @@ export function CalendarDropdown({
               {/* Date grid */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, maxWidth: 320 }}>
                 {grid.map(({ d, current, ymd }) => {
-                  const selected = selYMD === ymd;
+                  const selected = highlightYMD === ymd;
                   const isToday = todayYMD === ymd;
                   return (
                     <button
@@ -538,7 +720,8 @@ export function CalendarDropdown({
               </button>
             </div>
           </div>
-        </div>,
+        </div>
+        ),
         document.body
       )}
     </div>

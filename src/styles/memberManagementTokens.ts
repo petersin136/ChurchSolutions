@@ -131,7 +131,7 @@ export const MEMBER_MGMT = {
   pagerTrack: "#ccd0d7",
   pagerDot: "#33343a",
   pagerBarWidth: 24,
-  pagerBarHeight: 4, // 트랙 전체 + 현재 페이지 하이라이트 공통 두께
+  pagerBarHeight: 3, // 트랙 전체 + 현재 페이지 하이라이트 공통 두께
   pagerArrow: "#4b5563",
   pagerArrowDisabled: "#d1d5db",
   pagerFontSize: 18,

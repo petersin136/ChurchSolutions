@@ -31,6 +31,7 @@ function deleteConfirmOverlayStyle(
   placement: "viewport" | "nested",
 ): CSSProperties {
   if (placement === "nested") {
+    // CSS .app-modal-overlay 의 backdrop-filter가 부모 흰 프레임을 깨뜨리므로 명시적으로 끔
     return {
       position: "absolute",
       inset: 0,
@@ -40,14 +41,15 @@ function deleteConfirmOverlayStyle(
       justifyContent: "center",
       padding: 16,
       boxSizing: "border-box",
-      background: APP_MODAL.overlayBg,
-      backdropFilter: "blur(6px)",
-      WebkitBackdropFilter: "blur(6px)",
+      background: "rgba(17, 17, 26, 0.42)",
+      backdropFilter: "none",
+      WebkitBackdropFilter: "none",
       borderRadius: APP_MODAL.radius,
       overflow: "hidden",
     };
   }
 
+  // .app-modal-overlay 클래스를 쓰지 않음 — 그 CSS는 padding:14vh / justify flex-start 라 아래로 밀림
   return {
     position: "fixed",
     inset: 0,
@@ -170,7 +172,6 @@ export function AppDeleteConfirmModal({
 
   const overlay = (
     <div
-      className="app-modal-overlay open"
       role="presentation"
       style={deleteConfirmOverlayStyle(zIndex, placement)}
       onMouseDown={(e) => {

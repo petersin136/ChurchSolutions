@@ -36,7 +36,9 @@ import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pa
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
 import { MembersManagementPanel } from "@/components/pastoral/MembersManagementPanel";
+import { PrayerMemoPanel } from "@/components/pastoral/PrayerMemoPanel";
 import { ActivityRecordModal } from "@/components/pastoral/ActivityRecordModal";
+import { PrayerHistoryModal } from "@/components/pastoral/PrayerHistoryModal";
 import { AttendanceDashboard, AttendanceCheck, AbsenteeManagement, AttendanceStatistics } from "@/components/attendance";
 import { MonthlyAttendanceBulletin } from "@/components/reports/MonthlyAttendanceBulletin";
 import { ReportModal } from "@/components/report/ReportModal";
@@ -2762,214 +2764,194 @@ function getPrayerAnsweredKey(n: Note & { mbrId: string; isProfilePrayer?: boole
   return `note\t${n.mbrId}\t${n.date}\t${n.createdAt}\t${n.content}`;
 }
 
-/* ====== Notes ====== */
-function NotesSub({ db, setDb, persist, openPrayerModal, openNoteModal }: { db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void; openPrayerModal: (id: string, focusContent?: string) => void; openNoteModal: (id?: string) => void }) {
+/* ====== Notes (기도/메모) — 성도 관리 UI 동일 복사본 + 기도/메모 액션 ====== */
+function NotesSub({
+  db,
+  setDb,
+  openNoteModal,
+  openQuickNote,
+  openActivityModal,
+  openPrayerModal,
+  churchId,
+}: {
+  db: DB;
+  setDb: (fn: (prev: DB) => DB) => void;
+  openNoteModal: (id?: string) => void;
+  openQuickNote: (memberId: string, memberName: string, type: "note" | "prayer") => void;
+  openActivityModal: (memberId: string, memberName: string, memberRole?: string) => void;
+  openPrayerModal: (id: string, focusContent?: string) => void;
+  churchId: string | null;
+}) {
   const mob = useIsMobile();
-  const listRefNotes = useRef<HTMLDivElement>(null);
-  const [search, setSearch] = useState("");
-  const [typeF, setTypeF] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [highlightKey, setHighlightKey] = useState<string | null>(null);
-  const [pendingFeedFocus, setPendingFeedFocus] = useState<Extract<PastoralFeedFocus, { target: "notes" }> | null>(() => {
-    if (typeof window === "undefined") return null;
-    const raw = sessionStorage.getItem(PASTORAL_FEED_FOCUS_KEY);
-    if (!raw) return null;
-    sessionStorage.removeItem(PASTORAL_FEED_FOCUS_KEY);
-    try {
-      const parsed = JSON.parse(raw) as PastoralFeedFocus;
-      return parsed.target === "notes" ? parsed : null;
-    } catch {
-      return null;
-    }
-  });
+  const tabletOrLess = useIsMobile(1024);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [deptF, setDeptF] = useState("all");
+  const [roleF, setRoleF] = useState("all");
+  const [mokjangF, setMokjangF] = useState("all");
+  const [statusF, setStatusF] = useState("all");
+  const [pageList, setPageList] = useState(1);
+  const [pageCapacity, setPageCapacity] = useState(tabletOrLess ? 10 : 18);
+  const PAGE_SIZE_MEM = pageCapacity;
+  const depts = getDepts(db);
 
+  const setDbRef = useRef(setDb);
+  setDbRef.current = setDb;
+  useEffect(() => {
+    if (!churchId || !supabase) return;
+    supabase
+      .from("members")
+      .select("*")
+      .eq("church_id", churchId)
+      .order("created_at", { ascending: true })
+      .then(({ data, error }: { data: unknown[] | null; error: { message: string; details?: unknown } | null }) => {
+        if (error) {
+          console.error("[NotesSub] members load error:", error.message, error.details);
+          return;
+        }
+        const members = (data ?? []).map((r) => toMember(r as Record<string, unknown>));
+        setDbRef.current((prev) => ({ ...prev, members }));
+      });
+  }, [churchId]);
+
+  // 대시보드/피드에서 넘어온 타입·포커스 — 기도면 PrayerModal 오픈
   useEffect(() => {
     if (typeof window === "undefined") return;
     const preset = sessionStorage.getItem("pastoral_notes_type");
-    if (preset === "prayer" || preset === "memo" || preset === "visit" || preset === "event") {
-      setTypeF(preset);
-      sessionStorage.removeItem("pastoral_notes_type");
+    if (preset) sessionStorage.removeItem("pastoral_notes_type");
+    const raw = sessionStorage.getItem(PASTORAL_FEED_FOCUS_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(PASTORAL_FEED_FOCUS_KEY);
+    try {
+      const parsed = JSON.parse(raw) as PastoralFeedFocus;
+      if (parsed.target === "notes" && parsed.noteType === "prayer" && parsed.memberId) {
+        openPrayerModal(parsed.memberId, parsed.content);
+      } else if (parsed.target === "notes" && parsed.memberId) {
+        const m = db.members.find((x) => x.id === parsed.memberId);
+        if (m) openQuickNote(m.id, m.name || "?", parsed.noteType === "memo" ? "note" : "prayer");
+      }
+    } catch {
+      /* ignore */
     }
-  }, []);
+  }, [db.members, openPrayerModal, openQuickNote]);
 
-  const answeredSet = useMemo(() => new Set(db.answeredPrayerKeys || []), [db.answeredPrayerKeys]);
-
-  const allNotes = useMemo(() => {
-    const a: (Note & { mbrName: string; mbrId: string; mbrDept: string; isProfilePrayer?: boolean })[] = [];
-    const seen = new Set<string>();
-    // 타임라인 기록 (db.notes)
-    Object.keys(db.notes).forEach(mid => {
-      const mbr = db.members.find(x => x.id === mid);
-      const mbrName = mid === NOTE_TARGET_CHURCH ? "교회 전체" : (mbr?.name || "?");
-      (db.notes[mid] || []).forEach(n => {
-        const key = `${mid}|${n.date}|${n.type}|${n.content}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        a.push({ ...n, mbrName, mbrId: mid, mbrDept: mbr?.dept || "" });
-      });
-    });
-    // 성도 프로필 기도제목(m.prayer) — 기록으로 추가한 적 없어도 기도/메모 탭에 표시
-    const today = new Date().toISOString().slice(0, 10);
-    db.members.forEach(m => {
-      const prayer = (m.prayer || "").trim();
-      if (!prayer || m.status === "졸업/전출") return;
-      const key = `${m.id}|profile|prayer|${prayer}`;
-      if (seen.has(key)) return;
-      const alreadyInNotes = (db.notes[m.id] || []).some(n => n.type === "prayer" && n.content === prayer);
-      if (alreadyInNotes) return;
-      seen.add(key);
-      a.push({
-        type: "prayer",
-        content: prayer,
-        date: m.createdAt?.slice(0, 10) || today,
-        createdAt: m.createdAt || today,
-        mbrName: m.name,
-        mbrId: m.id,
-        mbrDept: m.dept || "",
-        isProfilePrayer: true,
-      });
-    });
-    return a;
-  }, [db]);
+  const mokjangList = getMokjangList(db);
+  const roleFilterOptions = useMemo(() => {
+    const baseOrder = ["담임목사", "부목사", "강도사", "전도사", "교육전도사", "장로", "안수집사", "권사", "집사", "교사", "부교사", "성도", "청년", "학생", "새가족"];
+    const fromMembers = Array.from(new Set(db.members.map((m) => (m.role || "").trim()).filter(Boolean)));
+    const merged = Array.from(new Set([...baseOrder, ...fromMembers]));
+    return merged.sort((a, b) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99) || a.localeCompare(b, "ko"));
+  }, [db.members]);
+  const deptSelectOptions = useMemo(
+    () => [{ value: "all", label: "부서" }, ...depts.map((d) => ({ value: d, label: d }))],
+    [depts]
+  );
+  const roleSelectOptions = useMemo(
+    () => [{ value: "all", label: "직분" }, ...roleFilterOptions.map((r) => ({ value: r, label: r }))],
+    [roleFilterOptions]
+  );
+  const mokjangSelectOptions = useMemo(
+    () => [{ value: "all", label: "목장" }, ...mokjangList.map((m) => ({ value: m, label: m }))],
+    [mokjangList]
+  );
 
   const filtered = useMemo(() => {
-    let r = [...allNotes];
-    if (search) { const q = search.toLowerCase(); r = r.filter(n => n.mbrName.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)); }
-    if (typeF !== "all") r = r.filter(n => n.type === typeF);
-    return r.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-  }, [allNotes, search, typeF]);
+    let r = db.members.filter(m => (m.member_status ?? m.status) !== "졸업/전출");
+    const q = searchQuery.trim().replace(/[,\uFF0C]+$/g, "").trim();
+    if (q) {
+      const norm = (s: string) => (s ?? "").toLowerCase().replace(/\s+/g, "").replace(/[,\uFF0C./\-]/g, "");
+      const qn = norm(q);
+      const digits = q.replace(/\D/g, "");
+      if (digits.length === 0 && q.length < 2) {
+        r = [];
+      } else {
+        r = r.filter((m) => {
+          const nameN = norm(m.name || "");
+          const phoneN = (m.phone || "").replace(/\D/g, "");
+          const deptN = norm(m.dept || "");
+          const mokjangN = norm((m.mokjang ?? m.group) || "");
+          const roleN = norm(m.role || "");
+          const memoN = norm(m.memo || "");
+          const prayerN = norm(m.prayer || "");
+          const noteBlob = norm(
+            (db.notes[m.id] || [])
+              .filter((n) => n.type === "prayer" || n.type === "memo")
+              .map((n) => n.content)
+              .join(" ")
+          );
+          if (nameN === qn) return true;
+          return (
+            nameN.includes(qn) ||
+            deptN.includes(qn) ||
+            mokjangN.includes(qn) ||
+            roleN.includes(qn) ||
+            (digits.length > 0 ? phoneN.includes(digits) : false) ||
+            memoN.includes(qn) ||
+            prayerN.includes(qn) ||
+            noteBlob.includes(qn)
+          );
+        });
+      }
+    }
+    if (deptF !== "all") r = r.filter(m => m.dept === deptF);
+    if (roleF !== "all") r = r.filter(m => m.role === roleF);
+    if (mokjangF !== "all") r = r.filter(m => ((m.mokjang ?? m.group) || "") === mokjangF);
+    if (statusF !== "all") r = r.filter(m => (m.member_status ?? m.status) === statusF);
+    return r;
+  }, [db.members, db.notes, searchQuery, deptF, roleF, mokjangF, statusF]);
 
-  const paginatedNotes = useMemo(() => filtered.slice((currentPage - 1) * 10, currentPage * 10), [filtered, currentPage]);
+  const resetFilters = useCallback(() => {
+    setDeptF("all");
+    setRoleF("all");
+    setMokjangF("all");
+    setStatusF("all");
+    setPageList(1);
+  }, []);
+
+  const totalPagesList = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE_MEM));
+  const currentPageList = Math.min(pageList, totalPagesList);
+  const pageListMembers = filtered.slice((currentPageList - 1) * PAGE_SIZE_MEM, currentPageList * PAGE_SIZE_MEM);
 
   useEffect(() => {
-    if (!pendingFeedFocus) return;
-    const type = pendingFeedFocus.noteType === "event" ? "all" : pendingFeedFocus.noteType;
-    setTypeF(type);
-    setSearch("");
+    setPageList((p) => Math.min(p, totalPagesList));
+  }, [totalPagesList]);
 
-    let list = [...allNotes];
-    if (type !== "all") list = list.filter(n => n.type === type);
-    const idx = list.findIndex(n => notesMatchFocus(n, pendingFeedFocus));
-    if (idx < 0) {
-      setPendingFeedFocus(null);
-      return;
-    }
-    const page = Math.floor(idx / 10) + 1;
-    setCurrentPage(page);
-    const matched = list[idx];
-    const domKey = getNoteFocusDomKey(matched);
-    setHighlightKey(domKey);
-    if (pendingFeedFocus.noteType === "prayer") {
-      openPrayerModal(pendingFeedFocus.memberId, pendingFeedFocus.content);
-    }
-    setPendingFeedFocus(null);
-    window.requestAnimationFrame(() => {
-      window.setTimeout(() => {
-        const el = document.getElementById(`pastoral-note-${domKey}`);
-        el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 120);
-    });
-    window.setTimeout(() => setHighlightKey(null), 3200);
-  }, [pendingFeedFocus, allNotes, openPrayerModal]);
-
-  const toggleAnswered = (key: string) => {
-    const list = db.answeredPrayerKeys || [];
-    const next = list.includes(key) ? list.filter(k => k !== key) : [...list, key];
-    setDb(prev => ({ ...prev, answeredPrayerKeys: next }));
-    persist();
-  };
-
-  const [searchFocused, setSearchFocused] = useState(false);
-  const btnPrayMob: CSSProperties = mob
-    ? { height: 32, fontSize: 11, padding: "0 10px", minHeight: 32 }
-    : {};
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: mob ? 8 : 20, ...(mob ? { minHeight: MOB_PANEL_MIN_H } : { minHeight: "100%" }) }}>
-      <div style={{ display: "flex", gap: mob ? 8 : 12, alignItems: "center", flexWrap: "wrap", ...(mob ? { flexShrink: 0 } : {}) }}>
-        <div style={{ position: "relative", flex: 1, minWidth: mob ? 0 : 200, width: mob ? "100%" : undefined }}>
-          <div style={{ position: "absolute", left: mob ? 10 : 14, top: "50%", transform: "translateY(-50%)", color: C.textFaint, pointerEvents: "none" }}><Icons.Search /></div>
-          <input
-            value={search}
-            onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            placeholder="제목, 기도제목 검색"
-            style={{
-              width: "100%",
-              height: mob ? 32 : 44,
-              padding: mob ? "0 10px 0 30px" : "0 14px 0 40px",
-              fontFamily: "inherit",
-              fontSize: mob ? 12 : 14,
-              background: C.card,
-              border: `1px solid ${searchFocused ? "var(--color-primary)" : C.border}`,
-              borderRadius: 7,
-              color: "var(--color-text)",
-              outline: "none",
-              boxShadow: searchFocused ? "0 0 0 2px color-mix(in srgb, var(--color-primary) 22%, transparent)" : "none",
-              transition: "border-color 0.2s, box-shadow 0.2s",
-            }}
-          />
-        </div>
-        <select
-          value={typeF === "event" ? "all" : typeF}
-          onChange={e => { setTypeF(e.target.value); setCurrentPage(1); }}
-          className="select-modern pastoral-notes-type-select"
-          style={{ height: mob ? 32 : 44, width: "auto", minWidth: mob ? 80 : 120, fontSize: mob ? 11 : 14 }}
-        >
-          <option value="all">전체</option>
-          <option value="prayer">기도</option>
-          <option value="memo">메모</option>
-          <option value="visit">심방</option>
-        </select>
-        {typeF === "all" && (
-          <span style={{ display: "inline-flex", alignItems: "center", padding: mob ? "3px 8px" : "6px 12px", borderRadius: 7, fontSize: mob ? 10 : 12, fontWeight: 600, background: C.successBg, color: C.success }}>
-            전체
-          </span>
-        )}
-        {typeF === "visit" && (
-          <span style={{ display: "inline-flex", alignItems: "center", padding: mob ? "3px 8px" : "6px 12px", borderRadius: 7, fontSize: mob ? 10 : 12, fontWeight: 600, background: C.tealBg, color: C.teal }}>
-            심방
-          </span>
-        )}
-        <Btn variant="primary" icon={<Icons.Plus />} onClick={() => openNoteModal()} style={btnPrayMob}>+ 기도</Btn>
-      </div>
-      <div ref={listRefNotes} style={{ ...PAGINATION_LIST_PARENT_STYLE, ...(mob ? { minWidth: 0 } : {}) }}>
-        {filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: mob ? 24 : 48 }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><Heart size={mob ? 28 : 40} strokeWidth={1.5} style={{ color: C.textMuted }} /></div>
-            <div style={{ fontSize: mob ? 14 : 17, fontWeight: 600, color: C.text, marginBottom: 8 }}>등록된 기도제목이 없습니다</div>
-            <Btn variant="primary" icon={<Icons.Plus />} onClick={() => openNoteModal()} style={btnPrayMob}>+ 기도</Btn>
-          </div>
-        ) : (
-          <>
-            <div style={mob ? { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" as const } : {}}>
-              {paginatedNotes.map((n, i) => {
-                const key = getPrayerAnsweredKey(n);
-                const answered = n.type === "prayer" && answeredSet.has(key);
-                const domKey = getNoteFocusDomKey(n);
-                const highlighted = highlightKey === domKey;
-                return (
-                  <div key={`${n.mbrId}-${n.date}-${n.type}-${n.createdAt}-${i}`} id={`pastoral-note-${domKey}`}>
-                    <NoteCard
-                      n={n}
-                      mbrName={n.mbrName}
-                      mbrDept={n.mbrDept}
-                      highlighted={highlighted}
-                      onClick={() => {
-                        if (n.type === "prayer") openPrayerModal(n.mbrId, n.content);
-                      }}
-                      answered={n.type === "prayer" ? answered : undefined}
-                      onToggleAnswered={n.type === "prayer" ? () => toggleAnswered(key) : undefined}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-            <Pagination compact={mob} totalItems={filtered.length} itemsPerPage={10} currentPage={currentPage} onPageChange={(p) => setCurrentPage(p)} />
-          </>
-        )}
-      </div>
-    </div>
+    <PrayerMemoPanel
+      mob={mob}
+      searchQuery={searchQuery}
+      onSearchChange={(v) => {
+        setSearchQuery(v);
+        setPageList(1);
+      }}
+      deptOptions={deptSelectOptions}
+      mokjangOptions={mokjangSelectOptions}
+      roleOptions={roleSelectOptions}
+      onSelectDept={(v) => {
+        setDeptF(v);
+        setPageList(1);
+      }}
+      onSelectMokjang={(v) => {
+        setMokjangF(v);
+        setPageList(1);
+      }}
+      onSelectRole={(v) => {
+        setRoleF(v);
+        setPageList(1);
+      }}
+      onResetFilters={resetFilters}
+      onRegister={() => openNoteModal()}
+      db={db}
+      filtered={filtered}
+      pageMembers={pageListMembers}
+      pageSize={PAGE_SIZE_MEM}
+      currentPage={currentPageList}
+      totalItems={filtered.length}
+      onPageChange={setPageList}
+      onOpenQuickPrayer={(id, name) => openQuickNote(id, name, "prayer")}
+      onOpenQuickMemo={(id, name) => openQuickNote(id, name, "note")}
+      onOpenActivity={openActivityModal}
+      onCapacityChange={setPageCapacity}
+    />
   );
 }
 
@@ -4142,6 +4124,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [activityMemberName, setActivityMemberName] = useState("");
   const [activityMemberRole, setActivityMemberRole] = useState("");
   const [activitySaving, setActivitySaving] = useState(false);
+  const [prayerHistoryOpen, setPrayerHistoryOpen] = useState(false);
+  const [prayerHistoryMemberId, setPrayerHistoryMemberId] = useState("");
 
   // Member form
   const [fName, setFName] = useState(""); const [fDept, setFDept] = useState(""); const [fRole, setFRole] = useState("");
@@ -4517,6 +4501,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   };
 
   const openQuickNote = useCallback((memberId: string, memberName: string, type: "note" | "prayer") => {
+    if (type === "prayer") {
+      setPrayerHistoryMemberId(memberId);
+      setPrayerHistoryOpen(true);
+      return;
+    }
     setQuickNoteMemberId(memberId);
     setQuickNoteMemberName(memberName);
     setQuickNoteType(type);
@@ -4731,18 +4720,30 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   );
   const quickNoteLocalSeed = useMemo((): QuickNoteItem[] => {
     if (!quickNoteMemberId) return [];
-    const noteType = quickNoteType === "prayer" ? "prayer" : "memo";
     return (db.notes[quickNoteMemberId] ?? [])
-      .filter((n) => n.type === noteType)
+      .filter((n) => n.type === "memo")
       .map((n, i) => ({
         id: `local-${n.createdAt ?? n.date}-${i}`,
         date: n.date,
         content: n.content,
         created_at: n.createdAt ?? n.date,
       }));
-  }, [db.notes, quickNoteMemberId, quickNoteType]);
-  const quickNoteProfileContent =
-    quickNoteType === "prayer" ? quickNoteMember?.prayer : quickNoteMember?.memo;
+  }, [db.notes, quickNoteMemberId]);
+  const prayerHistoryMember = useMemo(
+    () => db.members.find((m) => m.id === prayerHistoryMemberId),
+    [db.members, prayerHistoryMemberId],
+  );
+  const prayerHistoryLocalSeed = useMemo((): QuickNoteItem[] => {
+    if (!prayerHistoryMemberId) return [];
+    return (db.notes[prayerHistoryMemberId] ?? [])
+      .filter((n) => n.type === "prayer")
+      .map((n, i) => ({
+        id: `local-${n.createdAt ?? n.date}-${i}`,
+        date: n.date,
+        content: n.content,
+        created_at: n.createdAt ?? n.date,
+      }));
+  }, [db.notes, prayerHistoryMemberId]);
   const orgResourceLayout = activeSub === "settings";
 
   const navSections = [{ sectionLabel: "목양", items: NAV_ITEMS.map((n) => ({ id: n.id, label: n.label, Icon: n.Icon })) }];
@@ -4765,13 +4766,13 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       }
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
-      contentBg={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" ? DASH_GLOBAL.bg : undefined}
-      contentPaddingLeft={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" ? DASH_GLOBAL.contentPadLeft : undefined}
-      contentPaddingRight={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" ? DASH_GLOBAL.contentPadRight : undefined}
-      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "members" ? 20 : undefined}
-      contentTopGap={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" ? getMemberContentTopGap() : undefined}
-      contentFontFamily={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" ? DASH_GLOBAL.fontKR : undefined}
-      hideHeader={activeSub === "dashboard" || orgResourceLayout || activeSub === "members"}
+      contentBg={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" ? DASH_GLOBAL.bg : undefined}
+      contentPaddingLeft={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" ? DASH_GLOBAL.contentPadLeft : undefined}
+      contentPaddingRight={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" ? DASH_GLOBAL.contentPadRight : undefined}
+      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "members" || activeSub === "notes" ? 20 : undefined}
+      contentTopGap={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" || activeSub === "notes" ? getMemberContentTopGap() : undefined}
+      contentFontFamily={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" ? DASH_GLOBAL.fontKR : undefined}
+      hideHeader={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes"}
     >
           {activeSub === "dashboard" && (
             <DashboardSub
@@ -4925,7 +4926,17 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               )}
             </>
           )}
-          {activeSub === "notes" && <NotesSub db={db} setDb={fn => setDb(fn)} persist={persist} openPrayerModal={openPrayerModal} openNoteModal={openNoteModal} />}
+          {activeSub === "notes" && (
+            <NotesSub
+              db={db}
+              setDb={fn => setDb(fn)}
+              openNoteModal={openNoteModal}
+              openQuickNote={openQuickNote}
+              openActivityModal={openActivityModal}
+              openPrayerModal={openPrayerModal}
+              churchId={churchId}
+            />
+          )}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
           {activeSub === "ceremony" && <CeremonyBoard toast={toast} />}
           {activeSub === "settings" && (
@@ -5166,18 +5177,33 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         onSubmit={saveActivityRecord}
       />
 
-      {/* Quick Note/Prayer Modal — 성도별 메모·기도 제목 */}
+      <PrayerHistoryModal
+        open={prayerHistoryOpen}
+        onClose={() => setPrayerHistoryOpen(false)}
+        memberId={prayerHistoryMemberId}
+        memberName={prayerHistoryMember?.name || "?"}
+        memberRole={prayerHistoryMember?.role}
+        churchId={churchId ?? ""}
+        localSeedItems={prayerHistoryLocalSeed}
+        profilePrayer={prayerHistoryMember?.prayer}
+        answeredPrayerKeys={db.answeredPrayerKeys}
+        answeredPrayerDates={db.answeredPrayerDates}
+        onTogglePrayerAnswered={handleTogglePrayerAnswered}
+        onSaved={(memberId, items, latestContent) =>
+          handleQuickNoteSaved(memberId, "prayer", items, latestContent)
+        }
+      />
+
+      {/* Quick Note Modal — 성도별 메모 */}
       <QuickNoteModal
         isOpen={quickNoteOpen}
         onClose={() => setQuickNoteOpen(false)}
         memberName={quickNoteMemberName}
         memberId={quickNoteMemberId}
         churchId={churchId ?? ""}
-        type={quickNoteType}
-        profileContent={quickNoteProfileContent ?? undefined}
+        type="note"
+        profileContent={quickNoteMember?.memo ?? undefined}
         localSeedItems={quickNoteLocalSeed}
-        answeredPrayerKeys={db.answeredPrayerKeys}
-        onTogglePrayerAnswered={quickNoteType === "prayer" ? handleTogglePrayerAnswered : undefined}
         onSaved={handleQuickNoteSaved}
       />
 

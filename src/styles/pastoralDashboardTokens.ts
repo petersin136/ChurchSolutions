@@ -35,8 +35,10 @@ export const DASH_COLOR = {
   /** 사이드바 Today 라인 — 시안 대비 조금 더 진하게 */
   sidebarDateToday: "#a4aab4",
   sidebarDateValue: "#787f8c",
-  menubarBaseline: "#D2D4DB",
-  indicator: "#4E5159",
+  /** 상단 메뉴·성도관리 페이지네이션 공통 — 트랙 연한색 */
+  menubarBaseline: "#ccd0d7",
+  /** 활성 하이라이트 — 트랙과 동일 굵기, 진한색만 구분 */
+  indicator: "#33343a",
   cardBg: "#ffffff",
   cardBorder: "rgba(0,0,0,0.03)",
   sidebarHoverBox: "#ffffff",
@@ -105,13 +107,17 @@ export const DASH_MENUBAR = {
   baselineExtend: 32,
   /** 대시보드 상단 탭: 기준선 안에서 첫·마지막 탭까지 (≈1cm) */
   tabLineInset: 32,
-  baselineHeight: 2,
-  baselineColor: "#D2D4DB",
-  /** 활성/hover 인디케이터 — 글씨보다 좌우 6px 더 길게, 끝 곡률 */
+  /**
+   * 성도관리 하단 페이지네이션(MEMBER_MGMT.pager*)과 동일 형식:
+   * 트랙·하이라이트 동일 굵기(3), 색만 연한/진한 구분, 끝 반원.
+   */
+  baselineHeight: 3,
+  baselineColor: "#ccd0d7",
+  /** 활성/hover 인디케이터 — 글씨보다 좌우 6px 더 길게 */
   indicatorHeight: 3,
   indicatorExtend: 6,
-  indicatorRadius: 7,
-  indicatorColor: "#4E5159",
+  indicatorRadius: 1.5,
+  indicatorColor: "#33343a",
   /** 비활성 탭 SemiBold(600), 활성 Bold(700) */
   fontWeight: 600,
   fontWeightActive: 700,

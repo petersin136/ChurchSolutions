@@ -1,18 +1,35 @@
 import type { CSSProperties } from "react";
-import { APP_MODAL } from "@/styles/appModalTokens";
+import { APP_MODAL, appModalOverlayStyle } from "@/styles/appModalTokens";
 
-/** 활동 기록 추가 모달 — 성도 관리 +버튼 시안 (01~05) */
+const R = APP_MODAL.radius;
+
+/**
+ * 활동 기록 추가 모달 — 520×619
+ * 외곽 4모서리: 동일한 원호 A 7 7 / 탭 안쪽 사선: 디자이너 원본 유지
+ */
+export const ACTIVITY_RECORD_FRAME_PATH =
+  "M513,619 L7,619 A7,7 0 0,1 0,612 L0,7 A7,7 0 0,1 7,0 L196.423,0 C207.262,0.780 209.630,4.452 217.401,12.222 C225.171,19.993 239.145,35.874 244.100,40.828 C246.915,43.644 248.324,45.721 251.496,46.992 L505.996,46.992 L513,46.992 A7,7 0 0,1 520,53.992 L520,612 A7,7 0 0,1 513,619 Z";
+
 export const ACTIVITY_RECORD_MODAL = {
   fontKR: APP_MODAL.fontKR,
-  width: APP_MODAL.width,
-  height: 500,
+  width: 520,
+  height: 619,
+  viewW: 520,
+  viewH: 619,
   zIndex: APP_MODAL.zIndex,
-  radius: 12,
-  shadow: APP_MODAL.cardShadow,
-  headerBg: "#f0f0f2",
-  headerHeight: 88,
-  /** 우상단 회색 사선 장식 폭 */
-  headerWedgeWidth: 168,
+  shadow: "drop-shadow(0 12px 48px rgba(17, 17, 26, 0.14))",
+  radius: R,
+  /** 헤더·우상단 쐐기 — 하얀 반투명 15% */
+  glassLayerBg: "rgba(255, 255, 255, 0.15)",
+  glassLayerBlur: null as string | null,
+  /** 쐐기 영역이 어두워 보이지 않도록 오버레이를 약하게 */
+  overlayBg: "rgba(0, 0, 0, 0.28)",
+  glassLayerTop: -39,
+  glassLayerHeight: 129,
+  glassLayerRadius: R,
+  padX: 20,
+  headerShelfY: 47,
+  headerPadTop: 16,
   titleSize: APP_MODAL.titleSize,
   titleWeight: APP_MODAL.titleWeight,
   titleColor: APP_MODAL.ink,
@@ -20,62 +37,46 @@ export const ACTIVITY_RECORD_MODAL = {
   subtitleWeight: 400,
   subtitleColor: "#9ca0a8",
   titleToSubtitle: 4,
-  headerPadX: APP_MODAL.padding,
-  headerPadTop: 22,
-  headerPadBottom: 18,
-  bodyPadX: APP_MODAL.padding,
-  bodyPadBottom: APP_MODAL.padding,
+  bodyPadTop: 14,
+  bodyPadBottom: 22,
   fieldRowGap: 10,
   fieldToTextareaGap: 12,
   textareaToButtonsGap: 20,
   fieldHeight: APP_MODAL.inputHeight,
-  fieldRadius: APP_MODAL.inputRadius,
+  fieldRadius: R,
   fieldBg: APP_MODAL.inputBg,
   fieldFontSize: APP_MODAL.inputFontSize,
   fieldColor: APP_MODAL.ink,
   fieldPlaceholder: "#a3a8b0",
-  dateFlex: 1.58,
+  dateFlex: 1,
   categoryFlex: 1,
-  textareaMinHeight: 216,
+  textareaMinHeight: 200,
   textareaPad: 16,
   textareaBorder: "#e5e6ea",
   textareaFontSize: 15,
   textareaLineHeight: 1.55,
-  dropdownBg: "#ffffff",
-  dropdownBorder: "#ebebed",
-  dropdownShadow: "0 8px 24px rgba(0, 0, 0, 0.1)",
-  dropdownItemPadY: 12,
-  dropdownItemPadX: 16,
   dropdownItemHoverBg: "#f4f4f6",
-  btnHeight: APP_MODAL.btnHeight,
-  btnRadius: APP_MODAL.btnRadius,
   btnGap: APP_MODAL.btnGap,
-  btnFontSize: 15,
-  btnFontWeight: 600,
-  btnCancelBorder: "#e3e4e8",
-  btnCancelBg: "#ffffff",
-  btnCancelColor: APP_MODAL.ink,
-  btnSubmitBg: APP_MODAL.ink,
-  btnSubmitColor: "#ffffff",
-  dividerColor: "rgba(0,0,0,0.06)",
+  btnRadius: R,
+  btnSubmitDisabledBg: "#b0b4bc",
 } as const;
 
-export function activityRecordCardStyle(): CSSProperties {
+export function activityRecordShellStyle(): CSSProperties {
   return {
+    position: "relative",
     width: ACTIVITY_RECORD_MODAL.width,
     maxWidth: "100%",
     height: ACTIVITY_RECORD_MODAL.height,
-    minHeight: ACTIVITY_RECORD_MODAL.height,
-    maxHeight: ACTIVITY_RECORD_MODAL.height,
-    borderRadius: ACTIVITY_RECORD_MODAL.radius,
-    background: "#ffffff",
-    border: APP_MODAL.cardBorder,
-    boxShadow: ACTIVITY_RECORD_MODAL.shadow,
-    fontFamily: ACTIVITY_RECORD_MODAL.fontKR,
-    boxSizing: "border-box",
-    overflow: "hidden",
     flexShrink: 0,
-    display: "flex",
-    flexDirection: "column",
+    fontFamily: ACTIVITY_RECORD_MODAL.fontKR,
+    overflow: "visible",
+  };
+}
+
+export function activityRecordOverlayStyle(): CSSProperties {
+  return {
+    ...appModalOverlayStyle,
+    background: ACTIVITY_RECORD_MODAL.overlayBg,
+    zIndex: ACTIVITY_RECORD_MODAL.zIndex,
   };
 }
