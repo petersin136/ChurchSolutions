@@ -40,8 +40,16 @@ function itemKey(it: QuickNoteItem): string {
   return `${it.date}\t${it.content}\t${it.created_at}`;
 }
 
+import { prayerAnswerKeyFromParts } from "@/lib/prayerAnswers";
+
 function prayerAnswerKey(memberId: string, item: QuickNoteItem): string {
-  return `note\t${memberId}\t${item.date}\t${item.created_at}\t${item.content}`;
+  return prayerAnswerKeyFromParts({
+    memberId,
+    noteId: item.id,
+    date: item.date,
+    createdAt: item.created_at,
+    content: item.content,
+  });
 }
 
 function isLocalNoteId(id: string | number): boolean {
@@ -57,7 +65,7 @@ function preferNoteItem(a: QuickNoteItem, b: QuickNoteItem): QuickNoteItem {
   return aTime >= bTime ? a : b;
 }
 
-/** 동일 내용·중복 id 병합 — 최신 1건만 유지 */
+/** id/생성시각 기준 병합만 — 같은 내용이라도 서로 다른 기록이면 모두 유지 */
 function mergeNoteItems(supabaseItems: QuickNoteItem[], localSeed: QuickNoteItem[]): QuickNoteItem[] {
   const byId = new Map<string, QuickNoteItem>();
   for (const it of [...supabaseItems, ...localSeed]) {
@@ -66,20 +74,9 @@ function mergeNoteItems(supabaseItems: QuickNoteItem[], localSeed: QuickNoteItem
     const prev = byId.get(key);
     byId.set(key, prev ? preferNoteItem(it, prev) : it);
   }
-
-  const sorted = [...byId.values()].sort((a, b) =>
+  return [...byId.values()].sort((a, b) =>
     (b.created_at || b.date).localeCompare(a.created_at || a.date),
   );
-
-  const seenContent = new Set<string>();
-  const deduped: QuickNoteItem[] = [];
-  for (const it of sorted) {
-    const content = it.content.trim();
-    if (seenContent.has(content)) continue;
-    seenContent.add(content);
-    deduped.push(it);
-  }
-  return deduped;
 }
 
 function splitCurrentAndHistory(
@@ -277,12 +274,7 @@ export function QuickNoteModal({
     }
 
     setDeletingId(null);
-    const deleted = items.find((x) => x.id === id);
-    let nextList = items.filter((x) => x.id !== id);
-    if (deleted) {
-      const deletedText = deleted.content.trim();
-      nextList = nextList.filter((x) => x.content.trim() !== deletedText || x.id === nextList[0]?.id);
-    }
+    const nextList = items.filter((x) => x.id !== id);
     setItems(nextList);
     onSaved?.(memberId, noteType, nextList, nextList[0]?.content ?? "");
   };

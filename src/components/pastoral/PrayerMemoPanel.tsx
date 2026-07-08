@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
 import type { DB, Member } from "@/types/db";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
 import { MemberSearchCombo } from "@/components/pastoral/MemberSearchCombo";
+import { prayerAnswerKeyFromParts } from "@/lib/prayerAnswers";
 import { MEMBER_MGMT, MEMBER_MGMT_COLUMNS, MEMBER_MGMT_COL_LAYOUT } from "@/styles/memberManagementTokens";
 
 /** 번호식 페이지 목록 (1 2 3 4 5 … 21) — 앞·뒤 축약 */
@@ -178,7 +179,13 @@ function isMeaningfulText(value: string | null | undefined): boolean {
 
 /** QuickNoteModal 과 동일한 규칙으로 기도 응답 키를 만든다. */
 function prayerAnswerKeyForNote(memberId: string, note: DB["notes"][string][number]): string {
-  return `note\t${memberId}\t${note.date}\t${note.createdAt}\t${note.content}`;
+  return prayerAnswerKeyFromParts({
+    memberId,
+    noteId: note.id,
+    date: note.date,
+    createdAt: note.createdAt,
+    content: note.content,
+  });
 }
 
 function prayerPreview(
@@ -191,16 +198,20 @@ function prayerPreview(
     (b.createdAt || b.date || "").localeCompare(a.createdAt || a.date || ""),
   );
   // 이미 응답 받은 기도 제목은 카운트/미리보기에서 제외한다.
-  const unanswered = sortedPrayers.filter(
-    (n) => !answeredKeys.has(prayerAnswerKeyForNote(member.id, n)),
-  );
-  const texts = [
-    ...(isMeaningfulText(member.prayer) ? [member.prayer!.trim()] : []),
-    ...unanswered.map((n) => n.content?.trim()).filter(isMeaningfulText) as string[],
-  ];
-  const unique = [...new Set(texts)];
-  const preview = unique[0] ?? "";
-  const extra = Math.max(0, unique.length - 1);
+  const unanswered = sortedPrayers.filter((n) => {
+    if (n.answered) return false;
+    if (n.id != null && answeredKeys.has(`id\t${String(n.id)}`)) return false;
+    return !answeredKeys.has(prayerAnswerKeyForNote(member.id, n));
+  });
+  const noteTexts = unanswered
+    .map((n) => n.content?.trim())
+    .filter(isMeaningfulText) as string[];
+  const profile = isMeaningfulText(member.prayer) ? member.prayer!.trim() : "";
+  // 미리보기: 최신 note → 없으면 프로필
+  const preview = noteTexts[0] ?? profile ?? "";
+  // 배지: 같은 내용도 각각 카운트 (내용 유니크 합치지 않음)
+  const totalCount = noteTexts.length > 0 ? noteTexts.length : profile ? 1 : 0;
+  const extra = Math.max(0, totalCount - 1);
   const max = MEMBER_MGMT.prayerPreviewMaxChars;
   const text = preview.length > max ? `${preview.slice(0, max)}…` : preview;
   return { text, extra, hasPrayer: Boolean(preview) };
@@ -477,10 +488,13 @@ export function PrayerMemoPanel({
     return () => window.removeEventListener("resize", compute);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onCapacityChange, mob]);
-  const answeredPrayerKeySet = useMemo(
-    () => new Set(db.answeredPrayerKeys ?? []),
-    [db.answeredPrayerKeys],
-  );
+  const answeredPrayerKeySet = useMemo(() => {
+    const set = new Set(db.answeredPrayerKeys ?? []);
+    for (const id of Object.keys(db.answeredPrayerByNoteId ?? {})) {
+      set.add(`id\t${id}`);
+    }
+    return set;
+  }, [db.answeredPrayerKeys, db.answeredPrayerByNoteId]);
   const registerBtnStyle: CSSProperties = {
     display: "inline-flex",
     alignItems: "center",

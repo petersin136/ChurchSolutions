@@ -116,26 +116,43 @@ export async function loadDBFromSupabase(optionalChurchId?: string | null): Prom
 
   const answeredPrayerKeys: string[] = [];
   const answeredPrayerDates: Record<string, string> = {};
+  const answeredPrayerComments: Record<string, string> = {};
+  const answeredPrayerByNoteId: Record<string, { answeredAt: string; comment?: string }> = {};
   (notesRes.data ?? []).forEach((r: Record<string, unknown>) => {
     const mid = r.member_id as string;
     if (!db.notes[mid]) db.notes[mid] = [];
     const createdAt = (r.created_at as string) || "";
+    const noteId = r.id as string | number | undefined;
+    const answered = r.answered === true || Boolean(r.answered_at);
+    const answeredAt = r.answered_at ? String(r.answered_at).slice(0, 10) : undefined;
+    const answeredComment = r.answered_comment ? String(r.answered_comment) : undefined;
     const note: Note & { createdAt: string } = {
+      id: noteId,
       date: (r.date as string) || "",
       type: ((r.type as string) || "memo") as Note["type"],
       content: (r.content as string) || "",
       createdAt,
+      answered,
+      answeredAt,
+      answeredComment,
     };
     db.notes[mid].push(note);
-    if (note.type === "prayer" && (r.answered === true || r.answered_at)) {
-      const key = `note\t${mid}\t${note.date}\t${createdAt}\t${note.content}`;
+    if (note.type === "prayer" && answered && noteId != null) {
+      const key = `id\t${String(noteId)}`;
       answeredPrayerKeys.push(key);
-      if (r.answered_at) answeredPrayerDates[key] = String(r.answered_at).slice(0, 10);
+      if (answeredAt) answeredPrayerDates[key] = answeredAt;
+      if (answeredComment) answeredPrayerComments[key] = answeredComment;
+      answeredPrayerByNoteId[String(noteId)] = {
+        answeredAt: answeredAt || createdAt.slice(0, 10),
+        ...(answeredComment ? { comment: answeredComment } : {}),
+      };
     }
   });
   if (answeredPrayerKeys.length > 0) {
-    db.answeredPrayerKeys = [...new Set([...(db.answeredPrayerKeys || []), ...answeredPrayerKeys])];
-    db.answeredPrayerDates = { ...(db.answeredPrayerDates || {}), ...answeredPrayerDates };
+    db.answeredPrayerKeys = [...new Set(answeredPrayerKeys)];
+    db.answeredPrayerDates = answeredPrayerDates;
+    db.answeredPrayerComments = answeredPrayerComments;
+    db.answeredPrayerByNoteId = answeredPrayerByNoteId;
   }
 
   (budgetRes.data ?? []).forEach((r: Record<string, unknown>) => {

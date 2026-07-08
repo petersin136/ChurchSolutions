@@ -518,14 +518,14 @@ function OrgPlaceFormModal({
     width: "100%",
     height: ORG_RESOURCE.modalInputHeight,
     padding: "0 16px",
-    boxSizing: "border-box",
+          boxSizing: "border-box",
     border: "none",
     borderRadius: ORG_RESOURCE.modalInputRadius,
     background: ORG_RESOURCE.modalInputBg,
     fontSize: ORG_RESOURCE.modalInputFontSize,
-    fontFamily: ORG_RESOURCE.fontKR,
-    color: "#0b0c0e",
-    outline: "none",
+          fontFamily: ORG_RESOURCE.fontKR,
+          color: "#0b0c0e",
+          outline: "none",
   };
 
   return (
@@ -582,9 +582,9 @@ function OrgPlaceFormModal({
                     fontFamily: ORG_RESOURCE.fontKR,
                   }}
                 >
-                  <span
+      <span
                     aria-hidden
-                    style={{
+        style={{
                       width: ORG_RESOURCE.placeCheckboxSize,
                       height: ORG_RESOURCE.placeCheckboxSize,
                       borderRadius: 7,
@@ -602,7 +602,7 @@ function OrgPlaceFormModal({
                         <path d="M1 4L3.5 6.5L9 1" stroke="#ffffff" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     )}
-                  </span>
+      </span>
                   <input
                     type="checkbox"
                     checked={checked}
@@ -1822,8 +1822,8 @@ function OrgMokjangWizardModal({
                     fontFamily: ORG_RESOURCE.fontKR,
                   }}
                 >
-                  <span
-                    style={{
+                <span
+                  style={{
                       fontSize: ORG_RESOURCE.deptModalMemberNameSize,
                       fontWeight: isLeader ? 700 : ORG_RESOURCE.deptModalMemberNameWeight,
                       color: "#0b0c0e",
@@ -1833,7 +1833,7 @@ function OrgMokjangWizardModal({
                     }}
                   >
                     {m.name}
-                  </span>
+                </span>
                   <span
                     style={{
                       fontSize: ORG_RESOURCE.deptModalMemberMetaSize,
@@ -2505,14 +2505,14 @@ export function OrganizationResourceSub({
           <OrgPlaceGrid>
             {places.map((p, i) => (
               <OrgPlaceCard
-                key={p.id}
-                title={p.name}
+                  key={p.id}
+                  title={p.name}
                 equipment={p.equipment}
                 capacity={p.capacity}
                 highlighted={i === 0}
-                onEdit={() => openEditPlace(p)}
-                onDelete={() => setDeleteTarget({ type: "place", name: p.name, id: p.id })}
-              />
+                  onEdit={() => openEditPlace(p)}
+                  onDelete={() => setDeleteTarget({ type: "place", name: p.name, id: p.id })}
+                />
             ))}
             <OrgPlaceAddCard onClick={openAdd} />
           </OrgPlaceGrid>

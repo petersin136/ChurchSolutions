@@ -38,6 +38,8 @@ export const PRAYER_HISTORY_MODAL = {
   padX: 20,
   /** shelf / 탭 높이 (SVG y=47) */
   headerShelfY: 47,
+  /** 제목+성도명까지 포함한 고정 헤더 높이 (스크롤과 겹침 방지) */
+  headerBlockHeight: 72,
   headerPadTop: 14,
   /** 흰색 탭 오른쪽 끝·사선 시작 (상단) */
   frameTabTopX: 197,
@@ -59,9 +61,9 @@ export const PRAYER_HISTORY_MODAL = {
   subtitleWeight: 400,
   subtitleColor: "#9ca0a8",
   titleToSubtitle: 4,
-  /** 성도 이름 ↔ 첫 카드 (레퍼런스: 이름 아래 넉넉한 여백) */
-  bodyPadTop: 52,
-  bodyPadBottom: 20,
+  /** 고정 헤더(제목+성도명) 아래 본문 시작 여백 */
+  bodyPadTop: 16,
+  bodyPadBottom: 28,
   /** 시안: 기도중 연한 그레이 / 응답완료 진한 그레이 */
   tabPrayingBg: "#ececef",
   tabAnsweredBg: "#c8cad0",
@@ -97,6 +99,17 @@ export const PRAYER_HISTORY_MODAL = {
   cardGap: 14,
   iconMuted: "#9ca0a8",
   iconHover: APP_MODAL.ink,
+  /** 응답완료 탭 — 응답 내용 댓글 */
+  commentLabel: "응답 내용",
+  commentLabelColor: "#5dba4d",
+  commentBubbleBg: "#ffffff",
+  commentBubbleBorder: "#b8ddb4",
+  commentPlaceholder: "응답이 어떻게 이루어졌는지 남겨 주세요",
+  commentInputBg: "#ffffff",
+  commentInputBorder: "#cfe8cc",
+  commentBtnBg: "#5dba4d",
+  commentBtnText: "#ffffff",
+  commentEmptyHint: "#9ca0a8",
 } as const;
 
 export function prayerTabLabelStyle(kind: "praying" | "answered"): CSSProperties {

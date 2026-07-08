@@ -215,23 +215,94 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           const notes: DB["notes"] = {};
           const answeredPrayerKeys: string[] = [];
           const answeredPrayerDates: Record<string, string> = {};
+          const answeredPrayerComments: Record<string, string> = {};
+          const answeredPrayerByNoteId: Record<string, { answeredAt: string; comment?: string }> = {};
           data.forEach((r: any) => {
             const mid = r.member_id as string;
             if (!notes[mid]) notes[mid] = [];
             const createdAt = r.created_at || "";
-            notes[mid].push({ date: r.date || "", type: r.type || "memo", content: r.content || "", createdAt });
-            if (r.type === "prayer" && (r.answered === true || r.answered_at)) {
-              const key = `note\t${mid}\t${r.date || ""}\t${createdAt}\t${r.content || ""}`;
+            const noteId = r.id as string | number | undefined;
+            const answered = r.answered === true || Boolean(r.answered_at);
+            const answeredAt = r.answered_at ? String(r.answered_at).slice(0, 10) : undefined;
+            const answeredComment = r.answered_comment ? String(r.answered_comment) : undefined;
+            notes[mid].push({
+              id: noteId,
+              date: r.date || "",
+              type: r.type || "memo",
+              content: r.content || "",
+              createdAt,
+              answered,
+              answeredAt,
+              answeredComment,
+            });
+            if (r.type === "prayer" && answered && noteId != null) {
+              const key = `id\t${String(noteId)}`;
               answeredPrayerKeys.push(key);
-              if (r.answered_at) answeredPrayerDates[key] = String(r.answered_at).slice(0, 10);
+              if (answeredAt) answeredPrayerDates[key] = answeredAt;
+              if (answeredComment) answeredPrayerComments[key] = answeredComment;
+              answeredPrayerByNoteId[String(noteId)] = {
+                answeredAt: answeredAt || String(createdAt).slice(0, 10),
+                ...(answeredComment ? { comment: answeredComment } : {}),
+              };
             }
           });
           startTransition(() => {
-            setDb((prev) => ({
-              ...prev, notes,
-              answeredPrayerKeys: answeredPrayerKeys.length > 0 ? [...new Set([...(prev.answeredPrayerKeys || []), ...answeredPrayerKeys])] : prev.answeredPrayerKeys,
-              answeredPrayerDates: { ...(prev.answeredPrayerDates || {}), ...answeredPrayerDates },
-            }));
+            setDb((prev) => {
+              // localStorage에만 남은 응답완료를 DB(false) 위에 보강
+              const fromStorage =
+                typeof window !== "undefined" && cid
+                  ? (() => {
+                      try {
+                        const raw = localStorage.getItem(`church_solution_answered_prayers_${cid}`);
+                        if (!raw) return {} as Record<string, { answeredAt: string; comment?: string }>;
+                        const parsed = JSON.parse(raw) as Record<string, { answeredAt: string; comment?: string } | string>;
+                        const out: Record<string, { answeredAt: string; comment?: string }> = {};
+                        for (const [id, v] of Object.entries(parsed || {})) {
+                          if (typeof v === "string") out[id] = { answeredAt: v };
+                          else if (v && typeof v === "object" && typeof v.answeredAt === "string") out[id] = v;
+                        }
+                        return out;
+                      } catch {
+                        return {};
+                      }
+                    })()
+                  : {};
+
+              const byNoteId = { ...fromStorage, ...answeredPrayerByNoteId };
+              const keys = new Set<string>([...Object.keys(byNoteId).map((id) => `id\t${id}`)]);
+              const dates = { ...answeredPrayerDates };
+              const comments = { ...answeredPrayerComments };
+              for (const [id, rec] of Object.entries(byNoteId)) {
+                const k = `id\t${id}`;
+                dates[k] = rec.answeredAt;
+                if (rec.comment) comments[k] = rec.comment;
+              }
+
+              // 스토리지에만 남은 응답을 DB에 다시 심어 복구
+              if (supabase && cid) {
+                for (const [id, rec] of Object.entries(fromStorage)) {
+                  if (answeredPrayerByNoteId[id]) continue;
+                  void supabase
+                    .from("notes")
+                    .update({
+                      answered: true,
+                      answered_at: rec.answeredAt || null,
+                      ...(rec.comment ? { answered_comment: rec.comment } : {}),
+                    })
+                    .eq("church_id", cid)
+                    .eq("id", id);
+                }
+              }
+
+              return {
+                ...prev,
+                notes,
+                answeredPrayerKeys: [...keys],
+                answeredPrayerDates: dates,
+                answeredPrayerComments: comments,
+                answeredPrayerByNoteId: byNoteId,
+              };
+            });
           });
         }
       } else if (table === "visits") {

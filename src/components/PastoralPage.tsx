@@ -6,6 +6,12 @@ import { saveDBToSupabase, getWeekNum, getSundayForWeekNum } from "@/lib/store";
 import { countSundayPresent, getThisSundayStr, isChurchActiveMember, isMemberStatusActive, getAttendanceLoadYearOptions, getAttendanceLoadMinYear } from "@/lib/attendance-utils";
 import { supabase, deleteMemberPhotoFromStorage } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
+import {
+  isRemoteNoteId,
+  loadAnsweredPrayersFromStorage,
+  saveAnsweredPrayersToStorage,
+  type PrayerAnswerRecord,
+} from "@/lib/prayerAnswers";
 import { useAuth } from "@/contexts/AuthContext";
 import { CHURCHUP_GO_HOME_EVENT } from "@/contexts/ShellNavContext";
 import { PASTORAL_SET_SUB_EVENT } from "@/lib/globalSearch";
@@ -641,10 +647,10 @@ function NoteCard({ n, mbrName, mbrDept, onClick, answered, onToggleAnswered, hi
           ...((highlighted || n.type === "memo" || n.type === "visit")
             ? { whiteSpace: "pre-wrap" as const, wordBreak: "break-word" as const }
             : {
-                display: "-webkit-box",
-                WebkitLineClamp: 3,
+          display: "-webkit-box",
+          WebkitLineClamp: 3,
                 WebkitBoxOrient: "vertical" as const,
-                overflow: "hidden",
+          overflow: "hidden",
               }),
         }}
       >
@@ -1490,8 +1496,8 @@ function DashboardSub({
   const feedPageItems = useMemo(
     () =>
       pastoralFeed.slice(
-        (feedSafePage - 1) * feedItemsPerPage,
-        feedSafePage * feedItemsPerPage,
+    (feedSafePage - 1) * feedItemsPerPage,
+    feedSafePage * feedItemsPerPage,
       ),
     [pastoralFeed, feedSafePage, feedItemsPerPage],
   );
@@ -2670,15 +2676,15 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       if (digits.length === 0 && q.length < 2) {
         r = [];
       } else {
-        r = r.filter((m) => {
-          const nameN = norm(m.name || "");
-          const phoneN = (m.phone || "").replace(/\D/g, "");
+      r = r.filter((m) => {
+        const nameN = norm(m.name || "");
+        const phoneN = (m.phone || "").replace(/\D/g, "");
           const deptN = norm(m.dept || "");
           const mokjangN = norm((m.mokjang ?? m.group) || "");
           const roleN = norm(m.role || "");
-          const addrN = norm(m.address || "");
-          const memoN = norm(m.memo || "");
-          const prayerN = norm(m.prayer || "");
+        const addrN = norm(m.address || "");
+        const memoN = norm(m.memo || "");
+        const prayerN = norm(m.prayer || "");
           if (nameN === qn) return true;
           return (
             nameN.includes(qn) ||
@@ -2738,15 +2744,15 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
       }}
       onSelectRole={(v) => {
         setRoleF(v);
-        setPageList(1);
-      }}
+            setPageList(1);
+          }}
       onResetFilters={resetFilters}
       onRegister={() => openMemberModal()}
       db={db}
       filtered={filtered}
       pageMembers={pageListMembers}
       pageSize={PAGE_SIZE_MEM}
-      currentPage={currentPageList}
+                currentPage={currentPageList}
       totalItems={filtered.length}
       onPageChange={setPageList}
       onOpenQuickPrayer={(id, name) => openQuickNote(id, name, "prayer")}
@@ -4286,7 +4292,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   useEffect(() => {
     // 자동 저장 비활성화: saveDBToSupabase가 delete 없이 전체 db를 insert만 하여
     // db가 바뀔 때마다 notes/attendance 전체가 중복 복제되는 폭증 버그를 막기 위함.
-    didMountRef.current = true;
+      didMountRef.current = true;
   }, []);
 
   const toastIdRef = useRef(0);
@@ -4504,13 +4510,14 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     if (type === "prayer") {
       setPrayerHistoryMemberId(memberId);
       setPrayerHistoryOpen(true);
+      void refreshNotes();
       return;
     }
     setQuickNoteMemberId(memberId);
     setQuickNoteMemberName(memberName);
     setQuickNoteType(type);
     setQuickNoteOpen(true);
-  }, []);
+  }, [refreshNotes]);
 
   const openActivityModal = useCallback((memberId: string, memberName: string, memberRole?: string) => {
     setActivityMemberId(memberId);
@@ -4573,6 +4580,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       const merged = [
         ...others,
         ...items.map(it => ({
+          id: it.id,
           date: it.date,
           type,
           content: it.content,
@@ -4590,35 +4598,156 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       }
       return { ...prev, notes, members };
     });
-  }, [setDb]);
+    // 배지/목록은 DB를 원본으로 — 메모리가 짧게 남은 경우 보정
+    void refreshNotes();
+  }, [setDb, refreshNotes]);
 
   const handleTogglePrayerAnswered = useCallback((key: string, noteId?: string | number) => {
+    const cid = churchId ?? getChurchId();
+    const remoteId = isRemoteNoteId(noteId) ? String(noteId) : null;
+    const stableKey = remoteId ? `id\t${remoteId}` : key;
+
     let nextAnswered = false;
     setDb((prev) => {
-      const list = prev.answeredPrayerKeys || [];
-      nextAnswered = !list.includes(key);
-      const next = nextAnswered ? [...list, key] : list.filter((k) => k !== key);
+      const byNoteId = { ...(prev.answeredPrayerByNoteId || {}) };
       const dates = { ...(prev.answeredPrayerDates || {}) };
-      if (nextAnswered) dates[key] = todayStr();
-      else delete dates[key];
-      return { ...prev, answeredPrayerKeys: next, answeredPrayerDates: dates };
-    });
-    const cid = churchId ?? getChurchId();
-    if (supabase && cid && noteId != null) {
-      const isRemoteId =
-        typeof noteId === "number" ||
-        (typeof noteId === "string" && !noteId.startsWith("local-"));
-      if (isRemoteId) {
-        void supabase
-          .from("notes")
-          .update({
-            answered: nextAnswered,
-            answered_at: nextAnswered ? todayStr() : null,
-          })
-          .eq("church_id", cid)
-          .eq("id", noteId);
+      const comments = { ...(prev.answeredPrayerComments || {}) };
+      const list = new Set(prev.answeredPrayerKeys || []);
+
+      nextAnswered = !(
+        (remoteId && byNoteId[remoteId]) ||
+        list.has(stableKey) ||
+        list.has(key)
+      );
+
+      if (nextAnswered) {
+        const answeredAt = todayStr();
+        list.add(stableKey);
+        dates[stableKey] = answeredAt;
+        if (remoteId) {
+          byNoteId[remoteId] = {
+            answeredAt,
+            ...(comments[stableKey] ? { comment: comments[stableKey] } : {}),
+          };
+        }
+      } else {
+        list.delete(stableKey);
+        list.delete(key);
+        delete dates[stableKey];
+        delete dates[key];
+        delete comments[stableKey];
+        delete comments[key];
+        if (remoteId) delete byNoteId[remoteId];
       }
+
+      if (cid) saveAnsweredPrayersToStorage(cid, byNoteId);
+
+      return {
+        ...prev,
+        answeredPrayerKeys: [...list],
+        answeredPrayerDates: dates,
+        answeredPrayerComments: comments,
+        answeredPrayerByNoteId: byNoteId,
+      };
+    });
+
+    if (supabase && cid && remoteId) {
+      void supabase
+        .from("notes")
+        .update({
+          answered: nextAnswered,
+          answered_at: nextAnswered ? todayStr() : null,
+          ...(nextAnswered ? {} : { answered_comment: null }),
+        })
+        .eq("church_id", cid)
+        .eq("id", remoteId)
+        .then(({ error }) => {
+          if (error) console.warn("[handleTogglePrayerAnswered] DB 저장 실패:", error.message);
+        });
+    } else if (!remoteId) {
+      console.warn("[handleTogglePrayerAnswered] 원격 note id 없음 — localStorage만 반영됨", { key, noteId });
     }
+  }, [churchId, setDb]);
+
+  const handleSavePrayerComment = useCallback((key: string, comment: string, noteId?: string | number) => {
+    const trimmed = comment.trim();
+    const cid = churchId ?? getChurchId();
+    const remoteId = isRemoteNoteId(noteId) ? String(noteId) : null;
+    const stableKey = remoteId ? `id\t${remoteId}` : key;
+
+    setDb((prev) => {
+      const comments = { ...(prev.answeredPrayerComments || {}) };
+      const byNoteId = { ...(prev.answeredPrayerByNoteId || {}) };
+      const dates = { ...(prev.answeredPrayerDates || {}) };
+      if (trimmed) {
+        comments[stableKey] = trimmed;
+        if (remoteId) {
+          const prevRec = byNoteId[remoteId];
+          byNoteId[remoteId] = {
+            answeredAt: prevRec?.answeredAt || dates[stableKey] || todayStr(),
+            comment: trimmed,
+          };
+        }
+      } else {
+        delete comments[stableKey];
+        delete comments[key];
+        if (remoteId && byNoteId[remoteId]) {
+          const { comment: _c, ...rest } = byNoteId[remoteId];
+          byNoteId[remoteId] = rest;
+        }
+      }
+      if (cid) saveAnsweredPrayersToStorage(cid, byNoteId);
+      return {
+        ...prev,
+        answeredPrayerComments: comments,
+        answeredPrayerByNoteId: byNoteId,
+      };
+    });
+
+    if (supabase && cid && remoteId) {
+      void supabase
+        .from("notes")
+        .update({ answered_comment: trimmed || null })
+        .eq("church_id", cid)
+        .eq("id", remoteId)
+        .then(({ error }) => {
+          if (error) console.warn("응답 내용 저장 실패:", error.message);
+        });
+    }
+  }, [churchId, setDb]);
+
+  // 응답완료 복구: church별 localStorage → DB notes와 병합
+  useEffect(() => {
+    const cid = churchId ?? getChurchId();
+    if (!cid || typeof window === "undefined") return;
+    const fromStorage = loadAnsweredPrayersFromStorage(cid);
+    if (Object.keys(fromStorage).length === 0) return;
+
+    setDb((prev) => {
+      const byNoteId: Record<string, PrayerAnswerRecord> = {
+        ...(prev.answeredPrayerByNoteId || {}),
+      };
+      // 스토리지에만 있고 메모리에 없는 것 보강 (DB에 false로 남은 경우 대비)
+      for (const [id, rec] of Object.entries(fromStorage)) {
+        if (!byNoteId[id]) byNoteId[id] = rec;
+      }
+      const keys = new Set(prev.answeredPrayerKeys || []);
+      const dates = { ...(prev.answeredPrayerDates || {}) };
+      const comments = { ...(prev.answeredPrayerComments || {}) };
+      for (const [id, rec] of Object.entries(byNoteId)) {
+        const k = `id\t${id}`;
+        keys.add(k);
+        dates[k] = rec.answeredAt;
+        if (rec.comment) comments[k] = rec.comment;
+      }
+      return {
+        ...prev,
+        answeredPrayerByNoteId: byNoteId,
+        answeredPrayerKeys: [...keys],
+        answeredPrayerDates: dates,
+        answeredPrayerComments: comments,
+      };
+    });
   }, [churchId, setDb]);
 
   const openNoteModal = useCallback((id?: string) => {
@@ -4723,7 +4852,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     return (db.notes[quickNoteMemberId] ?? [])
       .filter((n) => n.type === "memo")
       .map((n, i) => ({
-        id: `local-${n.createdAt ?? n.date}-${i}`,
+        id: n.id ?? `local-${n.createdAt ?? n.date}-${i}`,
         date: n.date,
         content: n.content,
         created_at: n.createdAt ?? n.date,
@@ -4738,7 +4867,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     return (db.notes[prayerHistoryMemberId] ?? [])
       .filter((n) => n.type === "prayer")
       .map((n, i) => ({
-        id: `local-${n.createdAt ?? n.date}-${i}`,
+        id: n.id ?? `local-${n.createdAt ?? n.date}-${i}`,
         date: n.date,
         content: n.content,
         created_at: n.createdAt ?? n.date,
@@ -5188,24 +5317,27 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         profilePrayer={prayerHistoryMember?.prayer}
         answeredPrayerKeys={db.answeredPrayerKeys}
         answeredPrayerDates={db.answeredPrayerDates}
+        answeredPrayerComments={db.answeredPrayerComments}
+        answeredPrayerByNoteId={db.answeredPrayerByNoteId}
         onTogglePrayerAnswered={handleTogglePrayerAnswered}
+        onSavePrayerComment={handleSavePrayerComment}
         onSaved={(memberId, items, latestContent) =>
           handleQuickNoteSaved(memberId, "prayer", items, latestContent)
         }
       />
 
       {/* Quick Note Modal — 성도별 메모 */}
-      <QuickNoteModal
-        isOpen={quickNoteOpen}
-        onClose={() => setQuickNoteOpen(false)}
-        memberName={quickNoteMemberName}
-        memberId={quickNoteMemberId}
+        <QuickNoteModal
+          isOpen={quickNoteOpen}
+          onClose={() => setQuickNoteOpen(false)}
+          memberName={quickNoteMemberName}
+          memberId={quickNoteMemberId}
         churchId={churchId ?? ""}
         type="note"
         profileContent={quickNoteMember?.memo ?? undefined}
         localSeedItems={quickNoteLocalSeed}
-        onSaved={handleQuickNoteSaved}
-      />
+          onSaved={handleQuickNoteSaved}
+        />
 
       {/* Toasts */}
       <div style={{ position: "fixed", top: mob ? 8 : 20, right: mob ? 8 : 32, left: mob ? 8 : "auto", zIndex: 2000, display: "flex", flexDirection: "column", gap: 8 }}>

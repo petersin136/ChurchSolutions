@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
@@ -16,6 +17,10 @@ import {
   prayerHistoryOverlayStyle,
   prayerHistoryShellStyle,
 } from "@/styles/prayerHistoryModalTokens";
+import {
+  isRemoteNoteId,
+  prayerAnswerKeyFromParts,
+} from "@/lib/prayerAnswers";
 
 type TabId = "praying" | "answered";
 
@@ -29,7 +34,13 @@ function itemKey(it: QuickNoteItem): string {
 }
 
 export function prayerAnswerKey(memberId: string, item: QuickNoteItem): string {
-  return `note\t${memberId}\t${item.date}\t${item.created_at}\t${item.content}`;
+  return prayerAnswerKeyFromParts({
+    memberId,
+    noteId: item.id,
+    date: item.date,
+    createdAt: item.created_at,
+    content: item.content,
+  });
 }
 
 function preferNoteItem(a: QuickNoteItem, b: QuickNoteItem): QuickNoteItem {
@@ -41,6 +52,7 @@ function preferNoteItem(a: QuickNoteItem, b: QuickNoteItem): QuickNoteItem {
   return aTime >= bTime ? a : b;
 }
 
+/** id/생성시각 기준 병합만 — 같은 내용이라도 서로 다른 기록이면 모두 유지 */
 function mergeNoteItems(supabaseItems: QuickNoteItem[], localSeed: QuickNoteItem[]): QuickNoteItem[] {
   const byId = new Map<string, QuickNoteItem>();
   for (const it of [...supabaseItems, ...localSeed]) {
@@ -49,18 +61,9 @@ function mergeNoteItems(supabaseItems: QuickNoteItem[], localSeed: QuickNoteItem
     const prev = byId.get(key);
     byId.set(key, prev ? preferNoteItem(it, prev) : it);
   }
-  const sorted = [...byId.values()].sort((a, b) =>
+  return [...byId.values()].sort((a, b) =>
     (b.created_at || b.date).localeCompare(a.created_at || a.date),
   );
-  const seenContent = new Set<string>();
-  const deduped: QuickNoteItem[] = [];
-  for (const it of sorted) {
-    const content = it.content.trim();
-    if (seenContent.has(content)) continue;
-    seenContent.add(content);
-    deduped.push(it);
-  }
-  return deduped;
 }
 
 function formatDisplayDate(ymd: string): string {
@@ -88,7 +91,10 @@ export interface PrayerHistoryModalProps {
   profilePrayer?: string;
   answeredPrayerKeys?: string[];
   answeredPrayerDates?: Record<string, string>;
+  answeredPrayerComments?: Record<string, string>;
+  answeredPrayerByNoteId?: Record<string, { answeredAt: string; comment?: string }>;
   onTogglePrayerAnswered?: (key: string, noteId?: string | number) => void;
+  onSavePrayerComment?: (key: string, comment: string, noteId?: string | number) => void;
   onSaved?: (memberId: string, items: QuickNoteItem[], latestContent?: string) => void;
 }
 
@@ -103,7 +109,10 @@ export function PrayerHistoryModal({
   profilePrayer,
   answeredPrayerKeys = [],
   answeredPrayerDates = {},
+  answeredPrayerComments = {},
+  answeredPrayerByNoteId = {},
   onTogglePrayerAnswered,
+  onSavePrayerComment,
   onSaved,
 }: PrayerHistoryModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -116,8 +125,24 @@ export function PrayerHistoryModal({
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [editingCommentKey, setEditingCommentKey] = useState<string | null>(null);
 
-  const answeredSet = new Set(answeredPrayerKeys);
+  const answeredSet = useMemo(() => {
+    const set = new Set(answeredPrayerKeys);
+    for (const noteId of Object.keys(answeredPrayerByNoteId)) {
+      set.add(`id\t${noteId}`);
+    }
+    return set;
+  }, [answeredPrayerKeys, answeredPrayerByNoteId]);
+
+  const isItemAnswered = useCallback(
+    (item: QuickNoteItem) => {
+      if (isRemoteNoteId(item.id) && answeredPrayerByNoteId[String(item.id)]) return true;
+      return answeredSet.has(prayerAnswerKey(memberId, item));
+    },
+    [answeredPrayerByNoteId, answeredSet, memberId],
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -130,6 +155,8 @@ export function PrayerHistoryModal({
     setPendingDeleteId(null);
     setEditingId(null);
     setEditDraft("");
+    setCommentDrafts({});
+    setEditingCommentKey(null);
   }, [open, memberId]);
 
   const fetchList = useCallback(async () => {
@@ -138,6 +165,7 @@ export function PrayerHistoryModal({
     setLoading(true);
 
     let remote: QuickNoteItem[] = [];
+    let remoteOk = false;
     if (supabase && churchId) {
       const { data, error } = await supabase
         .from("notes")
@@ -148,6 +176,7 @@ export function PrayerHistoryModal({
         .order("created_at", { ascending: false });
 
       if (!error && data) {
+        remoteOk = true;
         remote = data.map((r: Record<string, unknown>) => ({
           id: r.id as string | number,
           date: String(r.date ?? "").slice(0, 10),
@@ -157,7 +186,10 @@ export function PrayerHistoryModal({
       }
     }
 
-    let merged = mergeNoteItems(remote, localSeedItems);
+    // DB 조회 성공 시 remote만 사용 (localSeed와 이중 카운트 방지)
+    let merged = remoteOk
+      ? mergeNoteItems(remote, [])
+      : mergeNoteItems(remote, localSeedItems);
     const profile = profilePrayer?.trim();
     if (profile && !merged.some((i) => i.content.trim() === profile)) {
       merged = [
@@ -200,9 +232,7 @@ export function PrayerHistoryModal({
 
   // 기도중: 전체(응답된 것도 그 자리에서 초록) / 응답완료: 응답된 것만
   const filteredItems =
-    tab === "answered"
-      ? items.filter((item) => answeredSet.has(prayerAnswerKey(memberId, item)))
-      : items;
+    tab === "answered" ? items.filter((item) => isItemAnswered(item)) : items;
 
   const confirmDelete = async () => {
     const id = pendingDeleteId;
@@ -222,12 +252,7 @@ export function PrayerHistoryModal({
     }
 
     setDeletingId(null);
-    const deleted = items.find((x) => x.id === id);
-    let nextList = items.filter((x) => x.id !== id);
-    if (deleted) {
-      const deletedText = deleted.content.trim();
-      nextList = nextList.filter((x) => x.content.trim() !== deletedText || x.id === nextList[0]?.id);
-    }
+    const nextList = items.filter((x) => x.id !== id);
     setItems(nextList);
     onSaved?.(memberId, nextList, nextList[0]?.content ?? "");
   };
@@ -292,6 +317,16 @@ export function PrayerHistoryModal({
           style={prayerHistoryShellStyle()}
           onMouseDown={(e) => e.stopPropagation()}
         >
+          {/* 삭제 확인 시 뒤 모달은 filter blur (backdrop-filter는 SVG 프레임을 깨뜨림) */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 1,
+              filter: pendingDeleteId != null ? "blur(5px)" : undefined,
+              pointerEvents: pendingDeleteId != null ? "none" : undefined,
+            }}
+          >
           <div
             aria-hidden
             style={{
@@ -339,14 +374,22 @@ export function PrayerHistoryModal({
               flexDirection: "column",
               boxSizing: "border-box",
               zIndex: 2,
+              overflow: "hidden",
+              /* 상·하 모두 r7 — 상단각(좌·우) 각진 모서리 제거 */
+              borderRadius: PRAYER_HISTORY_MODAL.radius,
             }}
           >
             <div
               style={{
                 flexShrink: 0,
                 position: "relative",
-                height: PRAYER_HISTORY_MODAL.headerShelfY,
+                height: PRAYER_HISTORY_MODAL.headerBlockHeight,
                 boxSizing: "border-box",
+                background: "#ffffff",
+                overflow: "hidden",
+                zIndex: 3,
+                borderTopLeftRadius: PRAYER_HISTORY_MODAL.radius,
+                borderTopRightRadius: PRAYER_HISTORY_MODAL.radius,
               }}
             >
               {/* 제목 — 흰 프레임 좌측 탭 */}
@@ -423,14 +466,13 @@ export function PrayerHistoryModal({
                     fontSize: PRAYER_HISTORY_MODAL.tabFontSize,
                     fontWeight: PRAYER_HISTORY_MODAL.tabFontWeight,
                     whiteSpace: "nowrap",
-                    background:
-                      tab === "answered"
-                        ? PRAYER_HISTORY_MODAL.tabPrayingBg
-                        : PRAYER_HISTORY_MODAL.tabAnsweredBg,
+                    // 탭 배경색은 고정, 글씨만 활성=진한색 / 비활성=연한색
+                    background: PRAYER_HISTORY_MODAL.tabAnsweredBg,
                     color:
                       tab === "answered"
-                        ? PRAYER_HISTORY_MODAL.tabPrayingText
-                        : PRAYER_HISTORY_MODAL.tabAnsweredText,
+                        ? PRAYER_HISTORY_MODAL.tabAnsweredText
+                        : PRAYER_HISTORY_MODAL.tabPrayingText,
+                    outline: "none",
                     borderTopRightRadius: PRAYER_HISTORY_MODAL.radius,
                     display: "flex",
                     alignItems: "center",
@@ -487,8 +529,8 @@ export function PrayerHistoryModal({
                       whiteSpace: "nowrap",
                       color:
                         tab === "praying"
-                          ? PRAYER_HISTORY_MODAL.tabPrayingText
-                          : PRAYER_HISTORY_MODAL.tabAnsweredText,
+                          ? PRAYER_HISTORY_MODAL.tabAnsweredText
+                          : PRAYER_HISTORY_MODAL.tabPrayingText,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -509,8 +551,12 @@ export function PrayerHistoryModal({
                 flex: 1,
                 minHeight: 0,
                 overflowY: "auto",
+                overflowX: "hidden",
                 padding: `${PRAYER_HISTORY_MODAL.bodyPadTop}px ${PRAYER_HISTORY_MODAL.padX}px ${PRAYER_HISTORY_MODAL.bodyPadBottom}px`,
                 boxSizing: "border-box",
+                background: "#ffffff",
+                /* 하단 얇은 안쪽 경계 */
+                boxShadow: `inset 0 -1px 0 ${PRAYER_HISTORY_MODAL.cardBodyBorder}`,
               }}
             >
               {loading ? (
@@ -541,10 +587,25 @@ export function PrayerHistoryModal({
                   ) : null}
                   {filteredItems.map((item, index) => {
                     const key = prayerAnswerKey(memberId, item);
-                    const answered = answeredSet.has(key);
+                    const answered = isItemAnswered(item);
                     const hovered = hoveredId === item.id;
                     const editing = editingId === item.id;
-                    const answeredEnd = answeredPrayerDates[key];
+                    const byId = isRemoteNoteId(item.id)
+                      ? answeredPrayerByNoteId[String(item.id)]
+                      : undefined;
+                    const answeredEnd =
+                      byId?.answeredAt ||
+                      answeredPrayerDates[key] ||
+                      (isRemoteNoteId(item.id)
+                        ? answeredPrayerDates[`id\t${String(item.id)}`]
+                        : undefined);
+                    const commentText =
+                      byId?.comment ||
+                      answeredPrayerComments[key] ||
+                      (isRemoteNoteId(item.id)
+                        ? answeredPrayerComments[`id\t${String(item.id)}`]
+                        : undefined) ||
+                      "";
                     const dateLabel = answered && answeredEnd
                       ? `${formatDisplayDate(item.date)} ~ ${formatDisplayDate(answeredEnd)}`
                       : formatDisplayDate(item.date);
@@ -632,67 +693,88 @@ export function PrayerHistoryModal({
                               >
                                 {dateLabel}
                               </span>
-                              {hovered && !editing ? (
-                                <span style={{ display: "inline-flex", gap: 4, flexShrink: 0 }}>
-                                  <button
-                                    type="button"
-                                    aria-label="삭제"
-                                    onClick={() => setPendingDeleteId(item.id)}
-                                    disabled={deletingId === item.id}
-                                    style={{
-                                      border: "none",
-                                      background: "transparent",
-                                      width: 24,
-                                      height: 24,
-                                      borderRadius: 6,
-                                      padding: 0,
-                                      cursor: deletingId === item.id ? "not-allowed" : "pointer",
-                                      color: answered ? "rgba(255,255,255,0.9)" : PRAYER_HISTORY_MODAL.iconMuted,
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.background = answered
-                                        ? "rgba(255,255,255,0.22)"
-                                        : "rgba(255,255,255,0.75)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.background = "transparent";
-                                    }}
-                                  >
-                                    <X size={14} strokeWidth={2} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    aria-label={answered ? "응답 취소" : "응답완료"}
-                                    onClick={() => onTogglePrayerAnswered?.(key, item.id)}
-                                    style={{
-                                      border: "none",
-                                      background: "transparent",
-                                      width: 24,
-                                      height: 24,
-                                      borderRadius: 6,
-                                      padding: 0,
-                                      cursor: "pointer",
-                                      color: answered ? "rgba(255,255,255,0.9)" : PRAYER_HISTORY_MODAL.iconMuted,
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.background = answered
-                                        ? "rgba(255,255,255,0.22)"
-                                        : "rgba(255,255,255,0.75)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.background = "transparent";
-                                    }}
-                                  >
-                                    <Check size={14} strokeWidth={2} />
-                                  </button>
-                                </span>
-                              ) : null}
+                              {/* 자리 항상 확보 — 호버 시 opacity만 변경해 레이아웃/창 흔들림 방지 */}
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  gap: 4,
+                                  flexShrink: 0,
+                                  width: 52,
+                                  height: 24,
+                                  alignItems: "center",
+                                  justifyContent: "flex-end",
+                                  opacity: hovered && !editing ? 1 : 0,
+                                  pointerEvents: hovered && !editing ? "auto" : "none",
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  aria-label="삭제"
+                                  tabIndex={hovered && !editing ? 0 : -1}
+                                  onClick={() => setPendingDeleteId(item.id)}
+                                  disabled={deletingId === item.id}
+                                  style={{
+                                    border: "none",
+                                    background: "transparent",
+                                    width: 24,
+                                    height: 24,
+                                    minWidth: 24,
+                                    minHeight: 24,
+                                    borderRadius: 6,
+                                    padding: 0,
+                                    boxSizing: "border-box",
+                                    cursor: deletingId === item.id ? "not-allowed" : "pointer",
+                                    color: answered ? "rgba(255,255,255,0.9)" : PRAYER_HISTORY_MODAL.iconMuted,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = answered
+                                      ? "rgba(255,255,255,0.22)"
+                                      : "rgba(255,255,255,0.75)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "transparent";
+                                  }}
+                                >
+                                  <X size={14} strokeWidth={2} />
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={answered ? "응답 취소" : "응답완료"}
+                                  tabIndex={hovered && !editing ? 0 : -1}
+                                  onClick={() => onTogglePrayerAnswered?.(key, item.id)}
+                                  style={{
+                                    border: "none",
+                                    background: "transparent",
+                                    width: 24,
+                                    height: 24,
+                                    minWidth: 24,
+                                    minHeight: 24,
+                                    borderRadius: 6,
+                                    padding: 0,
+                                    boxSizing: "border-box",
+                                    cursor: "pointer",
+                                    color: answered ? "rgba(255,255,255,0.9)" : PRAYER_HISTORY_MODAL.iconMuted,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = answered
+                                      ? "rgba(255,255,255,0.22)"
+                                      : "rgba(255,255,255,0.75)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "transparent";
+                                  }}
+                                >
+                                  <Check size={14} strokeWidth={2} />
+                                </button>
+                              </span>
                             </div>
                             <div
                               style={{
@@ -766,17 +848,191 @@ export function PrayerHistoryModal({
                                   </div>
                                 </>
                               ) : (
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: PRAYER_HISTORY_MODAL.cardContentFontSize,
-                                    lineHeight: PRAYER_HISTORY_MODAL.cardContentLineHeight,
-                                    color: PRAYER_HISTORY_MODAL.cardContentColor,
-                                    whiteSpace: "pre-wrap",
-                                  }}
-                                >
-                                  {item.content}
-                                </p>
+                                <>
+                                  <p
+                                    style={{
+                                      margin: 0,
+                                      fontSize: PRAYER_HISTORY_MODAL.cardContentFontSize,
+                                      lineHeight: PRAYER_HISTORY_MODAL.cardContentLineHeight,
+                                      color: PRAYER_HISTORY_MODAL.cardContentColor,
+                                      whiteSpace: "pre-wrap",
+                                    }}
+                                  >
+                                    {item.content}
+                                  </p>
+                                  {answered && tab === "answered" ? (
+                                    <div style={{ marginTop: 12 }}>
+                                      <div
+                                        style={{
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          color: PRAYER_HISTORY_MODAL.commentLabelColor,
+                                          marginBottom: 6,
+                                        }}
+                                      >
+                                        {PRAYER_HISTORY_MODAL.commentLabel}
+                                      </div>
+                                      {commentText.trim() &&
+                                      editingCommentKey !== key ? (
+                                        <div
+                                          style={{
+                                            background: PRAYER_HISTORY_MODAL.commentBubbleBg,
+                                            border: `1px solid ${PRAYER_HISTORY_MODAL.commentBubbleBorder}`,
+                                            borderRadius: PRAYER_HISTORY_MODAL.cardInnerRadius,
+                                            padding: "10px 12px",
+                                            boxSizing: "border-box",
+                                          }}
+                                        >
+                                          <p
+                                            style={{
+                                              margin: 0,
+                                              fontSize: 13,
+                                              lineHeight: 1.55,
+                                              color: PRAYER_HISTORY_MODAL.cardContentColor,
+                                              whiteSpace: "pre-wrap",
+                                            }}
+                                          >
+                                            {commentText}
+                                          </p>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingCommentKey(key);
+                                              setCommentDrafts((prev) => ({
+                                                ...prev,
+                                                [key]: commentText,
+                                              }));
+                                            }}
+                                            style={{
+                                              marginTop: 8,
+                                              border: "none",
+                                              background: "transparent",
+                                              padding: 0,
+                                              cursor: "pointer",
+                                              fontSize: 12,
+                                              fontWeight: 600,
+                                              color: PRAYER_HISTORY_MODAL.commentLabelColor,
+                                              fontFamily: PRAYER_HISTORY_MODAL.fontKR,
+                                            }}
+                                          >
+                                            수정
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div>
+                                          <textarea
+                                            value={
+                                              commentDrafts[key] ??
+                                              commentText
+                                            }
+                                            onChange={(e) =>
+                                              setCommentDrafts((prev) => ({
+                                                ...prev,
+                                                [key]: e.target.value,
+                                              }))
+                                            }
+                                            placeholder={PRAYER_HISTORY_MODAL.commentPlaceholder}
+                                            rows={2}
+                                            style={{
+                                              width: "100%",
+                                              boxSizing: "border-box",
+                                              border: `1px solid ${PRAYER_HISTORY_MODAL.commentInputBorder}`,
+                                              borderRadius: PRAYER_HISTORY_MODAL.cardInnerRadius,
+                                              padding: "10px 12px",
+                                              fontFamily: PRAYER_HISTORY_MODAL.fontKR,
+                                              fontSize: 13,
+                                              lineHeight: 1.5,
+                                              color: PRAYER_HISTORY_MODAL.cardContentColor,
+                                              background: PRAYER_HISTORY_MODAL.commentInputBg,
+                                              resize: "vertical",
+                                              outline: "none",
+                                            }}
+                                          />
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              justifyContent: "flex-end",
+                                              gap: 8,
+                                              marginTop: 8,
+                                            }}
+                                          >
+                                            {editingCommentKey === key ? (
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setEditingCommentKey(null);
+                                                  setCommentDrafts((prev) => {
+                                                    const next = { ...prev };
+                                                    delete next[key];
+                                                    return next;
+                                                  });
+                                                }}
+                                                style={{
+                                                  border: `1px solid ${PRAYER_HISTORY_MODAL.cardBodyBorder}`,
+                                                  background: "#fff",
+                                                  borderRadius: PRAYER_HISTORY_MODAL.radius,
+                                                  padding: "6px 12px",
+                                                  fontSize: 12,
+                                                  fontWeight: 600,
+                                                  cursor: "pointer",
+                                                  fontFamily: PRAYER_HISTORY_MODAL.fontKR,
+                                                }}
+                                              >
+                                                취소
+                                              </button>
+                                            ) : null}
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const text = (
+                                                  commentDrafts[key] ??
+                                                  commentText
+                                                ).trim();
+                                                onSavePrayerComment?.(key, text, item.id);
+                                                setEditingCommentKey(null);
+                                                setCommentDrafts((prev) => {
+                                                  const next = { ...prev };
+                                                  delete next[key];
+                                                  return next;
+                                                });
+                                              }}
+                                              disabled={
+                                                !(
+                                                  commentDrafts[key] ??
+                                                  commentText
+                                                ).trim()
+                                              }
+                                              style={{
+                                                border: "none",
+                                                background: PRAYER_HISTORY_MODAL.commentBtnBg,
+                                                color: PRAYER_HISTORY_MODAL.commentBtnText,
+                                                borderRadius: PRAYER_HISTORY_MODAL.radius,
+                                                padding: "6px 12px",
+                                                fontSize: 12,
+                                                fontWeight: 600,
+                                                cursor: !(
+                                                  commentDrafts[key] ??
+                                                  commentText
+                                                ).trim()
+                                                  ? "not-allowed"
+                                                  : "pointer",
+                                                opacity: !(
+                                                  commentDrafts[key] ??
+                                                  commentText
+                                                ).trim()
+                                                  ? 0.5
+                                                  : 1,
+                                                fontFamily: PRAYER_HISTORY_MODAL.fontKR,
+                                              }}
+                                            >
+                                              남기기
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : null}
+                                </>
                               )}
                             </div>
                           </div>
@@ -787,6 +1043,7 @@ export function PrayerHistoryModal({
                 </div>
               )}
             </div>
+          </div>
           </div>
 
           <AppDeleteConfirmModal

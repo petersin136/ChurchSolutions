@@ -152,6 +152,11 @@ export interface Note {
   type: "memo" | "prayer" | "visit" | "event";
   content: string;
   createdAt: string;
+  /** Supabase notes.id (있을 때만) */
+  id?: string | number;
+  answered?: boolean;
+  answeredAt?: string;
+  answeredComment?: string;
 }
 
 export interface Plan {
@@ -596,10 +601,14 @@ export interface DB {
   /** 결석 사유: memberId -> weekNum -> 사유 텍스트 */
   attendanceReasons?: Record<string, Record<number, string>>;
   notes: Record<string, Note[]>;
-  /** 기도 응답됨 키 목록 (타임라인/프로필 기도 구분용) */
+  /** 기도 응답됨 키 목록 (타임라인/프로필 기도 구분용) — `id\t{noteId}` 또는 레거시 `note\t...` */
   answeredPrayerKeys?: string[];
   /** 기도 응답일자 (키 -> YYYY-MM-DD) */
   answeredPrayerDates?: Record<string, string>;
+  /** 기도 응답 내용 댓글 (키 -> 텍스트) */
+  answeredPrayerComments?: Record<string, string>;
+  /** note id -> 응답 기록 (안정적인 원본) */
+  answeredPrayerByNoteId?: Record<string, { answeredAt: string; comment?: string }>;
   plans: Plan[];
   sermons: Sermon[];
   visits: Visit[];
@@ -632,6 +641,8 @@ export const DEFAULT_DB: DB = {
   attendanceReasons: {},
   notes: {},
   answeredPrayerKeys: [],
+  answeredPrayerByNoteId: {},
+  answeredPrayerComments: {},
   plans: [],
   sermons: [],
   visits: [],
