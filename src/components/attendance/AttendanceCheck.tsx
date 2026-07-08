@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef, type CSSProperties } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { tokens } from "@/styles/tokens";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
@@ -10,8 +11,6 @@ import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { MemberPhoto, MemberPhotoCircle } from "@/components/common/MemberPhoto";
 import { MEMBER_MGMT } from "@/styles/memberManagementTokens";
-
-const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 /** 성도 관리(MembersManagementPanel)와 동일한 행 호버 그라데이션 */
 function rowHoverBackground(isHovered: boolean): string {
@@ -32,7 +31,7 @@ function toDateStr(d: Date): string {
 
 const STATUSES = ["출석", "결석"] as const;
 type AttStatusUI = (typeof STATUSES)[number];
-const ATTENDANCE_CHECK_PAGE_SIZE = 10;
+const ATTENDANCE_CHECK_PAGE_SIZE = 15;
 
 function memberMokjangLabel(m: Member): string {
   return (m.mokjang ?? m.group ?? "").trim();
@@ -90,6 +89,158 @@ function AttendanceListPaginationBar({
       </span>
       <button type="button" className={btn} disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
         다음
+      </button>
+    </div>
+  );
+}
+
+/** 번호식 페이지 목록 (성도 관리와 동일한 앞·뒤 축약) */
+function buildAttendancePageList(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "…", total];
+  if (current >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "…", current - 1, current, current + 1, "…", total];
+}
+
+/** 성도 관리(MemberPagination)와 시각적으로 동일한 숫자식 페이지네이션 (데스크톱) */
+function AttendanceNumberPagination({
+  totalItems,
+  itemsPerPage,
+  currentPage,
+  onPageChange,
+}: {
+  totalItems: number;
+  itemsPerPage: number;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+}) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const pages = buildAttendancePageList(safePage, totalPages);
+  const prevDisabled = safePage <= 1;
+  const nextDisabled = safePage >= totalPages;
+
+  const ITEM_H = MEMBER_MGMT.pagerItemSize;
+  const ROW_GAP = MEMBER_MGMT.pagerRowGap;
+  const LINE_H = MEMBER_MGMT.pagerBarHeight;
+  const lineRadius = LINE_H / 2;
+
+  const arrowStyle = (disabled: boolean, side: "left" | "right"): CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: side === "left" ? "flex-start" : "flex-end",
+    height: ITEM_H,
+    border: "none",
+    background: "transparent",
+    color: disabled ? MEMBER_MGMT.pagerArrowDisabled : MEMBER_MGMT.pagerArrow,
+    cursor: disabled ? "not-allowed" : "pointer",
+    padding: 0,
+    flexShrink: 0,
+  });
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        width: "100%",
+        paddingTop: ROW_GAP,
+        fontFamily: MEMBER_MGMT.fontKR,
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: LINE_H,
+          borderRadius: lineRadius,
+          background: MEMBER_MGMT.pagerTrack,
+        }}
+      />
+
+      <button
+        type="button"
+        aria-label="이전 페이지"
+        onClick={() => !prevDisabled && onPageChange(safePage - 1)}
+        disabled={prevDisabled}
+        style={arrowStyle(prevDisabled, "left")}
+      >
+        <ArrowLeft size={20} strokeWidth={2.25} />
+      </button>
+
+      <div style={{ display: "flex", alignItems: "center", gap: MEMBER_MGMT.pagerGap }}>
+        {pages.map((p, idx) => {
+          if (p === "…") {
+            return (
+              <span
+                key={`gap-${idx}`}
+                style={{
+                  color: MEMBER_MGMT.pagerText,
+                  fontSize: MEMBER_MGMT.pagerFontSize,
+                  userSelect: "none",
+                }}
+              >
+                …
+              </span>
+            );
+          }
+          const active = p === safePage;
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => onPageChange(p)}
+              style={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: ITEM_H,
+                border: "none",
+                background: "transparent",
+                color: active ? MEMBER_MGMT.pagerActiveText : MEMBER_MGMT.pagerText,
+                fontSize: MEMBER_MGMT.pagerFontSize,
+                fontWeight: active ? 700 : 500,
+                fontVariantNumeric: "tabular-nums",
+                cursor: "pointer",
+                padding: "0 6px",
+                fontFamily: MEMBER_MGMT.fontKR,
+              }}
+            >
+              {p}
+              {active && (
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: -ROW_GAP,
+                    transform: "translateX(-50%)",
+                    width: MEMBER_MGMT.pagerBarWidth,
+                    height: LINE_H,
+                    borderRadius: lineRadius,
+                    background: MEMBER_MGMT.pagerDot,
+                  }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        aria-label="다음 페이지"
+        onClick={() => !nextDisabled && onPageChange(safePage + 1)}
+        disabled={nextDisabled}
+        style={arrowStyle(nextDisabled, "right")}
+      >
+        <ArrowRight size={20} strokeWidth={2.25} />
       </button>
     </div>
   );
@@ -320,25 +471,6 @@ export function AttendanceCheck({
     return () => { Object.values(noteTimersRef.current).forEach(clearTimeout); };
   }, []);
 
-  const count출석 = useMemo(
-    () => filteredMembers.filter((m) => statusMap[m.id] === "출석").length,
-    [filteredMembers, statusMap]
-  );
-  const count결석 = useMemo(
-    () => filteredMembers.filter((m) => statusMap[m.id] === "결석").length,
-    [filteredMembers, statusMap]
-  );
-  const statsCards = useMemo(() => {
-    const total = filteredMembers.length;
-    const rate = total > 0 ? Math.round((count출석 / total) * 100) : 0;
-    return [
-      { label: "대상 인원", value: `${fmt(total)}명`, sub: "필터 적용" },
-      { label: "출석률", value: `${rate}%`, sub: "저장된 체크 기준" },
-      { label: "출석", value: `${fmt(count출석)}명`, sub: "주일예배" },
-      { label: "결석", value: `${fmt(count결석)}명`, sub: "사유 입력 가능" },
-    ];
-  }, [filteredMembers.length, count출석, count결석]);
-
   const getWeekNumForDate = (dateStr: string) => {
     const d = new Date(dateStr + "T12:00:00");
     const s = new Date(d.getFullYear(), 0, 1);
@@ -416,9 +548,21 @@ export function AttendanceCheck({
         className={
           mob
             ? "flex flex-wrap items-center gap-2 bg-white rounded-xl shadow-sm border border-gray-100 p-2"
-            : "flex flex-nowrap items-center gap-4 overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-4 [&::-webkit-scrollbar]:hidden"
+            : "flex flex-nowrap items-center gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden"
         }
-        style={mob ? undefined : { scrollbarWidth: "none", msOverflowStyle: "none" }}
+        style={
+          mob
+            ? undefined
+            : {
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                fontFamily: MEMBER_MGMT.fontKR,
+                border: `1px solid ${MEMBER_MGMT.searchBorder}`,
+                borderRadius: MEMBER_MGMT.radius,
+                background: MEMBER_MGMT.searchBg,
+                padding: "8px 16px",
+              }
+        }
       >
         <label className={mob ? "flex shrink-0 items-center gap-1.5" : "flex shrink-0 items-center gap-2"}>
           <span className={mob ? "whitespace-nowrap text-[10px] text-gray-500" : "whitespace-nowrap text-sm text-gray-600"}>
@@ -442,7 +586,7 @@ export function AttendanceCheck({
           className={
             mob
               ? "rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#1e40af]"
-              : "rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-[#1e40af]"
+              : "rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-600"
           }
         >
           주일예배
@@ -481,29 +625,6 @@ export function AttendanceCheck({
               style={{ marginBottom: 0, minWidth: mob ? 72 : 100 }}
           />
         </label>
-      </div>
-
-      <div
-        className={
-          mob ? "mb-2 grid grid-cols-2 gap-1.5" : "mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4"
-        }
-      >
-        {statsCards.map((card) => (
-          <div
-            key={card.label}
-            className={
-              mob
-                ? "rounded-lg border border-gray-100 bg-white p-2"
-                : "rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
-            }
-          >
-            <div className={mob ? "text-[9px] text-gray-400" : "text-xs text-gray-500"}>{card.label}</div>
-            <div className={mob ? "text-[18px] font-extrabold text-gray-900" : "text-2xl font-extrabold text-gray-900"}>
-              {card.value}
-            </div>
-            <div className={mob ? "text-[9px] text-gray-400" : "text-xs text-gray-400"}>{card.sub}</div>
-          </div>
-        ))}
       </div>
 
       {loading ? (
@@ -590,11 +711,12 @@ export function AttendanceCheck({
           />
         </div>
       ) : (
-        <div
-          className="flex flex-col overflow-hidden"
-          style={{ background: MEMBER_MGMT.tableBg, borderRadius: MEMBER_MGMT.radius }}
-        >
-          <table className="w-full table-fixed border-collapse text-sm">
+        <div className="flex flex-col">
+          {/* 헤더 — 흰 카드 밖, 배경 없음 (성도 관리 헤더 밴드와 동일) */}
+          <table
+            className="w-full table-fixed border-collapse text-sm"
+            style={{ marginBottom: MEMBER_MGMT.headerToCardGap }}
+          >
             <colgroup>
               <col className="w-[5%]" />
               <col className="w-[14%]" />
@@ -604,7 +726,7 @@ export function AttendanceCheck({
               <col className="w-[33%]" />
             </colgroup>
             <thead>
-              <tr style={{ borderBottom: `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}` }}>
+              <tr>
                 <th
                   className="px-2 py-3 text-center"
                   style={{ color: MEMBER_MGMT.headerText, fontSize: MEMBER_MGMT.headerFontSize, fontWeight: MEMBER_MGMT.headerFontWeight, lineHeight: MEMBER_MGMT.headerLineHeight }}
@@ -643,6 +765,21 @@ export function AttendanceCheck({
                 </th>
               </tr>
             </thead>
+          </table>
+          {/* 데이터 카드 — 흰 배경만 (헤더는 위에서 카드 밖) */}
+          <div
+            className="flex flex-col overflow-hidden"
+            style={{ background: MEMBER_MGMT.tableBg, borderRadius: MEMBER_MGMT.radius }}
+          >
+            <table className="w-full table-fixed border-collapse text-sm">
+              <colgroup>
+                <col className="w-[5%]" />
+                <col className="w-[14%]" />
+                <col className="w-[14%]" />
+                <col className="w-[14%]" />
+                <col className="w-[20%]" />
+                <col className="w-[33%]" />
+              </colgroup>
             <tbody>
               {filteredMembers.length === 0 ? (
                 <tr><td colSpan={6} className="py-8 text-center text-gray-500">교인 목록이 없거나 검색 결과가 없습니다.</td></tr>
@@ -675,8 +812,8 @@ export function AttendanceCheck({
                         transition: "background 0.12s ease",
                       }}
                     >
-                      <td className="px-2 py-3 text-center align-middle tabular-nums" style={{ color: MEMBER_MGMT.numText, fontSize: MEMBER_MGMT.cellFontSize }}>{num}</td>
-                      <td className="overflow-hidden px-3 py-3 align-middle">
+                      <td className="px-2 text-center align-middle tabular-nums" style={{ color: MEMBER_MGMT.numText, fontSize: MEMBER_MGMT.cellFontSize }}>{num}</td>
+                      <td className="overflow-hidden px-3 align-middle">
                         <div className="flex min-w-0 items-center" style={{ gap: MEMBER_MGMT.nameAvatarGap }}>
                           <div
                             style={{
@@ -699,9 +836,9 @@ export function AttendanceCheck({
                           <div className="min-w-0 truncate" title={m.name} style={{ color: MEMBER_MGMT.nameText, fontSize: MEMBER_MGMT.nameFontSize, fontWeight: MEMBER_MGMT.nameFontWeight }}>{m.name}</div>
                         </div>
                       </td>
-                      <td className="overflow-hidden px-3 py-3 align-middle" style={{ color: MEMBER_MGMT.subText, fontSize: MEMBER_MGMT.cellFontSize, fontWeight: MEMBER_MGMT.subFontWeight }}><div className="truncate">{m.dept || "-"}</div></td>
-                      <td className="overflow-hidden px-3 py-3 align-middle" style={{ color: MEMBER_MGMT.deptText, fontSize: MEMBER_MGMT.cellFontSize, fontWeight: MEMBER_MGMT.subFontWeight }}><div className="truncate">{memberMokjangLabel(m) || "-"}</div></td>
-                      <td className="px-3 py-3 align-middle">
+                      <td className="overflow-hidden px-3 align-middle" style={{ color: MEMBER_MGMT.subText, fontSize: MEMBER_MGMT.cellFontSize, fontWeight: MEMBER_MGMT.subFontWeight }}><div className="truncate">{m.dept || "-"}</div></td>
+                      <td className="overflow-hidden px-3 align-middle" style={{ color: MEMBER_MGMT.deptText, fontSize: MEMBER_MGMT.cellFontSize, fontWeight: MEMBER_MGMT.subFontWeight }}><div className="truncate">{memberMokjangLabel(m) || "-"}</div></td>
+                      <td className="px-3 align-middle">
                         <div className="flex justify-center gap-2">
                           <button
                             type="button"
@@ -719,7 +856,7 @@ export function AttendanceCheck({
                           </button>
                         </div>
                       </td>
-                      <td className="px-3 py-3 align-middle">
+                      <td className="px-3 align-middle">
                         <input
                           type="text"
                           placeholder="사유 (선택)"
@@ -734,13 +871,24 @@ export function AttendanceCheck({
                 })
               )}
             </tbody>
-          </table>
-          <AttendanceListPaginationBar
-            page={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredMembers.length}
-            onPageChange={setCurrentPage}
-          />
+            </table>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexShrink: 0,
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "32px 4px 2px",
+            }}
+          >
+            <AttendanceNumberPagination
+              totalItems={filteredMembers.length}
+              itemsPerPage={ATTENDANCE_CHECK_PAGE_SIZE}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </div>
       )}
 
