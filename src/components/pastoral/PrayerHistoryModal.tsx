@@ -15,6 +15,8 @@ import {
   PRAYER_HISTORY_FRAME_PATH,
   PRAYER_HISTORY_MODAL,
   answeredPearlStyle,
+  historyTabRightEdgePath,
+  historyTabRightShapePath,
   prayerHistoryOverlayStyle,
   prayerHistoryShellStyle,
 } from "@/styles/prayerHistoryModalTokens";
@@ -424,7 +426,7 @@ export function PrayerHistoryModal({
                 position: "relative",
                 height: PRAYER_HISTORY_MODAL.headerBlockHeight,
                 boxSizing: "border-box",
-                background: "#ffffff",
+                background: "transparent",
                 overflow: "hidden",
                 zIndex: 3,
                 borderTopLeftRadius: PRAYER_HISTORY_MODAL.radius,
@@ -469,10 +471,7 @@ export function PrayerHistoryModal({
               </div>
 
               {/*
-                탭 (시안):
-                - 기도중: 왼쪽 = 흰 프레임과 같은 사선, 오른쪽 위 = r7 곡률
-                - 응답완료: 왼쪽 직선, 우상단 r7
-                - 기도중 r7 포켓 아래 = 응답완료 진한 회색
+                탭: 기도중=연회색 사선(뒤), 응답완료=진회색 사선(앞, 겹침)
               */}
               <div
                 style={{
@@ -485,57 +484,15 @@ export function PrayerHistoryModal({
                   pointerEvents: "none",
                 }}
               >
-                {/* 응답완료 — 기도중 곡률 포켓까지 왼쪽 / 우상단 r7 */}
-                <button
-                  type="button"
-                  onClick={() => setTab("answered")}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left:
-                      PRAYER_HISTORY_MODAL.tabSplitX -
-                      PRAYER_HISTORY_MODAL.frameTabTopX -
-                      PRAYER_HISTORY_MODAL.radius,
-                    right: 0,
-                    height: "100%",
-                    pointerEvents: "auto",
-                    border: "none",
-                    cursor: "pointer",
-                    fontFamily: PRAYER_HISTORY_MODAL.fontKR,
-                    fontSize: PRAYER_HISTORY_MODAL.tabFontSize,
-                    fontWeight: PRAYER_HISTORY_MODAL.tabFontWeight,
-                    whiteSpace: "nowrap",
-                    // 탭 배경색은 고정, 글씨만 활성=진한색 / 비활성=연한색
-                    background: PRAYER_HISTORY_MODAL.tabAnsweredBg,
-                    color:
-                      tab === "answered"
-                        ? PRAYER_HISTORY_MODAL.tabAnsweredText
-                        : PRAYER_HISTORY_MODAL.tabPrayingText,
-                    outline: "none",
-                    borderTopRightRadius: PRAYER_HISTORY_MODAL.radius,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    paddingLeft: PRAYER_HISTORY_MODAL.radius,
-                    boxSizing: "border-box",
-                    zIndex: 1,
-                  }}
-                >
-                  응답완료
-                </button>
-
-                {/* 기도 중 — 왼쪽 사선(상·하단 곡률) + 오른쪽 위 r7 */}
                 <div
                   style={{
                     position: "absolute",
                     top: 0,
                     left: 0,
-                    width:
-                      PRAYER_HISTORY_MODAL.tabSplitX - PRAYER_HISTORY_MODAL.frameTabTopX,
+                    width: PRAYER_HISTORY_MODAL.tabLeftWidth,
                     height: "100%",
-                    borderTopRightRadius: PRAYER_HISTORY_MODAL.radius,
                     overflow: "hidden",
-                    zIndex: 2,
+                    zIndex: 1,
                     pointerEvents: "auto",
                   }}
                 >
@@ -543,14 +500,13 @@ export function PrayerHistoryModal({
                     aria-hidden
                     width="100%"
                     height="100%"
-                    viewBox={`0 0 ${PRAYER_HISTORY_MODAL.tabSplitX - PRAYER_HISTORY_MODAL.frameTabTopX} ${PRAYER_HISTORY_MODAL.headerShelfY}`}
+                    viewBox={`0 0 ${PRAYER_HISTORY_MODAL.tabLeftWidth} ${PRAYER_HISTORY_MODAL.headerShelfY}`}
                     preserveAspectRatio="none"
                     style={{ position: "absolute", inset: 0, display: "block" }}
                   >
-                    {/* 왼쪽 경계: 디자이너 사선 베지어(상·하단 곡률) → 우측으로 채움 */}
                     <path
                       fill={PRAYER_HISTORY_MODAL.tabPrayingBg}
-                      d={`${PRAYER_HISTORY_MODAL.prayingLeftEdgePath} L${PRAYER_HISTORY_MODAL.tabSplitX - PRAYER_HISTORY_MODAL.frameTabTopX},${PRAYER_HISTORY_MODAL.headerShelfY} L${PRAYER_HISTORY_MODAL.tabSplitX - PRAYER_HISTORY_MODAL.frameTabTopX},0 Z`}
+                      d={`${PRAYER_HISTORY_MODAL.prayingLeftEdgePath} ${historyTabRightEdgePath()} Z`}
                     />
                   </svg>
                   <button
@@ -573,12 +529,67 @@ export function PrayerHistoryModal({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      paddingLeft:
-                        PRAYER_HISTORY_MODAL.frameShelfX - PRAYER_HISTORY_MODAL.frameTabTopX,
+                      transform: `translateX(${PRAYER_HISTORY_MODAL.tabLeftLabelOffset}px)`,
                       boxSizing: "border-box",
                     }}
                   >
                     기도 중
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: "100%",
+                    overflow: "hidden",
+                    zIndex: 2,
+                    pointerEvents: "auto",
+                  }}
+                >
+                  <svg
+                    aria-hidden
+                    width="100%"
+                    height="100%"
+                    viewBox={`0 0 ${PRAYER_HISTORY_MODAL.tabRowWidth} ${PRAYER_HISTORY_MODAL.headerShelfY}`}
+                    preserveAspectRatio="none"
+                    style={{ position: "absolute", inset: 0, display: "block" }}
+                  >
+                    <path
+                      fill={PRAYER_HISTORY_MODAL.tabAnsweredBg}
+                      d={historyTabRightShapePath(PRAYER_HISTORY_MODAL.radius)}
+                    />
+                  </svg>
+                  <button
+                    type="button"
+                    onClick={() => setTab("answered")}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: PRAYER_HISTORY_MODAL.tabRightAreaLeft,
+                      right: 0,
+                      height: "100%",
+                      border: "none",
+                      cursor: "pointer",
+                      background: "transparent",
+                      fontFamily: PRAYER_HISTORY_MODAL.fontKR,
+                      fontSize: PRAYER_HISTORY_MODAL.tabFontSize,
+                      fontWeight: PRAYER_HISTORY_MODAL.tabFontWeight,
+                      whiteSpace: "nowrap",
+                      color:
+                        tab === "answered"
+                          ? PRAYER_HISTORY_MODAL.tabAnsweredText
+                          : PRAYER_HISTORY_MODAL.tabPrayingText,
+                      outline: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    응답완료
                   </button>
                 </div>
               </div>

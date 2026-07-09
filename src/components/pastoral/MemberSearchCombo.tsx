@@ -14,6 +14,9 @@ export interface MemberSearchComboProps {
   onSelectMokjang: (value: string) => void;
   onSelectRole: (value: string) => void;
   placeholder?: string;
+  /** 이름 검색 자동완성 (출석부 등 — 테이블은 유지하고 드롭다운만 표시) */
+  memberMatches?: { id: string; name: string; subtitle?: string }[];
+  onSelectMember?: (memberId: string) => void;
 }
 
 export function MemberSearchCombo({
@@ -26,9 +29,16 @@ export function MemberSearchCombo({
   onSelectMokjang,
   onSelectRole,
   placeholder = "이름, 부서, 목장, 직분 검색 또는 선택...",
+  memberMatches,
+  onSelectMember,
 }: MemberSearchComboProps) {
   const [open, setOpen] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const showMemberDropdown =
+    Boolean(onSelectMember) && inputFocused && value.trim().length > 0;
+  const dropdownOpen = open || showMemberDropdown;
 
   const sections = useMemo(
     () => [
@@ -40,13 +50,16 @@ export function MemberSearchCombo({
   );
 
   useEffect(() => {
-    if (!open) return;
+    if (!dropdownOpen) return;
     const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+        setInputFocused(false);
+      }
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
+  }, [dropdownOpen]);
 
   return (
     <div ref={rootRef} style={{ position: "relative", flex: 1, minWidth: 0 }}>
@@ -64,8 +77,12 @@ export function MemberSearchCombo({
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setInputFocused(true)}
           onKeyDown={(e) => {
-            if (e.key === "Escape") setOpen(false);
+            if (e.key === "Escape") {
+              setOpen(false);
+              setInputFocused(false);
+            }
           }}
           placeholder={placeholder}
           style={{
@@ -105,7 +122,7 @@ export function MemberSearchCombo({
           <ChevronDown size={18} style={{ transform: open ? "rotate(180deg)" : undefined, transition: "transform 0.15s" }} />
         </button>
       </div>
-      {open && (
+      {dropdownOpen && (
         <div
           style={{
             position: "absolute",
@@ -122,7 +139,80 @@ export function MemberSearchCombo({
             padding: "8px 0",
           }}
         >
-          {sections.map((section) =>
+          {showMemberDropdown && (
+            <div>
+              <div
+                style={{
+                  padding: "6px 14px 4px",
+                  fontSize: MEMBER_MGMT.dropdownSectionFontSize,
+                  fontWeight: 700,
+                  color: MEMBER_MGMT.dropdownSectionLabel,
+                  letterSpacing: "0.02em",
+                }}
+              >
+                성도
+              </div>
+              {(memberMatches ?? []).length === 0 ? (
+                <div
+                  style={{
+                    padding: MEMBER_MGMT.dropdownItemPad,
+                    fontFamily: MEMBER_MGMT.fontKR,
+                    fontSize: MEMBER_MGMT.searchFontSize,
+                    color: MEMBER_MGMT.searchPlaceholder,
+                  }}
+                >
+                  검색 결과가 없습니다
+                </div>
+              ) : (
+                (memberMatches ?? []).map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      onSelectMember?.(m.id);
+                      setOpen(false);
+                      setInputFocused(false);
+                    }}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
+                      border: "none",
+                      background: "transparent",
+                      padding: MEMBER_MGMT.dropdownItemPad,
+                      fontFamily: MEMBER_MGMT.fontKR,
+                      fontSize: MEMBER_MGMT.searchFontSize,
+                      color: MEMBER_MGMT.searchText,
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = MEMBER_MGMT.dropdownItemHover;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <div>{m.name}</div>
+                    {m.subtitle ? (
+                      <div
+                        style={{
+                          marginTop: 2,
+                          fontSize: MEMBER_MGMT.dropdownSectionFontSize,
+                          color: MEMBER_MGMT.searchPlaceholder,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {m.subtitle}
+                      </div>
+                    ) : null}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+          {open &&
+            sections.map((section) =>
             section.options.length === 0 ? null : (
               <div key={section.title}>
                 <div

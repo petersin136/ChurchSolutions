@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { Check, FileText, X } from "lucide-react";
+import { Check, FileText, Pin, X } from "lucide-react";
 import { AppDeleteConfirmModal } from "@/components/common/AppDeleteConfirmModal";
 import type { QuickNoteItem } from "@/components/common/QuickNoteModal";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +18,10 @@ import {
   memoHistoryShellStyle,
   memoImportantPearlStyle,
 } from "@/styles/memoHistoryModalTokens";
+import {
+  historyTabRightEdgePath,
+  historyTabRightShapePath,
+} from "@/styles/historyTabShape";
 import { isRemoteNoteId } from "@/lib/prayerAnswers";
 
 type TabId = "general" | "important";
@@ -414,7 +418,7 @@ export function MemoHistoryModal({
                   position: "relative",
                   height: M.headerBlockHeight,
                   boxSizing: "border-box",
-                  background: "#ffffff",
+                  background: "transparent",
                   overflow: "hidden",
                   zIndex: 3,
                   borderTopLeftRadius: M.radius,
@@ -470,56 +474,16 @@ export function MemoHistoryModal({
                     pointerEvents: "none",
                   }}
                 >
-                  {/* 중요 탭 (오른쪽, 진한 배경) */}
-                  <button
-                    type="button"
-                    onClick={() => setTab("important")}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left:
-                        M.tabSplitX -
-                        M.frameTabTopX -
-                        M.radius,
-                      right: 0,
-                      height: "100%",
-                      pointerEvents: "auto",
-                      border: "none",
-                      cursor: "pointer",
-                      fontFamily: M.fontKR,
-                      fontSize: M.tabFontSize,
-                      fontWeight: M.tabFontWeight,
-                      whiteSpace: "nowrap",
-                      background: M.tabImportantBg,
-                      color:
-                        tab === "important"
-                          ? M.tabActiveText
-                          : M.tabMutedText,
-                      outline: "none",
-                      borderTopRightRadius: M.radius,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      paddingLeft: M.radius,
-                      boxSizing: "border-box",
-                      zIndex: 1,
-                    }}
-                  >
-                    중요
-                  </button>
-
-                  {/* 일반 탭 (왼쪽, 연한 배경, 사선) */}
+                  {/* 일반 — 연회색, 사선 평행사변형 (뒤, z1) */}
                   <div
                     style={{
                       position: "absolute",
                       top: 0,
                       left: 0,
-                      width:
-                        M.tabSplitX - M.frameTabTopX,
+                      width: M.tabLeftWidth,
                       height: "100%",
-                      borderTopRightRadius: M.radius,
                       overflow: "hidden",
-                      zIndex: 2,
+                      zIndex: 1,
                       pointerEvents: "auto",
                     }}
                   >
@@ -527,13 +491,13 @@ export function MemoHistoryModal({
                       aria-hidden
                       width="100%"
                       height="100%"
-                      viewBox={`0 0 ${M.tabSplitX - M.frameTabTopX} ${M.headerShelfY}`}
+                      viewBox={`0 0 ${M.tabLeftWidth} ${M.headerShelfY}`}
                       preserveAspectRatio="none"
                       style={{ position: "absolute", inset: 0, display: "block" }}
                     >
                       <path
                         fill={M.tabGeneralBg}
-                        d={`${M.generalLeftEdgePath} L${M.tabSplitX - M.frameTabTopX},${M.headerShelfY} L${M.tabSplitX - M.frameTabTopX},0 Z`}
+                        d={`${M.generalLeftEdgePath} ${historyTabRightEdgePath()} Z`}
                       />
                     </svg>
                     <button
@@ -556,12 +520,65 @@ export function MemoHistoryModal({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        paddingLeft:
-                          M.frameShelfX - M.frameTabTopX,
+                        transform: `translateX(${M.tabLeftLabelOffset}px)`,
                         boxSizing: "border-box",
                       }}
                     >
                       일반
+                    </button>
+                  </div>
+
+                  {/* 중요 — 진회색, 왼쪽 사선 (앞, z2) */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: "100%",
+                      overflow: "hidden",
+                      zIndex: 2,
+                      pointerEvents: "auto",
+                    }}
+                  >
+                    <svg
+                      aria-hidden
+                      width="100%"
+                      height="100%"
+                      viewBox={`0 0 ${M.tabRowWidth} ${M.headerShelfY}`}
+                      preserveAspectRatio="none"
+                      style={{ position: "absolute", inset: 0, display: "block" }}
+                    >
+                      <path fill={M.tabImportantBg} d={historyTabRightShapePath(M.radius)} />
+                    </svg>
+                    <button
+                      type="button"
+                      onClick={() => setTab("important")}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: M.tabRightAreaLeft,
+                        right: 0,
+                        height: "100%",
+                        border: "none",
+                        cursor: "pointer",
+                        background: "transparent",
+                        fontFamily: M.fontKR,
+                        fontSize: M.tabFontSize,
+                        fontWeight: M.tabFontWeight,
+                        whiteSpace: "nowrap",
+                        color:
+                          tab === "important"
+                            ? M.tabActiveText
+                            : M.tabMutedText,
+                        outline: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      중요
                     </button>
                   </div>
                 </div>
@@ -639,12 +656,13 @@ export function MemoHistoryModal({
                               aria-label={important ? "중요 표시됨" : "중요 표시"}
                               onClick={() => toggleImportant(item)}
                               style={{
-                                width: 20,
-                                height: 20,
-                                borderRadius: M.radius,
-                                border: important ? "none" : `1.5px solid ${M.checkBorder}`,
-                                ...(important ? memoImportantPearlStyle(true) : { background: M.nodeBg }),
-                                color: "#ffffff",
+                                width: 24,
+                                height: 24,
+                                borderRadius: important ? M.pinRadius : 6,
+                                border: important
+                                  ? `1.5px solid ${M.pinBorder}`
+                                  : `1.5px solid ${M.nodeBorder}`,
+                                background: important ? M.pinBg : M.nodeBg,
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -656,7 +674,14 @@ export function MemoHistoryModal({
                               }}
                             >
                               {important ? (
-                                <Check size={12} strokeWidth={2.5} />
+                                <Pin
+                                  size={13}
+                                  strokeWidth={2.25}
+                                  style={{
+                                    color: M.pinIcon,
+                                    transform: "rotate(45deg)",
+                                  }}
+                                />
                               ) : (
                                 <FileText
                                   size={12}

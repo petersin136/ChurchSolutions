@@ -5,8 +5,14 @@ import {
   activityRecordOverlayStyle,
   activityRecordShellStyle,
 } from "@/styles/activityRecordModalTokens";
+import {
+  HISTORY_TAB_LAYOUT,
+  historyTabLeftLabelOffset,
+  historyTabRightAreaLeft,
+} from "@/styles/historyTabShape";
 
 const R = APP_MODAL.radius;
+const TAB = HISTORY_TAB_LAYOUT;
 
 /** 흰 프레임 — 활동 기록과 동일 (520×619, 좌측 탭 + 우측 shelf) */
 export const PRAYER_HISTORY_FRAME_PATH = ACTIVITY_RECORD_FRAME_PATH;
@@ -64,9 +70,14 @@ export const PRAYER_HISTORY_MODAL = {
   /** 고정 헤더(제목+성도명) 아래 본문 시작 여백 */
   bodyPadTop: 16,
   bodyPadBottom: 28,
-  /** 시안: 기도중 연한 그레이 / 응답완료 진한 그레이 */
-  tabPrayingBg: "#ececef",
-  tabAnsweredBg: "#c8cad0",
+  /** 시안: 기도중 연한 / 응답완료 진한 — 디자이너 판 색 */
+  tabPrayingBg: "#f4f4f6",
+  tabAnsweredBg: "#d3d5db",
+  tabLeftWidth: TAB.tabLeftWidth,
+  tabRowWidth: TAB.tabRowWidth,
+  /** @deprecated 직접 historyTabRight* 함수 호출 권장 (모듈 로드 시 문자열 고정 방지) */
+  tabRightAreaLeft: historyTabRightAreaLeft(),
+  tabLeftLabelOffset: historyTabLeftLabelOffset(),
   tabPrayingText: "#a0a3ab",
   tabAnsweredText: "#5a5e66",
   tabFontSize: 14,
@@ -131,6 +142,12 @@ export const PRAYER_HISTORY_MODAL = {
   commentBtnBg: "#C05A55",
   commentBtnText: "#ffffff",
 } as const;
+
+/** 탭 SVG path — 렌더 시점에 생성 (토큰 객체에 bake 하지 않음) */
+export {
+  historyTabRightEdgePath,
+  historyTabRightShapePath,
+} from "@/styles/historyTabShape";
 
 /** 응답완료/중요 — 세련된 붉은 펄 (단색 베이스 + 스페큘러 하이라이트) */
 export function answeredPearlStyle(compact = false): CSSProperties {

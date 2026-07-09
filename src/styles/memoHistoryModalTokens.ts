@@ -5,6 +5,10 @@ import {
   activityRecordShellStyle,
 } from "@/styles/activityRecordModalTokens";
 import { PRAYER_HISTORY_MODAL } from "@/styles/prayerHistoryModalTokens";
+import {
+  historyTabLeftLabelOffset,
+  historyTabRightAreaLeft,
+} from "@/styles/historyTabShape";
 
 export { answeredPearlStyle as memoImportantPearlStyle } from "@/styles/prayerHistoryModalTokens";
 
@@ -50,9 +54,14 @@ export const MEMO_HISTORY_MODAL = {
   titleToSubtitle: 4,
   bodyPadTop: 16,
   bodyPadBottom: 28,
-  /** 일반 탭(연한) / 중요 탭(진한) */
-  tabGeneralBg: "#ececef",
-  tabImportantBg: "#c8cad0",
+  /** 일반 탭(연한) / 중요 탭(진한) — 디자이너 판 색 */
+  tabGeneralBg: "#f4f4f6",
+  tabImportantBg: "#d3d5db",
+  /** 왼쪽 탭 오른쪽 사선 (frameTabTopX 기준, 폭 188) */
+  tabLeftWidth: PRAYER_HISTORY_MODAL.tabLeftWidth,
+  tabRowWidth: PRAYER_HISTORY_MODAL.tabRowWidth,
+  tabRightAreaLeft: historyTabRightAreaLeft(),
+  tabLeftLabelOffset: historyTabLeftLabelOffset(),
   tabMutedText: "#a0a3ab",
   tabActiveText: "#5a5e66",
   tabFontSize: 14,
@@ -62,7 +71,10 @@ export const MEMO_HISTORY_MODAL = {
   nodeBorder: "#d1d5db",
   nodeBg: "#ffffff",
   nodeIcon: "#9ca0a8",
-  /** 중요 표시 — 기도 히스토리 응답완료와 동일 세련된 붉은 계열 */
+  pinBorder: "#e55c5c",
+  pinBg: "#fff0f0",
+  pinIcon: "#e55c5c",
+  pinRadius: 6,
   checkBorder: PRAYER_HISTORY_MODAL.checkBorder,
   importantAccent: PRAYER_HISTORY_MODAL.answeredAccent,
   importantCheckBg: PRAYER_HISTORY_MODAL.checkAnsweredBg,

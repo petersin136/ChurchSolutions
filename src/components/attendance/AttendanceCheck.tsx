@@ -11,10 +11,13 @@ import type { Attendance } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { MemberPhoto, MemberPhotoCircle } from "@/components/common/MemberPhoto";
-import { MEMBER_MGMT } from "@/styles/memberManagementTokens";
+import { MEMBER_MGMT, computeMemberPanelPageRows } from "@/styles/memberManagementTokens";
 import { MemberSearchCombo } from "@/components/pastoral/MemberSearchCombo";
 import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard";
 import { AttendanceDeptMonthlySummary } from "@/components/attendance/AttendanceStatistics";
+import { useAppData } from "@/contexts/AppDataContext";
+import { PcModalShell } from "@/components/common/PcModalShell";
+import { APP_MODAL } from "@/styles/appModalTokens";
 
 const ATTENDANCE_DATE_FIELD_WIDTH = 256;
 
@@ -26,9 +29,9 @@ function formatDeptMokjang(member: Member): string {
 }
 
 /** 성도 관리 앞 4열 동일 + 출석 상태·사유 */
-const ATTENDANCE_COL_TEMPLATE = "48px 176px 96px 152px 180px minmax(280px, 1.4fr)";
-const ATTENDANCE_COL_MIN_WIDTH = 932;
-const ATTENDANCE_HEADER_COLUMNS = ["번호", "이름", "직분", "부서/목장", "출석 상태", "사유"] as const;
+const ATTENDANCE_COL_TEMPLATE = "48px 176px 96px 152px 60px 100px minmax(280px, 1.4fr) 80px";
+const ATTENDANCE_COL_MIN_WIDTH = 992;
+const ATTENDANCE_HEADER_COLUMNS = ["번호", "이름", "직분", "부서/목장", "지난주", "금주", "사유", "장기결석"] as const;
 
 const attendanceGridColumns: CSSProperties = {
   display: "grid",
@@ -58,7 +61,9 @@ const ATTENDANCE_COL_LAYOUT = [
   { align: "left" as const },
   { align: "left" as const },
   { align: "center" as const },
+  { align: "center" as const },
   { align: "left" as const },
+  { align: "center" as const },
 ];
 
 function attendanceCellPadStyle(colIndex: number): CSSProperties {
@@ -195,8 +200,351 @@ function toDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** rawAttendance.date → YYYY-MM-DD (타임존/ISO 문자열 대응) */
+function normalizeAttendanceDate(date: string | undefined | null): string {
+  if (!date) return "";
+  return String(date).trim().slice(0, 10);
+}
+
+/** selectedDate는 일요일이므로 7일 전 = 지난주 일요일 */
+function getLastWeekSundayDate(selectedDate: string): string {
+  const d = new Date(selectedDate + "T12:00:00");
+  d.setDate(d.getDate() - 7);
+  return toDateStr(d);
+}
+
+const LAST_WEEK_PRESENT_DB_STATUSES = new Set(["p", "o"]);
+const LAST_WEEK_ABSENT_DB_STATUSES = new Set(["a", "l", "n"]);
+
+/** 금주 제외, 지난주부터 count개 일요일 날짜 */
+function getPastSundayDates(selectedDate: string, count: number): string[] {
+  const dates: string[] = [];
+  const d = new Date(selectedDate + "T12:00:00");
+  d.setDate(d.getDate() - 7);
+  for (let i = 0; i < count; i++) {
+    dates.push(toDateStr(d));
+    d.setDate(d.getDate() - 7);
+  }
+  return dates;
+}
+
+function buildSundayWorshipStatusIndex(
+  rows: { member_id: string; date?: string; service_type?: string; status: string }[],
+): Map<string, "출석" | "결석"> {
+  const map = new Map<string, "출석" | "결석">();
+  rows.forEach((r) => {
+    if (r.service_type && r.service_type !== "주일예배") return;
+    const date = normalizeAttendanceDate(r.date);
+    if (!date) return;
+    const key = `${r.member_id}\t${date}`;
+    if (LAST_WEEK_PRESENT_DB_STATUSES.has(r.status)) map.set(key, "출석");
+    else if (LAST_WEEK_ABSENT_DB_STATUSES.has(r.status)) map.set(key, "결석");
+  });
+  return map;
+}
+
+function memberSundayStatus(
+  index: Map<string, "출석" | "결석">,
+  memberId: string,
+  date: string,
+): "출석" | "결석" | null {
+  return index.get(`${memberId}\t${date}`) ?? null;
+}
+
+function countConsecutiveAbsentWeeks(
+  index: Map<string, "출석" | "결석">,
+  memberId: string,
+  startFromLastWeekDates: string[],
+): number {
+  let count = 0;
+  for (const date of startFromLastWeekDates) {
+    if (memberSundayStatus(index, memberId, date) !== "결석") break;
+    count++;
+  }
+  return count;
+}
+
+const WEEKDAY_SUN_LABELS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
+
+function formatAttendanceSundayLabel(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}. ${mo}. ${day}. ${WEEKDAY_SUN_LABELS[d.getDay()]}`;
+}
+
+function getMemberAbsentRecords(
+  rows: { member_id: string; date?: string; service_type?: string; status: string; note?: string }[],
+  memberId: string,
+  dates: string[],
+): { date: string; note: string }[] {
+  const wanted = new Set(dates);
+  const out: { date: string; note: string }[] = [];
+  rows.forEach((r) => {
+    if (r.member_id !== memberId) return;
+    if (r.service_type && r.service_type !== "주일예배") return;
+    const date = normalizeAttendanceDate(r.date);
+    if (!wanted.has(date)) return;
+    if (!LAST_WEEK_ABSENT_DB_STATUSES.has(r.status)) return;
+    out.push({ date, note: String(r.note ?? "").trim() || "-" });
+  });
+  out.sort((a, b) => b.date.localeCompare(a.date));
+  return out;
+}
+
+type LongAbsenceModalKind = "consecutive" | "scatter";
+
+function AttendanceLongAbsenceDetailModal({
+  open,
+  onClose,
+  memberName,
+  kind,
+  consecutiveWeeks,
+  records,
+}: {
+  open: boolean;
+  onClose: () => void;
+  memberName: string;
+  kind: LongAbsenceModalKind;
+  consecutiveWeeks: number;
+  records: { date: string; note: string }[];
+}) {
+  const title =
+    kind === "consecutive"
+      ? `${memberName} · 연속 ${consecutiveWeeks}주 결석`
+      : `${memberName} · 장기 결석`;
+
+  return (
+    <PcModalShell open={open} onClose={onClose} title={title} width={480}>
+      {records.length === 0 ? (
+        <p style={{ margin: 0, fontSize: 14, color: APP_MODAL.muted, fontFamily: APP_MODAL.fontKR }}>
+          표시할 결석 기록이 없습니다.
+        </p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {records.map((row) => (
+            <div
+              key={row.date}
+              style={{
+                padding: "12px 14px",
+                borderRadius: APP_MODAL.inputRadius,
+                background: APP_MODAL.inputBg,
+                fontFamily: APP_MODAL.fontKR,
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 600, color: APP_MODAL.ink }}>
+                {formatAttendanceSundayLabel(row.date)}
+              </div>
+              <div style={{ marginTop: 6, fontSize: 14, fontWeight: 500, color: APP_MODAL.muted, lineHeight: 1.45 }}>
+                {row.note}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </PcModalShell>
+  );
+}
+
+const ATTENDANCE_LONG_ABSENT_TAG_BG = "#fdecec";
+const ATTENDANCE_LONG_ABSENT_TAG_TEXT = "#d64545";
+const ATTENDANCE_LONG_ABSENT_SCATTER_BG = "#f4f5f7";
+const ATTENDANCE_LONG_ABSENT_SCATTER_TEXT = "#9aa0a6";
+
+function AttendanceLongAbsenceCell({
+  consecutiveWeeks,
+  showScatterLongTerm,
+  onOpenConsecutive,
+  onOpenScatter,
+}: {
+  consecutiveWeeks: number;
+  showScatterLongTerm: boolean;
+  onOpenConsecutive?: () => void;
+  onOpenScatter?: () => void;
+}) {
+  const tagBase: CSSProperties = {
+    fontFamily: MEMBER_MGMT.fontKR,
+    fontSize: 14,
+    fontWeight: 600,
+    lineHeight: 1,
+    padding: "3px 8px",
+    borderRadius: 6,
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    border: "none",
+    cursor: "pointer",
+    transition: "opacity 0.15s ease",
+  };
+
+  if (consecutiveWeeks >= 4) {
+    const label = `${consecutiveWeeks}주`;
+    const title = `연속 ${consecutiveWeeks}주 결석 — 클릭하여 내역 보기`;
+    return (
+      <button
+        type="button"
+        title={title}
+        aria-label={title}
+        onClick={onOpenConsecutive}
+        style={{
+          ...tagBase,
+          background: ATTENDANCE_LONG_ABSENT_TAG_BG,
+          color: ATTENDANCE_LONG_ABSENT_TAG_TEXT,
+        }}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  if (showScatterLongTerm) {
+    const title = "장기 결석 (최근 8주 중 5회 이상) — 클릭하여 내역 보기";
+    return (
+      <button
+        type="button"
+        title={title}
+        aria-label={title}
+        onClick={onOpenScatter}
+        style={{
+          ...tagBase,
+          background: ATTENDANCE_LONG_ABSENT_SCATTER_BG,
+          color: ATTENDANCE_LONG_ABSENT_SCATTER_TEXT,
+        }}
+      >
+        장기
+      </button>
+    );
+  }
+
+  return null;
+}
+
 const STATUSES = ["출석", "결석"] as const;
 type AttStatusUI = (typeof STATUSES)[number];
+
+const ATTENDANCE_DOT_SIZE = 20;
+const ATTENDANCE_DOT_PRESENT = "#22c55e";
+const ATTENDANCE_DOT_ABSENT = "#ef4444";
+const ATTENDANCE_DOT_UNCHECKED_BORDER = "#d1d5db";
+
+function AttendanceStatusDot({
+  status,
+  onClick,
+}: {
+  status: AttStatusUI | undefined;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const isPresent = status === "출석";
+  const isAbsent = status === "결석";
+  const ariaLabel = isPresent ? "출석" : isAbsent ? "결석" : "미체크";
+
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: ATTENDANCE_DOT_SIZE,
+        height: ATTENDANCE_DOT_SIZE,
+        borderRadius: "50%",
+        border: isPresent || isAbsent ? "none" : `1.5px solid ${ATTENDANCE_DOT_UNCHECKED_BORDER}`,
+        background: isPresent ? ATTENDANCE_DOT_PRESENT : isAbsent ? ATTENDANCE_DOT_ABSENT : "transparent",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 0,
+        cursor: "pointer",
+        flexShrink: 0,
+        transform: hovered ? "scale(1.08)" : "scale(1)",
+        boxShadow: hovered ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+        transition: "transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease",
+      }}
+    >
+      {isPresent ? (
+        <span style={{ color: "#ffffff", fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>
+      ) : isAbsent ? (
+        <span
+          aria-hidden
+          style={{
+            width: 8,
+            height: 2,
+            borderRadius: 1,
+            background: "#ffffff",
+            display: "block",
+          }}
+        />
+      ) : null}
+    </button>
+  );
+}
+
+function LastWeekStatusDot({ status }: { status: "출석" | "결석" | undefined }) {
+  if (!status) return null;
+  const isPresent = status === "출석";
+  const label = isPresent ? "지난주 출석" : "지난주 결석";
+  return (
+    <span
+      title={label}
+      aria-label={label}
+      style={{
+        width: 6,
+        height: 6,
+        borderRadius: "50%",
+        background: isPresent ? "#22c55e" : "#ef4444",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+/** 결석 사유 — 결석 선택 시 밑줄로 입력 가능함을 표시 */
+function AttendanceAbsentNoteField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  const hasValue = value.trim().length > 0;
+
+  return (
+    <input
+      type="text"
+      placeholder="사유"
+      title="결석사유입력"
+      aria-label="결석사유입력"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        width: "100%",
+        minWidth: 0,
+        height: 28,
+        boxSizing: "border-box",
+        border: "none",
+        borderBottom: `1.5px solid ${focused ? "#9aa0a6" : "#d1d5db"}`,
+        borderRadius: 0,
+        background: "transparent",
+        padding: "2px 2px 4px",
+        fontFamily: MEMBER_MGMT.fontKR,
+        fontSize: 14,
+        fontWeight: hasValue ? MEMBER_MGMT.contentFontWeight : 500,
+        color: MEMBER_MGMT.contentText,
+        outline: "none",
+        cursor: "text",
+        transition: "border-color 0.15s ease",
+      }}
+      className="placeholder:text-[#c4c7cf]"
+    />
+  );
+}
+
 const ATTENDANCE_CHECK_DEFAULT_PAGE_SIZE = 18;
 
 function memberMokjangLabel(m: Member): string {
@@ -458,6 +806,7 @@ export function AttendanceCheck({
   onAttendanceSaved,
 }: AttendanceCheckProps) {
   const mob = useIsMobile();
+  const { rawAttendance } = useAppData();
   const tabletOrLess = useIsMobile(1024);
   const SERVICE_TYPE = "주일예배";
   const todaySunday = useMemo(() => toDateStr(getLastSunday(new Date())), []);
@@ -476,6 +825,7 @@ export function AttendanceCheck({
   const PAGE_SIZE = pageCapacity;
   const cardRef = useRef<HTMLDivElement | null>(null);
   const pagerRef = useRef<HTMLDivElement | null>(null);
+  const saveStatusRef = useRef<HTMLDivElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
@@ -483,6 +833,7 @@ export function AttendanceCheck({
   const [statusMap, setStatusMap] = useState<Record<string, AttStatusUI>>({});
   const [noteMap, setNoteMap] = useState<Record<string, string>>({});
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [spotlightRowId, setSpotlightRowId] = useState<string | null>(null);
   const requestIdRef = useRef(0);
   const loadingRef = useRef(false);
   const toastRef = useRef(toast);
@@ -524,16 +875,140 @@ export function AttendanceCheck({
     return [{ value: "all", label: "전체" }, ...Array.from(set).sort().map((r) => ({ value: r, label: r }))];
   }, [activeMembers]);
 
-  const filteredMembers = useMemo(() => {
+  const deptMokjangFilteredMembers = useMemo(() => {
     let list = activeMembers;
     if (deptFilter) list = list.filter((m) => m.dept === deptFilter);
     if (mokjangFilter === "__none__") list = list.filter((m) => !memberMokjangLabel(m));
     else if (mokjangFilter) list = list.filter((m) => memberMokjangLabel(m) === mokjangFilter);
-    list = filterMembersByMgmtSearchQuery(list, searchName);
     return list;
-  }, [activeMembers, deptFilter, mokjangFilter, searchName]);
+  }, [activeMembers, deptFilter, mokjangFilter]);
+
+  const filteredMembers = useMemo(() => {
+    if (mob) return filterMembersByMgmtSearchQuery(deptMokjangFilteredMembers, searchName);
+    return deptMokjangFilteredMembers;
+  }, [deptMokjangFilteredMembers, mob, searchName]);
+
+  const searchMemberMatches = useMemo(() => {
+    if (mob || !searchName.trim()) return [];
+    const q = searchName.trim();
+    let matches: Member[];
+    if (q.replace(/\D/g, "").length === 0 && q.length < 2) {
+      const qn = normMemberSearchText(q);
+      matches = deptMokjangFilteredMembers.filter((m) => normMemberSearchText(m.name || "").includes(qn));
+    } else {
+      matches = filterMembersByMgmtSearchQuery(deptMokjangFilteredMembers, searchName);
+    }
+    return matches
+      .slice(0, 8)
+      .map((m) => ({
+        id: m.id,
+        name: m.name,
+        subtitle: [m.role, m.dept, memberMokjangLabel(m)].filter(Boolean).join(" · "),
+      }));
+  }, [deptMokjangFilteredMembers, mob, searchName]);
+
+  const lastWeekDate = useMemo(() => getLastWeekSundayDate(selectedDate), [selectedDate]);
+
+  const lastWeekStatusByMemberId = useMemo(() => {
+    const map: Record<string, "출석" | "결석"> = {};
+    rawAttendance.forEach((r) => {
+      if (normalizeAttendanceDate(r.date) !== lastWeekDate) return;
+      if (r.service_type && r.service_type !== "주일예배") return;
+      if (LAST_WEEK_PRESENT_DB_STATUSES.has(r.status)) map[r.member_id] = "출석";
+      else if (LAST_WEEK_ABSENT_DB_STATUSES.has(r.status)) map[r.member_id] = "결석";
+    });
+    return map;
+  }, [rawAttendance, lastWeekDate]);
+
+  const pastEightWeekDates = useMemo(() => getPastSundayDates(selectedDate, 8), [selectedDate]);
+  const pastWeekDatesForStreak = useMemo(() => getPastSundayDates(selectedDate, 52), [selectedDate]);
+
+  const sundayWorshipStatusIndex = useMemo(
+    () => buildSundayWorshipStatusIndex(rawAttendance),
+    [rawAttendance],
+  );
+
+  const longAbsenceByMemberId = useMemo(() => {
+    const map: Record<string, { consecutiveWeeks: number; showScatterLongTerm: boolean }> = {};
+    activeMembers.forEach((m) => {
+      const consecutiveWeeks = countConsecutiveAbsentWeeks(
+        sundayWorshipStatusIndex,
+        m.id,
+        pastWeekDatesForStreak,
+      );
+      let showScatterLongTerm = false;
+      if (consecutiveWeeks < 4) {
+        let absentCount = 0;
+        pastEightWeekDates.forEach((date) => {
+          if (memberSundayStatus(sundayWorshipStatusIndex, m.id, date) === "결석") absentCount++;
+        });
+        showScatterLongTerm = absentCount >= 5;
+      }
+      if (consecutiveWeeks >= 4 || showScatterLongTerm) {
+        map[m.id] = { consecutiveWeeks, showScatterLongTerm };
+      }
+    });
+    return map;
+  }, [activeMembers, pastEightWeekDates, pastWeekDatesForStreak, sundayWorshipStatusIndex]);
+
+  const [longAbsenceModal, setLongAbsenceModal] = useState<{
+    memberId: string;
+    memberName: string;
+    kind: LongAbsenceModalKind;
+    consecutiveWeeks: number;
+  } | null>(null);
+
+  const longAbsenceModalRecords = useMemo(() => {
+    if (!longAbsenceModal) return [];
+    const { memberId, kind, consecutiveWeeks } = longAbsenceModal;
+    const dates =
+      kind === "consecutive"
+        ? pastWeekDatesForStreak.slice(0, consecutiveWeeks)
+        : pastEightWeekDates.filter(
+            (date) => memberSundayStatus(sundayWorshipStatusIndex, memberId, date) === "결석",
+          );
+    return getMemberAbsentRecords(rawAttendance, memberId, dates);
+  }, [
+    longAbsenceModal,
+    pastWeekDatesForStreak,
+    pastEightWeekDates,
+    sundayWorshipStatusIndex,
+    rawAttendance,
+  ]);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production" || mob) return;
+    const sample = rawAttendance.find((r) => r.service_type === "주일예배" || !r.service_type);
+    const presentCount = Object.values(lastWeekStatusByMemberId).filter((s) => s === "출석").length;
+    const absentCount = Object.values(lastWeekStatusByMemberId).filter((s) => s === "결석").length;
+    console.log("[AttendanceCheck 지난주 매칭]", {
+      selectedDate,
+      lastWeekDate,
+      sampleRawDate: sample?.date,
+      sampleNormalized: normalizeAttendanceDate(sample?.date),
+      presentCount,
+      absentCount,
+    });
+  }, [selectedDate, lastWeekDate, rawAttendance, lastWeekStatusByMemberId, mob]);
 
   const hasSearchQuery = searchName.trim().length > 0;
+
+  const handleSelectSearchMember = useCallback(
+    (memberId: string) => {
+      const idx = deptMokjangFilteredMembers.findIndex((m) => m.id === memberId);
+      if (idx < 0) return;
+      setCurrentPage(Math.floor(idx / PAGE_SIZE) + 1);
+      setSpotlightRowId(memberId);
+      setSearchName("");
+    },
+    [deptMokjangFilteredMembers, PAGE_SIZE],
+  );
+
+  useEffect(() => {
+    if (!spotlightRowId) return;
+    const timer = window.setTimeout(() => setSpotlightRowId(null), 2400);
+    return () => window.clearTimeout(timer);
+  }, [spotlightRowId]);
 
   const pagedMembers = useMemo(
     () => filteredMembers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
@@ -543,7 +1018,12 @@ export function AttendanceCheck({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [deptFilter, mokjangFilter, searchName, selectedDate]);
+  }, [deptFilter, mokjangFilter, selectedDate]);
+
+  useEffect(() => {
+    if (!mob) return;
+    setCurrentPage(1);
+  }, [mob, searchName]);
 
   useEffect(() => {
     setCurrentPage((p) => Math.min(p, totalPages));
@@ -551,22 +1031,39 @@ export function AttendanceCheck({
 
   // 성도 관리(MembersManagementPanel)와 동일: 화면 높이에 맞춰 한 페이지 행 수 자동 조절
   useLayoutEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || mob) return;
+
     const compute = () => {
       const card = cardRef.current;
-      if (!card) return;
+      const pager = pagerRef.current;
+      if (!card || loading) return;
       const cardTop = card.getBoundingClientRect().top;
-      const pagerH = pagerRef.current?.offsetHeight ?? 90;
-      const bottomPad = MEMBER_MGMT.toolbarPadBottom + 8;
+      const pagerH = pager?.offsetHeight ?? 90;
+      const saveStatusH = saveStatusRef.current?.offsetHeight ?? 0;
+      const bottomPad = MEMBER_MGMT.toolbarPadBottom + 8 + saveStatusH;
       const avail = window.innerHeight - cardTop - pagerH - bottomPad;
-      const rows = Math.max(4, Math.min(40, Math.floor(avail / MEMBER_MGMT.rowHeight)));
+      const rows = computeMemberPanelPageRows(avail, window.innerHeight);
       if (Number.isFinite(rows) && rows > 0) setPageCapacity(rows);
     };
+
     compute();
+    const raf = requestAnimationFrame(compute);
     window.addEventListener("resize", compute);
-    return () => window.removeEventListener("resize", compute);
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => requestAnimationFrame(compute))
+        : null;
+    if (cardRef.current) ro?.observe(cardRef.current);
+    if (pagerRef.current) ro?.observe(pagerRef.current);
+    if (saveStatusRef.current) ro?.observe(saveStatusRef.current);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", compute);
+      ro?.disconnect();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mob]);
+  }, [mob, loading]);
 
   const loadAttendance = useCallback(async (date: string, serviceType: string) => {
     if (!supabase) {
@@ -668,6 +1165,50 @@ export function AttendanceCheck({
     saveOneAttendance(memberId, newStatus);
   }, [saveOneAttendance]);
 
+  const clearOneAttendance = useCallback(async (memberId: string) => {
+    if (!supabase) return;
+    setStatusMap((prev) => {
+      const next = { ...prev };
+      delete next[memberId];
+      return next;
+    });
+    setNoteMap((prev) => {
+      const next = { ...prev };
+      delete next[memberId];
+      return next;
+    });
+    setSaving(true);
+    setSaved(false);
+    setSaveError(false);
+    const churchId = getChurchId();
+    const { error } = await supabase
+      .from("attendance")
+      .delete()
+      .eq("church_id", churchId)
+      .eq("member_id", memberId)
+      .eq("date", selectedDate)
+      .eq("service_type", SERVICE_TYPE);
+    if (error) {
+      setSaveError(true);
+      setSaving(false);
+      return;
+    }
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    onAttendanceSaved?.();
+  }, [selectedDate, onAttendanceSaved]);
+
+  const cycleAttendanceStatus = useCallback(
+    (memberId: string) => {
+      const current = statusMapRef.current[memberId];
+      if (!current) toggleAttendance(memberId, "출석");
+      else if (current === "출석") toggleAttendance(memberId, "결석");
+      else void clearOneAttendance(memberId);
+    },
+    [toggleAttendance, clearOneAttendance],
+  );
+
   const handleNoteChange = useCallback((memberId: string, value: string) => {
     setNoteMap((prev) => ({ ...prev, [memberId]: value }));
     if (noteTimersRef.current[memberId]) clearTimeout(noteTimersRef.current[memberId]);
@@ -764,6 +1305,18 @@ export function AttendanceCheck({
             }
       }
     >
+      <div
+        style={
+          mob
+            ? undefined
+            : {
+                display: "flex",
+                flexDirection: "column",
+                minHeight: MEMBER_MGMT.panelMinHeightDesktop,
+                minWidth: 0,
+              }
+        }
+      >
       {mob ? (
       <div className="flex flex-wrap items-center gap-2 bg-white rounded-xl shadow-sm border border-gray-100 p-2">
         <label className="flex shrink-0 items-center gap-1.5">
@@ -856,6 +1409,8 @@ export function AttendanceCheck({
               else setMokjangFilter(v);
             }}
             onSelectRole={() => {}}
+            memberMatches={searchMemberMatches}
+            onSelectMember={handleSelectSearchMember}
           />
         </div>
         <div
@@ -964,6 +1519,7 @@ export function AttendanceCheck({
           </div>
         </div>
       ) : (
+        <>
         <div
           style={{
             flex: "0 0 auto",
@@ -1023,7 +1579,7 @@ export function AttendanceCheck({
             <div
               ref={cardRef}
               className="flex flex-col overflow-hidden"
-              style={{ background: MEMBER_MGMT.tableBg, borderRadius: MEMBER_MGMT.radius }}
+              style={{ background: MEMBER_MGMT.tableBg, borderRadius: MEMBER_MGMT.radius, flexShrink: 0 }}
             >
               {filteredMembers.length === 0 ? (
                 <div
@@ -1037,7 +1593,7 @@ export function AttendanceCheck({
                     fontSize: MEMBER_MGMT.cellFontSize,
                   }}
                 >
-                  {hasSearchQuery ? "검색 결과가 없습니다" : "교인 목록이 없습니다"}
+                  교인 목록이 없습니다
                 </div>
               ) : (
                 Array.from({ length: PAGE_SIZE }, (_, idx) => {
@@ -1060,7 +1616,7 @@ export function AttendanceCheck({
                   const num = (currentPage - 1) * PAGE_SIZE + idx + 1;
                   const status = getStatus(m.id);
                   const isAbsent = status === "결석";
-                  const isHovered = hoveredRow === m.id;
+                  const isHovered = hoveredRow === m.id || spotlightRowId === m.id;
                   const roleText = (m.role || "").trim() || "-";
                   return (
                     <div
@@ -1148,66 +1704,80 @@ export function AttendanceCheck({
                         {formatDeptMokjang(m)}
                       </div>
                       <div style={attendanceCellPadStyle(4)}>
-                        <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
-                          <button
-                            type="button"
-                            onClick={() => toggleAttendance(m.id, "출석")}
-                            className={attendanceStatusButtonClass()}
-                            style={attendanceStatusButtonStyle(status, "출석")}
-                          >
-                            출석
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleAttendance(m.id, "결석")}
-                            className={attendanceStatusButtonClass()}
-                            style={attendanceStatusButtonStyle(status, "결석")}
-                          >
-                            결석
-                          </button>
+                        <div style={{ display: "flex", justifyContent: "center" }}>
+                          <LastWeekStatusDot status={lastWeekStatusByMemberId[m.id]} />
                         </div>
                       </div>
                       <div style={attendanceCellPadStyle(5)}>
+                        <div style={{ display: "flex", justifyContent: "center" }}>
+                          <AttendanceStatusDot
+                            status={status}
+                            onClick={() => cycleAttendanceStatus(m.id)}
+                          />
+                        </div>
+                      </div>
+                      <div style={attendanceCellPadStyle(6)}>
                         {isAbsent ? (
-                          <input
-                            type="text"
-                            placeholder="사유 (선택)"
+                          <AttendanceAbsentNoteField
                             value={noteMap[m.id] ?? ""}
-                            onChange={(e) => handleNoteChange(m.id, e.target.value)}
-                            className="box-border h-8 w-full min-w-[240px] rounded-md border border-gray-200 bg-white px-2.5 text-[14.3px] text-gray-900 placeholder:text-gray-400"
+                            onChange={(v) => handleNoteChange(m.id, v)}
                           />
                         ) : (
                           <span style={emptyCellDashStyle()}>-</span>
                         )}
+                      </div>
+                      <div style={attendanceCellPadStyle(7)}>
+                        <AttendanceLongAbsenceCell
+                          consecutiveWeeks={longAbsenceByMemberId[m.id]?.consecutiveWeeks ?? 0}
+                          showScatterLongTerm={longAbsenceByMemberId[m.id]?.showScatterLongTerm ?? false}
+                          onOpenConsecutive={() =>
+                            setLongAbsenceModal({
+                              memberId: m.id,
+                              memberName: m.name,
+                              kind: "consecutive",
+                              consecutiveWeeks: longAbsenceByMemberId[m.id]?.consecutiveWeeks ?? 0,
+                            })
+                          }
+                          onOpenScatter={() =>
+                            setLongAbsenceModal({
+                              memberId: m.id,
+                              memberName: m.name,
+                              kind: "scatter",
+                              consecutiveWeeks: 0,
+                            })
+                          }
+                        />
                       </div>
                     </div>
                   );
                 })
               )}
             </div>
-            <div
-              ref={pagerRef}
-              style={{
-                display: "flex",
-                flexShrink: 0,
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "32px 4px 2px",
-              }}
-            >
-              <AttendanceNumberPagination
-                totalItems={filteredMembers.length}
-                itemsPerPage={PAGE_SIZE}
-                currentPage={currentPage}
-                onPageChange={setCurrentPage}
-              />
-            </div>
           </div>
         </div>
+        <div
+          ref={pagerRef}
+          style={{
+            display: "flex",
+            flexShrink: 0,
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "32px 4px 2px",
+          }}
+        >
+          <AttendanceNumberPagination
+            totalItems={filteredMembers.length}
+            itemsPerPage={PAGE_SIZE}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      </>
       )}
 
-      <div className="flex justify-end px-1 text-xs text-gray-500">
+      <div ref={saveStatusRef} className="flex justify-end px-1 text-xs text-gray-500">
         {saving ? "저장 중..." : saved ? "자동 저장됨" : saveError ? "저장 실패" : ""}
+      </div>
       </div>
 
       {!loading && (
@@ -1219,6 +1789,17 @@ export function AttendanceCheck({
             <AttendanceDeptMonthlySummary members={members} attendanceList={attendanceList} />
           </section>
         </>
+      )}
+
+      {!mob && longAbsenceModal && (
+        <AttendanceLongAbsenceDetailModal
+          open
+          onClose={() => setLongAbsenceModal(null)}
+          memberName={longAbsenceModal.memberName}
+          kind={longAbsenceModal.kind}
+          consecutiveWeeks={longAbsenceModal.consecutiveWeeks}
+          records={longAbsenceModalRecords}
+        />
       )}
     </div>
   );

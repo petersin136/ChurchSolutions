@@ -1,12 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
 import type { DB, Member } from "@/types/db";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
 import { MemberSearchCombo } from "@/components/pastoral/MemberSearchCombo";
 import { prayerAnswerKeyFromParts } from "@/lib/prayerAnswers";
-import { MEMBER_MGMT, MEMBER_MGMT_COLUMNS, MEMBER_MGMT_COL_LAYOUT } from "@/styles/memberManagementTokens";
+import { MEMBER_MGMT, MEMBER_MGMT_COLUMNS, MEMBER_MGMT_COL_LAYOUT, computeMemberPanelPageRows } from "@/styles/memberManagementTokens";
 
 /** 번호식 페이지 목록 (1 2 3 4 5 … 21) — 앞·뒤 축약 */
 function buildPageList(current: number, total: number): (number | "…")[] {
@@ -427,6 +427,8 @@ export interface MembersManagementPanelProps {
   onRegister: () => void;
   db: DB;
   filtered: Member[];
+  searchMemberMatches?: { id: string; name: string; subtitle?: string }[];
+  onSelectSearchMember?: (memberId: string) => void;
   pageMembers: Member[];
   pageSize: number;
   currentPage: number;
@@ -453,6 +455,8 @@ export function MembersManagementPanel({
   onRegister,
   db,
   filtered,
+  searchMemberMatches,
+  onSelectSearchMember,
   pageMembers,
   pageSize,
   currentPage,
@@ -464,6 +468,7 @@ export function MembersManagementPanel({
   onCapacityChange,
 }: MembersManagementPanelProps) {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [spotlightRowId, setSpotlightRowId] = useState<string | null>(null);
   const [hoveredCell, setHoveredCell] = useState<string | null>(null);
   const cellHovered = (id: string, col: string) => hoveredCell === `${id}:${col}`;
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -473,21 +478,43 @@ export function MembersManagementPanel({
   // 카드 상단·페이지네이션 높이는 행 수와 무관하게 고정이라 되먹임(무한 루프)이 없다.
   useLayoutEffect(() => {
     if (typeof window === "undefined" || !onCapacityChange) return;
+
     const compute = () => {
       const card = cardRef.current;
+      const pager = pagerRef.current;
       if (!card) return;
       const cardTop = card.getBoundingClientRect().top;
-      const pagerH = pagerRef.current?.offsetHeight ?? 90;
+      const pagerH = pager?.offsetHeight ?? 90;
       const bottomPad = MEMBER_MGMT.toolbarPadBottom + 8;
       const avail = window.innerHeight - cardTop - pagerH - bottomPad;
-      const rows = Math.max(4, Math.min(40, Math.floor(avail / MEMBER_MGMT.rowHeight)));
+      const rows = computeMemberPanelPageRows(avail, window.innerHeight);
       if (Number.isFinite(rows) && rows > 0) onCapacityChange(rows);
     };
+
     compute();
+    const raf = requestAnimationFrame(compute);
     window.addEventListener("resize", compute);
-    return () => window.removeEventListener("resize", compute);
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => requestAnimationFrame(compute))
+        : null;
+    if (cardRef.current) ro?.observe(cardRef.current);
+    if (pagerRef.current) ro?.observe(pagerRef.current);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", compute);
+      ro?.disconnect();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onCapacityChange, mob]);
+
+  useEffect(() => {
+    if (!spotlightRowId) return;
+    const timer = window.setTimeout(() => setSpotlightRowId(null), 2400);
+    return () => window.clearTimeout(timer);
+  }, [spotlightRowId]);
+
   const answeredPrayerKeySet = useMemo(() => {
     const set = new Set(db.answeredPrayerKeys ?? []);
     for (const id of Object.keys(db.answeredPrayerByNoteId ?? {})) {
@@ -554,6 +581,11 @@ export function MembersManagementPanel({
           onSelectDept={onSelectDept}
           onSelectMokjang={onSelectMokjang}
           onSelectRole={onSelectRole}
+          memberMatches={searchMemberMatches}
+          onSelectMember={(memberId) => {
+            onSelectSearchMember?.(memberId);
+            setSpotlightRowId(memberId);
+          }}
         />
         <button
           type="button"
@@ -676,7 +708,7 @@ export function MembersManagementPanel({
                 fontSize: MEMBER_MGMT.cellFontSize,
               }}
             >
-              검색 결과가 없습니다
+              성도 목록이 없습니다
             </div>
           ) : (
             <>
@@ -688,7 +720,7 @@ export function MembersManagementPanel({
                 const visitDate = lastVisitDate(notes);
                 const memo = memoPreview(notes, m.memo);
 
-                const isHovered = hoveredRow === m.id;
+                const isHovered = hoveredRow === m.id || spotlightRowId === m.id;
                 const isNextHovered =
                   idx < pageMembers.length - 1 && hoveredRow === pageMembers[idx + 1]?.id;
 

@@ -149,6 +149,39 @@ export const MEMBER_MGMT = {
   panelMinHeightMob: "calc(100dvh - 140px)",
 } as const;
 
+/** 성도 관리·출석부 등 목록 패널 — 뷰포트 높이에 맞춘 페이지 행 수 */
+export const MEMBER_PANEL_PAGE_ROWS = {
+  min: 4,
+  max: 40,
+  /** 맥북 등 세로 짧은 화면에서 한 행 더 채울 때 innerHeight 상한 */
+  laptopMaxInnerHeight: 1050,
+  /** floor 계산과 실제 레이아웃 차이 보정(px) */
+  laptopExtraRowSlackPx: 58,
+  laptopBumpFromRows: 11,
+  laptopBumpToRows: 12,
+} as const;
+
+/**
+ * 카드~페이지네이션 사이 가용 높이로 행 수 계산.
+ * resize·ResizeObserver마다 호출 — 고정 행 수가 아닌 반응형.
+ */
+export function computeMemberPanelPageRows(avail: number, innerHeight: number): number {
+  let rows = Math.max(
+    MEMBER_PANEL_PAGE_ROWS.min,
+    Math.min(MEMBER_PANEL_PAGE_ROWS.max, Math.floor(avail / MEMBER_MGMT.rowHeight)),
+  );
+  const { laptopMaxInnerHeight, laptopExtraRowSlackPx, laptopBumpFromRows, laptopBumpToRows } =
+    MEMBER_PANEL_PAGE_ROWS;
+  if (
+    innerHeight <= laptopMaxInnerHeight &&
+    rows === laptopBumpFromRows &&
+    laptopBumpToRows * MEMBER_MGMT.rowHeight <= avail + laptopExtraRowSlackPx
+  ) {
+    rows = laptopBumpToRows;
+  }
+  return rows;
+}
+
 /** 컬럼별 셀 정렬 — 번호 열은 순번(데이터) 위치에 헤더만 맞춤 */
 export const MEMBER_MGMT_COL_LAYOUT = [
   { align: "left" as const },   // 번호
