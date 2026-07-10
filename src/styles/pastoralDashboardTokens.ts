@@ -460,10 +460,10 @@ export const DASH_DEPT_CARD = {
   countGap: 14,
 } as const;
 
-/** 대시보드 타이포 반응형 — 컨테이너 너비 / 세션 최대 너비 */
+/** 대시보드 타이포 반응형 — 1440px 시안 콘텐츠 폭 기준 (큰 모니터=100%) */
 export const DASH_TYPO_SCALE = {
-  /** 이보다 작아지지 않음 (노트북·작은 창) */
-  minScale: 0.78,
+  designContentWidth: 1280,
+  minScale: 0.72,
 } as const;
 
 export function dashScalePx(px: number, scale: number): number {
@@ -471,13 +471,35 @@ export function dashScalePx(px: number, scale: number): number {
 }
 
 /**
- * 컨테이너 너비를 세션에서 본 최대 너비와 비교해 타이포 스케일 산출.
- * 전체 화면에서 1, 창을 줄이면 비례 축소.
+ * 컨테이너 너비가 줄면 타이포도 비례 축소 (노트북·창 축소 대응).
  */
-export function dashTopCardTypoScale(containerWidth: number, maxContainerWidth: number): number {
-  if (containerWidth <= 0 || maxContainerWidth <= 0) return 1;
-  const raw = containerWidth / maxContainerWidth;
+export function dashTopCardTypoScale(containerWidth: number): number {
+  if (containerWidth <= 0) return 1;
+  const raw = containerWidth / DASH_TYPO_SCALE.designContentWidth;
   return Math.max(DASH_TYPO_SCALE.minScale, Math.min(1, raw));
+}
+
+/** 주간 출석 막대 안 글자 — 막대 너비에 맞춰 %·n/n명 크기 제한 */
+export function dashWeekBarLabelTypo(
+  barWidth: number,
+  globalScale: number,
+  mob = false,
+): { value: number; sub: number; padTop: number; padLeft: number } {
+  const barRatio =
+    barWidth > 0 ? barWidth / DASH_ATT_CHART_BAR.weekBarDesignWidth : 1;
+  const scale = globalScale * Math.max(DASH_ATT_CHART_BAR.minScale, Math.min(1, barRatio));
+  const padLeft = dashScalePx(mob ? 10 : DASH_SECTION.chartWeekPadLeft, scale);
+  const padTop = dashScalePx(mob ? 12 : DASH_SECTION.chartWeekPadTop, scale);
+  const innerW = Math.max(0, barWidth - padLeft * 2);
+  const value = Math.min(
+    dashScalePx(mob ? DASH_SECTION.chartWeekValueMob : DASH_SECTION.chartWeekValue, scale),
+    Math.max(10, Math.floor(innerW * 0.5)),
+  );
+  const sub = Math.min(
+    dashScalePx(DASH_SECTION.chartWeekSub, scale),
+    Math.max(8, Math.floor(innerW * 0.19)),
+  );
+  return { value, sub, padTop, padLeft };
 }
 
 /** 숫자 토큰만 비율 유지하며 스케일 */

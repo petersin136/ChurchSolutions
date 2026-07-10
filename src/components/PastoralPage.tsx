@@ -34,11 +34,12 @@ import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Sett
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
 import { PastoralFeedDetailModal } from "@/components/pastoral/PastoralFeedDetailModal";
 import { APP_MODAL } from "@/styles/appModalTokens";
 import { MemberDotGrid } from "@/components/pastoral/MemberDotGrid";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
+import { MemberStylePagination } from "@/components/common/MemberStylePagination";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { Member360View } from "@/components/members/Member360View";
 import { MembersManagementPanel } from "@/components/pastoral/MembersManagementPanel";
@@ -1056,7 +1057,6 @@ function DashboardSub({
   const statGridRef = useRef<HTMLDivElement>(null);
   const dashRootRef = useRef<HTMLDivElement>(null);
   const attChartRef = useRef<HTMLDivElement>(null);
-  const dashMaxWidthRef = useRef(0);
   const [statRowHeight, setStatRowHeight] = useState<number | null>(null);
   const [attBarHeight, setAttBarHeight] = useState<number>(DASH_LAYOUT.attendanceBarHeight);
   const [topCardDotCell, setTopCardDotCell] = useState<number>(DASH_LAYOUT.memberDotSize);
@@ -1076,17 +1076,23 @@ function DashboardSub({
       week: typoScale * dashChartBarTypoScale(widths.week, DASH_ATT_CHART_BAR.weekBarDesignWidth),
       month: typoScale * dashChartBarTypoScale(widths.month, DASH_ATT_CHART_BAR.monthBarDesignWidth),
       year: typoScale * dashChartBarTypoScale(widths.year, DASH_ATT_YEAR_CHART.designBlockWidth),
+      weekBarWidth: widths.week,
     };
   }, [attChartWidth, mob, typoScale]);
 
+  const weekBarLabelTypo = useMemo(
+    () => dashWeekBarLabelTypo(attChartBarScale.weekBarWidth, typoScale, mob),
+    [attChartBarScale.weekBarWidth, typoScale, mob],
+  );
+
   const weekChartTypo = useMemo(() => ({
-    value: dashScalePx(DASH_SECTION.chartWeekValue, attChartBarScale.week),
-    valueMob: dashScalePx(DASH_SECTION.chartWeekValueMob, attChartBarScale.week),
-    sub: dashScalePx(DASH_SECTION.chartWeekSub, attChartBarScale.week),
+    value: weekBarLabelTypo.value,
+    valueMob: weekBarLabelTypo.value,
+    sub: weekBarLabelTypo.sub,
     axis: dashScalePx(DASH_SECTION.chartAxis, attChartBarScale.week),
-    padTop: dashScalePx(DASH_SECTION.chartWeekPadTop, attChartBarScale.week),
-    padLeft: dashScalePx(DASH_SECTION.chartWeekPadLeft, attChartBarScale.week),
-  }), [attChartBarScale.week]);
+    padTop: weekBarLabelTypo.padTop,
+    padLeft: weekBarLabelTypo.padLeft,
+  }), [weekBarLabelTypo, attChartBarScale.week]);
 
   const yearChartTypo = useMemo(() => ({
     value: dashScalePx(DASH_SECTION.chartYearValue, attChartBarScale.year),
@@ -1329,7 +1335,6 @@ function DashboardSub({
     if (mob) {
       setStatRowHeight(null);
       setTypoScale(1);
-      dashMaxWidthRef.current = 0;
       return;
     }
 
@@ -1340,9 +1345,7 @@ function DashboardSub({
       const w = el.clientWidth;
       if (w <= 0) return;
 
-      if (w > dashMaxWidthRef.current) dashMaxWidthRef.current = w;
-      const base = dashMaxWidthRef.current || w;
-      const ts = dashTopCardTypoScale(w, base);
+      const ts = dashTopCardTypoScale(w);
       const rowH = dashStatRowHeight(w);
       const { height, cell } = dashTopCardVisualMetrics(w, rowH, ts);
 
@@ -2033,7 +2036,7 @@ function DashboardSub({
                             {spacerFlex > 0 && <div style={{ flex: spacerFlex, minHeight: 0 }} />}
                             {hasData && (
                               <div style={{ flex: barFlex, minHeight: barMin, width: "100%", borderRadius: "12px 12px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase, display: "flex", flexDirection: "column", alignItems: "flex-start", padding: `${weekChartTypo.padTop}px ${weekChartTypo.padLeft}px 0`, boxSizing: "border-box", overflow: "hidden" }}>
-                                <span style={{ fontSize: mob ? weekChartTypo.valueMob : weekChartTypo.value, fontWeight: 900, color: pctColor, letterSpacing: "-0.04em", lineHeight: 1, textShadow: pctShadow, fontFeatureSettings: '"tnum"', maxWidth: "100%", overflow: "hidden" }}>{w.rate}%</span>
+                                <span style={{ fontSize: mob ? weekChartTypo.valueMob : weekChartTypo.value, fontWeight: 900, color: pctColor, letterSpacing: "-0.04em", lineHeight: 1, textShadow: pctShadow, fontFeatureSettings: '"tnum"', whiteSpace: "nowrap", maxWidth: "100%" }}>{w.rate}%</span>
                                 <span style={{ fontSize: weekChartTypo.sub, color: subColor, marginTop: Math.max(4, Math.round(weekChartTypo.padTop * 0.4)), fontWeight: 800, letterSpacing: "-0.02em", textShadow: pctShadow, maxWidth: "100%", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{w.present}/{w.total}명</span>
                               </div>
                             )}
@@ -2340,18 +2343,19 @@ function DashboardSub({
                 style={{
                   flexShrink: 0,
                   marginTop: "auto",
-                  minHeight: DASH_FEED_PAGINATION_HEIGHT,
-                  borderTop: "1px solid var(--color-border-soft)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: mob ? "28px 4px 6px" : "32px 4px 2px",
                   boxSizing: "border-box",
                 }}
               >
-                <Pagination
+                <MemberStylePagination
                   totalItems={pastoralFeed.length}
                   itemsPerPage={feedItemsPerPage}
                   currentPage={feedSafePage}
                   onPageChange={setFeedPage}
-                  hideSummary
-                  comfortable
+                  typoScale={typoScale}
                 />
               </div>
             )}
