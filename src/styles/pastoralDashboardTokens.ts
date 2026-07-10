@@ -190,8 +190,8 @@ export const DASH_ATT_CHART_BAR = {
   weekGapMob: 8,
   monthGap: 8,
   monthGapMob: 4,
-  yearBlockWidthRatio: 0.48,
-  yearBlockWidthRatioMob: 0.5,
+  yearBlockWidthRatio: 0.66,
+  yearBlockWidthRatioMob: 0.66,
   /** 막대가 아주 좁아질 때 하한 */
   minScale: 0.42,
 } as const;

@@ -2088,6 +2088,7 @@ function DashboardSub({
                 { bg: DASH_CHART.statBarHighlight, text: DASH_CHART.statTextYearHighlight, sub: DASH_CHART.statSubYearHighlight, textShadow: "0 1px 1px rgba(255,255,255,0.45)" },
               ] as const;
               const yc = DASH_ATT_YEAR_CHART;
+              const yearLayoutSpan = Math.max(...yc.blockLayout.map((b) => b.leftPct + b.widthPct));
               const yrScale = attChartBarScale.year;
               const blockRadius = dashScalePx(yc.blockRadius, yrScale);
               const yearLabelStyle = (palette: (typeof yearBlockStyles)[number], isFront: boolean): CSSProperties => ({
@@ -2117,6 +2118,8 @@ function DashboardSub({
                     const palette = yearBlockStyles[i] ?? yearBlockStyles[yearBlockStyles.length - 1];
                     const isFront = i === yearlyTrend.length - 1;
                     const layout = yc.blockLayout[i] ?? yc.blockLayout[yc.blockLayout.length - 1];
+                    const layoutLeftPct = (layout.leftPct / yearLayoutSpan) * 100;
+                    const layoutWidthPct = (layout.widthPct / yearLayoutSpan) * 100;
                     const visualRate = Math.min(y.rate, 100);
                     const hasData = visualRate > 0;
                     const spacerFlex = Math.max(0, yearChartFullRate - (hasData ? visualRate : 0));
@@ -2128,8 +2131,8 @@ function DashboardSub({
                           position: "absolute",
                           top: 0,
                           bottom: 0,
-                          left: `${layout.leftPct}%`,
-                          width: `${layout.widthPct}%`,
+                          left: `${layoutLeftPct}%`,
+                          width: `${layoutWidthPct}%`,
                           zIndex: layout.zIndex,
                           display: "flex",
                           flexDirection: "column",
