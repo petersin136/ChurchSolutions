@@ -61,18 +61,6 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
 
   const displayStatusHistory = dbStatusHistory.length > 0 ? dbStatusHistory : statusHistory;
 
-  const avatarNameDisplay = useMemo(() => {
-    const n = member.name?.trim() || "?";
-    const baseFontSize = 24;
-    const len = n.length;
-    const fontSize =
-      len <= 2 ? baseFontSize
-      : len === 3 ? baseFontSize * 0.85
-      : len === 4 ? baseFontSize * 0.7
-      : baseFontSize * 0.55;
-    return { text: n, fontSize };
-  }, [member.name]);
-
   const attendanceByWeek = useMemo(() => {
     const att = (db.attendance && db.attendance[member.id]) ? db.attendance[member.id] : {};
     const currentYear = new Date().getFullYear();
@@ -175,8 +163,8 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
             name={member.name}
             className="w-full h-full object-cover"
             fallback={
-              <span className="font-bold text-white/90" style={{ fontSize: avatarNameDisplay.fontSize }}>
-                {avatarNameDisplay.text}
+              <span className="font-bold text-white/90" style={{ fontSize: 36 }}>
+                {(member.name?.trim() || "?")[0]}
               </span>
             }
           />

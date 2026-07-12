@@ -282,14 +282,12 @@ export function PrayerHistoryModal({
     setPendingDeleteId(null);
     setDeletingId(id);
 
-    if (supabase && churchId) {
-      const isRemoteId = typeof id === "number" || (typeof id === "string" && !id.startsWith("local-"));
-      if (isRemoteId) {
-        const { error } = await supabase.from("notes").delete().eq("church_id", churchId).eq("id", id);
-        if (error) {
-          setDeletingId(null);
-          return;
-        }
+    // profile-/local- 가상 id 는 DB에 없음 — 원격 삭제하면 uuid 400 발생
+    if (supabase && churchId && isRemoteNoteId(id)) {
+      const { error } = await supabase.from("notes").delete().eq("church_id", churchId).eq("id", id);
+      if (error) {
+        setDeletingId(null);
+        return;
       }
     }
 
@@ -315,17 +313,12 @@ export function PrayerHistoryModal({
       return;
     }
 
-    if (supabase && churchId) {
-      const isRemoteId =
-        typeof editingId === "number" ||
-        (typeof editingId === "string" && !editingId.startsWith("local-"));
-      if (isRemoteId) {
-        await supabase
-          .from("notes")
-          .update({ content: trimmed })
-          .eq("church_id", churchId)
-          .eq("id", editingId);
-      }
+    if (supabase && churchId && isRemoteNoteId(editingId)) {
+      await supabase
+        .from("notes")
+        .update({ content: trimmed })
+        .eq("church_id", churchId)
+        .eq("id", editingId);
     }
 
     const nextList = items.map((it) =>
@@ -537,6 +530,7 @@ export function PrayerHistoryModal({
                   </button>
                 </div>
 
+                {/* 응답완료 탭 컨테이너는 클릭 통과, 버튼만 받음 — 왼쪽 탭 클릭 막힘 방지 */}
                 <div
                   style={{
                     position: "absolute",
@@ -546,7 +540,7 @@ export function PrayerHistoryModal({
                     height: "100%",
                     overflow: "hidden",
                     zIndex: 2,
-                    pointerEvents: "auto",
+                    pointerEvents: "none",
                   }}
                 >
                   <svg
@@ -587,6 +581,7 @@ export function PrayerHistoryModal({
                       alignItems: "center",
                       justifyContent: "center",
                       boxSizing: "border-box",
+                      pointerEvents: "auto",
                     }}
                   >
                     응답완료

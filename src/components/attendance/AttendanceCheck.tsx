@@ -6,6 +6,7 @@ import { tokens } from "@/styles/tokens";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { isChurchActiveMember } from "@/lib/attendance-utils";
+import { formatMemberRoleDisplay } from "@/lib/member-role-display";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
@@ -1617,7 +1618,7 @@ export function AttendanceCheck({
                   const status = getStatus(m.id);
                   const isAbsent = status === "결석";
                   const isHovered = hoveredRow === m.id || spotlightRowId === m.id;
-                  const roleText = (m.role || "").trim() || "-";
+                  const roleText = formatMemberRoleDisplay(m.role, m.dept);
                   return (
                     <div
                       key={m.id}

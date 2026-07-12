@@ -6,6 +6,7 @@ import type { DB, Member } from "@/types/db";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
 import { MemberSearchCombo } from "@/components/pastoral/MemberSearchCombo";
 import { prayerAnswerKeyFromParts } from "@/lib/prayerAnswers";
+import { formatMemberRoleDisplay } from "@/lib/member-role-display";
 import { MEMBER_MGMT, MEMBER_MGMT_COLUMNS, MEMBER_MGMT_COL_LAYOUT, computeMemberPanelPageRows } from "@/styles/memberManagementTokens";
 
 /** 번호식 페이지 목록 (1 2 3 4 5 … 21) — 앞·뒤 축약 */
@@ -716,7 +717,7 @@ export function MembersManagementPanel({
                 const rowNum = (currentPage - 1) * pageSize + idx + 1;
                 const notes = db.notes[m.id];
                 const prayer = prayerPreview(m, notes, answeredPrayerKeySet);
-                const roleText = (m.role || "").trim() || "-";
+                const roleText = formatMemberRoleDisplay(m.role, m.dept);
                 const visitDate = lastVisitDate(notes);
                 const memo = memoPreview(notes, m.memo);
 

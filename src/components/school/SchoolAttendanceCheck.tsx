@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
 import { useAppData } from "@/contexts/AppDataContext";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
+import { MemberPhoto } from "@/components/common/MemberPhoto";
 
 function getLastSunday(date: Date): Date {
   const d = new Date(date);
@@ -542,10 +543,13 @@ export function SchoolAttendanceCheck({ db, toast }: SchoolAttendanceCheckProps)
                   return (
                     <tr key={e.id} className="min-h-[48px]" style={{ borderBottom: "1px solid #f0f2f5" }}>
                       <td className="py-3 px-3 md:px-4 flex items-center gap-2 md:gap-3 min-h-[48px]">
-                        <div
-                          className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gray-200 flex-shrink-0 bg-cover bg-center"
-                          style={{ backgroundImage: photo ? `url(${photo})` : undefined }}
-                        />
+                        <div className="w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden flex-shrink-0">
+                          <MemberPhoto
+                            photo={photo}
+                            name={getMemberName(e)}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
                         <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] md:max-w-none">{getMemberName(e)}</span>
                       </td>
                       <td className="py-3 px-3 md:px-4 text-gray-600 text-xs md:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[60px] md:max-w-none">{e.role ?? "-"}</td>

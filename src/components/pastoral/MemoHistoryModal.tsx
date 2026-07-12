@@ -528,7 +528,7 @@ export function MemoHistoryModal({
                     </button>
                   </div>
 
-                  {/* 중요 — 진회색, 왼쪽 사선 (앞, z2) */}
+                  {/* 중요 — 진회색, 왼쪽 사선 (앞, z2). 컨테이너는 클릭 통과, 버튼만 받음 */}
                   <div
                     style={{
                       position: "absolute",
@@ -538,7 +538,7 @@ export function MemoHistoryModal({
                       height: "100%",
                       overflow: "hidden",
                       zIndex: 2,
-                      pointerEvents: "auto",
+                      pointerEvents: "none",
                     }}
                   >
                     <svg
@@ -576,6 +576,7 @@ export function MemoHistoryModal({
                         alignItems: "center",
                         justifyContent: "center",
                         boxSizing: "border-box",
+                        pointerEvents: "auto",
                       }}
                     >
                       중요

@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { resolveMemberPhotoSrc } from "@/lib/member-photo";
+import { surnameAvatarColors, surnameInitialFromName } from "@/components/ui/avatarUtils";
 
 type MemberPhotoProps = {
   photo?: string | null;
   name: string;
   className?: string;
-  style?: React.CSSProperties;
-  fallback?: React.ReactNode;
+  style?: CSSProperties;
+  fallback?: ReactNode;
 };
 
 export function useMemberPhotoSrc(photo: string | undefined | null): string | undefined {
@@ -25,6 +26,42 @@ export function useMemberPhotoSrc(photo: string | undefined | null): string | un
   return src;
 }
 
+function SurnameInitialAvatar({
+  name,
+  className,
+  style,
+}: {
+  name: string;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const label = surnameInitialFromName(name);
+  const { bg, fg } = surnameAvatarColors(name);
+  return (
+    <span
+      className={className}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        boxSizing: "border-box",
+        background: bg,
+        color: fg,
+        fontWeight: 700,
+        letterSpacing: "-0.02em",
+        lineHeight: 1,
+        userSelect: "none",
+        ...style,
+      }}
+      aria-hidden
+    >
+      {label}
+    </span>
+  );
+}
+
 export function MemberPhoto({ photo, name, className, style, fallback }: MemberPhotoProps) {
   const src = useMemberPhotoSrc(photo);
   const [broken, setBroken] = useState(false);
@@ -34,7 +71,8 @@ export function MemberPhoto({ photo, name, className, style, fallback }: MemberP
   }, [photo, src]);
 
   if (!src || broken) {
-    return <>{fallback ?? (name || "?")[0]}</>;
+    if (fallback !== undefined) return <>{fallback}</>;
+    return <SurnameInitialAvatar name={name} className={className} style={style} />;
   }
 
   return (
@@ -55,7 +93,7 @@ export function MemberPhotoBg({
 }: {
   photo?: string | null;
   className?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
 }) {
   const src = useMemberPhotoSrc(photo);
   if (!src) return null;
@@ -76,9 +114,17 @@ export function MemberPhotoCircle({
   getInitial?: (name: string) => string;
 }) {
   const src = useMemberPhotoSrc(photo);
-  const initial = getInitial ? getInitial(name) : (name || "?")[0];
+  const initial = getInitial ? getInitial(name) : surnameInitialFromName(name);
+  const { bg, fg } = surnameAvatarColors(name);
   if (src) {
     return <div className={imageClassName} style={{ backgroundImage: `url(${src})` }} />;
   }
-  return <div className={fallbackClassName}>{initial}</div>;
+  return (
+    <div
+      className={fallbackClassName}
+      style={{ background: bg, color: fg }}
+    >
+      {initial}
+    </div>
+  );
 }

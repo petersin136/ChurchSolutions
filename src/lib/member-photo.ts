@@ -17,6 +17,19 @@ export function isEphemeralMemberPhotoUrl(url: string | undefined | null): boole
   return u.startsWith("blob:") || u.startsWith("data:");
 }
 
+/** 시드/외부 생성 아바타(dicebear 등) — 표시하지 않고 성이니셜로 대체 */
+export function isGeneratedAvatarUrl(url: string | undefined | null): boolean {
+  if (!url?.trim()) return false;
+  const u = url.trim().toLowerCase();
+  return (
+    u.includes("dicebear.com") ||
+    u.includes("api.dicebear.com") ||
+    u.includes("avataaars") ||
+    u.includes("ui-avatars.com") ||
+    u.includes("robohash.org")
+  );
+}
+
 /** members.photo 값(URL 또는 storage path)에서 버킷 내 경로 추출 */
 export function extractMemberPhotoStoragePath(photo: string | undefined | null): string | null {
   if (!photo?.trim()) return null;
@@ -49,7 +62,7 @@ export function extractMemberPhotoStoragePath(photo: string | undefined | null):
 export function normalizeMemberPhotoDisplayUrl(photo: string | undefined | null): string | undefined {
   if (!photo?.trim()) return undefined;
   const trimmed = photo.trim();
-  if (isEphemeralMemberPhotoUrl(trimmed)) return undefined;
+  if (isEphemeralMemberPhotoUrl(trimmed) || isGeneratedAvatarUrl(trimmed)) return undefined;
 
   const path = extractMemberPhotoStoragePath(trimmed);
   if (path && SUPABASE_URL) {
@@ -61,7 +74,7 @@ export function normalizeMemberPhotoDisplayUrl(photo: string | undefined | null)
 
 /** 표시용 URL — signed URL 우선 (비공개 버킷 대응) */
 export async function resolveMemberPhotoSrc(photo: string | undefined | null): Promise<string | undefined> {
-  if (!photo?.trim() || isEphemeralMemberPhotoUrl(photo)) return undefined;
+  if (!photo?.trim() || isEphemeralMemberPhotoUrl(photo) || isGeneratedAvatarUrl(photo)) return undefined;
 
   const path = extractMemberPhotoStoragePath(photo);
   if (path && supabase) {
