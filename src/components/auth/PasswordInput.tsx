@@ -22,6 +22,7 @@ type PasswordInputProps = {
   placeholder?: string;
   required?: boolean;
   autoComplete?: string;
+  name?: string;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -32,6 +33,7 @@ export function PasswordInput({
   placeholder,
   required,
   autoComplete = "new-password",
+  name,
   className = "cu-input",
   style,
 }: PasswordInputProps) {
@@ -42,6 +44,7 @@ export function PasswordInput({
       <input
         className={className}
         type={visible ? "text" : "password"}
+        name={name}
         value={value}
         onChange={onChange}
         placeholder={placeholder}

@@ -77,7 +77,27 @@ function LoginFormInner() {
     }
 
     clearPendingLoginEmail();
-    router.replace("/");
+
+    // 크롬이 "로그인 완료"로 인식하도록 실제 페이지 이동 + Credential 저장 시도
+    const trimmedEmail = email.trim();
+    try {
+      const PasswordCredentialCtor = (
+        window as Window & {
+          PasswordCredential?: new (data: { id: string; password: string }) => Credential;
+        }
+      ).PasswordCredential;
+      if (PasswordCredentialCtor && navigator.credentials?.store) {
+        const cred = new PasswordCredentialCtor({
+          id: trimmedEmail,
+          password,
+        });
+        await navigator.credentials.store(cred);
+      }
+    } catch {
+      // Credential API 미지원/거부 시 무시 — 아래 hard navigation이 저장 프롬프트를 유도
+    }
+
+    window.location.assign("/");
   };
 
   const startOAuth = async (provider: "google" | "kakao") => {
@@ -139,6 +159,7 @@ function LoginFormInner() {
           <input
             className="cu-input"
             type="email"
+            name="username"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -146,7 +167,7 @@ function LoginFormInner() {
             }}
             placeholder="이메일 주소"
             required
-            autoComplete="off"
+            autoComplete="username"
             style={inputStyle}
           />
           <div style={{ height: 12 }} />
@@ -158,7 +179,8 @@ function LoginFormInner() {
             }}
             placeholder="비밀번호"
             required
-            autoComplete="new-password"
+            autoComplete="current-password"
+            name="password"
           />
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
