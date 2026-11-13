@@ -851,7 +851,7 @@ function dashPeriodBtnStyle(
     padding: 0,
     boxSizing: "border-box",
     background: active ? chartCtrl.periodActiveBg : chartCtrl.periodInactiveBg,
-    color: chartCtrl.periodText,
+    color: active ? chartCtrl.periodActiveText : chartCtrl.periodText,
     flexShrink: 0,
     transition: "background 0.15s ease",
   };
@@ -885,6 +885,7 @@ function AttChartControls({
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
+      {attChartView !== "week" && (
       <select
         value={attChartYear}
         onChange={(e) => setAttChartYear(Number(e.target.value))}
@@ -916,6 +917,7 @@ function AttChartControls({
           </option>
         ))}
       </select>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: chartCtrl.periodBtnGap }}>
         {periodSegmentItems.map((item) => {
           const active = attChartView === item.id;
@@ -1626,6 +1628,9 @@ function DashboardSub({
       ) : (
         (() => {
           const visitCount = recentNotes.filter((n) => n.type === "visit").length;
+          const riskOnly = m.filter((s) => s.status === "위험").length;
+          const dormantOnly = m.filter((s) => s.status === "휴면").length;
+          const answeredCount = Object.keys(db.answeredPrayerDates || {}).length;
 
           const sharedRowH = statRowHeight ?? DASH_LAYOUT.topCardHeight;
 
@@ -1646,12 +1651,12 @@ function DashboardSub({
             return m ? [m[1], m[2]] : [v, ""];
           };
 
-          // 2행 4카드: 새가족 / 위험·휴면 / 심방 / 기도
+          // 2행 4카드: 새가족 / 위험·휴면 / 심방 / 기도 — 01 빈 / 04 활성
           const midCards = [
-            { key: "newfamily", label: "새가족", sub: newF > 0 ? "정착 진행 중" : "정착 진행 성도 없음", value: `${newF}명`, has: newF > 0, fill: newF > 0 ? DASH_MID.newFamilyFill : DASH_MID.emptyFill, nav: () => onNavSub?.("newfamily") },
-            { key: "risk", label: "위험/휴면", sub: risk > 0 ? "관심 필요" : "관심 필요 성도 없음", value: `${risk}명`, has: risk > 0, fill: DASH_MID.riskFill, nav: () => { sessionStorage.setItem("pastoral_members_risk_dormant", "1"); onNavSub?.("members"); } },
-            { key: "visit", label: "심방", sub: "최근 기록", value: `${visitCount}건`, has: false, fill: DASH_MID.visitFill, nav: () => { sessionStorage.setItem("pastoral_notes_type", "visit"); onNavSub?.("notes"); } },
-            { key: "prayer", label: "기도", sub: prayers > 0 ? "함께 기도합니다" : "함께 기도합니다", value: `${prayers}건`, has: prayers > 0, fill: prayers > 0 ? DASH_MID.prayerFill : DASH_MID.emptyFill, nav: () => { sessionStorage.setItem("pastoral_notes_type", "prayer"); onNavSub?.("notes"); } },
+            { key: "newfamily", label: "새가족", sub: `정착 진행 ${newF}명`, prefix: "등록", value: `${newF}명`, has: newF > 0, fill: newF > 0 ? DASH_MID.newFamilyFill : DASH_MID.emptyFill, nav: () => onNavSub?.("newfamily") },
+            { key: "risk", label: "위험/휴면", sub: `위험 ${riskOnly}명 · 휴면 ${dormantOnly}명`, prefix: "합계", value: `${risk}명`, has: risk > 0, fill: risk > 0 ? DASH_MID.riskFill : DASH_MID.emptyFill, nav: () => { sessionStorage.setItem("pastoral_members_risk_dormant", "1"); onNavSub?.("members"); } },
+            { key: "visit", label: "심방", sub: "예정 0건", prefix: "완료", value: `${visitCount}건`, has: visitCount > 0, fill: DASH_MID.visitFill, nav: () => { sessionStorage.setItem("pastoral_notes_type", "visit"); onNavSub?.("notes"); } },
+            { key: "prayer", label: "기도", sub: `응답 ${answeredCount}건`, prefix: "요청", value: `${prayers}명`, has: prayers > 0, fill: DASH_MID.prayerFill, nav: () => { sessionStorage.setItem("pastoral_notes_type", "prayer"); onNavSub?.("notes"); } },
           ];
 
           return (
@@ -1695,7 +1700,7 @@ function DashboardSub({
                     style={{
                       fontSize: dashTypo.att.valueSize,
                       fontWeight: dashTypo.att.valueWeight,
-                      color: DASH_COLOR.ink,
+                      color: rate > 0 ? DASH_COLOR.ink : DASH_COLOR.emptyValue,
                       letterSpacing: dashTypo.att.valueLetterSpacing,
                       lineHeight: 1,
                       fontFamily: DASH_GLOBAL.fontLatin,
@@ -1707,12 +1712,12 @@ function DashboardSub({
                     style={{
                       fontSize: dashTypo.att.subSize,
                       fontWeight: dashTypo.att.subWeight,
-                      color: DASH_COLOR.dateValue,
+                      color: DASH_COLOR.heroSub,
                       lineHeight: 1.2,
                       fontFamily: DASH_GLOBAL.fontKR,
                     }}
                   >
-                    {attTotal}/{rateDenominator}명 출석
+                    활동 성도 {rateDenominator}명 중 {attTotal}명 출석
                   </span>
                 </div>
                 <div style={{ flex: 1, minHeight: dashTypo.att.barMarginTop }} />
@@ -1764,7 +1769,7 @@ function DashboardSub({
                     style={{
                       fontSize: dashTypo.member.valueSize,
                       fontWeight: dashTypo.member.valueWeight,
-                      color: DASH_COLOR.ink,
+                      color: total > 0 ? DASH_COLOR.ink : DASH_COLOR.emptyValue,
                       letterSpacing: dashTypo.member.valueLetterSpacing,
                       lineHeight: 1,
                       fontFamily: DASH_GLOBAL.fontLatin,
@@ -1785,12 +1790,12 @@ function DashboardSub({
                     style={{
                       fontSize: dashTypo.member.subSize,
                       fontWeight: dashTypo.member.subWeight,
-                      color: DASH_COLOR.dateValue,
+                      color: DASH_COLOR.heroSub,
                       lineHeight: 1.2,
                       fontFamily: DASH_GLOBAL.fontKR,
                     }}
                   >
-                    활동 {activeCount} / 비활동 {inactiveCount}
+                    활동 {activeCount} · 비활동 {inactiveCount}
                   </span>
                 </div>
                 <div style={{ flex: 1, minHeight: dashTypo.att.barMarginTop }} />
@@ -1799,6 +1804,7 @@ function DashboardSub({
               {/* 2행: 새가족 / 위험·휴면 / 심방 / 기도 — 각 1칸 */}
               {midCards.map((c) => {
                 const [num, suf] = splitNum(c.value);
+                const valueColor = c.has ? DASH_COLOR.ink : DASH_COLOR.emptyValue;
                 return (
                   <button
                     key={c.key}
@@ -1870,11 +1876,25 @@ function DashboardSub({
                       <ArrowUpRight size={dashTypo.arrowSize} strokeWidth={dashTypo.arrowStroke} />
                     </span>
                     <div style={{ marginTop: "auto", alignSelf: "flex-end", display: "flex", alignItems: "baseline", gap: 1 }}>
+                      {c.prefix ? (
+                        <span
+                          style={{
+                            fontSize: dashTypo.mid.prefixSize,
+                            fontWeight: DASH_MID_CARD.prefixWeight,
+                            color: valueColor,
+                            lineHeight: 1,
+                            fontFamily: DASH_GLOBAL.fontKR,
+                            marginRight: dashTypo.mid.prefixGap,
+                          }}
+                        >
+                          {c.prefix}
+                        </span>
+                      ) : null}
                       <span
                         style={{
                           fontSize: dashTypo.mid.valueSize,
                           fontWeight: dashTypo.mid.valueWeight,
-                          color: DASH_COLOR.ink,
+                          color: valueColor,
                           letterSpacing: dashTypo.mid.valueLetterSpacing,
                           lineHeight: 1,
                           fontFamily: DASH_GLOBAL.fontLatin,
@@ -1887,7 +1907,7 @@ function DashboardSub({
                           style={{
                             fontSize: dashTypo.mid.unitSize,
                             fontWeight: dashTypo.mid.unitWeight,
-                            color: DASH_COLOR.ink,
+                            color: valueColor,
                             lineHeight: 1,
                             fontFamily: DASH_GLOBAL.fontKR,
                           }}
@@ -2209,13 +2229,13 @@ function DashboardSub({
             }}
           >
             <h4 style={{ margin: 0, fontSize: dashTypo.section.titleSize, fontWeight: 700, color: C.text }}>
-              현황 보고
+              최근 사역
             </h4>
             <span
               style={{
                 fontSize: dashScalePx(DASH_FEED_CARD.countFontSize, typoScale),
                 fontWeight: DASH_FEED_CARD.countFontWeight,
-                color: C.text,
+                color: pastoralFeed.length > 0 ? C.text : "#adb1bc",
                 letterSpacing: "-0.02em",
               }}
             >
@@ -2265,8 +2285,8 @@ function DashboardSub({
                   }}
                 >
                   <div>
-                    최근 업데이트된 현황 보고가 없습니다.<br />
-                    사역 기록이 등록되면 실시간으로 타임라인이 생성됩니다.
+                    아직 사역 기록이 없습니다.<br />
+                    기록이 등록되면 이곳에 표시됩니다.
                   </div>
                 </div>
               ) : (
@@ -2430,7 +2450,7 @@ function DashboardSub({
           >
             {deptCounts.length === 0 ? (
               <div style={{ textAlign: "center", color: C.textMuted, padding: "32px 0", fontSize: dashTypo.section.bodySize, lineHeight: 1.6 }}>
-                등록된 부서가 없습니다.<br />우측 상단의 + 버튼을 눌러 부서를 추가해 주세요.
+                등록된 부서가 없습니다.<br />조직/자원관리에서 부서를 추가해 주세요.
               </div>
             ) : (
               deptCounts.map(([d, cnt], i) => {
@@ -4039,10 +4059,10 @@ type SubPage = "dashboard" | "members" | "attendance" | "notes" | "newfamily" | 
 
 const NAV_ITEMS: { id: SubPage; Icon: React.ComponentType<any>; label: string }[] = [
   { id: "dashboard", Icon: LayoutDashboard, label: "대시보드" },
-  { id: "members", Icon: Users, label: "성도 관리" },
+  { id: "members", Icon: Users, label: "성도관리" },
   { id: "attendance", Icon: ClipboardList, label: "출석부" },
   { id: "notes", Icon: PrayingHandsIcon, label: "기도/메모" },
-  { id: "newfamily", Icon: Sprout, label: "새가족 관리" },
+  { id: "newfamily", Icon: Sprout, label: "새가족관리" },
   { id: "ceremony", Icon: BookOpenCheck, label: "식순" },
   { id: "settings", Icon: Settings, label: "조직/자원관리" },
 ];
@@ -4942,10 +4962,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
       contentBg={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.bg : undefined}
-      contentPaddingLeft={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.contentPadLeft : undefined}
+      contentPaddingLeft={activeSub === "dashboard" ? DASH_GLOBAL.dashboardPadLeft : activeSub === "members" || activeSub === "notes" || activeSub === "attendance" || orgResourceLayout ? DASH_GLOBAL.contentPadLeft : undefined}
       contentPaddingRight={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.contentPadRight : undefined}
       contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? 20 : undefined}
-      contentTopGap={activeSub === "dashboard" || orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? getMemberContentTopGap() : undefined}
+      contentTopGap={activeSub === "dashboard" ? DASH_GLOBAL.dashboardPadTop : orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? getMemberContentTopGap() : undefined}
       contentFontFamily={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.fontKR : undefined}
       hideHeader={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance"}
     >

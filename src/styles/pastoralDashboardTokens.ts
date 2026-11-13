@@ -8,7 +8,8 @@
  * 1. 1440px 기준 그리드·비율 — 1280~1920+ 구간은 flex·여백으로 확장
  * 2. 배경 #f4f4f6
  * 3. 영문·숫자·기호 → Inter / 한글 → Pretendard
- * 4. 콘텐츠 여백: 상 32 / 좌 40 / 우 24 / 하 24 (px)
+ * 4. 성도관리 등 공유 여백: 상 32 / 좌 40 / 우 24 (px)
+ * 5. 대시보드 v2(01·04): 상 24 / 좌 24 / 우 24 — dashboardPad* 만 사용
  */
 
 /** 전역 기준 */
@@ -17,11 +18,14 @@ export const DASH_GLOBAL = {
   baseWidth: 1440,
   /** 앱 배경색 */
   bg: "#f4f4f6",
-  /** 콘텐츠 여백 (상 / 우 / 하 / 좌) */
+  /** 콘텐츠 여백 (상 / 우 / 하 / 좌) — 성도관리·출석부·기도 공유. 대시보드는 dashboardPad* */
   contentPadTop: 32,
   contentPadRight: 24,
   contentPadBottom: 0,
   contentPadLeft: 40,
+  /** 대시보드 v2 전용 여백 (01·04 PNG 실측). 다른 화면 금지 */
+  dashboardPadTop: 24,
+  dashboardPadLeft: 24,
   /** 영문·숫자·기호는 Inter, 한글은 Pretendard */
   fontLatin: "'Inter', 'Pretendard', system-ui, -apple-system, sans-serif",
   fontKR: "'Pretendard', 'Inter', system-ui, -apple-system, sans-serif",
@@ -32,9 +36,13 @@ export const DASH_COLOR = {
   ink: "#0b0c0e",
   dateToday: "#c2c5cd",
   dateValue: "#9fa4b0",
-  /** 사이드바 Today 라인 — 시안 대비 조금 더 진하게 */
-  sidebarDateToday: "#a4aab4",
-  sidebarDateValue: "#787f8c",
+  /** 사이드바 Today 라인 — 01 PNG */
+  sidebarDateToday: "#858993",
+  sidebarDateValue: "#646975",
+  /** 1행 서브 카피 (활동 성도 n명 중…) */
+  heroSub: "#93969f",
+  /** 데이터 없는 히어로·중간 카드 숫자 */
+  emptyValue: "#a0a5b1",
   /** 상단 메뉴·성도관리 페이지네이션 공통 — 트랙 연한색 */
   menubarBaseline: "#ccd0d7",
   /** 활성 하이라이트 — 트랙과 동일 굵기, 진한색만 구분 */
@@ -125,14 +133,14 @@ export const DASH_MENUBAR = {
 
 /** 카드 차트 색상 — 디자이너 시안 PNG에서 픽셀 추출 (추측값 아님) */
 export const DASH_CHART = {
-  /** 금주 출석률 bar — 채워진 진초록 */
-  attendanceBarFill: "#33473b",
-  /** 금주 출석률 bar — 빈 회색 */
-  attendanceBarEmpty: "#e4e5e9",
-  /** 전체 성도 원 — 채워진 보라(라벤더) — 시안 픽셀 #c3b1fa */
-  memberDotFill: "#c3b1fa",
-  /** 전체 성도 원 — 빈 회색 — 시안 픽셀 #e3e4e8 */
-  memberDotEmpty: "#e3e4e8",
+  /** 금주 출석률 bar — 04 중심 픽셀 */
+  attendanceBarFill: "#5b7be6",
+  /** 금주 출석률 bar — 빈 칸 */
+  attendanceBarEmpty: "#ebebef",
+  /** 전체 성도 원 — 04 중심 픽셀 */
+  memberDotFill: "#3a9a8c",
+  /** 전체 성도 원 — 빈 칸 */
+  memberDotEmpty: "#e3e4e9",
   /** 출석 통계 막대 — 현재/최신 기간 하이라이트(주황) */
   statBarHighlight: "#ff7044",
   /** 출석 통계 막대 — 기본 회색 */
@@ -167,15 +175,16 @@ export const DASH_ATT_CHART_CTRL = {
   yearFontSize: 17,
   yearFontWeight: 600,
   yearChevron: "#8b909a",
-  periodBtnSize: 38,
+  periodBtnSize: 35,
   periodBtnSizeMob: 34,
-  periodBtnFontSize: 16,
+  periodBtnFontSize: 14,
   periodBtnFontSizeMob: 14,
-  periodBtnRadius: 7,
-  periodBtnGap: 6,
-  periodActiveBg: "#d8dce3",
-  periodInactiveBg: "#eceef1",
+  periodBtnRadius: 8,
+  periodBtnGap: 8,
+  periodActiveBg: "#0b0c0e",
+  periodInactiveBg: "#ebebef",
   periodText: "#0b0c0e",
+  periodActiveText: "#ffffff",
   controlsGap: 14,
   controlsGapMob: 10,
 } as const;
@@ -214,26 +223,26 @@ export function dashChartBarWidths(chartWidth: number, mob: boolean) {
 
 /** 대시보드 카드 공통 radius */
 export const DASH_RADIUS = {
-  /** 큰 카드(금주출석률/전체성도/출석통계/부서별/현황보고) */
-  card: 7,
+  /** 큰 카드(금주출석률/전체성도/출석통계/부서별/현황보고) — 01·04 실측 ≈8 */
+  card: 8,
   /** 중간 4카드 */
-  mid: 7,
+  mid: 8,
 } as const;
 
 /** 중간 4카드(새가족/위험휴면/심방/기도) 배경 — 시안 픽셀 추출 */
 export const DASH_MID = {
-  /** 새가족 — 시안: 연한 라벤더 → 흰색 그라디언트 */
-  newFamilyFill: "linear-gradient(152deg, #e8efff 0%, #f6f8ff 42%, #ffffff 78%)",
-  /** 위험/휴면 — 시안 픽셀 #fbebe1·#f8eee7·#f7efe9 (살구/베이지, 회색 아님) */
-  riskFill: "linear-gradient(152deg, #fbebe1 0%, #fdf6f1 42%, #ffffff 78%)",
-  /** 심방 — 항상 회색(변화 없음) */
-  visitFill: "#e9e8ed",
-  /** 기도 — 흰색 */
+  /** 새가족 — 04 활성: 상단 블루 → 하단 흰 */
+  newFamilyFill: "linear-gradient(152deg, #e9f2ff 0%, #f2f7ff 42%, #fdfeff 78%)",
+  /** 위험/휴면 — 04 활성: 상단 살구 → 하단 흰 */
+  riskFill: "linear-gradient(152deg, #ffefe0 0%, #fff5ec 42%, #fffdfc 78%)",
+  /** 심방 — 01·04 항상 흰 면 */
+  visitFill: "#ffffff",
+  /** 기도 — 01·04 항상 흰 면 */
   prayerFill: "#ffffff",
-  /** 데이터 없을 때(빈 상태) — 새가족·기도만 */
-  emptyFill: "#f2f1f6",
-  /** 카드 흰 테두리 — 시안 픽셀 추출 */
-  cardBorder: "1px solid #ffffff",
+  /** 01 빈 상태 — 4카드 모두 흰 면 */
+  emptyFill: "#ffffff",
+  /** 시안에 테두리 없음 */
+  cardBorder: "none",
 } as const;
 
 /** 현황 보고 카드 — 리스트·헤더 간격 (카드 곡률은 DASH_RADIUS.card 공통) */
@@ -320,7 +329,7 @@ export const DASH_CARD = {
 
 /**
  * 대시보드 그리드·카드 치수 — 1440px 시안 기준
- * 콘텐츠 폭 ≈ 1440 − 240(사이드바) − 40(좌) − 24(우) = 1136px, 4열 flex + gap 16
+ * 대시보드 콘텐츠 폭 ≈ 1440 − 240(사이드바) − 24(좌) − 24(우) = 1152px, 4열 flex + gap 16
  */
 export const DASH_LAYOUT = {
   gridColumns: 4,
@@ -330,9 +339,9 @@ export const DASH_LAYOUT = {
   topCardPadding: 24,
   /** 금주 출석률 세그먼트 막대 최소 높이 — 카드 남은 높이는 flex로 채움 */
   attendanceBarHeight: 68,
-  /** 금주 출석률 세그먼트 간격·모서리 — 시안 픽셀 추출 */
-  attendanceBarGap: 6,
-  attendanceBarRadius: 7,
+  /** 금주 출석률 세그먼트 간격·모서리 — 04 실측 */
+  attendanceBarGap: 5,
+  attendanceBarRadius: 4,
   /** 2행(새가족·위험·심방·기도) — 1행과 같은 높이. 값↑ = 카드↓ (3행에 여유 확보) */
   midCardAspectRatio: "1.62 / 1",
   midCardPadding: 22,
@@ -348,8 +357,8 @@ export const DASH_LAYOUT = {
   /** 연간(Y) 차트 — 시안 픽셀 기준 고정 높이 (카드 flex 채움 방지) */
   attendanceYearPlotHeight: 172,
   attendanceYearMaxBarHeight: 156,
-  /** 데스크톱 대시보드 — 상단바·콘텐츠 패딩 (100dvh 계산용) */
-  dashboardViewportOffset: 96,
+  /** 데스크톱 대시보드 — 상단바 64 + dashboardPadTop 24 (100dvh 계산용) */
+  dashboardViewportOffset: 88,
   /** 전체 성도 dot — 시안 고정(px), 화면 크기와 무관 동일 형태 */
   memberDotSize: 13,
   memberDotGap: 6,
@@ -377,10 +386,10 @@ export const DASH_ATTENDANCE_CARD = {
   labelSize: 19,
   labelWeight: 700,
   labelValueGap: 12,
-  valueSize: 62,
+  valueSize: 50,
   valueWeight: 800,
   valueLetterSpacing: "-0.03em",
-  subSize: 17,
+  subSize: 15,
   subWeight: 400,
   valueSubGap: 14,
   barMarginTop: 26,
@@ -391,12 +400,12 @@ export const DASH_MEMBER_CARD = {
   labelSize: 19,
   labelWeight: 700,
   labelValueGap: 12,
-  valueSize: 62,
+  valueSize: 50,
   valueWeight: 800,
   valueLetterSpacing: "-0.03em",
-  unitSize: 24,
+  unitSize: 22,
   unitWeight: 700,
-  subSize: 17,
+  subSize: 15,
   subWeight: 400,
   valueSubGap: 14,
   dotMarginTop: 17,
@@ -407,14 +416,17 @@ export const DASH_MID_CARD = {
   labelSize: 23,
   labelWeight: 700,
   labelSubGap: 6,
-  subSize: 17,
+  subSize: 15,
   subWeight: 400,
-  subColor: "#8e8e8e",
-  valueSize: 60,
+  subColor: "#646977",
+  valueSize: 52,
   valueWeight: 800,
   valueLetterSpacing: "-0.03em",
-  unitSize: 24,
+  unitSize: 22,
   unitWeight: 700,
+  prefixSize: 15,
+  prefixWeight: 400,
+  prefixGap: 8,
   titleReserveRight: 43,
 } as const;
 
