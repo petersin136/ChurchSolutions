@@ -86,11 +86,39 @@
 
 10. **This Week 줄** — 시안 사이드바에 `This Week 11. 08 – 11. 14`가 있다. `UnifiedPageLayout` 수정이 필요해 이번엔 안 넣음.
 11. **상단 탭 인디케이터 `#0b0c0e`** — `globals.css` 전역. `#33343a`와 거의 같아 전역 CSS는 안 바꿈.
-12. **설정/검색 idle HEX** — 전역 CSS. 02·03 단계에서 대시보드 한정으로.
+12. **설정/검색 idle HEX** — 설정·로그아웃 idle은 2단계에서 `#ebebef`로 맞춤. 검색 밑줄은 아직 전역 CSS.
 13. **심방 예정** — 예정 일정 필드가 없어 `예정 0건`, 완료만 visit 노트 건수.
 14. **기도 요청 명 / 응답 건** — 요청 = 기도문 있는 성도 수(명). 응답 = `answeredPrayerDates` 키 수. 계산 함수는 안 바꿈.
 15. **부서 + 버튼** — W/M/Y와 같은 35px 회색 칸이 됨. 시안 01은 ↗. 06단계에서 맞춤.
 16. **히어로 50px** — 시안 추정 48–52. 작아 보이면 이 항목을 다시 연다.
+
+## 2단계 — 02·03 설정·로그아웃 hover·click
+
+- [x] `DASH_ICON_BTN` 토큰: idle `#ebebef` / hover `#dfe0e5`, 아이콘 idle `#646977` / hover `#0b0c0e`
+- [x] `pastoralDashboardChrome.css` — `html[data-dash-v2]` 한정. `globals.css`·로그아웃 로직 미변경
+- [x] `PastoralPage` 마운트 시 `data-dash-v2` + CSS 변수. 언마운트 시 제거 (재정 등 다른 탭은 기존 전역 스타일)
+- [x] click(`:active`) = hover와 동일 HEX. 시안이 hover·click을 한 장으로 줌
+- [x] `npx tsc --noEmit` · lint
+- [x] 02·03 대조 후 커밋
+
+### 2단계 PNG 대조
+
+| 항목 | 이미지 지정값 | 코드 | 일치 |
+|---|---|---|---|
+| 설정 idle 면 | `#ebebef` | `DASH_ICON_BTN.idleBg` | 예 |
+| 로그아웃 idle 면 | `#ebebef` | 동일 | 예 |
+| 설정 hover·click 면 | `#dfe0e5` | `hoverBg` + `:hover,:active` | 예 |
+| 로그아웃 hover·click 면 | `#dfe0e5` (빨강 아님) | 동일. `color` 빨강 오버라이드 | 예 |
+| 아이콘 idle | `#646977` | `idleInk` | 예 |
+| 아이콘 hover | `#0b0c0e` | `hoverInk` | 예 |
+| 버튼 크기·radius | 40 / 7 | 전역 CSS 유지 | 예 |
+| 로그아웃 onClick | 기존 | `GlobalTopBar` 미수정 | 예 |
+
+### 확인 필요 (2단계)
+
+17. **테두리** — 시안에 별도 보더 HEX 없음. 1px 링이 안 보이게 `border-color`를 fill과 같게 맞춤.
+18. **적용 범위** — 목양 탭이 열려 있는 동안만. 대시보드 서브페이지만이 아니라 성도관리 등 목양 안 화면도 같은 상단 버튼을 씀. 재정·학교 등 다른 메인 탭은 기존 전역(로그아웃 hover 빨강) 유지.
+19. **검색 idle HEX** — 이번 단계 대상 아님.
 
 ## 이후 단계
 

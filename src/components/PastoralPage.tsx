@@ -34,7 +34,8 @@ import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Sett
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ICON_BTN, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
+import "@/styles/pastoralDashboardChrome.css";
 import { PastoralFeedDetailModal } from "@/components/pastoral/PastoralFeedDetailModal";
 import { APP_MODAL } from "@/styles/appModalTokens";
 import { MemberDotGrid } from "@/components/pastoral/MemberDotGrid";
@@ -4134,6 +4135,21 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     };
     window.addEventListener(PASTORAL_SET_SUB_EVENT, handler as EventListener);
     return () => window.removeEventListener(PASTORAL_SET_SUB_EVENT, handler as EventListener);
+  }, []);
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute("data-dash-v2", "");
+    root.style.setProperty("--dash-icon-btn-idle-bg", DASH_ICON_BTN.idleBg);
+    root.style.setProperty("--dash-icon-btn-hover-bg", DASH_ICON_BTN.hoverBg);
+    root.style.setProperty("--dash-icon-btn-idle-ink", DASH_ICON_BTN.idleInk);
+    root.style.setProperty("--dash-icon-btn-hover-ink", DASH_ICON_BTN.hoverInk);
+    return () => {
+      root.removeAttribute("data-dash-v2");
+      root.style.removeProperty("--dash-icon-btn-idle-bg");
+      root.style.removeProperty("--dash-icon-btn-hover-bg");
+      root.style.removeProperty("--dash-icon-btn-idle-ink");
+      root.style.removeProperty("--dash-icon-btn-hover-ink");
+    };
   }, []);
   useEffect(() => {
     if (activeSub !== "newfamily") return;

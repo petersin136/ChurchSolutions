@@ -52,6 +52,14 @@ export const DASH_COLOR = {
   sidebarHoverBox: "#ffffff",
 } as const;
 
+/** 상단 설정·로그아웃 — 01 idle / 02·03 hover·click. 전역 CSS는 그대로 두고 data-dash-v2 에서만 씀 */
+export const DASH_ICON_BTN = {
+  idleBg: "#ebebef",
+  hoverBg: "#dfe0e5",
+  idleInk: "#646977",
+  hoverInk: "#0b0c0e",
+} as const;
+
 /** 좌측 사이드바 */
 export const DASH_SIDEBAR = {
   width: 240,
