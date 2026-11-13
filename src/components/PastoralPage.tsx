@@ -34,7 +34,7 @@ import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Sett
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ICON_BTN, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, DASH_WEEK_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ICON_BTN, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, DASH_WEEK_CHART, DASH_MONTH_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
 import "@/styles/pastoralDashboardChrome.css";
 import { PastoralFeedDetailModal } from "@/components/pastoral/PastoralFeedDetailModal";
 import { APP_MODAL } from "@/styles/appModalTokens";
@@ -838,8 +838,10 @@ function dashPeriodBtnStyle(
   chartCtrl: typeof DASH_ATT_CHART_CTRL,
   mob: boolean,
   active: boolean,
+  hovered = false,
 ): CSSProperties {
   const btnSize = mob ? chartCtrl.periodBtnSizeMob : chartCtrl.periodBtnSize;
+  const idleBg = hovered ? chartCtrl.periodHoverBg : chartCtrl.periodInactiveBg;
   return {
     width: btnSize,
     height: btnSize,
@@ -855,7 +857,7 @@ function dashPeriodBtnStyle(
     justifyContent: "center",
     padding: 0,
     boxSizing: "border-box",
-    background: active ? chartCtrl.periodActiveBg : chartCtrl.periodInactiveBg,
+    background: active ? chartCtrl.periodActiveBg : idleBg,
     color: active ? chartCtrl.periodActiveText : chartCtrl.periodText,
     flexShrink: 0,
     transition: "background 0.15s ease",
@@ -882,7 +884,8 @@ function AttChartControls({
   chartCtrl?: typeof DASH_ATT_CHART_CTRL;
 }) {
   const btnSize = mob ? chartCtrl.periodBtnSizeMob : chartCtrl.periodBtnSize;
-  const periodBtnStyle = (active: boolean) => dashPeriodBtnStyle(chartCtrl, mob, active);
+  const [periodHoverId, setPeriodHoverId] = useState<string | null>(null);
+  const periodBtnStyle = (active: boolean, hovered: boolean) => dashPeriodBtnStyle(chartCtrl, mob, active, hovered);
 
   return (
       <div
@@ -926,13 +929,16 @@ function AttChartControls({
       <div style={{ display: "flex", alignItems: "center", gap: chartCtrl.periodBtnGap }}>
         {periodSegmentItems.map((item) => {
           const active = attChartView === item.id;
+          const hovered = !active && periodHoverId === item.id;
           return (
             <button
               key={item.id}
               type="button"
               aria-pressed={active}
               onClick={() => setAttChartView(item.id as AttChartView)}
-              style={periodBtnStyle(active)}
+              onMouseEnter={() => setPeriodHoverId(item.id)}
+              onMouseLeave={() => setPeriodHoverId(null)}
+              style={periodBtnStyle(active, hovered)}
             >
               {item.label}
             </button>
@@ -1070,6 +1076,7 @@ function DashboardSub({
   const [typoScale, setTypoScale] = useState(1);
   const [attChartWidth, setAttChartWidth] = useState(0);
   const [weekHoverWk, setWeekHoverWk] = useState<number | null>(null);
+  const [monthHoverIdx, setMonthHoverIdx] = useState<number | null>(null);
   const [feedPage, setFeedPage] = useState(1);
   const feedSwipeStartX = useRef<number | null>(null);
   const [deptWizard, setDeptWizard] = useState<OrgDeptWizardState | null>(null);
@@ -2167,28 +2174,128 @@ function DashboardSub({
               }
 
               if (attChartView === "month") {
-                const MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                const MON = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
                 const has = monthlyAvg.some(x => x.avg > 0);
                 if (!has) return emptyMsg;
-                const maxM = Math.max(...monthlyAvg.map(x => x.avg), 1);
+                const mn = DASH_MONTH_CHART;
+                const tip = DASH_WEEK_CHART;
+                const denom = activeMembers.length;
+                const rates = monthlyAvg.map((mm) => (denom > 0 && mm.avg > 0 ? Math.round((mm.avg / denom) * 100) : 0));
+                const maxRate = Math.max(...rates, 1);
+                const barRadius = dashScalePx(mn.radius, typoScale);
+                const pctSize = dashScalePx(mob ? mn.pctSizeMob : mn.pctSize, typoScale);
                 return (
-                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? 4 : 8, flex: 1, minHeight: 0, paddingTop: 16, boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? mn.gapMob : mn.gap, flex: 1, minHeight: 0, paddingTop: 16, boxSizing: "border-box" }}>
                     {monthlyAvg.map((mm, i) => {
                       const hot = mm.isCurrent;
-                      const spacerFlex = Math.max(0, maxM - mm.avg);
-                      const barFlex = mm.avg;
+                      const rate = rates[i];
+                      const fillH = rate > 0 ? (rate / maxRate) * 100 : 0;
+                      const hovered = monthHoverIdx === i;
+                      const axisColor = hot ? mn.axisHot : rate > 0 ? mn.axis : mn.axisEmpty;
                       return (
-                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 0, minHeight: 0 }}>
-                          <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", alignItems: "center", minHeight: 0 }}>
-                            {spacerFlex > 0 && <div style={{ flex: spacerFlex, minHeight: 0, width: "100%" }} />}
-                            {barFlex > 0 && (
-                              <>
-                                <span style={{ fontSize: monthChartTypo.axis, color: hot ? DASH_CHART.statBarHighlight : C.textMuted, fontWeight: hot ? 700 : 500, flexShrink: 0 }}>{mm.avg || ""}</span>
-                                <div style={{ flex: barFlex, minHeight: 4, width: "100%", borderRadius: "6px 6px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase }} />
-                              </>
+                        <div
+                          key={i}
+                          style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 6, minWidth: 0, minHeight: 0 }}
+                          onMouseEnter={() => setMonthHoverIdx(i)}
+                          onMouseLeave={() => setMonthHoverIdx(null)}
+                        >
+                          <div style={{ flex: 1, width: "100%", position: "relative", minHeight: 0 }}>
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                background: mn.track,
+                                borderRadius: barRadius,
+                              }}
+                            />
+                            {fillH > 0 && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  height: `${fillH}%`,
+                                  background: hot ? mn.highlight : mn.fill,
+                                  borderRadius: `${barRadius}px ${barRadius}px 0 0`,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "center",
+                                  paddingTop: hot ? 6 : 0,
+                                  boxSizing: "border-box",
+                                }}
+                              >
+                                {hot && (
+                                  <span
+                                    style={{
+                                      fontSize: pctSize,
+                                      fontWeight: mn.pctWeight,
+                                      color: mn.pctHot,
+                                      letterSpacing: "-0.04em",
+                                      lineHeight: 1,
+                                      fontFamily: DASH_GLOBAL.fontLatin,
+                                      fontFeatureSettings: '"tnum"',
+                                    }}
+                                  >
+                                    {rate}%
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {!hot && fillH > 0 && (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  left: 0,
+                                  right: 0,
+                                  bottom: `${fillH}%`,
+                                  transform: "translateY(-3px)",
+                                  textAlign: "center",
+                                  fontSize: pctSize,
+                                  fontWeight: mn.pctWeight,
+                                  color: mn.pctGray,
+                                  letterSpacing: "-0.04em",
+                                  lineHeight: 1,
+                                  fontFamily: DASH_GLOBAL.fontLatin,
+                                  fontFeatureSettings: '"tnum"',
+                                  pointerEvents: "none",
+                                }}
+                              >
+                                {rate}%
+                              </span>
+                            )}
+                            {hovered && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  left: "50%",
+                                  bottom: `${fillH}%`,
+                                  transform: "translate(-50%, calc(-100% - 6px))",
+                                  background: tip.tooltipBg,
+                                  color: tip.tooltipFg,
+                                  borderRadius: tip.tooltipRadius,
+                                  padding: `${tip.tooltipPadY}px ${tip.tooltipPadX}px`,
+                                  fontSize: dashScalePx(tip.tooltipSize, typoScale),
+                                  fontWeight: tip.tooltipWeight,
+                                  fontFamily: DASH_GLOBAL.fontKR,
+                                  letterSpacing: "-0.02em",
+                                  lineHeight: 1.2,
+                                  whiteSpace: "nowrap",
+                                  pointerEvents: "none",
+                                  zIndex: 2,
+                                }}
+                              >
+                                활동 평균 {mm.avg}/{denom}명
+                              </div>
                             )}
                           </div>
-                          <AttChartAxisLabel text={MON[i]} hot={hot} fontSize={monthChartTypo.axisTiny} />
+                          <AttChartAxisLabel
+                            text={MON[i]}
+                            hot={hot}
+                            fontSize={monthChartTypo.axisTiny}
+                            color={axisColor}
+                            weight={hot ? 700 : 500}
+                          />
                         </div>
                       );
                     })}

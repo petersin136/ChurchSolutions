@@ -191,6 +191,8 @@ export const DASH_ATT_CHART_CTRL = {
   periodBtnGap: 8,
   periodActiveBg: "#0b0c0e",
   periodInactiveBg: "#ebebef",
+  /** 09 M 버튼 hover — 비활성보다 한 단계 진한 회색 */
+  periodHoverBg: "#c6c9d1",
   periodText: "#0b0c0e",
   periodActiveText: "#ffffff",
   controlsGap: 14,
@@ -219,6 +221,24 @@ export const DASH_WEEK_CHART = {
   tooltipPadX: 10,
   tooltipSize: 12,
   tooltipWeight: 600,
+} as const;
+
+/** 출석 통계 월간(M) — 10·11 PNG. 색은 주간과 동일, 막대가 더 좁음 */
+export const DASH_MONTH_CHART = {
+  highlight: "#5b7be6",
+  fill: "#c6c9d1",
+  track: "#ebebef",
+  pctGray: "#646977",
+  pctHot: "#ffffff",
+  axis: "#93969f",
+  axisHot: "#0b0c0e",
+  axisEmpty: "#a0a5b1",
+  gap: 7,
+  gapMob: 4,
+  radius: 4,
+  pctSize: 13,
+  pctSizeMob: 11,
+  pctWeight: 700,
 } as const;
 
 /** 출석 통계 막대 내부 타이포 — 막대 너비 대비 스케일 */
