@@ -30,11 +30,11 @@ import {
   isEphemeralMemberPhotoUrl,
 } from "@/lib/member-photo";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
-import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, BookOpenCheck, ArrowUpRight, Pencil, Trash2 } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, BookOpenCheck, ArrowUpRight, Pencil, Trash2, Check } from "lucide-react";
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ICON_BTN, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, DASH_WEEK_CHART, DASH_MONTH_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ICON_BTN, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, DASH_WEEK_CHART, DASH_MONTH_CHART, DASH_YEAR_CHART, DASH_YEAR_DROPDOWN, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
 import "@/styles/pastoralDashboardChrome.css";
 import { PastoralFeedDetailModal } from "@/components/pastoral/PastoralFeedDetailModal";
 import { APP_MODAL } from "@/styles/appModalTokens";
@@ -831,9 +831,6 @@ function AttChartAxisLabel({
   return <span style={{ ...base, fontWeight: fw }}>{text}</span>;
 }
 
-const ATT_CHART_YEAR_CHEVRON =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b909a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")";
-
 function dashPeriodBtnStyle(
   chartCtrl: typeof DASH_ATT_CHART_CTRL,
   mob: boolean,
@@ -885,46 +882,145 @@ function AttChartControls({
 }) {
   const btnSize = mob ? chartCtrl.periodBtnSizeMob : chartCtrl.periodBtnSize;
   const [periodHoverId, setPeriodHoverId] = useState<string | null>(null);
+  const [yearOpen, setYearOpen] = useState(false);
+  const [yearRowHover, setYearRowHover] = useState<number | null>(null);
+  const yearWrapRef = useRef<HTMLDivElement>(null);
+  const dd = DASH_YEAR_DROPDOWN;
   const periodBtnStyle = (active: boolean, hovered: boolean) => dashPeriodBtnStyle(chartCtrl, mob, active, hovered);
+
+  useEffect(() => {
+    if (!yearOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!yearWrapRef.current?.contains(e.target as Node)) setYearOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setYearOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [yearOpen]);
+
+  useEffect(() => {
+    if (attChartView === "week") setYearOpen(false);
+  }, [attChartView]);
 
   return (
       <div
-        style={{ display: "flex", alignItems: "center", gap: mob ? chartCtrl.controlsGapMob : chartCtrl.controlsGap, flexShrink: 0 }}
+        style={{ display: "flex", alignItems: "center", gap: mob ? chartCtrl.controlsGapMob : chartCtrl.controlsGap, flexShrink: 0, position: "relative", zIndex: 5 }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
       {attChartView !== "week" && (
-      <select
-        value={attChartYear}
-        onChange={(e) => setAttChartYear(Number(e.target.value))}
-        aria-label="출석 통계 연도"
-        style={{
-          appearance: "none",
-          WebkitAppearance: "none",
-          MozAppearance: "none",
-          border: "none",
-          background: `transparent ${ATT_CHART_YEAR_CHEVRON} no-repeat right center`,
-          backgroundSize: "12px 12px",
-          fontFamily: DASH_GLOBAL.fontLatin,
-          fontSize: chartCtrl.yearFontSize,
-          fontWeight: chartCtrl.yearFontWeight,
-          color: chartCtrl.periodText,
-          padding: "0 18px 0 0",
-          margin: 0,
-          cursor: "pointer",
-          height: btnSize,
-          lineHeight: 1,
-          display: "inline-flex",
-          alignItems: "center",
-          boxSizing: "border-box",
-        }}
-      >
-        {attChartYearOptions.map((y) => (
-          <option key={y} value={y}>
-            {y}
-          </option>
-        ))}
-      </select>
+      <div ref={yearWrapRef} style={{ position: "relative", flexShrink: 0 }}>
+        <button
+          type="button"
+          aria-label="출석 통계 연도"
+          aria-haspopup="listbox"
+          aria-expanded={yearOpen}
+          onClick={() => setYearOpen((v) => !v)}
+          style={{
+            border: "none",
+            background: "transparent",
+            fontFamily: DASH_GLOBAL.fontLatin,
+            fontSize: chartCtrl.yearFontSize,
+            fontWeight: chartCtrl.yearFontWeight,
+            color: chartCtrl.periodText,
+            padding: 0,
+            margin: 0,
+            cursor: "pointer",
+            height: btnSize,
+            lineHeight: 1,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            boxSizing: "border-box",
+          }}
+        >
+          {attChartYear}
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+            style={{
+              transform: yearOpen ? "rotate(180deg)" : "none",
+              flexShrink: 0,
+              display: "block",
+            }}
+          >
+            <polyline
+              points="6 9 12 15 18 9"
+              stroke={chartCtrl.yearChevron}
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        {yearOpen && (
+          <div
+            role="listbox"
+            aria-label="출석 통계 연도"
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              marginTop: 6,
+              width: dd.panelWidth,
+              background: dd.panelBg,
+              borderRadius: dd.panelRadius,
+              boxShadow: dd.shadow,
+              overflow: "hidden",
+              zIndex: 6,
+              boxSizing: "border-box",
+            }}
+          >
+            {attChartYearOptions.map((y) => {
+              const selected = y === attChartYear;
+              const hovered = !selected && yearRowHover === y;
+              return (
+                <button
+                  key={y}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onMouseEnter={() => setYearRowHover(y)}
+                  onMouseLeave={() => setYearRowHover(null)}
+                  onClick={() => {
+                    setAttChartYear(y);
+                    setYearOpen(false);
+                  }}
+                  style={{
+                    width: "100%",
+                    height: dd.rowHeight,
+                    border: "none",
+                    padding: "0 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    background: hovered ? dd.hoverBg : dd.panelBg,
+                    color: dd.text,
+                    fontFamily: DASH_GLOBAL.fontLatin,
+                    fontSize: chartCtrl.yearFontSize,
+                    fontWeight: chartCtrl.yearFontWeight,
+                    cursor: "pointer",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <span>{y}</span>
+                  {selected && <Check size={14} strokeWidth={2.2} color={dd.text} aria-hidden />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
       )}
       <div style={{ display: "flex", alignItems: "center", gap: chartCtrl.periodBtnGap }}>
         {periodSegmentItems.map((item) => {
@@ -1077,6 +1173,7 @@ function DashboardSub({
   const [attChartWidth, setAttChartWidth] = useState(0);
   const [weekHoverWk, setWeekHoverWk] = useState<number | null>(null);
   const [monthHoverIdx, setMonthHoverIdx] = useState<number | null>(null);
+  const [yearHoverIdx, setYearHoverIdx] = useState<number | null>(null);
   const [feedPage, setFeedPage] = useState(1);
   const feedSwipeStartX = useRef<number | null>(null);
   const [deptWizard, setDeptWizard] = useState<OrgDeptWizardState | null>(null);
@@ -2014,7 +2111,7 @@ function DashboardSub({
           ) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, padding: "16px 24px", flexShrink: 0 }}>
               <h4 style={{ margin: 0, fontSize: dashTypo.section.titleSize, fontWeight: 700, color: C.text }}>출석 통계</h4>
-              <div style={{ display: "flex", alignItems: "center", gap: mob ? 10 : 14, flexWrap: "wrap", position: "relative", zIndex: 1, marginLeft: "auto" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: mob ? 10 : 14, flexWrap: "wrap", position: "relative", zIndex: 5, marginLeft: "auto" }}>
                 <AttChartControls
                   mob={mob}
                   attChartYear={attChartYear}
@@ -2035,7 +2132,7 @@ function DashboardSub({
               flex: mob ? undefined : 1,
               minHeight: mob ? tokens.height.mobileChart : DASH_LAYOUT.attendanceChartMinHeight,
               boxSizing: "border-box",
-              overflow: mob ? "auto" : "hidden",
+              overflow: attChartView === "year" ? "visible" : mob ? "auto" : "hidden",
               display: "flex",
               flexDirection: "column",
               justifyContent: "flex-start",
@@ -2306,25 +2403,17 @@ function DashboardSub({
               const yearChartFullRate = 100;
               const yearHasData = yearlyTrend.some((y) => y.rate > 0);
               if (!yearHasData) return emptyMsg;
+              const yn = DASH_YEAR_CHART;
+              const tip = DASH_WEEK_CHART;
               const yearBlockStyles = [
-                { bg: DASH_CHART.statBarYearBack, text: DASH_CHART.statTextYearBack, sub: DASH_CHART.statSubYearBack, textShadow: "0 1px 1px rgba(0,0,0,0.1)" },
-                { bg: DASH_CHART.statBarYearMid, text: DASH_CHART.statTextYearMid, sub: DASH_CHART.statSubYearMid, textShadow: "0 1px 1px rgba(255,255,255,0.55)" },
-                { bg: DASH_CHART.statBarHighlight, text: DASH_CHART.statTextYearHighlight, sub: DASH_CHART.statSubYearHighlight, textShadow: "0 1px 1px rgba(255,255,255,0.45)" },
+                { bg: yn.back, pct: yn.backPct, year: yn.backYear },
+                { bg: yn.mid, pct: yn.midPct, year: yn.midYear },
+                { bg: yn.front, pct: yn.frontPct, year: yn.frontYear },
               ] as const;
               const yc = DASH_ATT_YEAR_CHART;
               const yearLayoutSpan = Math.max(...yc.blockLayout.map((b) => b.leftPct + b.widthPct));
               const yrScale = attChartBarScale.year;
               const blockRadius = dashScalePx(yc.blockRadius, yrScale);
-              const yearLabelStyle = (palette: (typeof yearBlockStyles)[number], isFront: boolean): CSSProperties => ({
-                fontSize: yearChartTypo.label,
-                color: palette.sub,
-                fontWeight: isFront ? 800 : 700,
-                letterSpacing: "-0.02em",
-                textShadow: palette.textShadow,
-                lineHeight: 1,
-                maxWidth: "100%",
-                overflow: "hidden",
-              });
               return (
                 <div
                   style={{
@@ -2334,7 +2423,7 @@ function DashboardSub({
                     width: "100%",
                     flex: 1,
                     minHeight: dashScalePx(yc.maxBarHeight, yrScale),
-                    paddingTop: mob ? 8 : 10,
+                    paddingTop: mob ? 24 : 32,
                     boxSizing: "border-box",
                   }}
                 >
@@ -2348,6 +2437,7 @@ function DashboardSub({
                     const hasData = visualRate > 0;
                     const spacerFlex = Math.max(0, yearChartFullRate - (hasData ? visualRate : 0));
                     const barFlex = hasData ? visualRate : 0;
+                    const hovered = yearHoverIdx === i;
                     return (
                       <div
                         key={y.year}
@@ -2357,17 +2447,20 @@ function DashboardSub({
                           bottom: 0,
                           left: `${layoutLeftPct}%`,
                           width: `${layoutWidthPct}%`,
-                          zIndex: layout.zIndex,
+                          zIndex: hovered ? 8 : layout.zIndex,
                           display: "flex",
                           flexDirection: "column",
                           minHeight: 0,
                           boxSizing: "border-box",
                         }}
+                        onMouseEnter={() => setYearHoverIdx(i)}
+                        onMouseLeave={() => setYearHoverIdx(null)}
                       >
                         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, justifyContent: "flex-end" }}>
                           {spacerFlex > 0 && <div style={{ flex: spacerFlex, minHeight: 0 }} />}
                           <div
                             style={{
+                              position: "relative",
                               flex: barFlex > 0 ? barFlex : undefined,
                               minHeight: hasData ? 0 : yearChartTypo.emptyMinH,
                               borderRadius: `${blockRadius}px ${blockRadius}px 0 0`,
@@ -2378,17 +2471,63 @@ function DashboardSub({
                               alignItems: "flex-start",
                               padding: `${hasData ? yearChartTypo.padTop : yearChartTypo.padBottom}px ${yearChartTypo.padLeft}px ${yearChartTypo.padBottom}px`,
                               boxSizing: "border-box",
-                              overflow: "hidden",
+                              overflow: "visible",
                               maxWidth: "100%",
                             }}
                           >
                             {hasData && (
-                              <div style={{ maxWidth: "100%", overflow: "hidden" }}>
-                                <div style={{ fontSize: mob ? yearChartTypo.valueMob : yearChartTypo.value, fontWeight: 900, color: palette.text, letterSpacing: "-0.04em", lineHeight: 1, textShadow: palette.textShadow, fontFeatureSettings: '"tnum"', maxWidth: "100%", overflow: "hidden" }}>{visualRate}%</div>
-                                <div style={{ fontSize: yearChartTypo.sub, color: palette.sub, marginTop: Math.max(6, Math.round(yearChartTypo.padTop * 0.45)), fontWeight: 800, letterSpacing: "-0.02em", textShadow: palette.textShadow, maxWidth: "100%", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{y.present}/{y.total}명</div>
+                              <div
+                                style={{
+                                  fontSize: mob ? yearChartTypo.valueMob : yearChartTypo.value,
+                                  fontWeight: 900,
+                                  color: palette.pct,
+                                  letterSpacing: "-0.04em",
+                                  lineHeight: 1,
+                                  fontFeatureSettings: '"tnum"',
+                                  maxWidth: "100%",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {visualRate}%
                               </div>
                             )}
-                            <div style={yearLabelStyle(palette, isFront)}>{y.year}</div>
+                            <div
+                              style={{
+                                fontSize: yearChartTypo.label,
+                                color: palette.year,
+                                fontWeight: isFront ? 800 : 700,
+                                letterSpacing: "-0.02em",
+                                lineHeight: 1,
+                                maxWidth: "100%",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {y.year}
+                            </div>
+                            {hovered && hasData && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  left: 0,
+                                  top: 0,
+                                  transform: "translateY(calc(-100% - 6px))",
+                                  background: tip.tooltipBg,
+                                  color: tip.tooltipFg,
+                                  borderRadius: tip.tooltipRadius,
+                                  padding: `${tip.tooltipPadY}px ${tip.tooltipPadX}px`,
+                                  fontSize: dashScalePx(tip.tooltipSize, typoScale),
+                                  fontWeight: tip.tooltipWeight,
+                                  fontFamily: DASH_GLOBAL.fontKR,
+                                  letterSpacing: "-0.02em",
+                                  lineHeight: 1.2,
+                                  whiteSpace: "nowrap",
+                                  pointerEvents: "none",
+                                  zIndex: 9,
+                                }}
+                              >
+                                활동 평균 {y.present}/{y.total}명
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

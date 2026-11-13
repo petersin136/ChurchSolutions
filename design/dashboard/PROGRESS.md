@@ -215,7 +215,45 @@
 
 28. **월 % 분모** — 시안 툴팁 87, 막대는 %. 집계 함수는 안 바꾸고 `avg / 활동성도`로만 그림. 시안 72/87과 실데이터 수는 다를 수 있음.
 29. **빈 달 트랙** — 10 PNG 12월 구간은 흰 면. 주간과 같이 `#ebebef` 트랙은 유지.
-30. **연간(Y)** — 다음 단계.
+30. **연간(Y)** — 6단계에서 맞춤.
+
+## 6단계 — 12~14 Y 그래프·연간 툴팁·연도 드롭다운
+
+- [x] `DASH_YEAR_CHART` 전용 토큰. `statBarHighlight` 주황은 AttendanceDashboard 공유라 안 바꿈
+- [x] 3년 겹침 블록: 2024 `#c6c9d1` / 2025 `#ebebef` / 2026 `#5b7be6`. 높이 = 기존 `yearlyTrend.rate` (집계 미변경)
+- [x] 블록 안 `present/total` 제거. %만. 뒤·중간 `#646977`, 앞 흰색
+- [x] hover 툴팁 `활동 평균 {present}/{total}명`. `yearlyTrend` 필드만 표시
+- [x] native `<select>` → 커스텀 패널. 열리면 쉐브론 위, 선택 체크, hover `#ebebef`
+- [x] 연도 목록은 `getAttendanceLoadYearOptions()` 그대로 (3년)
+- [x] `npx tsc --noEmit` 통과. lint는 기존 PastoralPage 경고만
+- [x] 12~14 대조 후 커밋
+
+### 6단계 PNG 대조
+
+| 항목 | 이미지 지정값 | 코드 | 일치 |
+|---|---|---|---|
+| 2024 면 | `#c6c9d1` | `DASH_YEAR_CHART.back` | 예 |
+| 2025 면 | `#ebebef` | `mid` | 예 |
+| 2026 면 | `#5b7be6` | `front` | 예 |
+| 뒤·중간 % | `#646977` | `backPct` / `midPct` | 예 |
+| 앞 % | 흰색 | `frontPct` | 예 |
+| 블록 안 인원 | 없음 (툴팁으로) | `present/total` 제거 | 예 |
+| 툴팁 면 | `#0b0c0e` | `DASH_WEEK_CHART.tooltipBg` | 예 |
+| 툴팁 카피 | `활동 평균 65/72명` | `활동 평균 {present}/{total}명` | 예 |
+| 드롭다운 면 | `#ffffff` | `DASH_YEAR_DROPDOWN.panelBg` | 예 |
+| 드롭다운 hover | `#ebebef` | `hoverBg` | 예 |
+| 열린 쉐브론 | 위 | `rotate(180deg)` | 예 |
+| 선택 체크 | 있음 | lucide `Check` | 예 |
+| 연도 옵션 | 시안 2026–2022 | `getAttendanceLoadYearOptions` 3년 | 아니오 (아래 31) |
+| 계산 | 기존 yearlyTrend | 미변경 | 예 |
+
+### 확인 필요 (6단계)
+
+31. **드롭다운 연 수** — 14 PNG는 2026–2022 5년. `ATTENDANCE_LOAD_YEARS = 3`이라 로드 범위를 안 바꾸고 3년만 그림.
+32. **2026 연도 글자** — 12 PNG 블루 하단 샘플에 `#0b0c0e` 66px. 가독성상 흰 글자(`frontYear #ffffff`).
+33. **드롭다운 그림자·패딩** — 14에 수치 없음. `0 8px 24px rgba(11,12,14,0.12)`, 행 높이 30, 폭 88.
+34. **겹침 레이아웃** — 12 실측 left/width 0/53, 27/26, 53/47. 높이 스케일은 기존 rate% 유지.
+35. **라이브 hover** — 로그인 세션이 없어 브라우저에서 Y 전환·툴팁·드롭다운 클릭은 소스 대조로만 확인.
 
 ## 이후 단계
 

@@ -241,6 +241,31 @@ export const DASH_MONTH_CHART = {
   pctWeight: 700,
 } as const;
 
+/** 출석 통계 연간(Y) — 12·13 PNG. AttendanceDashboard 공유 주황과 분리 */
+export const DASH_YEAR_CHART = {
+  back: "#c6c9d1",
+  mid: "#ebebef",
+  front: "#5b7be6",
+  backPct: "#646977",
+  midPct: "#646977",
+  frontPct: "#ffffff",
+  backYear: "#646977",
+  midYear: "#646977",
+  frontYear: "#ffffff",
+} as const;
+
+/** 연도 드롭다운 — 14 PNG */
+export const DASH_YEAR_DROPDOWN = {
+  panelBg: "#ffffff",
+  panelRadius: 8,
+  panelWidth: 88,
+  rowHeight: 30,
+  hoverBg: "#ebebef",
+  text: "#0b0c0e",
+  muted: "#646977",
+  shadow: "0 8px 24px rgba(11,12,14,0.12)",
+} as const;
+
 /** 출석 통계 막대 내부 타이포 — 막대 너비 대비 스케일 */
 export const DASH_ATT_CHART_BAR = {
   /** 시안 기준 막대 너비(px) — 이때 타이포 100% */
@@ -426,9 +451,9 @@ export const DASH_ATT_YEAR_CHART = {
   blockRadius: 7,
   /** 좌(높음) · 중(낮음·뒤) · 우(넓음·앞) — left+width 합이 100% 넘어도 겹침 허용 */
   blockLayout: [
-    { leftPct: 0, widthPct: 29, zIndex: 1 },
-    { leftPct: 18, widthPct: 32, zIndex: 2 },
-    { leftPct: 26, widthPct: 50, zIndex: 3 },
+    { leftPct: 0, widthPct: 53, zIndex: 1 },
+    { leftPct: 27, widthPct: 26, zIndex: 2 },
+    { leftPct: 53, widthPct: 47, zIndex: 3 },
   ] as const,
   designBlockWidth: 200,
 } as const;
