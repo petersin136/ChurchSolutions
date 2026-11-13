@@ -1,0 +1,2228 @@
+{
+  "png_scale": "All source PNGs are 1440px wide. Design baseWidth is 1440, so 1 PNG px = 1 CSS px.",
+  "files": {
+    "01": {
+      "size": [
+        1440,
+        1252
+      ],
+      "card_boxes": [
+        {
+          "x": 264,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 828,
+          "y1": 316
+        },
+        {
+          "x": 848,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 1412,
+          "y1": 316
+        },
+        {
+          "x": 264,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 536,
+          "y1": 552
+        },
+        {
+          "x": 556,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 828,
+          "y1": 552
+        },
+        {
+          "x": 848,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1120,
+          "y1": 552
+        },
+        {
+          "x": 1140,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1412,
+          "y1": 552
+        },
+        {
+          "x": 264,
+          "y": 572,
+          "w": 564,
+          "h": 316,
+          "x1": 828,
+          "y1": 888
+        },
+        {
+          "x": 848,
+          "y": 572,
+          "w": 564,
+          "h": 652,
+          "x1": 1412,
+          "y1": 1224
+        },
+        {
+          "x": 264,
+          "y": 908,
+          "w": 564,
+          "h": 316,
+          "x1": 828,
+          "y1": 1224
+        }
+      ],
+      "top_cards": [
+        {
+          "x": 264,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 828,
+          "y1": 316
+        },
+        {
+          "x": 848,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 1412,
+          "y1": 316
+        }
+      ]
+    },
+    "04": {
+      "size": [
+        1440,
+        1252
+      ],
+      "card_boxes": [
+        {
+          "x": 264,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 828,
+          "y1": 316
+        },
+        {
+          "x": 848,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 1412,
+          "y1": 316
+        },
+        {
+          "x": 264,
+          "y": 336,
+          "w": 276,
+          "h": 220,
+          "x1": 540,
+          "y1": 556
+        },
+        {
+          "x": 556,
+          "y": 336,
+          "w": 276,
+          "h": 220,
+          "x1": 832,
+          "y1": 556
+        },
+        {
+          "x": 848,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1120,
+          "y1": 552
+        },
+        {
+          "x": 1140,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1412,
+          "y1": 552
+        },
+        {
+          "x": 264,
+          "y": 572,
+          "w": 564,
+          "h": 316,
+          "x1": 828,
+          "y1": 888
+        },
+        {
+          "x": 848,
+          "y": 572,
+          "w": 564,
+          "h": 652,
+          "x1": 1412,
+          "y1": 1224
+        },
+        {
+          "x": 264,
+          "y": 908,
+          "w": 564,
+          "h": 316,
+          "x1": 828,
+          "y1": 1224
+        }
+      ],
+      "cards_sorted": [
+        {
+          "x": 264,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 828,
+          "y1": 316
+        },
+        {
+          "x": 848,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 1412,
+          "y1": 316
+        },
+        {
+          "x": 264,
+          "y": 336,
+          "w": 276,
+          "h": 220,
+          "x1": 540,
+          "y1": 556
+        },
+        {
+          "x": 556,
+          "y": 336,
+          "w": 276,
+          "h": 220,
+          "x1": 832,
+          "y1": 556
+        },
+        {
+          "x": 848,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1120,
+          "y1": 552
+        },
+        {
+          "x": 1140,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1412,
+          "y1": 552
+        },
+        {
+          "x": 264,
+          "y": 572,
+          "w": 564,
+          "h": 316,
+          "x1": 828,
+          "y1": 888
+        },
+        {
+          "x": 848,
+          "y": 572,
+          "w": 564,
+          "h": 652,
+          "x1": 1412,
+          "y1": 1224
+        },
+        {
+          "x": 264,
+          "y": 908,
+          "w": 564,
+          "h": 316,
+          "x1": 828,
+          "y1": 1224
+        }
+      ],
+      "mid_cards": [
+        {
+          "x": 264,
+          "y": 336,
+          "w": 276,
+          "h": 220,
+          "x1": 540,
+          "y1": 556
+        },
+        {
+          "x": 556,
+          "y": 336,
+          "w": 276,
+          "h": 220,
+          "x1": 832,
+          "y1": 556
+        },
+        {
+          "x": 848,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1120,
+          "y1": 552
+        },
+        {
+          "x": 1140,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1412,
+          "y1": 552
+        }
+      ],
+      "top_cards": [
+        {
+          "x": 264,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 828,
+          "y1": 316
+        },
+        {
+          "x": 848,
+          "y": 88,
+          "w": 564,
+          "h": 228,
+          "x1": 1412,
+          "y1": 316
+        }
+      ]
+    }
+  },
+  "tokens": {
+    "page_bg": "#f4f4f6",
+    "sidebar": {
+      "bg_sample": "#f4f4f6",
+      "active_menu_box": "#ffffff",
+      "active_menu_colors": [
+        {
+          "hex": "#fcfcfc",
+          "count": 7638,
+          "ratio": 0.6489
+        },
+        {
+          "hex": "#f4f4f4",
+          "count": 3798,
+          "ratio": 0.3227
+        },
+        {
+          "hex": "#080c0c",
+          "count": 107,
+          "ratio": 0.0091
+        },
+        {
+          "hex": "#a4a4a4",
+          "count": 75,
+          "ratio": 0.0064
+        },
+        {
+          "hex": "#686868",
+          "count": 52,
+          "ratio": 0.0044
+        },
+        {
+          "hex": "#d4d4d4",
+          "count": 40,
+          "ratio": 0.0034
+        }
+      ],
+      "inactive_menu_text": "#f4f4f6",
+      "date_today": "#f4f4f6",
+      "date_value": "#f4f4f6",
+      "logo_ink": "#f4f4f6",
+      "profile_icon": "#f4f4f6",
+      "profile_name": "#f4f4f6"
+    },
+    "attendance_bar": {
+      "bbox": [
+        288,
+        218,
+        677,
+        296
+      ],
+      "height_px": 78,
+      "fill": "#5b7be6",
+      "fill_unique": [
+        {
+          "hex": "#5878e4",
+          "count": 24390,
+          "ratio": 0.8038
+        },
+        {
+          "hex": "#fcfcfc",
+          "count": 5772,
+          "ratio": 0.1902
+        },
+        {
+          "hex": "#6888e8",
+          "count": 75,
+          "ratio": 0.0025
+        },
+        {
+          "hex": "#d0d8f8",
+          "count": 30,
+          "ratio": 0.001
+        },
+        {
+          "hex": "#6884e8",
+          "count": 30,
+          "ratio": 0.001
+        },
+        {
+          "hex": "#ccd8f8",
+          "count": 30,
+          "ratio": 0.001
+        }
+      ],
+      "blue_bar_count": 15,
+      "blue_bar_widths": [
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21
+      ],
+      "blue_bar_width_median": 21,
+      "empty_bar_count": 3,
+      "empty_widths": [
+        21,
+        21,
+        21
+      ],
+      "gaps": [
+        5,
+        6,
+        5,
+        5,
+        5,
+        6,
+        5,
+        5,
+        5,
+        6,
+        5,
+        5,
+        5,
+        6,
+        5,
+        5,
+        5
+      ],
+      "gap_median": 5,
+      "empty_fill": "#ebebef",
+      "radius": {
+        "radius_px": 3,
+        "error": 1.0
+      },
+      "empty_fill_median": "#ebebef"
+    },
+    "member_dot": {
+      "bbox": [
+        872,
+        218,
+        1392,
+        296
+      ],
+      "fill": "#3a9a8c",
+      "fill_unique": [
+        {
+          "hex": "#fcfcfc",
+          "count": 18224,
+          "ratio": 0.4493
+        },
+        {
+          "hex": "#38988c",
+          "count": 15088,
+          "ratio": 0.372
+        },
+        {
+          "hex": "#e0e4e8",
+          "count": 1376,
+          "ratio": 0.0339
+        },
+        {
+          "hex": "#90c4bc",
+          "count": 736,
+          "ratio": 0.0181
+        },
+        {
+          "hex": "#58a89c",
+          "count": 736,
+          "ratio": 0.0181
+        },
+        {
+          "hex": "#3c988c",
+          "count": 736,
+          "ratio": 0.0181
+        },
+        {
+          "hex": "#3c9c8c",
+          "count": 552,
+          "ratio": 0.0136
+        },
+        {
+          "hex": "#f8fcfc",
+          "count": 552,
+          "ratio": 0.0136
+        },
+        {
+          "hex": "#8cc4bc",
+          "count": 552,
+          "ratio": 0.0136
+        },
+        {
+          "hex": "#dcecec",
+          "count": 460,
+          "ratio": 0.0113
+        },
+        {
+          "hex": "#6cb4a8",
+          "count": 368,
+          "ratio": 0.0091
+        },
+        {
+          "hex": "#dcece8",
+          "count": 276,
+          "ratio": 0.0068
+        },
+        {
+          "hex": "#f8f8f8",
+          "count": 248,
+          "ratio": 0.0061
+        },
+        {
+          "hex": "#88c0b8",
+          "count": 184,
+          "ratio": 0.0045
+        },
+        {
+          "hex": "#409c90",
+          "count": 184,
+          "ratio": 0.0045
+        },
+        {
+          "hex": "#ecf0f0",
+          "count": 64,
+          "ratio": 0.0016
+        },
+        {
+          "hex": "#e4e4e8",
+          "count": 64,
+          "ratio": 0.0016
+        },
+        {
+          "hex": "#ececf0",
+          "count": 64,
+          "ratio": 0.0016
+        },
+        {
+          "hex": "#e8e8ec",
+          "count": 56,
+          "ratio": 0.0014
+        },
+        {
+          "hex": "#e4e8ec",
+          "count": 40,
+          "ratio": 0.001
+        }
+      ],
+      "dot_count_first_row": 25,
+      "diameter_median": 16,
+      "diameters": [
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16
+      ],
+      "gap_median": 5,
+      "gaps": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "grid_height": 78,
+      "empty": "#e3e4e9"
+    },
+    "mid_cards": [
+      {
+        "id": "newfamily",
+        "box": {
+          "x": 264,
+          "y": 336,
+          "w": 276,
+          "h": 220,
+          "x1": 540,
+          "y1": 556
+        },
+        "top_left": "#eaf1ff",
+        "center": "#f4f8ff",
+        "bottom_right": "#fdfeff",
+        "diagonal": [
+          "#989ca5",
+          "#eef4ff",
+          "#f4f8ff",
+          "#f9fbff",
+          "#fdfdff"
+        ],
+        "edge": "#ebf2ff",
+        "outside": "#f4f4f6",
+        "radius": {
+          "radius_px": 10,
+          "error": 0.0
+        }
+      },
+      {
+        "id": "risk",
+        "box": {
+          "x": 556,
+          "y": 336,
+          "w": 276,
+          "h": 220,
+          "x1": 832,
+          "y1": 556
+        },
+        "top_left": "#ffefe1",
+        "center": "#fff6ef",
+        "bottom_right": "#fffdfc",
+        "diagonal": [
+          "#0b0c0e",
+          "#fff2e7",
+          "#fff6ef",
+          "#fffbf7",
+          "#fffdfb"
+        ],
+        "edge": "#fff0e2",
+        "outside": "#f4f4f6",
+        "radius": {
+          "radius_px": 8,
+          "error": 0.0
+        }
+      },
+      {
+        "id": "visit",
+        "box": {
+          "x": 848,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1120,
+          "y1": 552
+        },
+        "top_left": "#ffffff",
+        "center": "#ffffff",
+        "bottom_right": "#ffffff",
+        "diagonal": [
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#a5a5a5"
+        ],
+        "edge": "#ffffff",
+        "outside": "#f4f4f6",
+        "radius": {
+          "radius_px": 9,
+          "error": 0.0
+        }
+      },
+      {
+        "id": "prayer",
+        "box": {
+          "x": 1140,
+          "y": 336,
+          "w": 272,
+          "h": 216,
+          "x1": 1412,
+          "y1": 552
+        },
+        "top_left": "#ffffff",
+        "center": "#ffffff",
+        "bottom_right": "#ffffff",
+        "diagonal": [
+          "#0b0c0e",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#0b0c0e"
+        ],
+        "edge": "#ffffff",
+        "outside": "#f4f4f6",
+        "radius": {
+          "radius_px": 9,
+          "error": 0.0
+        }
+      }
+    ],
+    "type_attendance_empty": {
+      "label": {
+        "glyph_h": 16,
+        "glyph_w": 81,
+        "box": [
+          288,
+          109,
+          369,
+          125
+        ],
+        "est_font_px_inter": 22,
+        "est_font_px_pretendard": 22
+      },
+      "value": null,
+      "sub": null,
+      "label_color": "#f5f5f5"
+    },
+    "type_member_empty": {
+      "label": {
+        "glyph_h": 16,
+        "glyph_w": 64,
+        "box": [
+          873,
+          109,
+          937,
+          125
+        ],
+        "est_font_px_inter": 22,
+        "est_font_px_pretendard": 22
+      },
+      "value": null
+    },
+    "type_attendance_75": {
+      "label": {
+        "glyph_h": 16,
+        "glyph_w": 81,
+        "box": [
+          288,
+          109,
+          369,
+          125
+        ],
+        "est_font_px_inter": 22,
+        "est_font_px_pretendard": 22
+      },
+      "value": {
+        "glyph_h": 37,
+        "glyph_w": 77,
+        "box": [
+          288,
+          142,
+          365,
+          179
+        ],
+        "est_font_px_inter": 51,
+        "est_font_px_pretendard": 51
+      },
+      "sub": {
+        "glyph_h": 11,
+        "glyph_w": 109,
+        "box": [
+          414,
+          167,
+          523,
+          178
+        ],
+        "est_font_px_inter": 15,
+        "est_font_px_pretendard": 15
+      },
+      "ink": "#ffffff",
+      "value_ink": "#ffffff",
+      "sub_color_samples": [
+        {
+          "hex": "#f8f8f8",
+          "count": 4647,
+          "ratio": 0.8801
+        },
+        {
+          "hex": "#b8b8c0",
+          "count": 112,
+          "ratio": 0.0212
+        },
+        {
+          "hex": "#606870",
+          "count": 111,
+          "ratio": 0.021
+        },
+        {
+          "hex": "#d8e0e0",
+          "count": 83,
+          "ratio": 0.0157
+        },
+        {
+          "hex": "#909098",
+          "count": 82,
+          "ratio": 0.0155
+        },
+        {
+          "hex": "#c8c8d0",
+          "count": 30,
+          "ratio": 0.0057
+        },
+        {
+          "hex": "#a8a8b0",
+          "count": 29,
+          "ratio": 0.0055
+        },
+        {
+          "hex": "#f0f0f8",
+          "count": 27,
+          "ratio": 0.0051
+        },
+        {
+          "hex": "#707080",
+          "count": 27,
+          "ratio": 0.0051
+        },
+        {
+          "hex": "#e8f0f0",
+          "count": 24,
+          "ratio": 0.0045
+        },
+        {
+          "hex": "#b0b0b8",
+          "count": 24,
+          "ratio": 0.0045
+        },
+        {
+          "hex": "#788088",
+          "count": 19,
+          "ratio": 0.0036
+        },
+        {
+          "hex": "#d0d0d8",
+          "count": 19,
+          "ratio": 0.0036
+        },
+        {
+          "hex": "#888890",
+          "count": 15,
+          "ratio": 0.0028
+        },
+        {
+          "hex": "#e0e8e8",
+          "count": 13,
+          "ratio": 0.0025
+        },
+        {
+          "hex": "#c0c0c8",
+          "count": 11,
+          "ratio": 0.0021
+        }
+      ],
+      "pad_left": 24,
+      "pad_top": 21
+    },
+    "type_member_101": {
+      "label": {
+        "glyph_h": 16,
+        "glyph_w": 64,
+        "box": [
+          873,
+          109,
+          937,
+          125
+        ],
+        "est_font_px_inter": 22,
+        "est_font_px_pretendard": 22
+      },
+      "value": {
+        "glyph_h": 37,
+        "glyph_w": 97,
+        "box": [
+          873,
+          142,
+          970,
+          179
+        ],
+        "est_font_px_inter": 51,
+        "est_font_px_pretendard": 51
+      },
+      "sub": {
+        "glyph_h": 12,
+        "glyph_w": 43,
+        "box": [
+          1033,
+          166,
+          1076,
+          178
+        ],
+        "est_font_px_inter": 17,
+        "est_font_px_pretendard": 16
+      }
+    },
+    "large_card": {
+      "box": {
+        "x": 848,
+        "y": 572,
+        "w": 564,
+        "h": 652,
+        "x1": 1412,
+        "y1": 1224
+      },
+      "bg": "#ffffff",
+      "radius": {
+        "radius_px": 9,
+        "error": 0.0
+      },
+      "outside_near_corner": "#f4f4f6",
+      "page_bg": "#f4f4f6"
+    },
+    "gap_top_cards": 20,
+    "gap_row1_to_row2": 20,
+    "gap_mid_cards": [
+      16,
+      16,
+      20
+    ],
+    "wmy_01": {
+      "dark_bbox": [
+        581,
+        360,
+        1194,
+        376
+      ],
+      "active_bg": "#0b0c0e",
+      "size_est": [
+        613,
+        16
+      ]
+    },
+    "dept": {
+      "top_bar": {
+        "fill": "#d468c8",
+        "bbox": [
+          356,
+          982,
+          759,
+          1018
+        ],
+        "height": 36,
+        "width": 403,
+        "unique": [
+          {
+            "hex": "#d468c8",
+            "count": 14476,
+            "ratio": 0.9978
+          }
+        ],
+        "radius": {
+          "radius_px": 5,
+          "error": 0.833
+        }
+      },
+      "other_bars": [],
+      "label_color": "#ffffff",
+      "count_color": "#ffffff"
+    },
+    "week_chart": {
+      "highlight": {
+        "fill": "#5b7be6",
+        "bbox": [
+          709,
+          699,
+          808,
+          849
+        ],
+        "h": 150,
+        "w": 99,
+        "unique": [
+          {
+            "hex": "#5878e4",
+            "count": 14834,
+            "ratio": 0.9989
+          }
+        ],
+        "radius_tl": {
+          "radius_px": 3,
+          "error": 1.0
+        }
+      },
+      "gray_bars": {
+        "count": 4,
+        "runs": [
+          [
+            288,
+            387
+          ],
+          [
+            394,
+            493
+          ],
+          [
+            499,
+            598
+          ],
+          [
+            604,
+            703
+          ]
+        ],
+        "widths": [
+          99,
+          99,
+          99,
+          99
+        ],
+        "fill": "#c6c9d1"
+      },
+      "track": {
+        "count": 10,
+        "fill": null
+      },
+      "bar_gaps": [
+        7,
+        6,
+        6,
+        6
+      ],
+      "highlight_text": [
+        {
+          "hex": "#5878e0",
+          "count": 4934,
+          "ratio": 0.9968
+        }
+      ],
+      "gray_text": [
+        {
+          "hex": "#f0f0f0",
+          "count": 4820,
+          "ratio": 0.9016
+        },
+        {
+          "hex": "#606870",
+          "count": 266,
+          "ratio": 0.0498
+        },
+        {
+          "hex": "#d0d0d8",
+          "count": 38,
+          "ratio": 0.0071
+        },
+        {
+          "hex": "#b0b0b8",
+          "count": 29,
+          "ratio": 0.0054
+        },
+        {
+          "hex": "#e8e8e8",
+          "count": 24,
+          "ratio": 0.0045
+        },
+        {
+          "hex": "#787888",
+          "count": 20,
+          "ratio": 0.0037
+        },
+        {
+          "hex": "#687080",
+          "count": 19,
+          "ratio": 0.0036
+        },
+        {
+          "hex": "#d8d8e0",
+          "count": 18,
+          "ratio": 0.0034
+        },
+        {
+          "hex": "#808890",
+          "count": 17,
+          "ratio": 0.0032
+        },
+        {
+          "hex": "#a8a8b0",
+          "count": 14,
+          "ratio": 0.0026
+        },
+        {
+          "hex": "#909098",
+          "count": 14,
+          "ratio": 0.0026
+        },
+        {
+          "hex": "#e0e0e8",
+          "count": 13,
+          "ratio": 0.0024
+        },
+        {
+          "hex": "#9898a0",
+          "count": 13,
+          "ratio": 0.0024
+        },
+        {
+          "hex": "#c0c0c8",
+          "count": 11,
+          "ratio": 0.0021
+        },
+        {
+          "hex": "#b8b8c0",
+          "count": 11,
+          "ratio": 0.0021
+        },
+        {
+          "hex": "#c8c8d0",
+          "count": 10,
+          "ratio": 0.0019
+        },
+        {
+          "hex": "#a0a0a8",
+          "count": 9,
+          "ratio": 0.0017
+        }
+      ],
+      "axis": [
+        {
+          "hex": "#f8f8f8",
+          "count": 2392,
+          "ratio": 0.8629
+        },
+        {
+          "hex": "#080808",
+          "count": 84,
+          "ratio": 0.0303
+        },
+        {
+          "hex": "#a0a0a0",
+          "count": 59,
+          "ratio": 0.0213
+        },
+        {
+          "hex": "#d0d0d0",
+          "count": 59,
+          "ratio": 0.0213
+        },
+        {
+          "hex": "#686868",
+          "count": 54,
+          "ratio": 0.0195
+        },
+        {
+          "hex": "#e8e8e8",
+          "count": 20,
+          "ratio": 0.0072
+        },
+        {
+          "hex": "#282828",
+          "count": 18,
+          "ratio": 0.0065
+        },
+        {
+          "hex": "#e0e0e0",
+          "count": 17,
+          "ratio": 0.0061
+        },
+        {
+          "hex": "#c8c8c8",
+          "count": 10,
+          "ratio": 0.0036
+        },
+        {
+          "hex": "#f0f0f0",
+          "count": 9,
+          "ratio": 0.0032
+        },
+        {
+          "hex": "#585858",
+          "count": 9,
+          "ratio": 0.0032
+        },
+        {
+          "hex": "#888888",
+          "count": 9,
+          "ratio": 0.0032
+        },
+        {
+          "hex": "#909098",
+          "count": 8,
+          "ratio": 0.0029
+        },
+        {
+          "hex": "#404040",
+          "count": 7,
+          "ratio": 0.0025
+        },
+        {
+          "hex": "#b8b8b8",
+          "count": 6,
+          "ratio": 0.0022
+        },
+        {
+          "hex": "#b0b0b0",
+          "count": 6,
+          "ratio": 0.0022
+        }
+      ]
+    },
+    "tooltip": {
+      "bbox": [
+        288,
+        495,
+        1392,
+        1265
+      ],
+      "bg": "#0b0c0e",
+      "size": [
+        1104,
+        770
+      ],
+      "text": [
+        {
+          "hex": "#f8f8f8",
+          "count": 598776,
+          "ratio": 0.7044
+        },
+        {
+          "hex": "#f0f0f0",
+          "count": 82516,
+          "ratio": 0.0971
+        },
+        {
+          "hex": "#c0c8d0",
+          "count": 64353,
+          "ratio": 0.0757
+        },
+        {
+          "hex": "#e8e8e8",
+          "count": 43814,
+          "ratio": 0.0515
+        },
+        {
+          "hex": "#5878e0",
+          "count": 14834,
+          "ratio": 0.0175
+        },
+        {
+          "hex": "#d068c8",
+          "count": 14478,
+          "ratio": 0.017
+        },
+        {
+          "hex": "#f8f8f0",
+          "count": 9204,
+          "ratio": 0.0108
+        },
+        {
+          "hex": "#080808",
+          "count": 6666,
+          "ratio": 0.0078
+        },
+        {
+          "hex": "#f0f8f8",
+          "count": 3265,
+          "ratio": 0.0038
+        },
+        {
+          "hex": "#606870",
+          "count": 1911,
+          "ratio": 0.0022
+        },
+        {
+          "hex": "#b8b8c0",
+          "count": 1212,
+          "ratio": 0.0014
+        },
+        {
+          "hex": "#909098",
+          "count": 1206,
+          "ratio": 0.0014
+        },
+        {
+          "hex": "#d8e0e0",
+          "count": 861,
+          "ratio": 0.001
+        },
+        {
+          "hex": "#686868",
+          "count": 633,
+          "ratio": 0.0007
+        },
+        {
+          "hex": "#a0a0a0",
+          "count": 533,
+          "ratio": 0.0006
+        },
+        {
+          "hex": "#d0d0d0",
+          "count": 503,
+          "ratio": 0.0006
+        },
+        {
+          "hex": "#d0d0d8",
+          "count": 309,
+          "ratio": 0.0004
+        },
+        {
+          "hex": "#c8c8d0",
+          "count": 301,
+          "ratio": 0.0004
+        },
+        {
+          "hex": "#b0b0b8",
+          "count": 243,
+          "ratio": 0.0003
+        },
+        {
+          "hex": "#282828",
+          "count": 229,
+          "ratio": 0.0003
+        }
+      ],
+      "radius": {
+        "radius_px": 3,
+        "error": 1.0
+      }
+    },
+    "month_chart": {
+      "highlight": {
+        "fill": "#5b7be6",
+        "bbox": [
+          727,
+          693,
+          764,
+          841
+        ],
+        "h": 148,
+        "w": 37
+      },
+      "gray_count": 10,
+      "gray_widths": [
+        37,
+        37,
+        37,
+        37,
+        37,
+        37,
+        37,
+        37,
+        37,
+        37
+      ],
+      "gray_fill": "#c6c9d1",
+      "gaps": [
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7
+      ],
+      "year_chip_colors": [
+        {
+          "hex": "#fcf4ec",
+          "count": 2334,
+          "ratio": 0.389
+        },
+        {
+          "hex": "#fcf4e8",
+          "count": 1198,
+          "ratio": 0.1997
+        },
+        {
+          "hex": "#f0f4fc",
+          "count": 707,
+          "ratio": 0.1178
+        },
+        {
+          "hex": "#f4f4f4",
+          "count": 700,
+          "ratio": 0.1167
+        },
+        {
+          "hex": "#fcf0e8",
+          "count": 500,
+          "ratio": 0.0833
+        },
+        {
+          "hex": "#f4f8fc",
+          "count": 179,
+          "ratio": 0.0298
+        },
+        {
+          "hex": "#fcf4f0",
+          "count": 168,
+          "ratio": 0.028
+        },
+        {
+          "hex": "#fcfcfc",
+          "count": 100,
+          "ratio": 0.0167
+        },
+        {
+          "hex": "#f0f8fc",
+          "count": 65,
+          "ratio": 0.0108
+        },
+        {
+          "hex": "#f4f4fc",
+          "count": 26,
+          "ratio": 0.0043
+        },
+        {
+          "hex": "#ecf4fc",
+          "count": 23,
+          "ratio": 0.0038
+        }
+      ]
+    },
+    "year_chart": {
+      "highlight": {
+        "fill": "#5b7be6",
+        "bbox": [
+          564,
+          698,
+          808,
+          859
+        ],
+        "h": 161,
+        "w": 244
+      },
+      "back_blocks": {
+        "runs": [
+          [
+            288,
+            564
+          ]
+        ],
+        "fills": [
+          "#c6c9d1"
+        ]
+      },
+      "pct_on_blue": [
+        {
+          "hex": "#5878e0",
+          "count": 8897,
+          "ratio": 0.9268
+        },
+        {
+          "hex": "#080808",
+          "count": 400,
+          "ratio": 0.0417
+        },
+        {
+          "hex": "#203060",
+          "count": 45,
+          "ratio": 0.0047
+        },
+        {
+          "hex": "#4860c0",
+          "count": 33,
+          "ratio": 0.0034
+        },
+        {
+          "hex": "#5070d8",
+          "count": 27,
+          "ratio": 0.0028
+        },
+        {
+          "hex": "#384890",
+          "count": 25,
+          "ratio": 0.0026
+        },
+        {
+          "hex": "#4058a8",
+          "count": 22,
+          "ratio": 0.0023
+        },
+        {
+          "hex": "#182038",
+          "count": 22,
+          "ratio": 0.0023
+        },
+        {
+          "hex": "#101828",
+          "count": 22,
+          "ratio": 0.0023
+        },
+        {
+          "hex": "#304888",
+          "count": 20,
+          "ratio": 0.0021
+        },
+        {
+          "hex": "#5070d0",
+          "count": 16,
+          "ratio": 0.0017
+        },
+        {
+          "hex": "#3850a0",
+          "count": 12,
+          "ratio": 0.0013
+        },
+        {
+          "hex": "#283868",
+          "count": 12,
+          "ratio": 0.0013
+        },
+        {
+          "hex": "#202850",
+          "count": 11,
+          "ratio": 0.0011
+        },
+        {
+          "hex": "#4860b0",
+          "count": 10,
+          "ratio": 0.001
+        },
+        {
+          "hex": "#304078",
+          "count": 9,
+          "ratio": 0.0009
+        },
+        {
+          "hex": "#5068c8",
+          "count": 9,
+          "ratio": 0.0009
+        }
+      ],
+      "year_label": [
+        {
+          "hex": "#5878e0",
+          "count": 2089,
+          "ratio": 0.816
+        },
+        {
+          "hex": "#f8f8f8",
+          "count": 240,
+          "ratio": 0.0938
+        },
+        {
+          "hex": "#080808",
+          "count": 66,
+          "ratio": 0.0258
+        },
+        {
+          "hex": "#5070d8",
+          "count": 21,
+          "ratio": 0.0082
+        },
+        {
+          "hex": "#4860c0",
+          "count": 21,
+          "ratio": 0.0082
+        },
+        {
+          "hex": "#101828",
+          "count": 13,
+          "ratio": 0.0051
+        },
+        {
+          "hex": "#5068c8",
+          "count": 12,
+          "ratio": 0.0047
+        },
+        {
+          "hex": "#202850",
+          "count": 12,
+          "ratio": 0.0047
+        },
+        {
+          "hex": "#384890",
+          "count": 11,
+          "ratio": 0.0043
+        },
+        {
+          "hex": "#304888",
+          "count": 11,
+          "ratio": 0.0043
+        },
+        {
+          "hex": "#5070d0",
+          "count": 11,
+          "ratio": 0.0043
+        },
+        {
+          "hex": "#203060",
+          "count": 10,
+          "ratio": 0.0039
+        },
+        {
+          "hex": "#4058a8",
+          "count": 10,
+          "ratio": 0.0039
+        },
+        {
+          "hex": "#4860b0",
+          "count": 9,
+          "ratio": 0.0035
+        },
+        {
+          "hex": "#283868",
+          "count": 8,
+          "ratio": 0.0031
+        },
+        {
+          "hex": "#304078",
+          "count": 7,
+          "ratio": 0.0027
+        },
+        {
+          "hex": "#3850a0",
+          "count": 6,
+          "ratio": 0.0023
+        }
+      ]
+    },
+    "year_dropdown": {
+      "colors": [
+        {
+          "hex": "#fcfcfc",
+          "count": 8365,
+          "ratio": 0.4111
+        },
+        {
+          "hex": "#fcf8f4",
+          "count": 2220,
+          "ratio": 0.1091
+        },
+        {
+          "hex": "#f4f4f4",
+          "count": 2162,
+          "ratio": 0.1062
+        },
+        {
+          "hex": "#fcf4ec",
+          "count": 1941,
+          "ratio": 0.0954
+        },
+        {
+          "hex": "#fcf8f0",
+          "count": 1502,
+          "ratio": 0.0738
+        },
+        {
+          "hex": "#fcfcf8",
+          "count": 1474,
+          "ratio": 0.0724
+        },
+        {
+          "hex": "#fcf4f0",
+          "count": 778,
+          "ratio": 0.0382
+        },
+        {
+          "hex": "#fcf8f8",
+          "count": 538,
+          "ratio": 0.0264
+        },
+        {
+          "hex": "#f4f8fc",
+          "count": 371,
+          "ratio": 0.0182
+        },
+        {
+          "hex": "#f8fcfc",
+          "count": 202,
+          "ratio": 0.0099
+        },
+        {
+          "hex": "#f8f8fc",
+          "count": 199,
+          "ratio": 0.0098
+        },
+        {
+          "hex": "#f0f4fc",
+          "count": 119,
+          "ratio": 0.0058
+        },
+        {
+          "hex": "#080c0c",
+          "count": 72,
+          "ratio": 0.0035
+        },
+        {
+          "hex": "#282c30",
+          "count": 50,
+          "ratio": 0.0025
+        },
+        {
+          "hex": "#e8e8ec",
+          "count": 44,
+          "ratio": 0.0022
+        },
+        {
+          "hex": "#f0f8fc",
+          "count": 35,
+          "ratio": 0.0017
+        },
+        {
+          "hex": "#a8a8ac",
+          "count": 28,
+          "ratio": 0.0014
+        },
+        {
+          "hex": "#f0f0f0",
+          "count": 27,
+          "ratio": 0.0013
+        },
+        {
+          "hex": "#18181c",
+          "count": 22,
+          "ratio": 0.0011
+        },
+        {
+          "hex": "#646468",
+          "count": 17,
+          "ratio": 0.0008
+        }
+      ],
+      "panel_bg": "#fffcfa",
+      "hover_row": "#fffcfa",
+      "selected_row": "#fff8f3",
+      "border": "#f8fafd"
+    },
+    "icon_hover": {
+      "settings_02": [
+        {
+          "hex": "#f4f4f4",
+          "count": 4815,
+          "ratio": 0.5944
+        },
+        {
+          "hex": "#e8e8ec",
+          "count": 1422,
+          "ratio": 0.1756
+        },
+        {
+          "hex": "#dce0e4",
+          "count": 1313,
+          "ratio": 0.1621
+        },
+        {
+          "hex": "#080c0c",
+          "count": 84,
+          "ratio": 0.0104
+        },
+        {
+          "hex": "#646874",
+          "count": 36,
+          "ratio": 0.0044
+        },
+        {
+          "hex": "#7c808c",
+          "count": 28,
+          "ratio": 0.0035
+        },
+        {
+          "hex": "#d8dce0",
+          "count": 23,
+          "ratio": 0.0028
+        },
+        {
+          "hex": "#f0f0f4",
+          "count": 21,
+          "ratio": 0.0026
+        },
+        {
+          "hex": "#ececf0",
+          "count": 19,
+          "ratio": 0.0023
+        },
+        {
+          "hex": "#b0b0b8",
+          "count": 13,
+          "ratio": 0.0016
+        },
+        {
+          "hex": "#d0d0d8",
+          "count": 12,
+          "ratio": 0.0015
+        },
+        {
+          "hex": "#f0f0f0",
+          "count": 11,
+          "ratio": 0.0014
+        },
+        {
+          "hex": "#e0e4e8",
+          "count": 10,
+          "ratio": 0.0012
+        },
+        {
+          "hex": "#3c3c40",
+          "count": 10,
+          "ratio": 0.0012
+        }
+      ],
+      "logout_03": [
+        {
+          "hex": "#f4f4f4",
+          "count": 3209,
+          "ratio": 0.5036
+        },
+        {
+          "hex": "#dce0e4",
+          "count": 1402,
+          "ratio": 0.22
+        },
+        {
+          "hex": "#e8e8ec",
+          "count": 1320,
+          "ratio": 0.2072
+        },
+        {
+          "hex": "#646874",
+          "count": 84,
+          "ratio": 0.0132
+        },
+        {
+          "hex": "#080c0c",
+          "count": 22,
+          "ratio": 0.0035
+        },
+        {
+          "hex": "#303034",
+          "count": 22,
+          "ratio": 0.0035
+        },
+        {
+          "hex": "#ececf0",
+          "count": 16,
+          "ratio": 0.0025
+        },
+        {
+          "hex": "#c0c0c8",
+          "count": 16,
+          "ratio": 0.0025
+        },
+        {
+          "hex": "#808490",
+          "count": 14,
+          "ratio": 0.0022
+        },
+        {
+          "hex": "#808084",
+          "count": 12,
+          "ratio": 0.0019
+        },
+        {
+          "hex": "#b4b8bc",
+          "count": 12,
+          "ratio": 0.0019
+        },
+        {
+          "hex": "#b0b4bc",
+          "count": 12,
+          "ratio": 0.0019
+        },
+        {
+          "hex": "#f0f0f4",
+          "count": 11,
+          "ratio": 0.0017
+        },
+        {
+          "hex": "#e4e4e8",
+          "count": 10,
+          "ratio": 0.0016
+        },
+        {
+          "hex": "#e0e4e8",
+          "count": 10,
+          "ratio": 0.0016
+        },
+        {
+          "hex": "#848894",
+          "count": 10,
+          "ratio": 0.0016
+        }
+      ],
+      "idle_01_settings": [
+        {
+          "hex": "#f4f4f4",
+          "count": 4818,
+          "ratio": 0.5948
+        },
+        {
+          "hex": "#e8e8ec",
+          "count": 2726,
+          "ratio": 0.3365
+        },
+        {
+          "hex": "#646874",
+          "count": 120,
+          "ratio": 0.0148
+        },
+        {
+          "hex": "#ececf0",
+          "count": 35,
+          "ratio": 0.0043
+        },
+        {
+          "hex": "#7c808c",
+          "count": 35,
+          "ratio": 0.0043
+        },
+        {
+          "hex": "#dce0e4",
+          "count": 23,
+          "ratio": 0.0028
+        },
+        {
+          "hex": "#d8dce0",
+          "count": 21,
+          "ratio": 0.0026
+        },
+        {
+          "hex": "#c0c0c8",
+          "count": 20,
+          "ratio": 0.0025
+        },
+        {
+          "hex": "#f0f0f0",
+          "count": 19,
+          "ratio": 0.0023
+        },
+        {
+          "hex": "#f0f0f4",
+          "count": 18,
+          "ratio": 0.0022
+        },
+        {
+          "hex": "#c4c4cc",
+          "count": 16,
+          "ratio": 0.002
+        },
+        {
+          "hex": "#b0b4bc",
+          "count": 16,
+          "ratio": 0.002
+        },
+        {
+          "hex": "#808490",
+          "count": 14,
+          "ratio": 0.0017
+        },
+        {
+          "hex": "#787c88",
+          "count": 13,
+          "ratio": 0.0016
+        },
+        {
+          "hex": "#b0b0b8",
+          "count": 13,
+          "ratio": 0.0016
+        },
+        {
+          "hex": "#848894",
+          "count": 12,
+          "ratio": 0.0015
+        },
+        {
+          "hex": "#d0d0d8",
+          "count": 12,
+          "ratio": 0.0015
+        },
+        {
+          "hex": "#bcbcc4",
+          "count": 11,
+          "ratio": 0.0014
+        },
+        {
+          "hex": "#6c7080",
+          "count": 10,
+          "ratio": 0.0012
+        }
+      ]
+    },
+    "dept_arrow": {
+      "05_header_right": [
+        {
+          "hex": "#fcfcfc",
+          "count": 6000,
+          "ratio": 1.0
+        }
+      ],
+      "06_header_right": [
+        {
+          "hex": "#fcfcfc",
+          "count": 6000,
+          "ratio": 1.0
+        }
+      ]
+    },
+    "wmy_hover": {
+      "07_wmy": [
+        {
+          "hex": "#fcf4ec",
+          "count": 3900,
+          "ratio": 0.4643
+        },
+        {
+          "hex": "#fcf4e8",
+          "count": 2049,
+          "ratio": 0.2439
+        },
+        {
+          "hex": "#fcf4f0",
+          "count": 1257,
+          "ratio": 0.1496
+        },
+        {
+          "hex": "#fcf0e8",
+          "count": 774,
+          "ratio": 0.0921
+        },
+        {
+          "hex": "#fcf8f0",
+          "count": 420,
+          "ratio": 0.05
+        }
+      ],
+      "09_wmy": [
+        {
+          "hex": "#fcf4ec",
+          "count": 3955,
+          "ratio": 0.4708
+        },
+        {
+          "hex": "#fcf4e8",
+          "count": 1984,
+          "ratio": 0.2362
+        },
+        {
+          "hex": "#fcf4f0",
+          "count": 1190,
+          "ratio": 0.1417
+        },
+        {
+          "hex": "#fcf0e8",
+          "count": 820,
+          "ratio": 0.0976
+        },
+        {
+          "hex": "#fcf8f0",
+          "count": 451,
+          "ratio": 0.0537
+        }
+      ],
+      "10_wmy": [
+        {
+          "hex": "#fcf4ec",
+          "count": 5956,
+          "ratio": 0.4512
+        },
+        {
+          "hex": "#fcf4e8",
+          "count": 3021,
+          "ratio": 0.2289
+        },
+        {
+          "hex": "#fcf4f0",
+          "count": 1816,
+          "ratio": 0.1376
+        },
+        {
+          "hex": "#fcf0e8",
+          "count": 1242,
+          "ratio": 0.0941
+        },
+        {
+          "hex": "#fcf8f0",
+          "count": 685,
+          "ratio": 0.0519
+        },
+        {
+          "hex": "#f4f4f4",
+          "count": 420,
+          "ratio": 0.0318
+        },
+        {
+          "hex": "#fcfcfc",
+          "count": 60,
+          "ratio": 0.0045
+        }
+      ]
+    },
+    "text_grays": {
+      "ink_logo": "#f4f4f6",
+      "sidebar_inactive": "#f4f4f6",
+      "card_title": "#ffffff",
+      "muted_sub": "#ffffff",
+      "empty_message": "#ffffff",
+      "feed_empty": "#ffffff",
+      "axis_label": "#c6c9d1",
+      "mid_sub": "#ebf2ff",
+      "unit_beside_number": "#fffcf9"
+    },
+    "chrome": {
+      "page_bg": "#f4f4f6",
+      "topbar": "#f4f4f6",
+      "search_underline": [
+        {
+          "hex": "#f4f4f4",
+          "count": 4641,
+          "ratio": 0.8287
+        },
+        {
+          "hex": "#e8e8ec",
+          "count": 513,
+          "ratio": 0.0916
+        },
+        {
+          "hex": "#dce0e4",
+          "count": 201,
+          "ratio": 0.0359
+        },
+        {
+          "hex": "#d8dce0",
+          "count": 201,
+          "ratio": 0.0359
+        },
+        {
+          "hex": "#ececf0",
+          "count": 11,
+          "ratio": 0.002
+        },
+        {
+          "hex": "#646874",
+          "count": 8,
+          "ratio": 0.0014
+        }
+      ],
+      "nav_baseline": [
+        {
+          "hex": "#f4f4f4",
+          "count": 4160,
+          "ratio": 0.8
+        },
+        {
+          "hex": "#dce0e4",
+          "count": 479,
+          "ratio": 0.0921
+        },
+        {
+          "hex": "#d8dce0",
+          "count": 479,
+          "ratio": 0.0921
+        },
+        {
+          "hex": "#080c0c",
+          "count": 78,
+          "ratio": 0.015
+        }
+      ],
+      "nav_active_mark": [
+        {
+          "hex": "#f4f4f4",
+          "count": 600,
+          "ratio": 0.8333
+        },
+        {
+          "hex": "#080c0c",
+          "count": 78,
+          "ratio": 0.1083
+        },
+        {
+          "hex": "#dce0e4",
+          "count": 19,
+          "ratio": 0.0264
+        },
+        {
+          "hex": "#d8dce0",
+          "count": 19,
+          "ratio": 0.0264
+        },
+        {
+          "hex": "#48484c",
+          "count": 4,
+          "ratio": 0.0056
+        }
+      ],
+      "card_white": "#ffffff"
+    },
+    "layout": {
+      "canvas": [
+        1440,
+        1252
+      ],
+      "sidebar_width_est": 250,
+      "sidebar_content_jump": [
+        [
+          288,
+          25.15833333333333
+        ],
+        [
+          289,
+          17.93611111111111
+        ],
+        [
+          309,
+          17.525000000000006
+        ],
+        [
+          185,
+          10.822222222222223
+        ],
+        [
+          308,
+          9.399999999999999
+        ]
+      ],
+      "content_left": 264,
+      "content_right": 28,
+      "top_card_y": 88,
+      "top_card_h": 228,
+      "top_card_w": 564
+    },
+    "month_tooltip": {
+      "bbox": [
+        288,
+        495,
+        1392,
+        1265
+      ],
+      "bg": "#0b0c0e",
+      "size": [
+        1104,
+        770
+      ]
+    },
+    "year_tooltip": {
+      "bbox": [
+        288,
+        495,
+        1392,
+        1265
+      ],
+      "bg": "#0b0c0e",
+      "size": [
+        1104,
+        770
+      ]
+    }
+  }
+}
