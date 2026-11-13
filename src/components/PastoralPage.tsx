@@ -30,7 +30,7 @@ import {
   isEphemeralMemberPhotoUrl,
 } from "@/lib/member-photo";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
-import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, BookOpenCheck, ArrowUpRight, Plus, Pencil, Trash2 } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Settings, Church, Heart, Home, Gift, TrendingUp, BookOpenCheck, ArrowUpRight, Pencil, Trash2 } from "lucide-react";
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
@@ -1070,6 +1070,7 @@ function DashboardSub({
   const [deptWizard, setDeptWizard] = useState<OrgDeptWizardState | null>(null);
   const [deptDeleteName, setDeptDeleteName] = useState<string | null>(null);
   const [deptHover, setDeptHover] = useState<string | null>(null);
+  const [deptArrowOn, setDeptArrowOn] = useState(false);
 
   const deptNames = useMemo(() => getDepts(db), [db.settings.depts]);
 
@@ -2432,11 +2433,26 @@ function DashboardSub({
               type="button"
               aria-label="부서 추가"
               onClick={openDeptAdd}
-              style={dashPeriodBtnStyle(dashTypo.chart, mob, !!deptWizard)}
+              onMouseEnter={() => setDeptArrowOn(true)}
+              onMouseLeave={() => setDeptArrowOn(false)}
+              onMouseDown={() => setDeptArrowOn(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+                margin: 0,
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                color: deptArrowOn ? DASH_DEPT_CARD.arrowHover : DASH_DEPT_CARD.arrowIdle,
+                lineHeight: 0,
+              }}
             >
-              <Plus
-                size={mob ? dashTypo.chart.periodBtnFontSizeMob : dashTypo.chart.periodBtnFontSize}
-                strokeWidth={2.5}
+              <ArrowUpRight
+                size={dashScalePx(DASH_DEPT_CARD.arrowSize, typoScale)}
+                strokeWidth={DASH_DEPT_CARD.arrowStroke}
+                aria-hidden
               />
             </button>
           </div>
@@ -2456,12 +2472,13 @@ function DashboardSub({
             ) : (
               deptCounts.map(([d, cnt], i) => {
                 const isTop = i === 0;
-                const deptDenom = total > 0 ? total : 1;
-                const pct = (cnt / deptDenom) * 100;
+                const maxDeptCount = deptCounts[0]?.[1] ?? 0;
+                const pct = maxDeptCount > 0 && cnt > 0 ? (cnt / maxDeptCount) * 100 : 0;
                 const barH = dashScalePx(DASH_DEPT_CARD.barHeight, typoScale);
                 const rowGap = dashScalePx(DASH_DEPT_CARD.rowGap, typoScale);
                 const barRadius = dashScalePx(DASH_DEPT_CARD.barRadius, typoScale);
-                const labelInset = dashScalePx(DASH_DEPT_CARD.labelInset, typoScale);
+                const labelMinW = dashScalePx(DASH_DEPT_CARD.labelMinWidth, typoScale);
+                const labelGap = dashScalePx(DASH_DEPT_CARD.labelGap, typoScale);
                 const countGap = dashScalePx(DASH_DEPT_CARD.countGap, typoScale);
                 const countMinW = dashScalePx(DASH_DEPT_CARD.countMinWidth, typoScale);
                 const rowHovered = deptHover === d;
@@ -2475,10 +2492,24 @@ function DashboardSub({
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: countGap,
                       marginBottom: i < deptCounts.length - 1 ? rowGap : 0,
                     }}
                   >
+                    <span
+                      style={{
+                        width: labelMinW,
+                        marginRight: labelGap,
+                        flexShrink: 0,
+                        fontSize: dashTypo.section.bodySize,
+                        fontWeight: DASH_MID_CARD.subWeight,
+                        color: DASH_DEPT_CARD.labelColor,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {d}
+                    </span>
                     <div
                       style={{
                         flex: 1,
@@ -2495,30 +2526,18 @@ function DashboardSub({
                           left: 0,
                           top: 0,
                           bottom: 0,
-                          width: cnt > 0 ? `${Math.max(pct, 4)}%` : "0%",
+                          width: `${pct}%`,
                           background: isTop ? DASH_CHART.deptBarTop : DASH_CHART.deptBarFill,
                           borderRadius: barRadius,
                         }}
                       />
-                      <span
-                        style={{
-                          position: "absolute",
-                          left: labelInset,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          fontSize: dashTypo.section.bodySize,
-                          fontWeight: 600,
-                          color: C.text,
-                        }}
-                      >
-                        {d}
-                      </span>
                     </div>
                     <span
                       style={{
+                        marginLeft: countGap,
                         fontSize: dashTypo.section.bodySize,
                         fontWeight: 600,
-                        color: C.text,
+                        color: DASH_DEPT_CARD.countColor,
                         minWidth: countMinW,
                         textAlign: "right",
                         flexShrink: 0,

@@ -153,12 +153,12 @@ export const DASH_CHART = {
   statBarHighlight: "#ff7044",
   /** 출석 통계 막대 — 기본 회색 */
   statBarBase: "#e4e5e9",
-  /** 부서별 인원 — 1위 막대(라임그린) */
-  deptBarTop: "#e0e447",
+  /** 부서별 인원 — 1위 막대 (05 마젠타) */
+  deptBarTop: "#d468c8",
   /** 부서별 인원 — 그 외 채움 막대 */
-  deptBarFill: "#dadbe0",
-  /** 부서별 인원 — 막대 트랙(배경) */
-  deptBarTrack: "#ececef",
+  deptBarFill: "#c6c9d1",
+  /** 부서별 인원 — 막대 트랙 */
+  deptBarTrack: "#ebebef",
   /** 출석 통계 — 일반(회색) 막대 위 % 숫자 색 */
   statTextGray: "#6f7480",
   /** 출석 통계 — 일반(회색) 막대 위 n/n명 색 (시안 픽셀 추출 #b1b5c0) */
@@ -467,17 +467,25 @@ export const DASH_SECTION = {
   feedTimeMinWidth: 84,
 } as const;
 
-/** 부서별 인원 카드 — 막대·간격 (시안 2번) */
+/** 부서별 인원 카드 — 막대·간격 (05·06 PNG 실측) */
 export const DASH_DEPT_CARD = {
-  barHeight: 48,
+  barHeight: 36,
   rowGap: 16,
   bodyPaddingY: 28,
   bodyPaddingX: 24,
   headerPaddingBottom: 8,
-  barRadius: 7,
+  barRadius: 5,
   labelInset: 16,
-  countMinWidth: 52,
-  countGap: 14,
+  labelMinWidth: 68,
+  labelGap: 12,
+  labelColor: "#646977",
+  countMinWidth: 40,
+  countGap: 20,
+  countColor: "#0b0c0e",
+  arrowSize: 16,
+  arrowStroke: 2,
+  arrowIdle: "#646977",
+  arrowHover: "#0b0c0e",
 } as const;
 
 /** 대시보드 타이포 반응형 — 1440px 시안 콘텐츠 폭 기준 (큰 모니터=100%) */
