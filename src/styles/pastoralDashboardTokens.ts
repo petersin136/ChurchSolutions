@@ -197,6 +197,30 @@ export const DASH_ATT_CHART_CTRL = {
   controlsGapMob: 10,
 } as const;
 
+/** 출석 통계 주간(W) — 07·08 PNG. AttendanceDashboard 공유 토큰과 분리 */
+export const DASH_WEEK_CHART = {
+  highlight: "#5b7be6",
+  fill: "#c6c9d1",
+  track: "#ebebef",
+  pctGray: "#646977",
+  pctHot: "#ffffff",
+  axis: "#93969f",
+  axisHot: "#0b0c0e",
+  gap: 6,
+  gapMob: 4,
+  radius: 4,
+  pctSize: 32,
+  pctSizeMob: 22,
+  pctWeight: 700,
+  tooltipBg: "#0b0c0e",
+  tooltipFg: "#ffffff",
+  tooltipRadius: 6,
+  tooltipPadY: 4,
+  tooltipPadX: 10,
+  tooltipSize: 12,
+  tooltipWeight: 600,
+} as const;
+
 /** 출석 통계 막대 내부 타이포 — 막대 너비 대비 스케일 */
 export const DASH_ATT_CHART_BAR = {
   /** 시안 기준 막대 너비(px) — 이때 타이포 100% */

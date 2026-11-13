@@ -34,7 +34,7 @@ import { LayoutDashboard, Users, ClipboardList, Sprout, Sparkles, FileText, Sett
 import { PrayingHandsIcon } from "@/components/icons/PrayingHandsIcon";
 import { CeremonyBoard } from "@/components/ceremony";
 import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
-import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ICON_BTN, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
+import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ICON_BTN, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, DASH_WEEK_CHART, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
 import "@/styles/pastoralDashboardChrome.css";
 import { PastoralFeedDetailModal } from "@/components/pastoral/PastoralFeedDetailModal";
 import { APP_MODAL } from "@/styles/appModalTokens";
@@ -793,14 +793,18 @@ function AttChartAxisLabel({
   hot,
   fontSize,
   splitMonthWeek = false,
+  color: colorOverride,
+  weight,
 }: {
   text: string;
   hot: boolean;
   fontSize: number;
   splitMonthWeek?: boolean;
+  color?: string;
+  weight?: number;
 }) {
-  const color = hot ? DASH_CHART.statBarHighlight : DASH_CHART.statSubGray;
-  const fw = hot ? 900 : 700;
+  const color = colorOverride ?? (hot ? DASH_CHART.statBarHighlight : DASH_CHART.statSubGray);
+  const fw = weight ?? (hot ? 900 : 700);
   const base: CSSProperties = {
     fontSize,
     color,
@@ -1065,6 +1069,7 @@ function DashboardSub({
   const [topCardDotCell, setTopCardDotCell] = useState<number>(DASH_LAYOUT.memberDotSize);
   const [typoScale, setTypoScale] = useState(1);
   const [attChartWidth, setAttChartWidth] = useState(0);
+  const [weekHoverWk, setWeekHoverWk] = useState<number | null>(null);
   const [feedPage, setFeedPage] = useState(1);
   const feedSwipeStartX = useRef<number | null>(null);
   const [deptWizard, setDeptWizard] = useState<OrgDeptWizardState | null>(null);
@@ -2040,30 +2045,120 @@ function DashboardSub({
               if (attChartView === "week") {
                 const has = weekly5.some(w => w.present > 0);
                 if (!has) return emptyMsg;
-                const maxRate = 100;
-                const barMin = mob ? 56 : 52;
+                const wk = DASH_WEEK_CHART;
+                const barRadius = dashScalePx(wk.radius, typoScale);
+                const pctSize = dashScalePx(mob ? wk.pctSizeMob : wk.pctSize, typoScale);
                 return (
-                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? 8 : 16, flex: 1, minHeight: 0, paddingTop: 8, boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? wk.gapMob : wk.gap, flex: 1, minHeight: 0, paddingTop: 8, boxSizing: "border-box" }}>
                     {weekly5.map((w) => {
                       const hot = w.isCurrent;
-                      const hasData = w.rate > 0;
-                      const spacerFlex = Math.max(0, maxRate - w.rate);
-                      const barFlex = w.rate;
-                      const pctColor = hot ? DASH_CHART.statTextYearHighlight : DASH_CHART.statTextGray;
-                      const subColor = hot ? DASH_CHART.statSubYearHighlight : DASH_CHART.statSubGray;
-                      const pctShadow = hot ? "0 1px 1px rgba(255,255,255,0.45)" : "0 1px 1px rgba(255,255,255,0.55)";
+                      const hovered = weekHoverWk === w.wk;
+                      const fillH = Math.max(0, Math.min(100, w.rate));
                       return (
-                        <div key={w.wk} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 8, minWidth: 0, minHeight: 0 }}>
-                          <div style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
-                            {spacerFlex > 0 && <div style={{ flex: spacerFlex, minHeight: 0 }} />}
-                            {hasData && (
-                              <div style={{ flex: barFlex, minHeight: barMin, width: "100%", borderRadius: "12px 12px 0 0", background: hot ? DASH_CHART.statBarHighlight : DASH_CHART.statBarBase, display: "flex", flexDirection: "column", alignItems: "flex-start", padding: `${weekChartTypo.padTop}px ${weekChartTypo.padLeft}px 0`, boxSizing: "border-box", overflow: "hidden" }}>
-                                <span style={{ fontSize: mob ? weekChartTypo.valueMob : weekChartTypo.value, fontWeight: 900, color: pctColor, letterSpacing: "-0.04em", lineHeight: 1, textShadow: pctShadow, fontFeatureSettings: '"tnum"', whiteSpace: "nowrap", maxWidth: "100%" }}>{w.rate}%</span>
-                                <span style={{ fontSize: weekChartTypo.sub, color: subColor, marginTop: Math.max(4, Math.round(weekChartTypo.padTop * 0.4)), fontWeight: 800, letterSpacing: "-0.02em", textShadow: pctShadow, maxWidth: "100%", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{w.present}/{w.total}명</span>
+                        <div
+                          key={w.wk}
+                          style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 8, minWidth: 0, minHeight: 0 }}
+                          onMouseEnter={() => setWeekHoverWk(w.wk)}
+                          onMouseLeave={() => setWeekHoverWk(null)}
+                        >
+                          <div style={{ flex: 1, width: "100%", position: "relative", minHeight: 0 }}>
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                background: wk.track,
+                                borderRadius: barRadius,
+                              }}
+                            />
+                            {fillH > 0 && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  height: `${fillH}%`,
+                                  background: hot ? wk.highlight : wk.fill,
+                                  borderRadius: `${barRadius}px ${barRadius}px 0 0`,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "center",
+                                  paddingTop: hot ? 10 : 0,
+                                  boxSizing: "border-box",
+                                }}
+                              >
+                                {hot && (
+                                  <span
+                                    style={{
+                                      fontSize: pctSize,
+                                      fontWeight: wk.pctWeight,
+                                      color: wk.pctHot,
+                                      letterSpacing: "-0.04em",
+                                      lineHeight: 1,
+                                      fontFamily: DASH_GLOBAL.fontLatin,
+                                      fontFeatureSettings: '"tnum"',
+                                    }}
+                                  >
+                                    {w.rate}%
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {!hot && fillH > 0 && (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  left: 0,
+                                  right: 0,
+                                  bottom: `${fillH}%`,
+                                  transform: "translateY(-4px)",
+                                  textAlign: "center",
+                                  fontSize: pctSize,
+                                  fontWeight: wk.pctWeight,
+                                  color: wk.pctGray,
+                                  letterSpacing: "-0.04em",
+                                  lineHeight: 1,
+                                  fontFamily: DASH_GLOBAL.fontLatin,
+                                  fontFeatureSettings: '"tnum"',
+                                  pointerEvents: "none",
+                                }}
+                              >
+                                {w.rate}%
+                              </span>
+                            )}
+                            {hovered && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  left: "50%",
+                                  bottom: `${fillH}%`,
+                                  transform: "translate(-50%, calc(-100% - 6px))",
+                                  background: wk.tooltipBg,
+                                  color: wk.tooltipFg,
+                                  borderRadius: wk.tooltipRadius,
+                                  padding: `${wk.tooltipPadY}px ${wk.tooltipPadX}px`,
+                                  fontSize: dashScalePx(wk.tooltipSize, typoScale),
+                                  fontWeight: wk.tooltipWeight,
+                                  fontFamily: DASH_GLOBAL.fontLatin,
+                                  letterSpacing: "-0.02em",
+                                  lineHeight: 1.2,
+                                  whiteSpace: "nowrap",
+                                  pointerEvents: "none",
+                                  zIndex: 2,
+                                }}
+                              >
+                                {w.present}/{w.total}명
                               </div>
                             )}
                           </div>
-                          <AttChartAxisLabel text={w.label} hot={hot} fontSize={weekChartTypo.axis} splitMonthWeek />
+                          <AttChartAxisLabel
+                            text={w.label}
+                            hot={hot}
+                            fontSize={weekChartTypo.axis}
+                            splitMonthWeek
+                            color={hot ? wk.axisHot : wk.axis}
+                            weight={hot ? 700 : 500}
+                          />
                         </div>
                       );
                     })}
