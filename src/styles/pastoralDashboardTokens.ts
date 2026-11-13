@@ -251,19 +251,25 @@ export const DASH_YEAR_CHART = {
   frontPct: "#ffffff",
   backYear: "#646977",
   midYear: "#646977",
-  frontYear: "#ffffff",
+  frontYear: "#0b0c0e",
 } as const;
 
-/** 연도 드롭다운 — 14 PNG */
+/** 연도 칩·드롭다운 — 10·12·14 PNG */
 export const DASH_YEAR_DROPDOWN = {
   panelBg: "#ffffff",
   panelRadius: 8,
-  panelWidth: 88,
+  panelWidth: 76,
   rowHeight: 30,
   hoverBg: "#ebebef",
   text: "#0b0c0e",
   muted: "#646977",
   shadow: "0 8px 24px rgba(11,12,14,0.12)",
+  chipWidth: 76,
+  chipHeight: 36,
+  chipRadius: 8,
+  chipBorder: "#c9ccd4",
+  chipBg: "#ffffff",
+  chipPadX: 10,
 } as const;
 
 /** 출석 통계 막대 내부 타이포 — 막대 너비 대비 스케일 */
@@ -522,8 +528,8 @@ export const DASH_SECTION = {
   chartWeekPadLeft: 14,
   chartAxis: 15,
   chartAxisTiny: 13,
-  chartYearValue: 52,
-  chartYearValueMob: 36,
+  chartYearValue: 36,
+  chartYearValueMob: 26,
   chartYearSub: 17,
   chartYearLabel: 14,
   chartYearPadTop: 14,

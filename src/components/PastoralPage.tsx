@@ -923,20 +923,23 @@ function AttChartControls({
           aria-expanded={yearOpen}
           onClick={() => setYearOpen((v) => !v)}
           style={{
-            border: "none",
-            background: "transparent",
+            border: `1px solid ${dd.chipBorder}`,
+            background: dd.chipBg,
             fontFamily: DASH_GLOBAL.fontLatin,
             fontSize: chartCtrl.yearFontSize,
             fontWeight: chartCtrl.yearFontWeight,
             color: chartCtrl.periodText,
-            padding: 0,
+            padding: `0 ${dd.chipPadX}px`,
             margin: 0,
             cursor: "pointer",
-            height: btnSize,
+            height: dd.chipHeight,
+            minWidth: dd.chipWidth,
             lineHeight: 1,
             display: "inline-flex",
             alignItems: "center",
+            justifyContent: "space-between",
             gap: 6,
+            borderRadius: dd.chipRadius,
             boxSizing: "border-box",
           }}
         >
@@ -2243,7 +2246,7 @@ function DashboardSub({
                                   padding: `${wk.tooltipPadY}px ${wk.tooltipPadX}px`,
                                   fontSize: dashScalePx(wk.tooltipSize, typoScale),
                                   fontWeight: wk.tooltipWeight,
-                                  fontFamily: DASH_GLOBAL.fontLatin,
+                                  fontFamily: DASH_GLOBAL.fontKR,
                                   letterSpacing: "-0.02em",
                                   lineHeight: 1.2,
                                   whiteSpace: "nowrap",
@@ -2297,6 +2300,7 @@ function DashboardSub({
                           onMouseLeave={() => setMonthHoverIdx(null)}
                         >
                           <div style={{ flex: 1, width: "100%", position: "relative", minHeight: 0 }}>
+                            {fillH > 0 && (
                             <div
                               style={{
                                 position: "absolute",
@@ -2305,6 +2309,7 @@ function DashboardSub({
                                 borderRadius: barRadius,
                               }}
                             />
+                            )}
                             {fillH > 0 && (
                               <div
                                 style={{
