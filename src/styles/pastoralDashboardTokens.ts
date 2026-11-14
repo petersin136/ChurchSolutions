@@ -570,8 +570,9 @@ export const DASH_DEPT_CARD = {
   countMinWidth: 40,
   countGap: 20,
   countColor: "#0b0c0e",
-  arrowSize: 16,
-  arrowStroke: 2,
+  /** 부서 헤더 ↗ — 24에서 조금 키움 */
+  arrowSize: 28,
+  arrowStroke: 2.25,
   arrowIdle: "#646977",
   arrowHover: "#0b0c0e",
 } as const;

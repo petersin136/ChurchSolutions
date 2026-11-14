@@ -2793,6 +2793,8 @@ function DashboardSub({
                 cursor: "pointer",
                 color: deptArrowOn ? DASH_DEPT_CARD.arrowHover : DASH_DEPT_CARD.arrowIdle,
                 lineHeight: 0,
+                /* Lucide ↗ 광학 중심이 왼쪽 — 카드 모서리 쪽으로 살짝 */
+                transform: "translateX(4px)",
               }}
             >
               <ArrowUpRight
