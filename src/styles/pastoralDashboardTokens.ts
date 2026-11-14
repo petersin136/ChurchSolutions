@@ -39,6 +39,8 @@ export const DASH_COLOR = {
   /** 사이드바 Today 라인 — 01 PNG */
   sidebarDateToday: "#858993",
   sidebarDateValue: "#646975",
+  /** 사이드바 This Week 라벨 — 01 PNG */
+  sidebarDateThisWeek: "#90939b",
   /** 1행 서브 카피 (활동 성도 n명 중…) */
   heroSub: "#93969f",
   /** 데이터 없는 히어로·중간 카드 숫자 */
@@ -79,10 +81,14 @@ export const DASH_SIDEBAR = {
   /** 실험: 아이콘 내 up 글자 수평 맞춤 — 원본 -45° 보정(시계방향 38°) */
   appIconRotateDeg: 40,
   logoToDateGap: 18,
-  /** 날짜 라인 — Today 바로 옆에 일자 */
+  /** 날짜 라인 — Today / This Week 바로 옆에 값 */
   dateFontSize: 13,
   dateLetterSpacing: 0,
   dateLineHeight: 1.2,
+  /** Today·This Week 라벨과 값 사이 */
+  dateLabelGap: 8,
+  /** Today 줄 ↔ This Week 줄 */
+  dateRowGap: 6,
   itemColor: "#0b0c0e",
   /** hover/active 흰색 라운드 박스 */
   hoverBoxWidth: 200,
@@ -455,11 +461,18 @@ export const DASH_ATT_YEAR_CHART = {
   /** 헤더 아래 차트 영역 세로 패딩 합 */
   bodyPadY: 32,
   blockRadius: 7,
-  /** 좌(높음) · 중(낮음·뒤) · 우(넓음·앞) — left+width 합이 100% 넘어도 겹침 허용 */
+  /**
+   * PNG 12 실측 (차트 x288–807 = 519px). 세 블록 하단 정렬, z로 겹침.
+   * 2024: x288–602 w315 (60.7%) z1
+   * 2025: 2024와 오른쪽을 맞추고(60.7%) 2026 밑으로 7.5% 겹침.
+   *       시안에서 2025가 낮을 때만 2024 지붕이 위에 보임.
+   *       높이가 같으면 2024가 2025 오른쪽 위로 삐져나오지 않게 2025가 덮음.
+   * 2026: x564–807 (53.2%+46.8%) z3 — 2024·2025와 38px(7.3%) 겹침
+   */
   blockLayout: [
-    { leftPct: 0, widthPct: 53, zIndex: 1 },
-    { leftPct: 27, widthPct: 26, zIndex: 2 },
-    { leftPct: 53, widthPct: 47, zIndex: 3 },
+    { leftPct: 0, widthPct: 60.7, zIndex: 1 },
+    { leftPct: 27.2, widthPct: 33.5, zIndex: 2 },
+    { leftPct: 53.2, widthPct: 46.8, zIndex: 3 },
   ] as const,
   designBlockWidth: 200,
 } as const;

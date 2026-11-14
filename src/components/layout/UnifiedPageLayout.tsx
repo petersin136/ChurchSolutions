@@ -246,14 +246,23 @@ export function UnifiedPageLayout({
   /** 데스크톱 + 최상위 레이아웃에서만 상단 메인 메뉴바를 콘텐츠 영역 위에 렌더 */
   const showGlobalTopBar = isOutermost && !mob;
 
-  /** 시안: "2026. 07. 01. WED" (Inter) */
-  const sidebarDateLine = (() => {
+  /** 시안: "2026. 11. 11. WED" / "This Week 11. 08 – 11. 14" (일–토, Inter) */
+  const sidebarDateMeta = (() => {
     const d = new Date();
     const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     const wd = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][d.getDay()];
-    return `${y}. ${m}. ${day}. ${wd}`;
+    const sun = new Date(d);
+    if (sun.getDay() !== 0) sun.setDate(sun.getDate() - sun.getDay());
+    const sat = new Date(sun);
+    sat.setDate(sun.getDate() + 6);
+    const md = (x: Date) =>
+      `${String(x.getMonth() + 1).padStart(2, "0")}. ${String(x.getDate()).padStart(2, "0")}`;
+    return {
+      today: `${y}. ${mo}. ${day}. ${wd}`,
+      week: `${md(sun)} – ${md(sat)}`,
+    };
   })();
   const sidebarExpanded = !mob || sideOpen;
   const asideWidth = LAYOUT.sidebarWidth;
@@ -335,7 +344,7 @@ export function UnifiedPageLayout({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
+                alignItems: "flex-start",
                 width: "fit-content",
                 boxSizing: "border-box",
               }}
@@ -345,9 +354,10 @@ export function UnifiedPageLayout({
                 style={{
                   marginTop: DASH_SIDEBAR.logoToDateGap,
                   display: "flex",
-                  alignItems: "baseline",
-                  justifyContent: "center",
-                  gap: 4,
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: DASH_SIDEBAR.dateRowGap,
+                  width: "100%",
                   fontFamily: DASH_GLOBAL.fontLatin,
                   fontSize: DASH_SIDEBAR.dateFontSize,
                   letterSpacing: `${DASH_SIDEBAR.dateLetterSpacing}px`,
@@ -355,8 +365,14 @@ export function UnifiedPageLayout({
                   whiteSpace: "nowrap",
                 }}
               >
-                <span style={{ fontWeight: 500, color: DASH_COLOR.sidebarDateToday }}>Today</span>
-                <span style={{ fontWeight: 600, color: DASH_COLOR.sidebarDateValue }}>{sidebarDateLine}</span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: DASH_SIDEBAR.dateLabelGap }}>
+                  <span style={{ fontWeight: 500, color: DASH_COLOR.sidebarDateToday }}>Today</span>
+                  <span style={{ fontWeight: 600, color: DASH_COLOR.sidebarDateValue }}>{sidebarDateMeta.today}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: DASH_SIDEBAR.dateLabelGap }}>
+                  <span style={{ fontWeight: 500, color: DASH_COLOR.sidebarDateThisWeek }}>This Week</span>
+                  <span style={{ fontWeight: 600, color: DASH_COLOR.sidebarDateValue }}>{sidebarDateMeta.week}</span>
+                </div>
               </div>
             </div>
           </div>

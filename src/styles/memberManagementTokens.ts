@@ -2,7 +2,9 @@ import { DASH_SIDEBAR } from "@/styles/pastoralDashboardTokens";
 
 const MEMBER_TOPBAR_HEIGHT = 64;
 const MEMBER_SIDEBAR_LOGO_HEIGHT = Math.round(DASH_SIDEBAR.brandWidth * (167 / 1000));
-const MEMBER_SIDEBAR_DATE_LINE = Math.round(DASH_SIDEBAR.dateFontSize * DASH_SIDEBAR.dateLineHeight);
+const MEMBER_SIDEBAR_DATE_LINE =
+  Math.round(DASH_SIDEBAR.dateFontSize * DASH_SIDEBAR.dateLineHeight) * 2 +
+  DASH_SIDEBAR.dateRowGap;
 
 /** 사이드바 첫 메뉴(대시보드) 텍스트 세로 중심 — 뷰포트 기준 px (사이드바는 이동하지 않음) */
 export const MEMBER_SIDEBAR_MENU_ALIGN_Y =
