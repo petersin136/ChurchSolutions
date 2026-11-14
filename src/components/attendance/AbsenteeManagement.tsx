@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useLayoutEffect, useRef, type CSSProperties } from "react";
 import { tokens } from "@/styles/tokens";
 import { useAppData } from "@/contexts/AppDataContext";
 import type { Member } from "@/types/db";
 import type { Attendance } from "@/types/db";
 import { ModernSelect } from "@/components/common/ModernSelect";
-import { MemberPhotoCircle } from "@/components/common/MemberPhoto";
+import { MemberPhoto, MemberPhotoCircle } from "@/components/common/MemberPhoto";
+import { ATT_CHECK } from "@/styles/attendanceCheckTokens";
+import { MEMBER_MGMT } from "@/styles/memberManagementTokens";
+import { MemberStylePagination } from "@/components/common/MemberStylePagination";
 
 export interface AbsenteeManagementProps {
   /** Supabase 미사용 시 사용할 성도 목록 */
@@ -18,6 +21,18 @@ export interface AbsenteeManagementProps {
   toast?: (msg: string, type?: "ok" | "err" | "warn") => void;
 }
 const ABSENTEE_PAGE_SIZE = 10;
+const ABSENTEE_COL_TEMPLATE = "48px minmax(168px,1.3fr) minmax(110px,0.9fr) minmax(120px,0.9fr) 88px 130px 150px 72px";
+const ABSENTEE_HEADERS = ["번호", "이름", "부서", "목장", "연속 결석", "마지막 출석일", "연락처", "액션"] as const;
+
+const absenteeGrid: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: ABSENTEE_COL_TEMPLATE,
+  alignItems: "center",
+  width: "100%",
+  boxSizing: "border-box",
+  paddingLeft: ATT_CHECK.gridPadX,
+  paddingRight: ATT_CHECK.gridPadX,
+};
 
 const fmt = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
@@ -134,6 +149,11 @@ export function AbsenteeManagement({
   const [currentPage, setCurrentPage] = useState(1);
   const [deptFilter, setDeptFilter] = useState("");
   const [mokjangFilter, setMokjangFilter] = useState("");
+  const [pageCapacity, setPageCapacity] = useState(6);
+  const PAGE_SIZE = mob ? ABSENTEE_PAGE_SIZE : pageCapacity;
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const pagerRef = useRef<HTMLDivElement | null>(null);
 
   const members = membersProp?.length ? membersProp : (db.members ?? []);
   const attendanceList = useMemo(() => {
@@ -211,10 +231,10 @@ export function AbsenteeManagement({
   }, [filteredActiveMembers, byWeekService, recentSundays, nWeeks]);
 
   const pagedAbsentees = useMemo(
-    () => absentees.slice((currentPage - 1) * ABSENTEE_PAGE_SIZE, currentPage * ABSENTEE_PAGE_SIZE),
-    [absentees, currentPage]
+    () => absentees.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [absentees, currentPage, PAGE_SIZE]
   );
-  const totalPages = Math.max(1, Math.ceil(absentees.length / ABSENTEE_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(absentees.length / PAGE_SIZE));
 
   const statsCards = useMemo(() => {
     const pool = filteredActiveMembers.length;
@@ -263,20 +283,67 @@ export function AbsenteeManagement({
     setCurrentPage((p) => Math.min(p, totalPages));
   }, [totalPages]);
 
+  useLayoutEffect(() => {
+    if (typeof window === "undefined" || mob) return;
+    const compute = () => {
+      const card = cardRef.current;
+      if (!card) return;
+      const cardTop = card.getBoundingClientRect().top;
+      const pagerReserve =
+        ATT_CHECK.pagerGapTop + MEMBER_MGMT.pagerRowGap + MEMBER_MGMT.pagerItemSize;
+      const availFull = window.innerHeight - cardTop - 8;
+      const rowsIfNoPager = Math.max(4, Math.min(40, Math.floor(availFull / ATT_CHECK.rowHeight)));
+      const needPager = absentees.length > rowsIfNoPager;
+      const avail = needPager ? availFull - pagerReserve : availFull;
+      const rows = Math.max(4, Math.min(40, Math.floor(avail / ATT_CHECK.rowHeight)));
+      if (Number.isFinite(rows) && rows > 0) setPageCapacity(rows);
+    };
+    compute();
+    const raf = requestAnimationFrame(compute);
+    window.addEventListener("resize", compute);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", compute);
+    };
+  }, [mob, absentees.length]);
+
   return (
     <div
-      className={mob ? "space-y-2" : "space-y-6"}
+      ref={rootRef}
+      className={mob ? "space-y-2" : undefined}
       style={
         mob
           ? {
               minHeight: tokens.layout.mobPastoralPanelMinHeight,
               minWidth: 0,
             }
-          : undefined
+          : {
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              minHeight: 0,
+              overflow: "hidden",
+              fontFamily: ATT_CHECK.fontKR,
+            }
       }
     >
       <div
-        className={`flex flex-wrap items-center bg-white rounded-xl shadow-sm border border-gray-100 ${mob ? "p-2 gap-2" : "gap-4 p-4"}`}
+        className={mob ? "flex flex-wrap items-center bg-white rounded-xl shadow-sm border border-gray-100 p-2 gap-2" : undefined}
+        style={
+          mob
+            ? undefined
+            : {
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 20,
+                background: ATT_CHECK.cardBg,
+                borderRadius: ATT_CHECK.cardRadius,
+                padding: "16px 20px",
+                flexShrink: 0,
+                marginBottom: 16,
+              }
+        }
       >
         <label className={`flex shrink-0 items-center gap-1 ${mob ? "text-[10px] text-gray-600" : "gap-2 text-sm text-gray-600"}`}>
           <span className="whitespace-nowrap">연속 결석 주</span>
@@ -317,29 +384,82 @@ export function AbsenteeManagement({
       </div>
 
       <div
-        className={
-          mob ? "mb-2 grid grid-cols-2 gap-1.5" : "mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4"
+        className={mob ? "mb-2 grid grid-cols-2 gap-1.5" : undefined}
+        style={
+          mob
+            ? undefined
+            : {
+                display: "grid",
+                gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                gap: 12,
+                marginBottom: 18,
+                flexShrink: 0,
+              }
         }
       >
         {statsCards.map((card) => (
           <div
             key={card.id}
-            className={
+            className={mob ? "rounded-lg border border-gray-100 bg-white p-2" : undefined}
+            style={
               mob
-                ? "rounded-lg border border-gray-100 bg-white p-2"
-                : "rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
+                ? undefined
+                : {
+                    background: ATT_CHECK.cardBg,
+                    borderRadius: ATT_CHECK.cardRadius,
+                    padding: "18px 20px 16px",
+                    minHeight: 108,
+                    boxSizing: "border-box",
+                  }
             }
           >
-            <div className={mob ? "text-[9px] text-gray-400" : "text-xs text-gray-500"}>{card.label}</div>
-            <div className={mob ? "text-[18px] font-extrabold text-gray-900" : "text-2xl font-extrabold text-gray-900"}>
+            <div
+              className={mob ? "text-[9px] text-gray-400" : undefined}
+              style={mob ? undefined : { fontSize: 13, fontWeight: 500, color: ATT_CHECK.statsMuted, marginBottom: 8 }}
+            >
+              {card.label}
+            </div>
+            <div
+              className={mob ? "text-[18px] font-extrabold text-gray-900" : undefined}
+              style={
+                mob
+                  ? undefined
+                  : {
+                      fontSize: 28,
+                      fontWeight: 800,
+                      color: ATT_CHECK.ink,
+                      letterSpacing: "-0.03em",
+                      lineHeight: 1.15,
+                      marginBottom: 8,
+                    }
+              }
+            >
               {card.value}
             </div>
-            <div className={mob ? "text-[9px] text-gray-400" : "text-xs text-gray-400"}>{card.sub}</div>
+            <div
+              className={mob ? "text-[9px] text-gray-400" : undefined}
+              style={mob ? undefined : { fontSize: 12, fontWeight: 500, color: ATT_CHECK.emptyValue, lineHeight: 1.45 }}
+            >
+              {card.sub}
+            </div>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+      <div
+        className={mob ? "flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm" : undefined}
+        style={
+          mob
+            ? undefined
+            : {
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }
+        }
+      >
         {mob ? (
           <div className="flex flex-col overflow-hidden">
             <div className="grid grid-cols-[22px_minmax(0,1fr)_40px_44px_minmax(0,0.9fr)_52px] items-center gap-x-0 border-b border-gray-100 bg-gray-50/50 px-1.5 py-1 text-[9px] font-semibold text-[#1e40af]">
@@ -414,124 +534,231 @@ export function AbsenteeManagement({
             )}
           </div>
         ) : (
-          <>
-            <div className="min-h-0 overflow-hidden">
-              <table className="w-full table-fixed border-collapse text-sm">
-                <colgroup>
-                  <col className="w-[5%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[13%]" />
-                  <col className="w-[15%]" />
-                  <col className="w-[13%]" />
-                </colgroup>
-                <thead className="border-b border-gray-200 bg-gray-50/95">
-                  <tr>
-                    <th className="px-2 py-3 text-center font-semibold text-[#1e40af]">번호</th>
-                    <th className="px-3 py-3 text-left font-semibold text-[#1e40af]">이름</th>
-                    <th className="px-3 py-3 text-left font-semibold text-[#1e40af]">부서</th>
-                    <th className="px-3 py-3 text-left font-semibold text-[#1e40af]">목장</th>
-                    <th className="px-3 py-3 text-center font-semibold text-[#1e40af]">연속 결석</th>
-                    <th className="px-3 py-3 text-left font-semibold text-[#1e40af]">마지막 출석일</th>
-                    <th className="px-3 py-3 text-left font-semibold text-[#1e40af]">연락처</th>
-                    <th className="px-3 py-3 text-center font-semibold text-[#1e40af]">액션</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {absentees.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="py-12 text-center text-gray-500">
-                        해당 조건의 연속 결석자가 없습니다.
-                      </td>
-                    </tr>
-                  ) : (
-                    Array.from({ length: ABSENTEE_PAGE_SIZE }, (_, idx) => {
-                      const row = pagedAbsentees[idx];
-                      if (!row) {
-                        return (
-                          <tr key={`pad-${currentPage}-${idx}`} className="h-12 border-b border-gray-100">
-                            <td colSpan={8} className="h-12 p-0" aria-hidden />
-                          </tr>
-                        );
-                      }
-                      const { member, consecutiveWeeks: cw, lastPresentDate } = row;
-                      const num = (currentPage - 1) * ABSENTEE_PAGE_SIZE + idx + 1;
-                      const mj = memberMokjangLabel(member);
-                      return (
-                        <tr key={member.id} className="h-12 border-b border-gray-100 hover:bg-gray-50/50">
-                          <td className="px-2 py-3 text-center align-middle tabular-nums text-gray-500">{num}</td>
-                          <td className="overflow-hidden px-3 py-3 align-middle font-medium">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <MemberPhotoCircle
-                                photo={member.photo}
-                                name={member.name}
-                                getInitial={memberSurnameInitial}
-                                imageClassName="h-7 w-7 shrink-0 rounded-full bg-gray-200 bg-cover bg-center"
-                                fallbackClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-300 text-xs font-semibold text-gray-600"
-                              />
-                              <div className="min-w-0 truncate" title={member.name}>
-                                {member.name}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="overflow-hidden px-3 py-3 align-middle text-gray-600">
-                            <div className="truncate" title={member.dept || undefined}>
-                              {member.dept || "-"}
-                            </div>
-                          </td>
-                          <td className="overflow-hidden px-3 py-3 align-middle text-gray-600">
-                            <div className="truncate" title={mj || undefined}>
-                              {mj || "-"}
-                            </div>
-                          </td>
-                          <td className="px-3 py-3 text-center align-middle">
-                            <span className="inline-flex min-w-[2.75rem] items-center justify-center rounded-md bg-red-100 px-2.5 py-1 text-sm font-semibold tabular-nums text-red-800">
-                              {cw}주
-                            </span>
-                          </td>
-                          <td className="overflow-hidden px-3 py-3 align-middle text-gray-600">
-                            <div className="truncate">{lastPresentDate || "-"}</div>
-                          </td>
-                          <td className="overflow-hidden px-3 py-3 align-middle">
-                            {member.phone ? (
-                              <a href={`tel:${member.phone}`} className="text-[#1e40af] hover:underline">
-                                {member.phone}
-                              </a>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                          <td className="px-3 py-3 align-middle text-center">
-                            <div className="inline-flex items-center justify-center gap-1.5">
-                              {onAddVisit ? (
-                                <button
-                                  type="button"
-                                  onClick={() => onAddVisit(member.id)}
-                                  className="inline-flex h-6 items-center justify-center rounded-lg bg-[#1e40af] px-3 text-[11px] font-medium text-white shadow-sm hover:opacity-90"
-                                >
-                                  심방 등록
-                                </button>
-                              ) : null}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                flexShrink: 0,
+                display: "grid",
+                ...absenteeGrid,
+                minHeight: ATT_CHECK.headerMinHeight,
+                marginBottom: ATT_CHECK.headerToCardGap,
+              }}
+            >
+              {ABSENTEE_HEADERS.map((h) => (
+                <div
+                  key={h}
+                  style={{
+                    fontSize: ATT_CHECK.headerFontSize,
+                    fontWeight: ATT_CHECK.headerFontWeight,
+                    color: ATT_CHECK.headerMuted,
+                    whiteSpace: "nowrap",
+                    overflow: "visible",
+                  }}
+                >
+                  {h}
+                </div>
+              ))}
             </div>
-            <AttendanceListPaginationBar
-              page={currentPage}
-              totalPages={totalPages}
-              totalItems={absentees.length}
-              onPageChange={setCurrentPage}
-            />
-          </>
+            <div
+              ref={cardRef}
+              style={{
+                background: ATT_CHECK.cardBg,
+                borderRadius: ATT_CHECK.cardRadius,
+                flex: 1,
+                minHeight: 0,
+                overflow: "hidden",
+              }}
+            >
+              {absentees.length === 0 ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: PAGE_SIZE * ATT_CHECK.rowHeight,
+                    color: ATT_CHECK.emptyTitle,
+                    fontSize: ATT_CHECK.emptyFontSize,
+                    fontWeight: 500,
+                  }}
+                >
+                  해당 조건의 연속 결석자가 없습니다.
+                </div>
+              ) : (
+                Array.from({ length: PAGE_SIZE }, (_, idx) => {
+                  const row = pagedAbsentees[idx];
+                  if (!row) {
+                    return (
+                      <div
+                        key={`pad-${currentPage}-${idx}`}
+                        style={{
+                          ...absenteeGrid,
+                          height: ATT_CHECK.rowHeight,
+                          borderBottom: `1px solid ${ATT_CHECK.rowBorder}`,
+                        }}
+                        aria-hidden
+                      />
+                    );
+                  }
+                  const { member, consecutiveWeeks: cw, lastPresentDate } = row;
+                  const num = (currentPage - 1) * PAGE_SIZE + idx + 1;
+                  const mj = memberMokjangLabel(member);
+                  const cellSub: CSSProperties = {
+                    fontSize: ATT_CHECK.subFontSize,
+                    fontWeight: ATT_CHECK.subFontWeight,
+                    color: ATT_CHECK.subText,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  };
+                  return (
+                    <div
+                      key={member.id}
+                      style={{
+                        ...absenteeGrid,
+                        height: ATT_CHECK.rowHeight,
+                        borderBottom: `1px solid ${ATT_CHECK.rowBorder}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: ATT_CHECK.subFontSize,
+                          color: ATT_CHECK.emptyValue,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {num}
+                      </div>
+                      <div style={{ overflow: "hidden" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: ATT_CHECK.avatarGap, minWidth: 0 }}>
+                          <div
+                            style={{
+                              width: ATT_CHECK.avatarSize,
+                              height: ATT_CHECK.avatarSize,
+                              borderRadius: "50%",
+                              background: ATT_CHECK.avatarBg,
+                              color: ATT_CHECK.avatarText,
+                              fontSize: ATT_CHECK.avatarFontSize,
+                              fontWeight: ATT_CHECK.avatarFontWeight,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              overflow: "hidden",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <MemberPhoto
+                              photo={member.photo}
+                              name={member.name}
+                              className="h-full w-full object-cover"
+                              fallback={memberSurnameInitial(member.name)}
+                            />
+                          </div>
+                          <span
+                            style={{
+                              fontSize: ATT_CHECK.nameFontSize,
+                              fontWeight: ATT_CHECK.nameFontWeight,
+                              color: ATT_CHECK.nameText,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={member.name}
+                          >
+                            {member.name}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={cellSub} title={member.dept || undefined}>
+                        {member.dept || "-"}
+                      </div>
+                      <div style={cellSub} title={mj || undefined}>
+                        {mj || "-"}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: ATT_CHECK.subFontSize,
+                          fontWeight: 600,
+                          color: ATT_CHECK.ink,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {cw}주
+                      </div>
+                      <div style={cellSub}>{lastPresentDate || "-"}</div>
+                      <div style={{ overflow: "hidden" }}>
+                        {member.phone ? (
+                          <a
+                            href={`tel:${member.phone}`}
+                            style={{
+                              color: ATT_CHECK.present,
+                              fontSize: ATT_CHECK.subFontSize,
+                              fontWeight: 600,
+                              textDecoration: "none",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {member.phone}
+                          </a>
+                        ) : (
+                          <span style={cellSub}>-</span>
+                        )}
+                      </div>
+                      <div>
+                        {onAddVisit ? (
+                          <button
+                            type="button"
+                            onClick={() => onAddVisit(member.id)}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              color: ATT_CHECK.present,
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              padding: 0,
+                              fontFamily: ATT_CHECK.fontKR,
+                            }}
+                          >
+                            심방
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         )}
       </div>
+      {!mob && (
+        <div
+          ref={pagerRef}
+          style={{
+            display: absentees.length > PAGE_SIZE ? "flex" : "none",
+            flexShrink: 0,
+            alignItems: "center",
+            justifyContent: "center",
+            padding: `${ATT_CHECK.pagerGapTop}px 4px 0`,
+            background: ATT_CHECK.pageBg,
+          }}
+        >
+          <MemberStylePagination
+            totalItems={absentees.length}
+            itemsPerPage={PAGE_SIZE}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 }

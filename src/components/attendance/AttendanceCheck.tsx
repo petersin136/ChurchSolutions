@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef, type CSSProperties } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArrowLeft, ArrowRight, Check, ChevronDown } from "lucide-react";
 import { tokens } from "@/styles/tokens";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
@@ -12,15 +13,18 @@ import type { Attendance } from "@/types/db";
 import { CalendarDropdown } from "@/components/CalendarDropdown";
 import { ModernSelect } from "@/components/common/ModernSelect";
 import { MemberPhoto, MemberPhotoCircle } from "@/components/common/MemberPhoto";
-import { MEMBER_MGMT, computeMemberPanelPageRows } from "@/styles/memberManagementTokens";
+import { MEMBER_MGMT } from "@/styles/memberManagementTokens";
+import { ATT_CHECK } from "@/styles/attendanceCheckTokens";
 import { MemberSearchCombo } from "@/components/pastoral/MemberSearchCombo";
+import { AbsenteeManagement } from "@/components/attendance/AbsenteeManagement";
 import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard";
 import { AttendanceDeptMonthlySummary } from "@/components/attendance/AttendanceStatistics";
 import { useAppData } from "@/contexts/AppDataContext";
 import { PcModalShell } from "@/components/common/PcModalShell";
 import { APP_MODAL } from "@/styles/appModalTokens";
 
-const ATTENDANCE_DATE_FIELD_WIDTH = 256;
+const ATTENDANCE_DATE_FIELD_WIDTH = ATT_CHECK.dateWidth;
+const ATTENDANCE_FILTER_WIDTH = 148;
 
 function formatDeptMokjang(member: Member): string {
   const dept = (member.dept || "").trim();
@@ -29,10 +33,10 @@ function formatDeptMokjang(member: Member): string {
   return dept || mokjang || "-";
 }
 
-/** 성도 관리 앞 4열 동일 + 출석 상태·사유 */
-const ATTENDANCE_COL_TEMPLATE = "48px 176px 96px 152px 60px 100px minmax(280px, 1.4fr) 80px";
-const ATTENDANCE_COL_MIN_WIDTH = 992;
-const ATTENDANCE_HEADER_COLUMNS = ["번호", "이름", "직분", "부서/목장", "지난주", "금주", "사유", "장기결석"] as const;
+/** 01·02 PNG 실측: 이름 · 구분 · 부서/목장 · 지난주 날짜 · 금주 날짜 · 사유 */
+const ATTENDANCE_COL_TEMPLATE = ATT_CHECK.colTemplate;
+const ATTENDANCE_COL_MIN_WIDTH = ATT_CHECK.colMinWidth;
+const ATTENDANCE_HEADER_COLUMNS = ["이름", "구분", "부서/목장", "last", "current", "사유"] as const;
 
 const attendanceGridColumns: CSSProperties = {
   display: "grid",
@@ -45,57 +49,29 @@ const attendanceGridColumns: CSSProperties = {
 
 const attendanceRowGridStyle: CSSProperties = {
   ...attendanceGridColumns,
-  paddingLeft: MEMBER_MGMT.gridPadX,
-  paddingRight: MEMBER_MGMT.gridPadX,
+  paddingLeft: ATT_CHECK.gridPadX,
+  paddingRight: ATT_CHECK.gridPadX,
 };
 
 const attendanceHeaderBandStyle: CSSProperties = {
   boxSizing: "border-box",
   width: "100%",
-  paddingLeft: MEMBER_MGMT.tableBorderWidth + MEMBER_MGMT.gridPadX,
-  paddingRight: MEMBER_MGMT.tableBorderWidth + MEMBER_MGMT.gridPadX,
+  paddingLeft: ATT_CHECK.gridPadX,
+  paddingRight: ATT_CHECK.gridPadX,
 };
 
 const ATTENDANCE_COL_LAYOUT = [
   { align: "left" as const },
   { align: "left" as const },
   { align: "left" as const },
-  { align: "left" as const },
   { align: "center" as const },
   { align: "center" as const },
   { align: "left" as const },
-  { align: "center" as const },
 ];
 
 function attendanceCellPadStyle(colIndex: number): CSSProperties {
   const col = ATTENDANCE_COL_LAYOUT[colIndex];
   return { textAlign: col.align, minWidth: 0, overflow: "hidden" };
-}
-
-function attendanceColumnOffsetX(colIndex: number): number {
-  const offsets: Record<number, number> = {
-    0: MEMBER_MGMT.headerNumOffsetX,
-    1: MEMBER_MGMT.headerNameOffsetX,
-    2: MEMBER_MGMT.headerRoleOffsetX,
-    3: MEMBER_MGMT.headerDeptOffsetX,
-  };
-  return offsets[colIndex] ?? 0;
-}
-
-function columnNudgeStyle(offsetX: number): CSSProperties | undefined {
-  if (offsetX === 0) return undefined;
-  return {
-    display: "inline-block",
-    position: "relative",
-    left: offsetX,
-    maxWidth: "none",
-  };
-}
-
-function attendanceHeaderCellOverflow(colIndex: number): CSSProperties["overflow"] {
-  if (colIndex === 0) return "visible";
-  if (colIndex <= 3 && attendanceColumnOffsetX(colIndex) !== 0) return "visible";
-  return "hidden";
 }
 
 function emptyCellDashStyle(): CSSProperties {
@@ -423,10 +399,10 @@ function AttendanceLongAbsenceCell({
 const STATUSES = ["출석", "결석"] as const;
 type AttStatusUI = (typeof STATUSES)[number];
 
-const ATTENDANCE_DOT_SIZE = 20;
-const ATTENDANCE_DOT_PRESENT = "#22c55e";
-const ATTENDANCE_DOT_ABSENT = "#ef4444";
-const ATTENDANCE_DOT_UNCHECKED_BORDER = "#d1d5db";
+const ATTENDANCE_DOT_SIZE = ATT_CHECK.thisDot;
+const ATTENDANCE_DOT_PRESENT = ATT_CHECK.present;
+const ATTENDANCE_DOT_ABSENT = ATT_CHECK.absent;
+const ATTENDANCE_DOT_UNCHECKED_BORDER = ATT_CHECK.unchecked;
 
 function AttendanceStatusDot({
   status,
@@ -460,13 +436,12 @@ function AttendanceStatusDot({
         padding: 0,
         cursor: "pointer",
         flexShrink: 0,
-        transform: hovered ? "scale(1.08)" : "scale(1)",
-        boxShadow: hovered ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-        transition: "transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease",
+        opacity: hovered ? 0.88 : 1,
+        transition: "opacity 0.15s ease, background 0.15s ease",
       }}
     >
       {isPresent ? (
-        <span style={{ color: "#ffffff", fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>
+        <Check size={12} strokeWidth={2.75} color="#ffffff" />
       ) : isAbsent ? (
         <span
           aria-hidden
@@ -483,26 +458,287 @@ function AttendanceStatusDot({
   );
 }
 
-function LastWeekStatusDot({ status }: { status: "출석" | "결석" | undefined }) {
-  if (!status) return null;
+function LastWeekStatusDot({
+  status,
+  onAbsentClick,
+}: {
+  status: "출석" | "결석" | undefined;
+  onAbsentClick?: (anchor: DOMRect) => void;
+}) {
   const isPresent = status === "출석";
-  const label = isPresent ? "지난주 출석" : "지난주 결석";
-  return (
+  const isAbsent = status === "결석";
+  const label = isPresent ? "지난주 출석" : isAbsent ? "지난주 결석 사유 보기" : "지난주 미체크";
+  const dot = (
     <span
-      title={label}
-      aria-label={label}
+      aria-hidden
       style={{
-        width: 6,
-        height: 6,
+        width: ATT_CHECK.lastDot,
+        height: ATT_CHECK.lastDot,
         borderRadius: "50%",
-        background: isPresent ? "#22c55e" : "#ef4444",
+        background: isPresent ? ATT_CHECK.present : isAbsent ? ATT_CHECK.absent : ATT_CHECK.unchecked,
         flexShrink: 0,
       }}
     />
   );
+  if (!isAbsent || !onAbsentClick) {
+    return (
+      <span title={label} aria-label={label} style={{ display: "inline-flex" }}>
+        {dot}
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      data-last-week-dot=""
+      title={label}
+      aria-label={label}
+      onClick={(e) => {
+        e.stopPropagation();
+        onAbsentClick(e.currentTarget.getBoundingClientRect());
+      }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 22,
+        height: 22,
+        margin: 0,
+        padding: 0,
+        border: "none",
+        background: "transparent",
+        cursor: "pointer",
+        borderRadius: 6,
+      }}
+    >
+      {dot}
+    </button>
+  );
 }
 
-/** 결석 사유 — 결석 선택 시 밑줄로 입력 가능함을 표시 */
+function AttendanceFilterSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  width,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  width: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.value === value);
+  const empty = !value;
+  const display = empty ? placeholder : (selected?.label ?? placeholder);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0, width, minWidth: width }}>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={placeholder}
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "100%",
+          height: ATT_CHECK.searchHeight,
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          padding: "0 12px 0 14px",
+          borderRadius: MEMBER_MGMT.radius,
+          background: MEMBER_MGMT.searchBg,
+          border: `1px solid ${MEMBER_MGMT.searchBorder}`,
+          cursor: "pointer",
+          fontFamily: ATT_CHECK.fontKR,
+          fontSize: MEMBER_MGMT.searchFontSize,
+          fontWeight: 500,
+        }}
+      >
+        <span
+          style={{
+            minWidth: 0,
+            flex: 1,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            lineHeight: "48px",
+            color: empty ? ATT_CHECK.placeholder : ATT_CHECK.ink,
+          }}
+        >
+          {display}
+        </span>
+        <ChevronDown
+          size={16}
+          color={ATT_CHECK.muted}
+          style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : undefined, transition: "transform 0.15s" }}
+        />
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            left: 0,
+            minWidth: "100%",
+            width: "max-content",
+            maxWidth: 240,
+            zIndex: 50,
+            maxHeight: 280,
+            overflowY: "auto",
+            background: MEMBER_MGMT.dropdownBg,
+            border: `1px solid ${MEMBER_MGMT.dropdownBorder}`,
+            borderRadius: MEMBER_MGMT.radius,
+            boxShadow: MEMBER_MGMT.dropdownShadow,
+            padding: "6px 0",
+          }}
+        >
+          {options.map((opt) => {
+            const active = opt.value === value;
+            return (
+              <button
+                key={opt.value || "__all__"}
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  border: "none",
+                  background: active ? MEMBER_MGMT.dropdownItemHover : "transparent",
+                  padding: MEMBER_MGMT.dropdownItemPad,
+                  fontFamily: ATT_CHECK.fontKR,
+                  fontSize: MEMBER_MGMT.searchFontSize,
+                  fontWeight: active ? 600 : 500,
+                  color: ATT_CHECK.ink,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = MEMBER_MGMT.dropdownItemHover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = active ? MEMBER_MGMT.dropdownItemHover : "transparent";
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LastWeekReasonPopover({
+  name,
+  note,
+  top,
+  left,
+  onClose,
+}: {
+  name: string;
+  note: string;
+  top: number;
+  left: number;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const hasNote = note.trim().length > 0;
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (ref.current?.contains(t)) return;
+      const el = e.target instanceof Element ? e.target : (e.target as Node).parentElement;
+      if (el?.closest("[data-last-week-dot]")) return;
+      onClose();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      ref={ref}
+      role="dialog"
+      aria-label={`${name} 지난주 결석 사유`}
+      style={{
+        position: "fixed",
+        top,
+        left,
+        zIndex: 100000,
+        width: 240,
+        boxSizing: "border-box",
+        padding: "12px 14px",
+        background: "#ffffff",
+        border: "1px solid #f0f1f3",
+        borderRadius: 12,
+        boxShadow: "0 16px 40px rgba(11, 12, 14, 0.10), 0 2px 6px rgba(11, 12, 14, 0.04)",
+        fontFamily: ATT_CHECK.fontKR,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: ATT_CHECK.muted,
+          letterSpacing: "0.02em",
+          marginBottom: 6,
+          textBoxTrim: "trim-both",
+          textBoxEdge: "cap alphabetic",
+        }}
+      >
+        {name} · 지난주 결석
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 500,
+          color: hasNote ? ATT_CHECK.ink : ATT_CHECK.placeholder,
+          lineHeight: 1.45,
+          textBoxTrim: "trim-both",
+          textBoxEdge: "cap alphabetic",
+        }}
+      >
+        {hasNote ? note : "적힌 사유가 없습니다"}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/** 결석 사유 — 시안: 값이면 본문, 없으면 '사유 입력' */
 function AttendanceAbsentNoteField({
   value,
   onChange,
@@ -510,43 +746,156 @@ function AttendanceAbsentNoteField({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const [focused, setFocused] = useState(false);
   const hasValue = value.trim().length > 0;
 
   return (
     <input
       type="text"
-      placeholder="사유"
+      placeholder="사유 입력"
       title="결석사유입력"
       aria-label="결석사유입력"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
       style={{
         width: "100%",
         minWidth: 0,
         height: 28,
         boxSizing: "border-box",
         border: "none",
-        borderBottom: `1.5px solid ${focused ? "#9aa0a6" : "#d1d5db"}`,
         borderRadius: 0,
         background: "transparent",
-        padding: "2px 2px 4px",
-        fontFamily: MEMBER_MGMT.fontKR,
-        fontSize: 14,
-        fontWeight: hasValue ? MEMBER_MGMT.contentFontWeight : 500,
-        color: MEMBER_MGMT.contentText,
+        padding: 0,
+        fontFamily: ATT_CHECK.fontKR,
+        fontSize: ATT_CHECK.reasonFontSize,
+        fontWeight: hasValue ? 500 : 500,
+        color: ATT_CHECK.reasonText,
         outline: "none",
         cursor: "text",
-        transition: "border-color 0.15s ease",
       }}
-      className="placeholder:text-[#c4c7cf]"
+      className="placeholder:text-[#c8cad0]"
     />
   );
 }
 
-const ATTENDANCE_CHECK_DEFAULT_PAGE_SIZE = 18;
+function formatMonthDay(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${mo}. ${day}`;
+}
+
+function AttendanceSubTabs({
+  value,
+  onChange,
+}: {
+  value: "check" | "absentee";
+  onChange: (v: "check" | "absentee") => void;
+}) {
+  const tabs: { id: "check" | "absentee"; label: string }[] = [
+    { id: "check", label: "출석 체크" },
+    { id: "absentee", label: "결석자 관리" },
+  ];
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        height: ATT_CHECK.tabTrackHeight,
+        padding: ATT_CHECK.tabInnerPad,
+        borderRadius: ATT_CHECK.tabTrackRadius,
+        background: ATT_CHECK.tabTrackBg,
+        flexShrink: 0,
+      }}
+    >
+      {tabs.map((t) => {
+        const active = value === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onChange(t.id)}
+            style={{
+              height: ATT_CHECK.tabTrackHeight - ATT_CHECK.tabInnerPad * 2,
+              padding: "0 16px",
+              border: "none",
+              borderRadius: ATT_CHECK.tabActiveRadius,
+              background: active ? ATT_CHECK.tabActiveBg : "transparent",
+              color: active ? ATT_CHECK.tabActiveText : ATT_CHECK.tabIdleText,
+              fontFamily: ATT_CHECK.fontKR,
+              fontSize: ATT_CHECK.tabFontSize,
+              fontWeight: ATT_CHECK.tabFontWeight,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              textBoxTrim: "trim-both",
+              textBoxEdge: "cap alphabetic",
+            }}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function AttendanceStatsLine({
+  present,
+  absent,
+  unchecked,
+  total,
+}: {
+  present: number;
+  absent: number;
+  unchecked: number;
+  total: number;
+}) {
+  const empty = total === 0;
+  const dot = empty ? ATT_CHECK.emptyValue : ATT_CHECK.present;
+  const labelColor = empty ? ATT_CHECK.emptyValue : ATT_CHECK.statsMuted;
+  const numStyle: CSSProperties = {
+    color: empty ? ATT_CHECK.emptyValue : ATT_CHECK.statsNumber,
+    fontWeight: empty ? 500 : ATT_CHECK.statsNumberWeight,
+    fontVariantNumeric: "tabular-nums",
+  };
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: ATT_CHECK.statsGap,
+        marginLeft: "auto",
+        flexShrink: 0,
+        fontFamily: ATT_CHECK.fontKR,
+        fontSize: ATT_CHECK.statsFontSize,
+        fontWeight: 500,
+        color: labelColor,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: ATT_CHECK.statsDot,
+          height: ATT_CHECK.statsDot,
+          borderRadius: "50%",
+          background: dot,
+          flexShrink: 0,
+        }}
+      />
+      <span>
+        출석 <span style={numStyle}>{present}</span>
+        {" · "}
+        결석 <span style={numStyle}>{absent}</span>
+        {" · "}
+        미체크 <span style={numStyle}>{unchecked}</span>
+        {" / 전체 "}
+        <span style={numStyle}>{total}</span>명
+      </span>
+    </div>
+  );
+}
+
+const ATTENDANCE_CHECK_DEFAULT_PAGE_SIZE = 12;
 
 function memberMokjangLabel(m: Member): string {
   return (m.mokjang ?? m.group ?? "").trim();
@@ -824,6 +1173,7 @@ export function AttendanceCheck({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageCapacity, setPageCapacity] = useState(tabletOrLess ? 10 : ATTENDANCE_CHECK_DEFAULT_PAGE_SIZE);
   const PAGE_SIZE = pageCapacity;
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const pagerRef = useRef<HTMLDivElement | null>(null);
   const saveStatusRef = useRef<HTMLDivElement | null>(null);
@@ -833,8 +1183,16 @@ export function AttendanceCheck({
   const [loading, setLoading] = useState(true);
   const [statusMap, setStatusMap] = useState<Record<string, AttStatusUI>>({});
   const [noteMap, setNoteMap] = useState<Record<string, string>>({});
+  const [innerTab, setInnerTab] = useState<"check" | "absentee">("check");
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [spotlightRowId, setSpotlightRowId] = useState<string | null>(null);
+  const [lastWeekReasonPop, setLastWeekReasonPop] = useState<{
+    memberId: string;
+    name: string;
+    note: string;
+    top: number;
+    left: number;
+  } | null>(null);
   const requestIdRef = useRef(0);
   const loadingRef = useRef(false);
   const toastRef = useRef(toast);
@@ -860,6 +1218,24 @@ export function AttendanceCheck({
       ...Array.from(set).sort(compareMokjangOrder).map((name) => ({ value: name, label: name })),
     ];
   }, [activeMembers]);
+  const deptFilterOptions = useMemo(
+    () => [{ value: "", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))],
+    [depts],
+  );
+  const mokjangFilterOptions = useMemo(() => {
+    const pool = deptFilter ? activeMembers.filter((m) => m.dept === deptFilter) : activeMembers;
+    const set = new Set<string>();
+    pool.forEach((m) => {
+      const v = memberMokjangLabel(m);
+      if (v) set.add(v);
+    });
+    const hasUnassigned = pool.some((m) => !memberMokjangLabel(m));
+    return [
+      { value: "", label: "전체" },
+      ...(hasUnassigned ? [{ value: "__none__", label: "미배정" }] : []),
+      ...Array.from(set).sort(compareMokjangOrder).map((name) => ({ value: name, label: name })),
+    ];
+  }, [activeMembers, deptFilter]);
   const deptOptionsForCombo = useMemo(
     () => [{ value: "all", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))],
     [depts],
@@ -917,6 +1293,17 @@ export function AttendanceCheck({
       if (r.service_type && r.service_type !== "주일예배") return;
       if (LAST_WEEK_PRESENT_DB_STATUSES.has(r.status)) map[r.member_id] = "출석";
       else if (LAST_WEEK_ABSENT_DB_STATUSES.has(r.status)) map[r.member_id] = "결석";
+    });
+    return map;
+  }, [rawAttendance, lastWeekDate]);
+
+  const lastWeekNoteByMemberId = useMemo(() => {
+    const map: Record<string, string> = {};
+    rawAttendance.forEach((r) => {
+      if (normalizeAttendanceDate(r.date) !== lastWeekDate) return;
+      if (r.service_type && r.service_type !== "주일예배") return;
+      if (!LAST_WEEK_ABSENT_DB_STATUSES.has(r.status)) return;
+      map[r.member_id] = String(r.note ?? "").trim();
     });
     return map;
   }, [rawAttendance, lastWeekDate]);
@@ -1005,6 +1392,43 @@ export function AttendanceCheck({
     [deptMokjangFilteredMembers, PAGE_SIZE],
   );
 
+  const handleDeptFilterChange = useCallback(
+    (next: string) => {
+      setDeptFilter(next);
+      setMokjangFilter((prev) => {
+        if (!prev) return prev;
+        const pool = next ? activeMembers.filter((m) => m.dept === next) : activeMembers;
+        if (prev === "__none__") return pool.some((m) => !memberMokjangLabel(m)) ? prev : "";
+        return pool.some((m) => memberMokjangLabel(m) === prev) ? prev : "";
+      });
+    },
+    [activeMembers],
+  );
+
+  const closeLastWeekReasonPop = useCallback(() => setLastWeekReasonPop(null), []);
+
+  const openLastWeekReason = useCallback(
+    (memberId: string, name: string, anchor: DOMRect) => {
+      setLastWeekReasonPop((prev) => {
+        if (prev?.memberId === memberId) return null;
+        const popW = 240;
+        let left = anchor.right + 8;
+        if (left + popW > window.innerWidth - 12) left = Math.max(12, anchor.left - popW - 8);
+        let top = anchor.top + anchor.height / 2 - 18;
+        if (top < 12) top = 12;
+        if (top + 96 > window.innerHeight) top = Math.max(12, window.innerHeight - 108);
+        return {
+          memberId,
+          name,
+          note: lastWeekNoteByMemberId[memberId] ?? "",
+          top,
+          left,
+        };
+      });
+    },
+    [lastWeekNoteByMemberId],
+  );
+
   useEffect(() => {
     if (!spotlightRowId) return;
     const timer = window.setTimeout(() => setSpotlightRowId(null), 2400);
@@ -1019,7 +1443,12 @@ export function AttendanceCheck({
 
   useEffect(() => {
     setCurrentPage(1);
+    setLastWeekReasonPop(null);
   }, [deptFilter, mokjangFilter, selectedDate]);
+
+  useEffect(() => {
+    setLastWeekReasonPop(null);
+  }, [currentPage]);
 
   useEffect(() => {
     if (!mob) return;
@@ -1036,14 +1465,17 @@ export function AttendanceCheck({
 
     const compute = () => {
       const card = cardRef.current;
-      const pager = pagerRef.current;
+      const root = rootRef.current;
       if (!card || loading) return;
       const cardTop = card.getBoundingClientRect().top;
-      const pagerH = pager?.offsetHeight ?? 90;
-      const saveStatusH = saveStatusRef.current?.offsetHeight ?? 0;
-      const bottomPad = MEMBER_MGMT.toolbarPadBottom + 8 + saveStatusH;
-      const avail = window.innerHeight - cardTop - pagerH - bottomPad;
-      const rows = computeMemberPanelPageRows(avail, window.innerHeight);
+      const rootBottom = root?.getBoundingClientRect().bottom ?? window.innerHeight;
+      const pagerReserve =
+        ATT_CHECK.pagerGapTop + MEMBER_MGMT.pagerRowGap + MEMBER_MGMT.pagerItemSize;
+      const availFull = rootBottom - cardTop - 2;
+      const rowsIfNoPager = Math.max(4, Math.min(40, Math.floor(availFull / ATT_CHECK.rowHeight)));
+      const needPager = filteredMembers.length > rowsIfNoPager;
+      const avail = needPager ? availFull - pagerReserve : availFull;
+      const rows = Math.max(4, Math.min(40, Math.floor(avail / ATT_CHECK.rowHeight)));
       if (Number.isFinite(rows) && rows > 0) setPageCapacity(rows);
     };
 
@@ -1064,7 +1496,7 @@ export function AttendanceCheck({
       ro?.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mob, loading]);
+  }, [mob, loading, filteredMembers.length, innerTab]);
 
   const loadAttendance = useCallback(async (date: string, serviceType: string) => {
     if (!supabase) {
@@ -1119,6 +1551,19 @@ export function AttendanceCheck({
   const getStatus = useCallback((memberId: string): AttStatusUI | undefined => {
     return statusMap[memberId];
   }, [statusMap]);
+
+  const attendanceStats = useMemo(() => {
+    let present = 0;
+    let absent = 0;
+    let unchecked = 0;
+    filteredMembers.forEach((m) => {
+      const s = statusMap[m.id];
+      if (s === "출석") present += 1;
+      else if (s === "결석") absent += 1;
+      else unchecked += 1;
+    });
+    return { present, absent, unchecked, total: filteredMembers.length };
+  }, [filteredMembers, statusMap]);
 
   const setStatus = useCallback((memberId: string, status: AttStatusUI) => {
     setStatusMap((prev) => ({ ...prev, [memberId]: status }));
@@ -1284,8 +1729,54 @@ export function AttendanceCheck({
     onAttendanceSaved?.();
   };
 
+  const handleMarkAllPresent = async () => {
+    if (!supabase || filteredMembers.length === 0) return;
+    setSaving(true);
+    setSaved(false);
+    setSaveError(false);
+    const year = new Date(selectedDate + "T12:00:00").getFullYear();
+    const week_num = getWeekNumForDate(selectedDate);
+    const churchId = getChurchId();
+    const nextStatus: Record<string, AttStatusUI> = { ...statusMap };
+    filteredMembers.forEach((m) => {
+      nextStatus[m.id] = "출석";
+    });
+    setStatusMap(nextStatus);
+    const records = filteredMembers.map((m) => ({
+      member_id: m.id,
+      week_num: Number(week_num),
+      year: Number(year),
+      date: selectedDate,
+      service_type: SERVICE_TYPE,
+      status: "p" as const,
+      check_in_time: new Date().toISOString(),
+      check_in_method: "수동" as const,
+      note: null as string | null,
+      checked_by: getCurrentUserId?.() ?? null,
+      church_id: churchId,
+    }));
+    const { error } = await supabase.from("attendance").upsert(records, {
+      onConflict: "member_id,date,service_type",
+    });
+    if (error) {
+      setSaveError(true);
+      setSaving(false);
+      toast("저장 실패: " + error.message, "err");
+      return;
+    }
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    onAttendanceSaved?.();
+  };
+
+  const markAllDisabled = filteredMembers.length === 0;
+  const lastWeekHeader = formatMonthDay(lastWeekDate);
+  const currentWeekHeader = formatMonthDay(selectedDate);
+
   return (
     <div
+      ref={rootRef}
       className={mob ? "space-y-2" : undefined}
       style={
         mob
@@ -1294,15 +1785,19 @@ export function AttendanceCheck({
               minWidth: 0,
             }
           : {
+              position: "relative",
               display: "flex",
               flexDirection: "column",
               width: "100%",
               maxWidth: "100%",
               minWidth: 0,
+              height: "calc(100vh - 88px)",
+              maxHeight: "calc(100vh - 88px)",
+              overflow: "hidden",
               boxSizing: "border-box",
-              fontFamily: MEMBER_MGMT.fontKR,
-              paddingTop: MEMBER_MGMT.toolbarPadTop,
-              paddingBottom: MEMBER_MGMT.toolbarPadBottom,
+              fontFamily: ATT_CHECK.fontKR,
+              paddingTop: 0,
+              paddingBottom: 0,
             }
       }
     >
@@ -1313,12 +1808,27 @@ export function AttendanceCheck({
             : {
                 display: "flex",
                 flexDirection: "column",
-                minHeight: MEMBER_MGMT.panelMinHeightDesktop,
-                minWidth: 0,
+                flex: 1,
+                minHeight: 0,
+                height: "100%",
+                overflow: "hidden",
               }
         }
       >
-      {mob ? (
+      {!mob && (
+        <div style={{ marginBottom: innerTab === "check" ? ATT_CHECK.tabGapBelow : 18, flexShrink: 0 }}>
+          <AttendanceSubTabs value={innerTab} onChange={setInnerTab} />
+        </div>
+      )}
+      {!mob && innerTab === "absentee" ? (
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <AbsenteeManagement
+            members={members}
+            attendanceList={attendanceList}
+            toast={toast}
+          />
+        </div>
+      ) : mob ? (
       <div className="flex flex-wrap items-center gap-2 bg-white rounded-xl shadow-sm border border-gray-100 p-2">
         <label className="flex shrink-0 items-center gap-1.5">
           <span className="whitespace-nowrap text-[10px] text-gray-500">날짜</span>
@@ -1380,12 +1890,12 @@ export function AttendanceCheck({
           display: "flex",
           flexDirection: "row",
           flexWrap: "nowrap",
-          gap: MEMBER_MGMT.toolbarGap,
+          gap: ATT_CHECK.toolbarGap,
           alignItems: "stretch",
           width: "100%",
           minWidth: 0,
           flexShrink: 0,
-          fontFamily: MEMBER_MGMT.fontKR,
+          fontFamily: ATT_CHECK.fontKR,
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1393,16 +1903,13 @@ export function AttendanceCheck({
             value={searchName}
             onChange={(v) => {
               setSearchName(v);
-              if (!v.trim()) {
-                setDeptFilter("");
-                setMokjangFilter("");
-              }
             }}
+            placeholder="이름, 부서, 목장, 구분 검색 또는 선택"
             deptOptions={deptOptionsForCombo}
             mokjangOptions={mokjangOptionsForCombo}
             roleOptions={roleOptionsForCombo}
             onSelectDept={(v) => {
-              setDeptFilter(v === "all" ? "" : v);
+              handleDeptFilterChange(v === "all" ? "" : v);
             }}
             onSelectMokjang={(v) => {
               if (v === "all") setMokjangFilter("");
@@ -1414,6 +1921,20 @@ export function AttendanceCheck({
             onSelectMember={handleSelectSearchMember}
           />
         </div>
+        <AttendanceFilterSelect
+          value={deptFilter}
+          onChange={handleDeptFilterChange}
+          options={deptFilterOptions}
+          placeholder="부서별"
+          width={ATTENDANCE_FILTER_WIDTH}
+        />
+        <AttendanceFilterSelect
+          value={mokjangFilter}
+          onChange={setMokjangFilter}
+          options={mokjangFilterOptions}
+          placeholder="목장별"
+          width={ATTENDANCE_FILTER_WIDTH}
+        />
         <div
           style={{
             flexShrink: 0,
@@ -1430,10 +1951,32 @@ export function AttendanceCheck({
             triggerStyle={attendanceDateTriggerStyle()}
           />
         </div>
+        <button
+          type="button"
+          disabled={markAllDisabled}
+          onClick={() => { void handleMarkAllPresent(); }}
+          style={{
+            flexShrink: 0,
+            width: ATT_CHECK.markAllWidth,
+            height: ATT_CHECK.searchHeight,
+            border: "none",
+            borderRadius: ATT_CHECK.markAllRadius,
+            background: markAllDisabled ? ATT_CHECK.markAllIdleBg : ATT_CHECK.markAllBg,
+            color: markAllDisabled ? ATT_CHECK.markAllIdleText : ATT_CHECK.markAllText,
+            fontFamily: ATT_CHECK.fontKR,
+            fontSize: ATT_CHECK.markAllFontSize,
+            fontWeight: ATT_CHECK.markAllFontWeight,
+            cursor: markAllDisabled ? "default" : "pointer",
+            textBoxTrim: "trim-both",
+            textBoxEdge: "cap alphabetic",
+          }}
+        >
+          전체 출석
+        </button>
       </div>
       )}
 
-      {loading ? (
+      {!(!mob && innerTab === "absentee") && (loading ? (
         <div
           className={`flex items-center justify-center py-12 bg-white rounded-xl border border-gray-100 ${mob ? "shrink-0" : ""}`}
         >
@@ -1520,13 +2063,21 @@ export function AttendanceCheck({
           </div>
         </div>
       ) : (
-        <>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
         <div
           style={{
             flex: "0 0 auto",
             width: "100%",
             overflowX: "auto",
-            overflowY: "visible",
+            overflowY: "hidden",
             display: "flex",
             flexDirection: "column",
             WebkitOverflowScrolling: "touch",
@@ -1534,7 +2085,7 @@ export function AttendanceCheck({
         >
           <div
             style={{
-              minWidth: ATTENDANCE_COL_MIN_WIDTH + MEMBER_MGMT.gridPadX * 2,
+              minWidth: ATTENDANCE_COL_MIN_WIDTH + ATT_CHECK.gridPadX * 2,
               width: "100%",
               flex: "0 0 auto",
               display: "flex",
@@ -1545,56 +2096,75 @@ export function AttendanceCheck({
               style={{
                 width: "100%",
                 flexShrink: 0,
-                marginTop: MEMBER_MGMT.headerRowGap,
-                marginBottom: MEMBER_MGMT.headerToCardGap,
+                marginTop: ATT_CHECK.headerRowGap,
+                marginBottom: ATT_CHECK.headerToCardGap,
                 display: "flex",
                 alignItems: "center",
-                minHeight: MEMBER_MGMT.headerMinHeight,
+                minHeight: ATT_CHECK.headerMinHeight,
+                overflow: "visible",
                 ...attendanceHeaderBandStyle,
               }}
             >
-              <div style={{ ...attendanceGridColumns, alignItems: "center", width: "100%" }}>
+              <div style={{ ...attendanceGridColumns, alignItems: "center", flex: 1, minWidth: 0, width: "auto" }}>
                 {ATTENDANCE_HEADER_COLUMNS.map((h, i) => {
-                  const nudge = attendanceColumnOffsetX(i);
+                  const label =
+                    h === "last" ? lastWeekHeader : h === "current" ? currentWeekHeader : h;
+                  const isCurrent = h === "current";
                   return (
                     <div
                       key={h}
                       style={{
                         ...attendanceCellPadStyle(i),
-                        fontSize: MEMBER_MGMT.headerFontSize,
-                        fontWeight: MEMBER_MGMT.headerFontWeight,
-                        lineHeight: MEMBER_MGMT.headerLineHeight,
-                        color: MEMBER_MGMT.headerText,
+                        fontSize: ATT_CHECK.headerFontSize,
+                        fontWeight: isCurrent ? ATT_CHECK.headerCurrentWeight : ATT_CHECK.headerFontWeight,
+                        lineHeight: 1.4,
+                        color: isCurrent ? ATT_CHECK.ink : ATT_CHECK.headerMuted,
                         whiteSpace: "nowrap",
-                        overflow: attendanceHeaderCellOverflow(i),
-                        textOverflow: "ellipsis",
-                        letterSpacing: i === 0 ? "0" : "-0.01em",
+                        overflow: "visible",
                       }}
                     >
-                      <span style={columnNudgeStyle(nudge)}>{h}</span>
+                      {label}
                     </div>
                   );
                 })}
               </div>
+              <AttendanceStatsLine
+                present={attendanceStats.present}
+                absent={attendanceStats.absent}
+                unchecked={attendanceStats.unchecked}
+                total={attendanceStats.total}
+              />
             </div>
             <div
               ref={cardRef}
               className="flex flex-col overflow-hidden"
-              style={{ background: MEMBER_MGMT.tableBg, borderRadius: MEMBER_MGMT.radius, flexShrink: 0 }}
+              style={{ background: ATT_CHECK.cardBg, borderRadius: ATT_CHECK.cardRadius, flexShrink: 0 }}
             >
               {filteredMembers.length === 0 ? (
                 <div
                   style={{
                     flex: 1,
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    minHeight: PAGE_SIZE * MEMBER_MGMT.rowHeight,
-                    color: MEMBER_MGMT.memoMuted,
-                    fontSize: MEMBER_MGMT.cellFontSize,
+                    minHeight: PAGE_SIZE * ATT_CHECK.rowHeight,
+                    color: ATT_CHECK.emptyTitle,
+                    fontSize: ATT_CHECK.emptyFontSize,
+                    fontWeight: 500,
+                    textAlign: "center",
+                    gap: ATT_CHECK.emptyLineGap,
+                    fontFamily: ATT_CHECK.fontKR,
                   }}
                 >
-                  교인 목록이 없습니다
+                  {hasSearchQuery ? (
+                    "검색 결과가 없습니다"
+                  ) : (
+                    <>
+                      <span>아직 등록된 성도가 없습니다.</span>
+                      <span>성도관리에서 성도를 등록해 주세요.</span>
+                    </>
+                  )}
                 </div>
               ) : (
                 Array.from({ length: PAGE_SIZE }, (_, idx) => {
@@ -1607,14 +2177,13 @@ export function AttendanceCheck({
                         key={`pad-${currentPage}-${idx}`}
                         style={{
                           ...attendanceRowGridStyle,
-                          height: MEMBER_MGMT.rowHeight,
-                          borderBottom: `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}`,
+                          height: ATT_CHECK.rowHeight,
+                          borderBottom: `1px solid ${ATT_CHECK.rowBorder}`,
                         }}
                         aria-hidden
                       />
                     );
                   }
-                  const num = (currentPage - 1) * PAGE_SIZE + idx + 1;
                   const status = getStatus(m.id);
                   const isAbsent = status === "결석";
                   const isHovered = hoveredRow === m.id || spotlightRowId === m.id;
@@ -1626,36 +2195,26 @@ export function AttendanceCheck({
                       onMouseLeave={() => setHoveredRow((prev) => (prev === m.id ? null : prev))}
                       style={{
                         ...attendanceRowGridStyle,
-                        height: MEMBER_MGMT.rowHeight,
+                        height: ATT_CHECK.rowHeight,
                         borderBottom:
                           isHovered || isNextHovered
                             ? "transparent"
-                            : `${MEMBER_MGMT.rowBorderWidth}px solid ${MEMBER_MGMT.rowBorder}`,
+                            : `1px solid ${ATT_CHECK.rowBorder}`,
                         background: rowHoverBackground(isHovered),
                         transition: "background 0.12s ease, border-color 0.12s ease",
                       }}
                     >
-                      <div
-                        style={{
-                          ...attendanceCellPadStyle(0),
-                          color: MEMBER_MGMT.numText,
-                          fontSize: MEMBER_MGMT.cellFontSize,
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
-                        {num}
-                      </div>
-                      <div style={{ ...attendanceCellPadStyle(1), overflow: "hidden" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: MEMBER_MGMT.nameAvatarGap, minWidth: 0 }}>
+                      <div style={{ ...attendanceCellPadStyle(0), overflow: "hidden" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: ATT_CHECK.avatarGap, minWidth: 0 }}>
                           <div
                             style={{
-                              width: MEMBER_MGMT.avatarSize,
-                              height: MEMBER_MGMT.avatarSize,
+                              width: ATT_CHECK.avatarSize,
+                              height: ATT_CHECK.avatarSize,
                               borderRadius: "50%",
-                              background: MEMBER_MGMT.avatarBg,
-                              color: MEMBER_MGMT.avatarText,
-                              fontSize: MEMBER_MGMT.avatarFontSize,
-                              fontWeight: MEMBER_MGMT.avatarFontWeight,
+                              background: ATT_CHECK.avatarBg,
+                              color: ATT_CHECK.avatarText,
+                              fontSize: ATT_CHECK.avatarFontSize,
+                              fontWeight: ATT_CHECK.avatarFontWeight,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -1667,9 +2226,9 @@ export function AttendanceCheck({
                           </div>
                           <span
                             style={{
-                              fontSize: MEMBER_MGMT.nameFontSize,
-                              fontWeight: MEMBER_MGMT.nameFontWeight,
-                              color: MEMBER_MGMT.nameText,
+                              fontSize: ATT_CHECK.nameFontSize,
+                              fontWeight: ATT_CHECK.nameFontWeight,
+                              color: ATT_CHECK.nameText,
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
@@ -1682,10 +2241,10 @@ export function AttendanceCheck({
                       </div>
                       <div
                         style={{
-                          ...attendanceCellPadStyle(2),
-                          fontSize: MEMBER_MGMT.cellFontSize,
-                          fontWeight: MEMBER_MGMT.subFontWeight,
-                          color: MEMBER_MGMT.subText,
+                          ...attendanceCellPadStyle(1),
+                          fontSize: ATT_CHECK.subFontSize,
+                          fontWeight: ATT_CHECK.subFontWeight,
+                          color: ATT_CHECK.subText,
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
@@ -1694,22 +2253,25 @@ export function AttendanceCheck({
                       </div>
                       <div
                         style={{
-                          ...attendanceCellPadStyle(3),
-                          fontSize: MEMBER_MGMT.cellFontSize,
-                          fontWeight: MEMBER_MGMT.subFontWeight,
-                          color: MEMBER_MGMT.deptText,
+                          ...attendanceCellPadStyle(2),
+                          fontSize: ATT_CHECK.subFontSize,
+                          fontWeight: ATT_CHECK.subFontWeight,
+                          color: ATT_CHECK.subText,
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
                       >
                         {formatDeptMokjang(m)}
                       </div>
-                      <div style={attendanceCellPadStyle(4)}>
+                      <div style={attendanceCellPadStyle(3)}>
                         <div style={{ display: "flex", justifyContent: "center" }}>
-                          <LastWeekStatusDot status={lastWeekStatusByMemberId[m.id]} />
+                          <LastWeekStatusDot
+                            status={lastWeekStatusByMemberId[m.id]}
+                            onAbsentClick={(anchor) => openLastWeekReason(m.id, m.name, anchor)}
+                          />
                         </div>
                       </div>
-                      <div style={attendanceCellPadStyle(5)}>
+                      <div style={attendanceCellPadStyle(4)}>
                         <div style={{ display: "flex", justifyContent: "center" }}>
                           <AttendanceStatusDot
                             status={status}
@@ -1717,37 +2279,13 @@ export function AttendanceCheck({
                           />
                         </div>
                       </div>
-                      <div style={attendanceCellPadStyle(6)}>
+                      <div style={attendanceCellPadStyle(5)}>
                         {isAbsent ? (
                           <AttendanceAbsentNoteField
                             value={noteMap[m.id] ?? ""}
                             onChange={(v) => handleNoteChange(m.id, v)}
                           />
-                        ) : (
-                          <span style={emptyCellDashStyle()}>-</span>
-                        )}
-                      </div>
-                      <div style={attendanceCellPadStyle(7)}>
-                        <AttendanceLongAbsenceCell
-                          consecutiveWeeks={longAbsenceByMemberId[m.id]?.consecutiveWeeks ?? 0}
-                          showScatterLongTerm={longAbsenceByMemberId[m.id]?.showScatterLongTerm ?? false}
-                          onOpenConsecutive={() =>
-                            setLongAbsenceModal({
-                              memberId: m.id,
-                              memberName: m.name,
-                              kind: "consecutive",
-                              consecutiveWeeks: longAbsenceByMemberId[m.id]?.consecutiveWeeks ?? 0,
-                            })
-                          }
-                          onOpenScatter={() =>
-                            setLongAbsenceModal({
-                              memberId: m.id,
-                              memberName: m.name,
-                              kind: "scatter",
-                              consecutiveWeeks: 0,
-                            })
-                          }
-                        />
+                        ) : null}
                       </div>
                     </div>
                   );
@@ -1759,11 +2297,11 @@ export function AttendanceCheck({
         <div
           ref={pagerRef}
           style={{
-            display: "flex",
+            display: filteredMembers.length > PAGE_SIZE ? "flex" : "none",
             flexShrink: 0,
             alignItems: "center",
             justifyContent: "center",
-            padding: "32px 4px 2px",
+            padding: `${ATT_CHECK.pagerGapTop}px 4px 2px`,
           }}
         >
           <AttendanceNumberPagination
@@ -1773,20 +2311,39 @@ export function AttendanceCheck({
             onPageChange={setCurrentPage}
           />
         </div>
-      </>
-      )}
+        </div>
+      ))}
 
-      <div ref={saveStatusRef} className="flex justify-end px-1 text-xs text-gray-500">
+      <div
+        ref={saveStatusRef}
+        className="text-xs text-gray-500"
+        style={{
+          position: "absolute",
+          right: 4,
+          bottom: 2,
+          pointerEvents: "none",
+        }}
+      >
         {saving ? "저장 중..." : saved ? "자동 저장됨" : saveError ? "저장 실패" : ""}
       </div>
       </div>
 
-      {!loading && (
+      {lastWeekReasonPop && (
+        <LastWeekReasonPopover
+          name={lastWeekReasonPop.name}
+          note={lastWeekReasonPop.note}
+          top={lastWeekReasonPop.top}
+          left={lastWeekReasonPop.left}
+          onClose={closeLastWeekReasonPop}
+        />
+      )}
+
+      {mob && !loading && (
         <>
-          <section style={{ marginTop: mob ? 16 : 40, width: "100%" }}>
+          <section style={{ marginTop: 16, width: "100%" }}>
             <AttendanceDashboard embedded members={members} attendanceList={attendanceList} />
           </section>
-          <section style={{ marginTop: mob ? 16 : 32, width: "100%", paddingBottom: mob ? 16 : 24 }}>
+          <section style={{ marginTop: 16, width: "100%", paddingBottom: 16 }}>
             <AttendanceDeptMonthlySummary members={members} attendanceList={attendanceList} />
           </section>
         </>

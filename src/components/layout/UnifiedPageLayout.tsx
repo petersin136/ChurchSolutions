@@ -339,13 +339,13 @@ export function UnifiedPageLayout({
               width: "100%",
             }}
           >
-            {/* 처치업 로고 + 날짜 — 사이드바 가운데 정렬 */}
+            {/* 처치업 로고 + 날짜 — 01 PNG: 로고·날짜 동일 좌측(C), 날짜 우측은 로고(P)보다 ~6px 짧게 */}
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "flex-start",
-                width: "fit-content",
+                alignItems: "stretch",
+                width: DASH_SIDEBAR.brandWidth,
                 boxSizing: "border-box",
               }}
             >
@@ -367,11 +367,15 @@ export function UnifiedPageLayout({
               >
                 <div style={{ display: "flex", alignItems: "baseline", gap: DASH_SIDEBAR.dateLabelGap }}>
                   <span style={{ fontWeight: 500, color: DASH_COLOR.sidebarDateToday }}>Today</span>
-                  <span style={{ fontWeight: 600, color: DASH_COLOR.sidebarDateValue }}>{sidebarDateMeta.today}</span>
+                  <span style={{ fontWeight: 600, color: DASH_COLOR.sidebarDateValue, fontVariantNumeric: "tabular-nums" }}>
+                    {sidebarDateMeta.today}
+                  </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: DASH_SIDEBAR.dateLabelGap }}>
                   <span style={{ fontWeight: 500, color: DASH_COLOR.sidebarDateThisWeek }}>This Week</span>
-                  <span style={{ fontWeight: 600, color: DASH_COLOR.sidebarDateValue }}>{sidebarDateMeta.week}</span>
+                  <span style={{ fontWeight: 600, color: DASH_COLOR.sidebarDateValue, fontVariantNumeric: "tabular-nums" }}>
+                    {sidebarDateMeta.week}
+                  </span>
                 </div>
               </div>
             </div>

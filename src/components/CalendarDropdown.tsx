@@ -9,23 +9,27 @@ const YEAR_MIN = 1940;
 const YEAR_MAX = 2030;
 /** 앱 테마와 통일 (남색) */
 const ACCENT = "var(--color-primary)";
-/** 활동 기록 모달 톤 — 흑·회색 미니멀 */
+/** 출석부·활동기록 — 잉크 톤을 유지한 에디토리얼 캘린더 */
 const ACTIVITY_CAL = {
   ink: "#0b0c0e",
-  muted: "#9ca0a8",
+  muted: "#90939c",
   faint: "#c8cad0",
-  sun: "#e55c5c",
+  sun: "#c45c5c",
   surface: "#ffffff",
-  border: "#e5e6ea",
-  hover: "#f4f4f6",
+  border: "#f0f1f3",
+  hover: "#ebebef",
+  week: "#f6f6f8",
+  today: "#ebebef",
   selectedBg: "#0b0c0e",
-  shadow: "0 12px 36px rgba(17, 17, 26, 0.12)",
-  radius: 7,
-  font: "'Pretendard', system-ui, -apple-system, sans-serif",
+  shadow: "0 16px 40px rgba(11, 12, 14, 0.10), 0 2px 6px rgba(11, 12, 14, 0.04)",
+  panelRadius: 12,
+  chipRadius: 6,
+  font: "'Pretendard', 'Inter', system-ui, -apple-system, sans-serif",
 } as const;
+const ACTIVITY_POPUP_WIDTH = 264;
 
 const activityNavBtnStyle: CSSProperties = {
-  width: 28,
+  width: 26,
   height: 28,
   border: "none",
   background: "transparent",
@@ -34,8 +38,46 @@ const activityNavBtnStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  borderRadius: ACTIVITY_CAL.radius,
+  padding: 0,
 };
+
+function ActivityPickCell({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        height: 44,
+        border: "none",
+        background: selected ? ACTIVITY_CAL.selectedBg : "transparent",
+        color: selected ? "#ffffff" : ACTIVITY_CAL.ink,
+        borderRadius: ACTIVITY_CAL.chipRadius,
+        fontFamily: ACTIVITY_CAL.font,
+        fontSize: 13,
+        fontWeight: selected ? 700 : 500,
+        cursor: "pointer",
+        fontVariantNumeric: "tabular-nums",
+        letterSpacing: "-0.02em",
+      }}
+      onMouseEnter={(e) => {
+        if (!selected) e.currentTarget.style.background = ACTIVITY_CAL.hover;
+      }}
+      onMouseLeave={(e) => {
+        if (!selected) e.currentTarget.style.background = "transparent";
+      }}
+    >
+      {label}
+    </button>
+  );
+}
 const ITEM_H = 40;
 const VISIBLE = 5;
 
@@ -224,6 +266,8 @@ export function CalendarDropdown({
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState(() => (value ? parseYMD(value) : new Date()));
   const [mode, setMode] = useState<"calendar" | "wheel">("calendar");
+  const [activityPick, setActivityPick] = useState<"calendar" | "month" | "year">("calendar");
+  const [yearPageStart, setYearPageStart] = useState(() => Math.floor(new Date().getFullYear() / 10) * 10);
   const [alignRight, setAlignRight] = useState(false);
   const [portalPosition, setPortalPosition] = useState<{
     top: number;
@@ -243,7 +287,10 @@ export function CalendarDropdown({
   }, [value]);
 
   useEffect(() => {
-    if (!open) setMode("calendar");
+    if (!open) {
+      setMode("calendar");
+      setActivityPick("calendar");
+    }
   }, [open]);
 
   const isActivity = displayVariant === "activity";
@@ -255,13 +302,13 @@ export function CalendarDropdown({
     }
     if (typeof window === "undefined" || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const popupW = isActivity ? rect.width : POPUP_WIDTH;
+    const popupW = isActivity ? ACTIVITY_POPUP_WIDTH : POPUP_WIDTH;
     const spaceOnRight = window.innerWidth - rect.right;
     const spaceOnLeft = rect.left;
-    const useRight = !isActivity && spaceOnRight < popupW && spaceOnLeft >= popupW;
+    const useRight = spaceOnRight < popupW && spaceOnLeft >= popupW;
     setAlignRight(useRight);
     const top = rect.bottom + (isActivity ? 6 : 8);
-    const maxW = isActivity ? rect.width : Math.min(window.innerWidth - 24, 360);
+    const maxW = isActivity ? ACTIVITY_POPUP_WIDTH : Math.min(window.innerWidth - 24, 360);
     if (useRight) {
       const right = Math.max(12, window.innerWidth - rect.right);
       setPortalPosition({ top, right, width: maxW });
@@ -366,8 +413,76 @@ export function CalendarDropdown({
     setSel((v) => { const n = new Date(v); n.setMonth(n.getMonth() + 1); return n; });
   }, []);
 
+  const pickActivityMonth = useCallback((monthIndex: number) => {
+    setSel((prev) => {
+      const dim = daysInMonth(prev.getFullYear(), monthIndex);
+      return new Date(prev.getFullYear(), monthIndex, Math.min(prev.getDate(), dim));
+    });
+    setActivityPick("calendar");
+  }, []);
+
+  const pickActivityYear = useCallback((nextYear: number) => {
+    setSel((prev) => {
+      const dim = daysInMonth(nextYear, prev.getMonth());
+      return new Date(nextYear, prev.getMonth(), Math.min(prev.getDate(), dim));
+    });
+    setActivityPick("calendar");
+  }, []);
+
+  const shiftActivityWeek = useCallback(
+    (weekDelta: number) => {
+      const base = value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? parseYMD(value) : sel;
+      const next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + weekDelta * 7);
+      const ymd = toYMD(next);
+      setSel(next);
+      onChange(ymd);
+    },
+    [value, sel, onChange],
+  );
+
+  const activityNavPrev = useCallback(() => {
+    if (activityPick === "year") {
+      setYearPageStart((s) => Math.max(YEAR_MIN, s - 10));
+      return;
+    }
+    if (activityPick === "month") {
+      setSel((v) => {
+        const y = v.getFullYear() - 1;
+        const dim = daysInMonth(y, v.getMonth());
+        return new Date(y, v.getMonth(), Math.min(v.getDate(), dim));
+      });
+      return;
+    }
+    shiftActivityWeek(-1);
+  }, [activityPick, shiftActivityWeek]);
+
+  const activityNavNext = useCallback(() => {
+    if (activityPick === "year") {
+      setYearPageStart((s) => Math.min(Math.floor(YEAR_MAX / 10) * 10, s + 10));
+      return;
+    }
+    if (activityPick === "month") {
+      setSel((v) => {
+        const y = v.getFullYear() + 1;
+        const dim = daysInMonth(y, v.getMonth());
+        return new Date(y, v.getMonth(), Math.min(v.getDate(), dim));
+      });
+      return;
+    }
+    shiftActivityWeek(1);
+  }, [activityPick, shiftActivityWeek]);
+
+  const activityYearPage = useMemo(() => {
+    const start = Math.min(Math.max(yearPageStart, YEAR_MIN), Math.floor(YEAR_MAX / 10) * 10);
+    return Array.from({ length: 12 }, (_, i) => start + i).filter((y) => y >= YEAR_MIN && y <= YEAR_MAX);
+  }, [yearPageStart]);
+
   const selYMD = toYMD(sel);
   const highlightYMD = isActivity && value ? value : selYMD;
+  const highlightWeekStart = useMemo(() => {
+    const idx = grid.findIndex((c) => c.ymd === highlightYMD);
+    return idx >= 0 ? Math.floor(idx / 7) * 7 : -1;
+  }, [grid, highlightYMD]);
 
   const triggerH = triggerStyle?.minHeight ?? triggerStyle?.height;
   const triggerDense =
@@ -444,7 +559,7 @@ export function CalendarDropdown({
               ...(portalPosition.right != null ? { right: portalPosition.right } : {}),
               width: portalPosition.width,
               background: ACTIVITY_CAL.surface,
-              borderRadius: ACTIVITY_CAL.radius,
+              borderRadius: ACTIVITY_CAL.panelRadius,
               border: `1px solid ${ACTIVITY_CAL.border}`,
               boxShadow: ACTIVITY_CAL.shadow,
               zIndex: 100000,
@@ -454,59 +569,173 @@ export function CalendarDropdown({
           >
             <div
               style={{
-                padding: "14px 14px 10px",
+                padding: "14px 14px 10px 16px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
                 gap: 8,
+                borderBottom: `1px solid ${ACTIVITY_CAL.border}`,
               }}
             >
-              <span style={{ fontSize: 15, fontWeight: 600, color: ACTIVITY_CAL.ink, letterSpacing: "-0.02em" }}>
-                {year}년 {month + 1}월
-              </span>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 4, minWidth: 0 }}>
+                <button
+                  type="button"
+                  aria-label="월 선택"
+                  aria-pressed={activityPick === "month"}
+                  onClick={() => setActivityPick((p) => (p === "month" ? "calendar" : "month"))}
+                  style={{
+                    border: "none",
+                    background: activityPick === "month" ? ACTIVITY_CAL.today : "transparent",
+                    padding: "2px 6px",
+                    margin: "-2px 0",
+                    borderRadius: ACTIVITY_CAL.chipRadius,
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: ACTIVITY_CAL.ink,
+                    letterSpacing: "-0.03em",
+                    lineHeight: 1.2,
+                    cursor: "pointer",
+                    fontFamily: ACTIVITY_CAL.font,
+                  }}
+                >
+                  {month + 1}월
+                </button>
+                <button
+                  type="button"
+                  aria-label="연도 선택"
+                  aria-pressed={activityPick === "year"}
+                  onClick={() => {
+                    if (activityPick === "year") {
+                      setActivityPick("calendar");
+                      return;
+                    }
+                    setYearPageStart(Math.max(YEAR_MIN, Math.floor(year / 10) * 10));
+                    setActivityPick("year");
+                  }}
+                  style={{
+                    border: "none",
+                    background: activityPick === "year" ? ACTIVITY_CAL.today : "transparent",
+                    padding: "2px 6px",
+                    margin: "-2px 0",
+                    borderRadius: ACTIVITY_CAL.chipRadius,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: ACTIVITY_CAL.muted,
+                    letterSpacing: "0.01em",
+                    lineHeight: 1.2,
+                    cursor: "pointer",
+                    fontFamily: ACTIVITY_CAL.font,
+                  }}
+                >
+                  {year}
+                </button>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <button
                   type="button"
                   onClick={goToToday}
                   style={{
                     border: "none",
-                    background: ACTIVITY_CAL.hover,
+                    background: ACTIVITY_CAL.today,
                     color: ACTIVITY_CAL.muted,
                     fontSize: 12,
                     fontWeight: 600,
-                    padding: "6px 10px",
-                    borderRadius: ACTIVITY_CAL.radius,
+                    height: 28,
+                    padding: "0 10px",
+                    borderRadius: ACTIVITY_CAL.chipRadius,
                     cursor: "pointer",
                     fontFamily: ACTIVITY_CAL.font,
+                    lineHeight: "28px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = ACTIVITY_CAL.ink;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = ACTIVITY_CAL.muted;
                   }}
                 >
                   오늘
                 </button>
-                <button
-                  type="button"
-                  onClick={prevMonth}
-                  aria-label="이전 달"
-                  style={activityNavBtnStyle}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    height: 28,
+                    background: ACTIVITY_CAL.today,
+                    borderRadius: ACTIVITY_CAL.chipRadius,
+                    overflow: "hidden",
+                  }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={nextMonth}
-                  aria-label="다음 달"
-                  style={activityNavBtnStyle}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
+                  <button
+                    type="button"
+                    onClick={activityNavPrev}
+                    aria-label={activityPick === "year" ? "이전 연도" : activityPick === "month" ? "이전 해" : "이전 주"}
+                    style={activityNavBtnStyle}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = ACTIVITY_CAL.ink;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = ACTIVITY_CAL.muted;
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={activityNavNext}
+                    aria-label={activityPick === "year" ? "다음 연도" : activityPick === "month" ? "다음 해" : "다음 주"}
+                    style={activityNavBtnStyle}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = ACTIVITY_CAL.ink;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = ACTIVITY_CAL.muted;
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div style={{ padding: "0 10px 12px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 6 }}>
+            <div style={{ padding: "12px 12px 14px" }}>
+              {activityPick === "month" ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <ActivityPickCell
+                      key={i}
+                      label={`${i + 1}월`}
+                      selected={i === month}
+                      onClick={() => pickActivityMonth(i)}
+                    />
+                  ))}
+                </div>
+              ) : activityPick === "year" ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>
+                  {activityYearPage.map((y) => (
+                    <ActivityPickCell
+                      key={y}
+                      label={String(y)}
+                      selected={y === year}
+                      onClick={() => pickActivityYear(y)}
+                    />
+                  ))}
+                </div>
+              ) : (
+              <>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(7, 1fr)",
+                  marginBottom: 8,
+                  paddingBottom: 8,
+                  borderBottom: `1px solid ${ACTIVITY_CAL.border}`,
+                }}
+              >
                 {DAY_KR.map((d, i) => (
                   <div
                     key={d}
@@ -515,18 +744,29 @@ export function CalendarDropdown({
                       fontSize: 11,
                       fontWeight: 600,
                       color: i === 0 ? ACTIVITY_CAL.sun : ACTIVITY_CAL.muted,
-                      padding: "2px 0",
-                      letterSpacing: "0.02em",
+                      padding: "0",
+                      letterSpacing: "0.04em",
+                      textBoxTrim: "trim-both",
+                      textBoxEdge: "cap alphabetic",
                     }}
                   >
                     {d}
                   </div>
                 ))}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-                {grid.map(({ d, current, ymd }) => {
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+                {grid.map(({ d, current, ymd }, i) => {
                   const selected = highlightYMD === ymd;
                   const isToday = todayYMD === ymd;
+                  const inWeek = highlightWeekStart >= 0 && i >= highlightWeekStart && i < highlightWeekStart + 7;
+                  const col = i % 7;
+                  const weekRadius =
+                    inWeek && col === 0 ? "8px 0 0 8px" : inWeek && col === 6 ? "0 8px 8px 0" : 0;
+                  const chipBg = selected
+                    ? ACTIVITY_CAL.selectedBg
+                    : isToday
+                      ? ACTIVITY_CAL.today
+                      : "transparent";
                   return (
                     <button
                       key={ymd}
@@ -534,33 +774,53 @@ export function CalendarDropdown({
                       onClick={() => selectDate(ymd)}
                       style={{
                         width: "100%",
-                        aspectRatio: "1",
+                        height: 36,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        border: isToday && !selected ? `1.5px solid ${ACTIVITY_CAL.ink}` : "1.5px solid transparent",
-                        borderRadius: ACTIVITY_CAL.radius,
-                        background: selected ? ACTIVITY_CAL.selectedBg : "transparent",
-                        color: selected ? "#fff" : current ? ACTIVITY_CAL.ink : ACTIVITY_CAL.faint,
-                        fontSize: 13,
-                        fontWeight: selected || isToday ? 600 : 400,
+                        border: "none",
+                        borderRadius: weekRadius,
+                        background: inWeek ? ACTIVITY_CAL.week : "transparent",
                         cursor: "pointer",
                         fontFamily: ACTIVITY_CAL.font,
                         padding: 0,
-                        transition: "background 0.12s ease, color 0.12s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!selected) e.currentTarget.style.background = ACTIVITY_CAL.hover;
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!selected) e.currentTarget.style.background = "transparent";
                       }}
                     >
-                      {d}
+                      <span
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: ACTIVITY_CAL.chipRadius,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: chipBg,
+                          color: selected ? "#ffffff" : current ? ACTIVITY_CAL.ink : ACTIVITY_CAL.faint,
+                          fontSize: 13,
+                          fontWeight: selected ? 700 : isToday ? 600 : 500,
+                          fontVariantNumeric: "tabular-nums",
+                          letterSpacing: "-0.02em",
+                          transition: "background 0.12s ease, color 0.12s ease",
+                          textBoxTrim: "trim-both",
+                          textBoxEdge: "cap alphabetic",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!selected) e.currentTarget.style.background = ACTIVITY_CAL.hover;
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!selected) {
+                            e.currentTarget.style.background = isToday ? ACTIVITY_CAL.today : "transparent";
+                          }
+                        }}
+                      >
+                        {d}
+                      </span>
                     </button>
                   );
                 })}
               </div>
+              </>
+              )}
             </div>
           </div>
         ) : (

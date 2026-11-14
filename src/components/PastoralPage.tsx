@@ -5345,10 +5345,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
       contentBg={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.bg : undefined}
-      contentPaddingLeft={activeSub === "dashboard" ? DASH_GLOBAL.dashboardPadLeft : activeSub === "members" || activeSub === "notes" || activeSub === "attendance" || orgResourceLayout ? DASH_GLOBAL.contentPadLeft : undefined}
+      contentPaddingLeft={activeSub === "dashboard" || activeSub === "attendance" ? DASH_GLOBAL.dashboardPadLeft : activeSub === "members" || activeSub === "notes" || orgResourceLayout ? DASH_GLOBAL.contentPadLeft : undefined}
       contentPaddingRight={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.contentPadRight : undefined}
-      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? 20 : undefined}
-      contentTopGap={activeSub === "dashboard" ? DASH_GLOBAL.dashboardPadTop : orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? getMemberContentTopGap() : undefined}
+      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "attendance" ? 0 : activeSub === "members" || activeSub === "notes" ? 20 : undefined}
+      contentTopGap={activeSub === "dashboard" || activeSub === "attendance" ? DASH_GLOBAL.dashboardPadTop : orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" || activeSub === "notes" ? getMemberContentTopGap() : undefined}
       contentFontFamily={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.fontKR : undefined}
       hideHeader={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance"}
     >
