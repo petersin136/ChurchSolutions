@@ -59,7 +59,12 @@ export const ATT_CHECK = {
   rowHeight: 52,
   rowBorder: "#f0f1f3",
   gridPadX: 24,
-  colTemplate: "129px 102px 191px 87px 95px minmax(240px, 1fr)",
+  /**
+   * 출석 체크·결석자 관리 공통 — 이름·구분·부서/목장.
+   * minmax로 고정해 탭 전환 시 가로가 흔들리지 않게 한다.
+   */
+  sharedLeftCols: "minmax(129px,129px) minmax(102px,102px) minmax(191px,191px)",
+  colTemplate: "minmax(129px,129px) minmax(102px,102px) minmax(191px,191px) 87px 95px minmax(240px, 1fr)",
   colMinWidth: 844,
 
   avatarSize: 32,
@@ -96,5 +101,7 @@ export const ATT_CHECK = {
   emptyFontSize: 14,
   emptyLineGap: 6,
 
+  /** 카드 ↔ 페이지 바 · 페이지 바 아래 여백 */
   pagerGapTop: 12,
+  pagerPadBottom: 8,
 } as const;

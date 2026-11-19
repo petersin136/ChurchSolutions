@@ -14,6 +14,8 @@ export interface MemberSearchComboProps {
   onSelectMokjang: (value: string) => void;
   onSelectRole: (value: string) => void;
   placeholder?: string;
+  /** 검색칸 높이 — 미지정 시 성도관리(48). 출석부는 ATT_CHECK.searchHeight */
+  height?: number;
   /** 이름 검색 자동완성 (출석부 등 — 테이블은 유지하고 드롭다운만 표시) */
   memberMatches?: { id: string; name: string; subtitle?: string }[];
   onSelectMember?: (memberId: string) => void;
@@ -29,9 +31,11 @@ export function MemberSearchCombo({
   onSelectMokjang,
   onSelectRole,
   placeholder = "이름, 부서, 목장, 직분 검색 또는 선택...",
+  height,
   memberMatches,
   onSelectMember,
 }: MemberSearchComboProps) {
+  const searchHeight = height ?? MEMBER_MGMT.searchHeight;
   const [open, setOpen] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -67,7 +71,8 @@ export function MemberSearchCombo({
         style={{
           display: "flex",
           alignItems: "center",
-          height: MEMBER_MGMT.searchHeight,
+          height: searchHeight,
+          boxSizing: "border-box",
           borderRadius: MEMBER_MGMT.radius,
           border: `1px solid ${MEMBER_MGMT.searchBorder}`,
           background: MEMBER_MGMT.searchBg,

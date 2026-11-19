@@ -1181,7 +1181,6 @@ function DashboardSub({
   const feedSwipeStartX = useRef<number | null>(null);
   const [deptWizard, setDeptWizard] = useState<OrgDeptWizardState | null>(null);
   const [deptDeleteName, setDeptDeleteName] = useState<string | null>(null);
-  const [deptHover, setDeptHover] = useState<string | null>(null);
   const [deptArrowOn, setDeptArrowOn] = useState(false);
 
   const deptNames = useMemo(() => getDepts(db), [db.settings.depts]);
@@ -2155,12 +2154,17 @@ function DashboardSub({
                 const wk = DASH_WEEK_CHART;
                 const barRadius = dashScalePx(wk.radius, typoScale);
                 const pctSize = dashScalePx(mob ? wk.pctSizeMob : wk.pctSize, typoScale);
+                /** 막대 위 %·툴팁이 overflow에 잘리지 않도록 확보 (pct + 간격 + 툴팁) */
+                const labelHeadroom = pctSize + dashScalePx(28, typoScale);
                 return (
-                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? wk.gapMob : wk.gap, flex: 1, minHeight: 0, paddingTop: 8, boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, boxSizing: "border-box" }}>
+                    <div style={{ height: labelHeadroom, flexShrink: 0 }} aria-hidden />
+                    <div style={{ display: "flex", alignItems: "stretch", gap: mob ? wk.gapMob : wk.gap, flex: 1, minHeight: 0 }}>
                     {weekly5.map((w) => {
                       const hot = w.isCurrent;
                       const hovered = weekHoverWk === w.wk;
                       const fillH = Math.max(0, Math.min(100, w.rate));
+                      const tipLift = hot ? 6 : pctSize + 10;
                       return (
                         <div
                           key={w.wk}
@@ -2239,7 +2243,7 @@ function DashboardSub({
                                   position: "absolute",
                                   left: "50%",
                                   bottom: `${fillH}%`,
-                                  transform: "translate(-50%, calc(-100% - 6px))",
+                                  transform: `translate(-50%, calc(-100% - ${tipLift}px))`,
                                   background: wk.tooltipBg,
                                   color: wk.tooltipFg,
                                   borderRadius: wk.tooltipRadius,
@@ -2269,6 +2273,7 @@ function DashboardSub({
                         </div>
                       );
                     })}
+                    </div>
                   </div>
                 );
               }
@@ -2284,14 +2289,18 @@ function DashboardSub({
                 const maxRate = Math.max(...rates, 1);
                 const barRadius = dashScalePx(mn.radius, typoScale);
                 const pctSize = dashScalePx(mob ? mn.pctSizeMob : mn.pctSize, typoScale);
+                const labelHeadroom = pctSize + dashScalePx(28, typoScale);
                 return (
-                  <div style={{ display: "flex", alignItems: "stretch", gap: mob ? mn.gapMob : mn.gap, flex: 1, minHeight: 0, paddingTop: 16, boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, boxSizing: "border-box" }}>
+                    <div style={{ height: labelHeadroom, flexShrink: 0 }} aria-hidden />
+                    <div style={{ display: "flex", alignItems: "stretch", gap: mob ? mn.gapMob : mn.gap, flex: 1, minHeight: 0 }}>
                     {monthlyAvg.map((mm, i) => {
                       const hot = mm.isCurrent;
                       const rate = rates[i];
                       const fillH = rate > 0 ? (rate / maxRate) * 100 : 0;
                       const hovered = monthHoverIdx === i;
                       const axisColor = hot ? mn.axisHot : rate > 0 ? mn.axis : mn.axisEmpty;
+                      const tipLift = hot ? 6 : pctSize + 10;
                       return (
                         <div
                           key={i}
@@ -2372,7 +2381,7 @@ function DashboardSub({
                                   position: "absolute",
                                   left: "50%",
                                   bottom: `${fillH}%`,
-                                  transform: "translate(-50%, calc(-100% - 6px))",
+                                  transform: `translate(-50%, calc(-100% - ${tipLift}px))`,
                                   background: tip.tooltipBg,
                                   color: tip.tooltipFg,
                                   borderRadius: tip.tooltipRadius,
@@ -2401,6 +2410,7 @@ function DashboardSub({
                         </div>
                       );
                     })}
+                    </div>
                   </div>
                 );
               }
@@ -2777,8 +2787,8 @@ function DashboardSub({
             <h4 style={{ margin: 0, fontSize: mob ? dashTypo.section.titleSizeMob : dashTypo.section.titleSize, fontWeight: 700, color: C.text }}>부서별 인원</h4>
             <button
               type="button"
-              aria-label="부서 추가"
-              onClick={openDeptAdd}
+              aria-label="조직/자원관리로 이동"
+              onClick={() => onNavSub?.("settings")}
               onMouseEnter={() => setDeptArrowOn(true)}
               onMouseLeave={() => setDeptArrowOn(false)}
               onMouseDown={() => setDeptArrowOn(true)}
@@ -2829,14 +2839,9 @@ function DashboardSub({
                 const labelGap = dashScalePx(DASH_DEPT_CARD.labelGap, typoScale);
                 const countGap = dashScalePx(DASH_DEPT_CARD.countGap, typoScale);
                 const countMinW = dashScalePx(DASH_DEPT_CARD.countMinWidth, typoScale);
-                const rowHovered = deptHover === d;
-                const actionBtnSize = mob ? dashTypo.chart.periodBtnSizeMob : dashTypo.chart.periodBtnSize;
-                const actionIcon = Math.round((mob ? dashTypo.chart.periodBtnFontSizeMob : dashTypo.chart.periodBtnFontSize) * 0.75);
                 return (
                   <div
                     key={d}
-                    onMouseEnter={() => setDeptHover(d)}
-                    onMouseLeave={() => setDeptHover(null)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -2893,35 +2898,6 @@ function DashboardSub({
                     >
                       {cnt}명
                     </span>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 4,
-                        width: rowHovered ? actionBtnSize * 2 + 4 : 0,
-                        opacity: rowHovered ? 1 : 0,
-                        overflow: "hidden",
-                        flexShrink: 0,
-                        transition: "width 0.15s ease, opacity 0.15s ease",
-                        pointerEvents: rowHovered ? "auto" : "none",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        aria-label={`${d} 수정`}
-                        onClick={(e) => { e.stopPropagation(); openDeptEdit(d); }}
-                        style={dashPeriodBtnStyle(dashTypo.chart, mob, false)}
-                      >
-                        <Pencil size={actionIcon} strokeWidth={2.25} />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`${d} 삭제`}
-                        onClick={(e) => { e.stopPropagation(); setDeptDeleteName(d); }}
-                        style={dashPeriodBtnStyle(dashTypo.chart, mob, false)}
-                      >
-                        <Trash2 size={actionIcon} strokeWidth={2.25} />
-                      </button>
-                    </div>
                   </div>
                 );
               })
@@ -4644,7 +4620,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     if (!supabase || !churchId) return;
     supabase
       .from("attendance")
-      .select("id, member_id, week_num, year, date, status, reason")
+      .select("id, member_id, week_num, year, date, status, note, reason")
       .eq("church_id", churchId)
       .gte("year", getAttendanceLoadMinYear())
       .then(({ data, error }: { data: unknown[] | null; error: { message: string; details?: unknown } | null }) => {
@@ -4662,8 +4638,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           if (!attendance[mid]) attendance[mid] = {};
           const status = row.status as string;
           attendance[mid][week] = (status === "p" || status === "a" || status === "n" ? status : "n") as AttStatus;
-          const reason = (row.note ?? row.reason) as string | undefined;
-          if (reason?.trim()) {
+          const reason = String(row.note ?? row.reason ?? "").trim();
+          if (reason) {
             if (!attendanceReasons[mid]) attendanceReasons[mid] = {};
             attendanceReasons[mid][week] = reason;
           }

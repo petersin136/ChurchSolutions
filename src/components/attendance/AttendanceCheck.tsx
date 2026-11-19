@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Check, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { tokens } from "@/styles/tokens";
 import { supabase } from "@/lib/supabase";
 import { getChurchId } from "@/lib/tenant";
@@ -24,7 +24,6 @@ import { PcModalShell } from "@/components/common/PcModalShell";
 import { APP_MODAL } from "@/styles/appModalTokens";
 
 const ATTENDANCE_DATE_FIELD_WIDTH = ATT_CHECK.dateWidth;
-const ATTENDANCE_FILTER_WIDTH = 148;
 
 function formatDeptMokjang(member: Member): string {
   const dept = (member.dept || "").trim();
@@ -108,8 +107,8 @@ function attendanceStatusButtonStyle(status: AttStatusUI | undefined, target: At
 function attendanceDateTriggerStyle(): CSSProperties {
   return {
     width: "100%",
-    height: MEMBER_MGMT.searchHeight,
-    minHeight: MEMBER_MGMT.searchHeight,
+    height: ATT_CHECK.searchHeight,
+    minHeight: ATT_CHECK.searchHeight,
     borderRadius: MEMBER_MGMT.radius,
     background: MEMBER_MGMT.searchBg,
     border: `1px solid ${MEMBER_MGMT.searchBorder}`,
@@ -460,14 +459,16 @@ function AttendanceStatusDot({
 
 function LastWeekStatusDot({
   status,
-  onAbsentClick,
+  onAbsentEnter,
+  onAbsentLeave,
 }: {
   status: "출석" | "결석" | undefined;
-  onAbsentClick?: (anchor: DOMRect) => void;
+  onAbsentEnter?: (anchor: DOMRect) => void;
+  onAbsentLeave?: () => void;
 }) {
   const isPresent = status === "출석";
   const isAbsent = status === "결석";
-  const label = isPresent ? "지난주 출석" : isAbsent ? "지난주 결석 사유 보기" : "지난주 미체크";
+  const label = isPresent ? "지난주 출석" : isAbsent ? "지난주 결석 사유" : "지난주 미체크";
   const dot = (
     <span
       aria-hidden
@@ -480,7 +481,7 @@ function LastWeekStatusDot({
       }}
     />
   );
-  if (!isAbsent || !onAbsentClick) {
+  if (!isAbsent || !onAbsentEnter) {
     return (
       <span title={label} aria-label={label} style={{ display: "inline-flex" }}>
         {dot}
@@ -488,14 +489,14 @@ function LastWeekStatusDot({
     );
   }
   return (
-    <button
-      type="button"
+    <span
       data-last-week-dot=""
-      title={label}
       aria-label={label}
-      onClick={(e) => {
-        e.stopPropagation();
-        onAbsentClick(e.currentTarget.getBoundingClientRect());
+      onMouseEnter={(e) => {
+        onAbsentEnter(e.currentTarget.getBoundingClientRect());
+      }}
+      onMouseLeave={() => {
+        onAbsentLeave?.();
       }}
       style={{
         display: "inline-flex",
@@ -505,150 +506,12 @@ function LastWeekStatusDot({
         height: 22,
         margin: 0,
         padding: 0,
-        border: "none",
-        background: "transparent",
-        cursor: "pointer",
+        cursor: "default",
         borderRadius: 6,
       }}
     >
       {dot}
-    </button>
-  );
-}
-
-function AttendanceFilterSelect({
-  value,
-  onChange,
-  options,
-  placeholder,
-  width,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  placeholder: string;
-  width: number;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const selected = options.find((o) => o.value === value);
-  const empty = !value;
-  const display = empty ? placeholder : (selected?.label ?? placeholder);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
-
-  return (
-    <div ref={ref} style={{ position: "relative", flexShrink: 0, width, minWidth: width }}>
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={placeholder}
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          width: "100%",
-          height: ATT_CHECK.searchHeight,
-          boxSizing: "border-box",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 8,
-          padding: "0 12px 0 14px",
-          borderRadius: MEMBER_MGMT.radius,
-          background: MEMBER_MGMT.searchBg,
-          border: `1px solid ${MEMBER_MGMT.searchBorder}`,
-          cursor: "pointer",
-          fontFamily: ATT_CHECK.fontKR,
-          fontSize: MEMBER_MGMT.searchFontSize,
-          fontWeight: 500,
-        }}
-      >
-        <span
-          style={{
-            minWidth: 0,
-            flex: 1,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            lineHeight: "48px",
-            color: empty ? ATT_CHECK.placeholder : ATT_CHECK.ink,
-          }}
-        >
-          {display}
-        </span>
-        <ChevronDown
-          size={16}
-          color={ATT_CHECK.muted}
-          style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : undefined, transition: "transform 0.15s" }}
-        />
-      </button>
-      {open && (
-        <div
-          role="listbox"
-          style={{
-            position: "absolute",
-            top: "calc(100% + 6px)",
-            left: 0,
-            minWidth: "100%",
-            width: "max-content",
-            maxWidth: 240,
-            zIndex: 50,
-            maxHeight: 280,
-            overflowY: "auto",
-            background: MEMBER_MGMT.dropdownBg,
-            border: `1px solid ${MEMBER_MGMT.dropdownBorder}`,
-            borderRadius: MEMBER_MGMT.radius,
-            boxShadow: MEMBER_MGMT.dropdownShadow,
-            padding: "6px 0",
-          }}
-        >
-          {options.map((opt) => {
-            const active = opt.value === value;
-            return (
-              <button
-                key={opt.value || "__all__"}
-                type="button"
-                role="option"
-                aria-selected={active}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  textAlign: "left",
-                  border: "none",
-                  background: active ? MEMBER_MGMT.dropdownItemHover : "transparent",
-                  padding: MEMBER_MGMT.dropdownItemPad,
-                  fontFamily: ATT_CHECK.fontKR,
-                  fontSize: MEMBER_MGMT.searchFontSize,
-                  fontWeight: active ? 600 : 500,
-                  color: ATT_CHECK.ink,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = MEMBER_MGMT.dropdownItemHover;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = active ? MEMBER_MGMT.dropdownItemHover : "transparent";
-                }}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    </span>
   );
 }
 
@@ -658,41 +521,34 @@ function LastWeekReasonPopover({
   top,
   left,
   onClose,
+  onKeepOpen,
 }: {
   name: string;
   note: string;
   top: number;
   left: number;
   onClose: () => void;
+  onKeepOpen?: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const hasNote = note.trim().length > 0;
 
   useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (ref.current?.contains(t)) return;
-      const el = e.target instanceof Element ? e.target : (e.target as Node).parentElement;
-      if (el?.closest("[data-last-week-dot]")) return;
-      onClose();
-    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
   if (typeof document === "undefined") return null;
   return createPortal(
     <div
       ref={ref}
-      role="dialog"
+      role="tooltip"
       aria-label={`${name} 지난주 결석 사유`}
+      onMouseEnter={() => onKeepOpen?.()}
+      onMouseLeave={() => onClose()}
       style={{
         position: "fixed",
         top,
@@ -706,6 +562,7 @@ function LastWeekReasonPopover({
         borderRadius: 12,
         boxShadow: "0 16px 40px rgba(11, 12, 14, 0.10), 0 2px 6px rgba(11, 12, 14, 0.04)",
         fontFamily: ATT_CHECK.fontKR,
+        pointerEvents: "auto",
       }}
     >
       <div
@@ -1218,24 +1075,6 @@ export function AttendanceCheck({
       ...Array.from(set).sort(compareMokjangOrder).map((name) => ({ value: name, label: name })),
     ];
   }, [activeMembers]);
-  const deptFilterOptions = useMemo(
-    () => [{ value: "", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))],
-    [depts],
-  );
-  const mokjangFilterOptions = useMemo(() => {
-    const pool = deptFilter ? activeMembers.filter((m) => m.dept === deptFilter) : activeMembers;
-    const set = new Set<string>();
-    pool.forEach((m) => {
-      const v = memberMokjangLabel(m);
-      if (v) set.add(v);
-    });
-    const hasUnassigned = pool.some((m) => !memberMokjangLabel(m));
-    return [
-      { value: "", label: "전체" },
-      ...(hasUnassigned ? [{ value: "__none__", label: "미배정" }] : []),
-      ...Array.from(set).sort(compareMokjangOrder).map((name) => ({ value: name, label: name })),
-    ];
-  }, [activeMembers, deptFilter]);
   const deptOptionsForCombo = useMemo(
     () => [{ value: "all", label: "전체" }, ...depts.map((d) => ({ value: d, label: d }))],
     [depts],
@@ -1405,29 +1244,48 @@ export function AttendanceCheck({
     [activeMembers],
   );
 
-  const closeLastWeekReasonPop = useCallback(() => setLastWeekReasonPop(null), []);
+  const lastWeekReasonCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const keepLastWeekReasonPop = useCallback(() => {
+    if (lastWeekReasonCloseTimerRef.current) {
+      clearTimeout(lastWeekReasonCloseTimerRef.current);
+      lastWeekReasonCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleCloseLastWeekReasonPop = useCallback(() => {
+    keepLastWeekReasonPop();
+    lastWeekReasonCloseTimerRef.current = setTimeout(() => {
+      setLastWeekReasonPop(null);
+      lastWeekReasonCloseTimerRef.current = null;
+    }, 120);
+  }, [keepLastWeekReasonPop]);
 
   const openLastWeekReason = useCallback(
     (memberId: string, name: string, anchor: DOMRect) => {
-      setLastWeekReasonPop((prev) => {
-        if (prev?.memberId === memberId) return null;
-        const popW = 240;
-        let left = anchor.right + 8;
-        if (left + popW > window.innerWidth - 12) left = Math.max(12, anchor.left - popW - 8);
-        let top = anchor.top + anchor.height / 2 - 18;
-        if (top < 12) top = 12;
-        if (top + 96 > window.innerHeight) top = Math.max(12, window.innerHeight - 108);
-        return {
-          memberId,
-          name,
-          note: lastWeekNoteByMemberId[memberId] ?? "",
-          top,
-          left,
-        };
+      keepLastWeekReasonPop();
+      const popW = 240;
+      let left = anchor.right + 8;
+      if (left + popW > window.innerWidth - 12) left = Math.max(12, anchor.left - popW - 8);
+      let top = anchor.top + anchor.height / 2 - 18;
+      if (top < 12) top = 12;
+      if (top + 96 > window.innerHeight) top = Math.max(12, window.innerHeight - 108);
+      setLastWeekReasonPop({
+        memberId,
+        name,
+        note: lastWeekNoteByMemberId[memberId] ?? "",
+        top,
+        left,
       });
     },
-    [lastWeekNoteByMemberId],
+    [keepLastWeekReasonPop, lastWeekNoteByMemberId],
   );
+
+  useEffect(() => {
+    return () => {
+      if (lastWeekReasonCloseTimerRef.current) clearTimeout(lastWeekReasonCloseTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!spotlightRowId) return;
@@ -1470,11 +1328,13 @@ export function AttendanceCheck({
       const cardTop = card.getBoundingClientRect().top;
       const rootBottom = root?.getBoundingClientRect().bottom ?? window.innerHeight;
       const pagerReserve =
-        ATT_CHECK.pagerGapTop + MEMBER_MGMT.pagerRowGap + MEMBER_MGMT.pagerItemSize;
-      const availFull = rootBottom - cardTop - 2;
-      const rowsIfNoPager = Math.max(4, Math.min(40, Math.floor(availFull / ATT_CHECK.rowHeight)));
-      const needPager = filteredMembers.length > rowsIfNoPager;
-      const avail = needPager ? availFull - pagerReserve : availFull;
+        ATT_CHECK.pagerGapTop +
+        ATT_CHECK.pagerPadBottom +
+        MEMBER_MGMT.pagerRowGap +
+        MEMBER_MGMT.pagerItemSize;
+      const availByRoot = rootBottom - cardTop - pagerReserve;
+      const availByCard = card.clientHeight > ATT_CHECK.rowHeight ? card.clientHeight : availByRoot;
+      const avail = Math.max(availByRoot, availByCard);
       const rows = Math.max(4, Math.min(40, Math.floor(avail / ATT_CHECK.rowHeight)));
       if (Number.isFinite(rows) && rows > 0) setPageCapacity(rows);
     };
@@ -1530,11 +1390,13 @@ export function AttendanceCheck({
     } else {
       const newMap: Record<string, AttStatusUI> = {};
       const notes: Record<string, string> = {};
-      (data ?? []).forEach((row: { member_id?: string; status?: string; note?: string }) => {
+      (data ?? []).forEach((row: { member_id?: string; status?: string; note?: string; reason?: string }) => {
         const uiStatus = (DB_TO_UI_STATUS[row.status ?? ""] ?? "결석") as AttStatusUI;
         if (row.member_id) {
-          newMap[row.member_id] = uiStatus;
-          if (row.note) notes[row.member_id] = row.note;
+          const mid = String(row.member_id);
+          newMap[mid] = uiStatus;
+          const noteText = String(row.note ?? row.reason ?? "").trim();
+          if (noteText) notes[mid] = noteText;
         }
       });
       console.log("[출석 로드]", { date, serviceType, count: (data ?? []).length, statusMap: newMap });
@@ -1816,18 +1678,18 @@ export function AttendanceCheck({
         }
       >
       {!mob && (
-        <div style={{ marginBottom: innerTab === "check" ? ATT_CHECK.tabGapBelow : 18, flexShrink: 0 }}>
+        <div style={{ marginBottom: ATT_CHECK.tabGapBelow, flexShrink: 0 }}>
           <AttendanceSubTabs value={innerTab} onChange={setInnerTab} />
         </div>
       )}
       {!mob && innerTab === "absentee" ? (
-        <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-          <AbsenteeManagement
-            members={members}
-            attendanceList={attendanceList}
-            toast={toast}
-          />
-        </div>
+        <AbsenteeManagement
+          members={members}
+          attendanceList={attendanceList}
+          weekSunday={selectedDate}
+          weekNotesByMember={noteMap}
+          toast={toast}
+        />
       ) : mob ? (
       <div className="flex flex-wrap items-center gap-2 bg-white rounded-xl shadow-sm border border-gray-100 p-2">
         <label className="flex shrink-0 items-center gap-1.5">
@@ -1891,10 +1753,15 @@ export function AttendanceCheck({
           flexDirection: "row",
           flexWrap: "nowrap",
           gap: ATT_CHECK.toolbarGap,
-          alignItems: "stretch",
+          alignItems: "center",
           width: "100%",
+          height: ATT_CHECK.searchHeight,
+          minHeight: ATT_CHECK.searchHeight,
+          maxHeight: ATT_CHECK.searchHeight,
           minWidth: 0,
           flexShrink: 0,
+          boxSizing: "border-box",
+          overflow: "hidden",
           fontFamily: ATT_CHECK.fontKR,
         }}
       >
@@ -1904,6 +1771,7 @@ export function AttendanceCheck({
             onChange={(v) => {
               setSearchName(v);
             }}
+            height={ATT_CHECK.searchHeight}
             placeholder="이름, 부서, 목장, 구분 검색 또는 선택"
             deptOptions={deptOptionsForCombo}
             mokjangOptions={mokjangOptionsForCombo}
@@ -1921,20 +1789,6 @@ export function AttendanceCheck({
             onSelectMember={handleSelectSearchMember}
           />
         </div>
-        <AttendanceFilterSelect
-          value={deptFilter}
-          onChange={handleDeptFilterChange}
-          options={deptFilterOptions}
-          placeholder="부서별"
-          width={ATTENDANCE_FILTER_WIDTH}
-        />
-        <AttendanceFilterSelect
-          value={mokjangFilter}
-          onChange={setMokjangFilter}
-          options={mokjangFilterOptions}
-          placeholder="목장별"
-          width={ATTENDANCE_FILTER_WIDTH}
-        />
         <div
           style={{
             flexShrink: 0,
@@ -2074,7 +1928,8 @@ export function AttendanceCheck({
         >
         <div
           style={{
-            flex: "0 0 auto",
+            flex: 1,
+            minHeight: 0,
             width: "100%",
             overflowX: "auto",
             overflowY: "hidden",
@@ -2087,13 +1942,15 @@ export function AttendanceCheck({
             style={{
               minWidth: ATTENDANCE_COL_MIN_WIDTH + ATT_CHECK.gridPadX * 2,
               width: "100%",
-              flex: "0 0 auto",
+              flex: 1,
+              minHeight: 0,
               display: "flex",
               flexDirection: "column",
             }}
           >
             <div
               style={{
+                position: "relative",
                 width: "100%",
                 flexShrink: 0,
                 marginTop: ATT_CHECK.headerRowGap,
@@ -2105,7 +1962,7 @@ export function AttendanceCheck({
                 ...attendanceHeaderBandStyle,
               }}
             >
-              <div style={{ ...attendanceGridColumns, alignItems: "center", flex: 1, minWidth: 0, width: "auto" }}>
+              <div style={{ ...attendanceGridColumns, alignItems: "center", width: "100%" }}>
                 {ATTENDANCE_HEADER_COLUMNS.map((h, i) => {
                   const label =
                     h === "last" ? lastWeekHeader : h === "current" ? currentWeekHeader : h;
@@ -2117,10 +1974,11 @@ export function AttendanceCheck({
                         ...attendanceCellPadStyle(i),
                         fontSize: ATT_CHECK.headerFontSize,
                         fontWeight: isCurrent ? ATT_CHECK.headerCurrentWeight : ATT_CHECK.headerFontWeight,
-                        lineHeight: 1.4,
+                        lineHeight: "20px",
                         color: isCurrent ? ATT_CHECK.ink : ATT_CHECK.headerMuted,
                         whiteSpace: "nowrap",
-                        overflow: "visible",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
                     >
                       {label}
@@ -2128,17 +1986,32 @@ export function AttendanceCheck({
                   );
                 })}
               </div>
-              <AttendanceStatsLine
-                present={attendanceStats.present}
-                absent={attendanceStats.absent}
-                unchecked={attendanceStats.unchecked}
-                total={attendanceStats.total}
-              />
+              <div
+                style={{
+                  position: "absolute",
+                  right: ATT_CHECK.gridPadX,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                }}
+              >
+                <AttendanceStatsLine
+                  present={attendanceStats.present}
+                  absent={attendanceStats.absent}
+                  unchecked={attendanceStats.unchecked}
+                  total={attendanceStats.total}
+                />
+              </div>
             </div>
             <div
               ref={cardRef}
               className="flex flex-col overflow-hidden"
-              style={{ background: ATT_CHECK.cardBg, borderRadius: ATT_CHECK.cardRadius, flexShrink: 0 }}
+              style={{
+                background: ATT_CHECK.cardBg,
+                borderRadius: ATT_CHECK.cardRadius,
+                flex: 1,
+                minHeight: 0,
+              }}
             >
               {filteredMembers.length === 0 ? (
                 <div
@@ -2267,7 +2140,8 @@ export function AttendanceCheck({
                         <div style={{ display: "flex", justifyContent: "center" }}>
                           <LastWeekStatusDot
                             status={lastWeekStatusByMemberId[m.id]}
-                            onAbsentClick={(anchor) => openLastWeekReason(m.id, m.name, anchor)}
+                            onAbsentEnter={(anchor) => openLastWeekReason(m.id, m.name, anchor)}
+                            onAbsentLeave={scheduleCloseLastWeekReasonPop}
                           />
                         </div>
                       </div>
@@ -2297,15 +2171,15 @@ export function AttendanceCheck({
         <div
           ref={pagerRef}
           style={{
-            display: filteredMembers.length > PAGE_SIZE ? "flex" : "none",
+            display: "flex",
             flexShrink: 0,
             alignItems: "center",
             justifyContent: "center",
-            padding: `${ATT_CHECK.pagerGapTop}px 4px 2px`,
+            padding: `${ATT_CHECK.pagerGapTop}px 4px ${ATT_CHECK.pagerPadBottom}px`,
           }}
         >
           <AttendanceNumberPagination
-            totalItems={filteredMembers.length}
+            totalItems={Math.max(filteredMembers.length, 1)}
             itemsPerPage={PAGE_SIZE}
             currentPage={currentPage}
             onPageChange={setCurrentPage}
@@ -2334,7 +2208,8 @@ export function AttendanceCheck({
           note={lastWeekReasonPop.note}
           top={lastWeekReasonPop.top}
           left={lastWeekReasonPop.left}
-          onClose={closeLastWeekReasonPop}
+          onClose={scheduleCloseLastWeekReasonPop}
+          onKeepOpen={keepLastWeekReasonPop}
         />
       )}
 
