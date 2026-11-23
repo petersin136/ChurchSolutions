@@ -89,7 +89,7 @@ function AttendanceListPaginationBar({
   onPageChange: (p: number) => void;
   compact?: boolean;
 }) {
-  if (totalItems === 0) return null;
+  if (totalItems === 0 || totalPages <= 1) return null;
   const btn =
     compact
       ? "rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
@@ -1512,7 +1512,7 @@ export function AbsenteeManagement({
           </div>
         )}
       </div>
-      {!mob && (
+      {!mob && shownCareRows.length > PAGE_SIZE && (
         <div
           ref={pagerRef}
           style={{
@@ -1524,7 +1524,7 @@ export function AbsenteeManagement({
           }}
         >
           <MemberStylePagination
-            totalItems={Math.max(shownCareRows.length, 1)}
+            totalItems={shownCareRows.length}
             itemsPerPage={PAGE_SIZE}
             currentPage={currentPage}
             onPageChange={setCurrentPage}

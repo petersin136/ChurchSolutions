@@ -136,6 +136,10 @@ export interface PrayerHistoryModalProps {
   onTogglePrayerAnswered?: (key: string, noteId?: string | number) => void;
   onSavePrayerComment?: (key: string, comment: string, noteId?: string | number) => void;
   onSaved?: (memberId: string, items: QuickNoteItem[], latestContent?: string) => void;
+  /** 성도관리에서 연 경우 — 글 수정·삭제 없이 응답 체크만 */
+  contentLocked?: boolean;
+  /** 추가 — 기도/메모 메뉴로 이동 */
+  onAdd?: () => void;
 }
 
 export function PrayerHistoryModal({
@@ -154,6 +158,8 @@ export function PrayerHistoryModal({
   onTogglePrayerAnswered,
   onSavePrayerComment,
   onSaved,
+  contentLocked = false,
+  onAdd,
 }: PrayerHistoryModalProps) {
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<TabId>("praying");
@@ -298,6 +304,7 @@ export function PrayerHistoryModal({
   };
 
   const startEdit = (item: QuickNoteItem) => {
+    if (contentLocked) return;
     setEditingId(item.id);
     setEditDraft(item.content);
   };
@@ -756,7 +763,9 @@ export function PrayerHistoryModal({
                                   type="button"
                                   aria-label="삭제"
                                   tabIndex={hovered && !editing ? 0 : -1}
-                                  onClick={() => setPendingDeleteId(item.id)}
+                                  onClick={() => {
+                                    if (!contentLocked) setPendingDeleteId(item.id);
+                                  }}
                                   disabled={deletingId === item.id}
                                   style={{
                                     border: "none",
@@ -770,7 +779,7 @@ export function PrayerHistoryModal({
                                     boxSizing: "border-box",
                                     cursor: deletingId === item.id ? "not-allowed" : "pointer",
                                     color: answered ? "rgba(255,255,255,0.9)" : PRAYER_HISTORY_MODAL.iconMuted,
-                                    display: "inline-flex",
+                                    display: contentLocked ? "none" : "inline-flex",
                                     alignItems: "center",
                                     justifyContent: "center",
                                     flexShrink: 0,
@@ -958,6 +967,7 @@ export function PrayerHistoryModal({
                                               <button
                                                 type="button"
                                                 onClick={() => {
+                                                  if (contentLocked) return;
                                                   setEditingCommentKey(key);
                                                   setCommentDrafts((prev) => ({
                                                     ...prev,
@@ -969,6 +979,7 @@ export function PrayerHistoryModal({
                                                   background: "transparent",
                                                   padding: 0,
                                                   cursor: "pointer",
+                                                  display: contentLocked ? "none" : undefined,
                                                   fontSize: 12,
                                                   fontWeight: 600,
                                                   color: P.replyActionColor,
@@ -1002,7 +1013,8 @@ export function PrayerHistoryModal({
                                         </div>
                                       ) : null}
 
-                                      {(editingCommentKey === key ||
+                                      {!contentLocked &&
+                                      (editingCommentKey === key ||
                                         !commentText.trim()) ? (
                                         <div
                                           style={{
@@ -1173,6 +1185,28 @@ export function PrayerHistoryModal({
                 </div>
               )}
             </div>
+            {onAdd ? (
+              <div style={{ flexShrink: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px 16px", background: "#ffffff" }}>
+                <button
+                  type="button"
+                  onClick={onAdd}
+                  style={{
+                    height: 36,
+                    padding: "0 16px",
+                    border: "none",
+                    borderRadius: PRAYER_HISTORY_MODAL.radius,
+                    background: PRAYER_HISTORY_MODAL.titleColor,
+                    color: "#ffffff",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    fontFamily: PRAYER_HISTORY_MODAL.fontKR,
+                    cursor: "pointer",
+                  }}
+                >
+                  추가
+                </button>
+              </div>
+            ) : null}
           </div>
           </div>
 

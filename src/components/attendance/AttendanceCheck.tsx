@@ -1592,7 +1592,8 @@ export function AttendanceCheck({
   };
 
   const handleMarkAllPresent = async () => {
-    if (!supabase || filteredMembers.length === 0) return;
+    /** 전체 목록이 아니라 지금 보고 있는 페이지 행만 출석 처리 */
+    if (!supabase || pagedMembers.length === 0) return;
     setSaving(true);
     setSaved(false);
     setSaveError(false);
@@ -1600,11 +1601,11 @@ export function AttendanceCheck({
     const week_num = getWeekNumForDate(selectedDate);
     const churchId = getChurchId();
     const nextStatus: Record<string, AttStatusUI> = { ...statusMap };
-    filteredMembers.forEach((m) => {
+    pagedMembers.forEach((m) => {
       nextStatus[m.id] = "출석";
     });
     setStatusMap(nextStatus);
-    const records = filteredMembers.map((m) => ({
+    const records = pagedMembers.map((m) => ({
       member_id: m.id,
       week_num: Number(week_num),
       year: Number(year),
@@ -1632,7 +1633,7 @@ export function AttendanceCheck({
     onAttendanceSaved?.();
   };
 
-  const markAllDisabled = filteredMembers.length === 0;
+  const markAllDisabled = pagedMembers.length === 0;
   const lastWeekHeader = formatMonthDay(lastWeekDate);
   const currentWeekHeader = formatMonthDay(selectedDate);
 

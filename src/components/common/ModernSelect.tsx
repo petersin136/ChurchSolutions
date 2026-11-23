@@ -34,6 +34,8 @@ export interface ModernSelectProps {
   uniform30?: boolean;
   /** compact와 함께: 높이 32px, 보고서 필터 행(날짜 트리거와 동일) */
   uniform32?: boolean;
+  /** 성도 등록 등 시트형 폼 — 회색 칸, 흐린 라벨. 기본 화면은 그대로 */
+  quiet?: boolean;
 }
 
 export function ModernSelect({
@@ -50,6 +52,7 @@ export function ModernSelect({
   uniform28 = false,
   uniform30 = false,
   uniform32 = false,
+  quiet = false,
 }: ModernSelectProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -78,9 +81,9 @@ export function ModernSelect({
   }, [open]);
 
   return (
-    <div ref={ref} style={{ marginBottom: label ? 16 : 0, position: "relative", ...style }} className={className}>
+    <div ref={ref} style={{ marginBottom: quiet ? 0 : label ? 16 : 0, position: "relative", ...style }} className={className}>
       {label && (
-        <label htmlFor={id} style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--color-primary)", marginBottom: 6 }}>
+        <label htmlFor={id} style={{ display: "block", fontSize: 13, fontWeight: quiet ? 500 : 600, color: quiet ? "#8b909a" : "var(--color-primary)", marginBottom: 6 }}>
           {label}
         </label>
       )}
@@ -95,16 +98,16 @@ export function ModernSelect({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: pad,
+          padding: quiet ? "0 16px" : pad,
           minHeight: compact ? (u32 ? 32 : u30 ? 30 : 28) : undefined,
-          height: u32 ? 32 : u30 ? 30 : u28 ? 28 : undefined,
-          boxSizing: u32 || u30 || u28 ? "border-box" : undefined,
-          fontSize: fs,
+          height: quiet ? 48 : u32 ? 32 : u30 ? 30 : u28 ? 28 : undefined,
+          boxSizing: quiet || u32 || u30 || u28 ? "border-box" : undefined,
+          fontSize: quiet ? 15 : fs,
           lineHeight: 1.4,
           fontFamily: "inherit",
-          color: value ? TEXT : TEXT_MUTED,
-          background: SURFACE,
-          border: u32 || u30 ? `1px solid ${FILTER_BORDER}` : `1px solid ${BORDER}`,
+          color: value ? (quiet ? "#0b0c0e" : TEXT) : TEXT_MUTED,
+          background: quiet ? "#f4f4f6" : SURFACE,
+          border: quiet ? "none" : u32 || u30 ? `1px solid ${FILTER_BORDER}` : `1px solid ${BORDER}`,
           borderRadius: br,
           cursor: disabled ? "not-allowed" : "pointer",
           outline: "none",
@@ -146,7 +149,7 @@ export function ModernSelect({
             top: "100%",
             marginTop: 4,
             background: SURFACE,
-            border: `1px solid ${BORDER}`,
+            border: quiet ? "none" : `1px solid ${BORDER}`,
             borderRadius: br,
             boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
             zIndex: 1000,
@@ -173,7 +176,7 @@ export function ModernSelect({
                 fontSize: optFs,
                 fontFamily: "inherit",
                 color: TEXT,
-                background: o.value === value ? BLUE_LIGHT : "transparent",
+                background: o.value === value ? (quiet ? "#f4f4f6" : BLUE_LIGHT) : "transparent",
                 border: "none",
                 cursor: "pointer",
                 textAlign: "left",
@@ -187,7 +190,7 @@ export function ModernSelect({
               }}
             >
               {o.value === value && (
-                <span style={{ color: BORDER_FOCUS, fontWeight: 700, flexShrink: 0 }}>✓</span>
+                <span style={{ color: quiet ? "#0b0c0e" : BORDER_FOCUS, fontWeight: 700, flexShrink: 0 }}>✓</span>
               )}
               <span style={{ whiteSpace: "nowrap" }}>{o.label}</span>
             </button>

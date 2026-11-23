@@ -107,6 +107,10 @@ export interface MemoHistoryModalProps {
   importantMemoIds?: string[];
   onToggleImportant?: (noteId: string | number, next: boolean) => void;
   onSaved?: (memberId: string, items: QuickNoteItem[], latestContent?: string) => void;
+  /** 성도관리에서 연 경우 — 글 수정·삭제 없음 */
+  contentLocked?: boolean;
+  /** 추가 — 기도/메모 메뉴로 이동 */
+  onAdd?: () => void;
 }
 
 export function MemoHistoryModal({
@@ -121,6 +125,8 @@ export function MemoHistoryModal({
   importantMemoIds,
   onToggleImportant,
   onSaved,
+  contentLocked = false,
+  onAdd,
 }: MemoHistoryModalProps) {
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<TabId>("general");
@@ -292,6 +298,7 @@ export function MemoHistoryModal({
   };
 
   const startEdit = (item: QuickNoteItem) => {
+    if (contentLocked) return;
     setEditingId(item.id);
     setEditDraft(item.content);
   };
@@ -751,7 +758,9 @@ export function MemoHistoryModal({
                                     type="button"
                                     aria-label="삭제"
                                     tabIndex={hovered && !editing ? 0 : -1}
-                                    onClick={() => setPendingDeleteId(item.id)}
+                                    onClick={() => {
+                                      if (!contentLocked) setPendingDeleteId(item.id);
+                                    }}
                                     disabled={deletingId === item.id}
                                     style={{
                                       border: "none",
@@ -765,7 +774,7 @@ export function MemoHistoryModal({
                                       boxSizing: "border-box",
                                       cursor: deletingId === item.id ? "not-allowed" : "pointer",
                                       color: important ? "rgba(255,255,255,0.9)" : M.iconMuted,
-                                      display: "inline-flex",
+                                      display: contentLocked ? "none" : "inline-flex",
                                       alignItems: "center",
                                       justifyContent: "center",
                                       flexShrink: 0,
@@ -892,14 +901,14 @@ export function MemoHistoryModal({
                                   </>
                                 ) : (
                                   <p
-                                    onClick={() => !editing && startEdit(item)}
+                                    onClick={() => !contentLocked && !editing && startEdit(item)}
                                     style={{
                                       margin: 0,
                                       fontSize: M.cardContentFontSize,
                                       lineHeight: M.cardContentLineHeight,
                                       color: M.cardContentColor,
                                       whiteSpace: "pre-wrap",
-                                      cursor: "text",
+                                      cursor: contentLocked ? "default" : "text",
                                     }}
                                   >
                                     {item.content}
@@ -915,6 +924,28 @@ export function MemoHistoryModal({
                 )}
               </div>
             </div>
+            {onAdd ? (
+              <div style={{ flexShrink: 0, display: "flex", justifyContent: "flex-end", padding: "0 20px 16px", background: "#ffffff" }}>
+                <button
+                  type="button"
+                  onClick={onAdd}
+                  style={{
+                    height: 36,
+                    padding: "0 16px",
+                    border: "none",
+                    borderRadius: M.radius,
+                    background: M.titleColor,
+                    color: "#ffffff",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    fontFamily: M.fontKR,
+                    cursor: "pointer",
+                  }}
+                >
+                  추가
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <AppDeleteConfirmModal

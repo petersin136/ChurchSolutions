@@ -1,24 +1,47 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, type CSSProperties, type ReactNode } from "react";
 import { useAppData } from "@/contexts/AppDataContext";
 import type { DB, Member, Note, Visit, Income, MemberStatusHistory, NewFamilyProgram } from "@/types/db";
 import { supabase } from "@/lib/supabase";
 import { getChurchId, filterByChurch } from "@/lib/tenant";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { getBaptismTermLabels, displayBaptismType } from "@/lib/churchTerminology";
 import LazyChart from "../common/LazyChart";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
 
-const STATUS_BADGE_COLOR: Record<string, string> = {
-  활동: "#10B981",
-  휴적: "#F59E0B",
-  은퇴: "#6B7280",
-  별세: "#1F2937",
-  이적: "#EF4444",
-  제적: "#DC2626",
-  미등록: "#9CA3AF",
-};
+const SHEET = {
+  font: "'Pretendard', system-ui, -apple-system, sans-serif",
+  ink: "#0b0c0e",
+  muted: "#8b909a",
+  faint: "#a3a8b0",
+  line: "rgba(0,0,0,0.06)",
+  fill: "#f4f4f6",
+  radius: 7,
+} as const;
+
+function displayGender(g?: string) {
+  if (!g) return "";
+  if (g === "M" || g === "남" || g === "male") return "남";
+  if (g === "F" || g === "여" || g === "female") return "여";
+  return g;
+}
+
+function sheetDate(s?: string) {
+  if (!s) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m) return s;
+  return `${m[1]}. ${m[2]}. ${m[3]}`;
+}
+
+function attLabel(status?: string) {
+  if (status === "p") return "출석";
+  if (status === "o") return "온라인";
+  if (status === "a") return "결석";
+  if (status === "l") return "병결";
+  if (status === "n") return "기타";
+  return status || "";
+}
 
 export interface Member360ViewProps {
   member: Member;
@@ -147,243 +170,253 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
     [db.members, member.family_id, member.id]
   );
 
-  const statusColor = STATUS_BADGE_COLOR[member.member_status || ""] || "#6B7280";
   const baptismLabels = getBaptismTermLabels(db.settings);
   const baptismCertLabel = baptismLabels.baptismCertificate;
   const baptismInfoLabel = baptismLabels.baptism;
   const baptismDisplayValue = displayBaptismType(member.baptism_type, db.settings);
 
+  const meta = [member.role, member.dept, member.member_status || "활동", member.is_prospect ? "관심" : ""]
+    .filter(Boolean)
+    .join("  ·  ");
+  const facts: [string, string][] = [
+    ["성별", displayGender(member.gender)],
+    ["생년월일", sheetDate(member.birth)],
+    ["연락처", member.phone || ""],
+    ["이메일", member.email || ""],
+    ["주소", member.address || ""],
+    ["직업", member.job || ""],
+    ["부서", member.dept || ""],
+    ["직분", member.role || ""],
+    ["목장", member.group || ""],
+    ["소그룹", member.small_group || ""],
+    [baptismInfoLabel, [baptismDisplayValue, sheetDate(member.baptism_date)].filter(Boolean).join("  ")],
+    ["등록일", sheetDate(member.registered_date)],
+  ].filter((pair): pair is [string, string] => Boolean(pair[1] && pair[1] !== "-"));
+  const attendanceHasBars = attendanceByWeek.some((w) => w.present || w.absent);
+
+  const textBtn: CSSProperties = {
+    border: "none",
+    background: "none",
+    padding: 0,
+    fontFamily: SHEET.font,
+    fontSize: 14,
+    fontWeight: 600,
+    color: SHEET.ink,
+    cursor: "pointer",
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col flex-1 min-h-0">
-      {/* 프로필 헤더 */}
-      <div className="bg-gradient-to-r from-[#1e40af] to-[#2d5a8e] text-white p-6 flex flex-wrap items-center gap-4">
-        <div className="w-[100px] h-[100px] rounded-full border-4 border-white/30 overflow-hidden bg-white/20 flex items-center justify-center shrink-0">
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, fontFamily: SHEET.font, color: SHEET.ink }}>
+
+      <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+        <div style={{ width: 72, height: 72, borderRadius: "50%", background: SHEET.fill, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <MemberPhoto
             photo={member.photo}
             name={member.name}
-            className="w-full h-full object-cover"
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
             fallback={
-              <span className="font-bold text-white/90" style={{ fontSize: 36 }}>
+              <span style={{ fontSize: 26, fontWeight: 700, color: SHEET.ink, letterSpacing: "-0.03em" }}>
                 {(member.name?.trim() || "?")[0]}
               </span>
             }
           />
         </div>
-        <div className="flex-1 min-w-[200px]">
-          <h2 className="text-2xl font-bold truncate">{member.name}</h2>
-          <div className="flex flex-wrap items-center gap-2 mt-2">
-            {member.role && <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-white/20 whitespace-nowrap shrink-0">{member.role}</span>}
-            {member.dept && <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-white/20 whitespace-nowrap shrink-0">{member.dept}</span>}
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap shrink-0" style={{ backgroundColor: statusColor }}>{member.member_status || "활동"}</span>
-            {member.is_prospect && <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-500/80 whitespace-nowrap shrink-0">관심 성도</span>}
-          </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.15, textBoxTrim: "trim-both", textBoxEdge: "cap alphabetic" } as CSSProperties}>{member.name}</h2>
+          {meta ? <div style={{ marginTop: 8, fontSize: 14, fontWeight: 500, color: SHEET.muted }}>{meta}</div> : null}
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {onEdit && <button type="button" onClick={onEdit} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">편집</button>}
-          <button type="button" onClick={async () => { try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(member, db.settings?.churchName ?? "", null, db.settings); toast?.(`${baptismCertLabel} PDF 다운로드됨`, "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">{baptismCertLabel} 인쇄</button>
-          <button type="button" onClick={async () => { try { const { generateMemberCertificatePdf } = await import("@/components/print/MemberCertificate"); await generateMemberCertificatePdf(member, db.settings?.churchName ?? "", null); toast?.("교인증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">교인증명서 인쇄</button>
-          {member.phone && <a href={`tel:${member.phone}`} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">전화</a>}
-          {member.phone && <a href={`sms:${member.phone}`} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">문자</a>}
-          {onClose && <button type="button" onClick={onClose} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium">닫기</button>}
-        </div>
-      </div>
-
-      {/* 미니 통계 카드 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border-b border-gray-100">
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-[#1e40af]">{attendanceRate}%</div>
-          <div className="text-xs text-gray-500">출석률 (최근 12주)</div>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-xl font-bold text-[#1e40af]">{givingTotal.toLocaleString()}원</div>
-          <div className="text-xs text-gray-500">올해 헌금</div>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-[#1e40af]">{visitCount}</div>
-          <div className="text-xs text-gray-500">올해 심방</div>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3 text-center">
-          <div className="text-xl font-bold text-[#1e40af]">{newFamilyProgress != null ? `${newFamilyProgress}%` : "해당없음"}</div>
-          <div className="text-xs text-gray-500">새가족 정착</div>
-        </div>
-      </div>
-
-      {/* 탭 */}
-      <div className="flex border-b border-gray-200 overflow-x-auto">
-        {(["info", "attendance", "giving", "visits", "newfamily", "history"] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition ${activeTab === tab ? "border-[#1e40af] text-[#1e40af]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
-          >
-            {tab === "info" && "기본 정보"}
-            {tab === "attendance" && "출결 현황"}
-            {tab === "giving" && "헌금 내역"}
-            {tab === "visits" && "심방 기록"}
-            {tab === "newfamily" && "새가족 정착"}
-            {tab === "history" && "상태 이력"}
+        {onEdit && (
+          <button type="button" onClick={onEdit} style={{ height: 36, padding: "0 16px", border: "none", borderRadius: SHEET.radius, background: SHEET.ink, color: "#fff", fontFamily: SHEET.font, fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+            편집
           </button>
-        ))}
+        )}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-5">
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 18px", marginTop: 18 }}>
+        {member.phone && <a href={`tel:${member.phone}`} style={{ ...textBtn, textDecoration: "none" }}>전화</a>}
+        {member.phone && <a href={`sms:${member.phone}`} style={{ ...textBtn, textDecoration: "none" }}>문자</a>}
+        <button type="button" style={textBtn} onClick={async () => { try { const { generateBaptismCertificatePdf } = await import("@/components/print/BaptismCertificate"); await generateBaptismCertificatePdf(member, db.settings?.churchName ?? "", null, db.settings); toast?.(`${baptismCertLabel} PDF 다운로드됨`, "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }}>{baptismCertLabel}</button>
+        <button type="button" style={textBtn} onClick={async () => { try { const { generateMemberCertificatePdf } = await import("@/components/print/MemberCertificate"); await generateMemberCertificatePdf(member, db.settings?.churchName ?? "", null); toast?.("교인증명서 PDF 다운로드됨", "ok"); } catch (e) { console.error(e); toast?.("PDF 생성 실패", "err"); } }}>교인증명서</button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16, marginTop: 26, padding: "20px 0", borderTop: `1px solid ${SHEET.line}`, borderBottom: `1px solid ${SHEET.line}` }}>
+        <Figure value={`${attendanceRate}%`} label="출석 · 12주" />
+        <Figure value={givingTotal ? givingTotal.toLocaleString() : "0"} label="올해 헌금" />
+        <Figure value={String(visitCount)} label="올해 심방" />
+        <Figure value={newFamilyProgress != null ? `${newFamilyProgress}%` : "없음"} label="새가족" quiet={newFamilyProgress == null} />
+      </div>
+
+      <div style={{ display: "flex", gap: 22, marginTop: 8, overflowX: "auto", flexShrink: 0 }}>
+        {([
+          ["info", "정보"],
+          ["attendance", "출결"],
+          ["giving", "헌금"],
+          ["visits", "심방"],
+          ["newfamily", "새가족"],
+          ["history", "상태"],
+        ] as const).map(([id, label]) => {
+          const on = activeTab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveTab(id)}
+              style={{
+                border: "none",
+                background: "none",
+                padding: "14px 0 12px",
+                fontFamily: SHEET.font,
+                fontSize: 15,
+                fontWeight: on ? 700 : 500,
+                color: on ? SHEET.ink : SHEET.muted,
+                borderBottom: on ? `2px solid ${SHEET.ink}` : "2px solid transparent",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingTop: 22 }}>
         {activeTab === "info" && (
-          <div className="space-y-4">
-            <InfoRow label="성별" value={member.gender || "-"} />
-            <InfoRow label="생년월일" value={member.birth || "-"} />
-            <InfoRow label="연락처" value={member.phone || "-"} />
-            <InfoRow label="이메일" value={member.email || "-"} />
-            <InfoRow label="주소" value={member.address || "-"} />
-            <InfoRow label="직업" value={member.job || "-"} />
-            <InfoRow label="부서" value={member.dept || "-"} />
-            <InfoRow label="직분" value={member.role || "-"} />
-            <InfoRow label="목장" value={member.group || "-"} />
-            <InfoRow label="소그룹" value={member.small_group || "-"} />
-            <InfoRow label={baptismInfoLabel} value={[baptismDisplayValue, member.baptism_date].filter(Boolean).join(" ") || "-"} />
-            <InfoRow label="등록일" value={member.registered_date || "-"} />
-            {member.family_id && (
-              <div>
-                <div className="text-xs text-gray-500 mb-1">가족 구성원</div>
-                <ul className="space-y-1">
-                  {familyMembers.map((m) => (
-                    <li key={m.id} className="text-sm text-gray-800">{m.name} {m.family_relation ? `(${m.family_relation})` : ""}</li>
-                  ))}
-                </ul>
+          <div>
+            {facts.length === 0 ? <Empty>등록된 기본 정보가 없습니다.</Empty> : (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 28, rowGap: 22 }}>
+                {facts.map(([label, value]) => (
+                  <div key={label}>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: SHEET.muted, marginBottom: 6 }}>{label}</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: SHEET.ink, lineHeight: 1.45, wordBreak: "break-word" }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {familyMembers.length > 0 && (
+              <div style={{ marginTop: 28 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: SHEET.muted, marginBottom: 8 }}>가족</div>
+                {familyMembers.map((m) => (
+                  <div key={m.id} style={{ fontSize: 15, fontWeight: 600, padding: "8px 0", borderTop: `1px solid ${SHEET.line}` }}>
+                    {m.name}{m.family_relation ? `  ·  ${m.family_relation}` : ""}
+                  </div>
+                ))}
               </div>
             )}
           </div>
         )}
 
         {activeTab === "attendance" && (
-          <div className="space-y-4">
+          <div>
+            {threeWeeksAbsent && <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>최근 3주 연속 결석</div>}
             {attendanceHistory.length > 0 && (
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">출석 이력 (Supabase)</div>
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left py-2 px-3">날짜</th>
-                        <th className="text-left py-2 px-3">예배유형</th>
-                        <th className="text-left py-2 px-3">출석상태</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attendanceHistory.map((row, i) => (
-                        <tr key={i} className="border-t border-gray-100">
-                          <td className="py-2 px-3">{row.date}</td>
-                          <td className="py-2 px-3">{row.service_type}</td>
-                          <td className="py-2 px-3">
-                            {row.status === "p" ? "출석" : row.status === "o" ? "온라인" : row.status === "a" ? "결석" : row.status === "l" ? "병결" : row.status === "n" ? "기타" : row.status}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div style={{ marginBottom: 22 }}>
+                {attendanceHistory.map((row, i) => (
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "120px 1fr auto", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : `1px solid ${SHEET.line}`, fontSize: 14 }}>
+                    <span style={{ fontWeight: 600 }}>{sheetDate(row.date)}</span>
+                    <span style={{ color: SHEET.muted }}>{row.service_type}</span>
+                    <span style={{ fontWeight: 600 }}>{attLabel(row.status)}</span>
+                  </div>
+                ))}
               </div>
             )}
-            {threeWeeksAbsent && (
-              <div className="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm font-medium">
-                ⚠️ 최근 3주 연속 결석
-              </div>
-            )}
-            <LazyChart height={250}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={attendanceByWeek}>
-                  <XAxis dataKey="week" tick={{ fontSize: 10 }} />
-                  <YAxis hide />
-                  <Tooltip />
-                  <Bar dataKey="present" fill="#1e40af" name="출석" stackId="a" />
-                  <Bar dataKey="absent" fill="#e2e5ef" name="결석" stackId="a" />
-                </BarChart>
-              </ResponsiveContainer>
-            </LazyChart>
+            {attendanceHasBars ? (
+              <LazyChart height={180}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={attendanceByWeek} barCategoryGap="28%">
+                    <XAxis dataKey="week" tick={{ fontSize: 11, fill: SHEET.muted }} axisLine={false} tickLine={false} />
+                    <YAxis hide />
+                    <Tooltip cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                    <Bar dataKey="present" fill={SHEET.ink} name="출석" stackId="a" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="absent" fill="#e3e4e8" name="결석" stackId="a" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </LazyChart>
+            ) : attendanceHistory.length === 0 ? <Empty>출결 기록이 없습니다.</Empty> : null}
           </div>
         )}
 
         {activeTab === "giving" && (
-          <div className="space-y-4">
+          <div>
             {monthlyGiving.length > 0 && (
-              <LazyChart height={250}>
+              <LazyChart height={180}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyGiving}>
-                    <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
-                    <Tooltip formatter={(v: any) => [`${Number(v ?? 0).toLocaleString()}원`, "금액"]} />
-                    <Line type="monotone" dataKey="amount" stroke="#d4a574" strokeWidth={2} />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: SHEET.muted }} axisLine={false} tickLine={false} />
+                    <YAxis hide />
+                    <Tooltip formatter={(v: unknown) => [`${Number(v ?? 0).toLocaleString()}원`, ""]} />
+                    <Line type="monotone" dataKey="amount" stroke={SHEET.ink} strokeWidth={1.5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </LazyChart>
             )}
             {categoryGiving.length > 0 && (
-              <LazyChart height={250}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={categoryGiving} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={(e) => e.name}>
-                      {categoryGiving.map((_, i) => <Cell key={i} fill={["#1e40af", "#d4a574", "#6B7280", "#10B981", "#F59E0B"][i % 5]} />)}
-                    </Pie>
-                    <Tooltip formatter={(v: any) => [`${Number(v ?? 0).toLocaleString()}원`, ""]} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </LazyChart>
-            )}
-            <div>
-              <div className="text-sm font-medium text-gray-700 mb-2">최근 헌금</div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b"><th className="text-left py-2">날짜</th><th className="text-left py-2">구분</th><th className="text-right py-2">금액</th></tr></thead>
-                  <tbody>
-                    {incomeList.slice(0, 10).map((i) => (
-                      <tr key={i.id} className="border-b border-gray-100"><td className="py-1">{i.date}</td><td>{i.type}</td><td className="text-right">{i.amount.toLocaleString()}원</td></tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div style={{ marginTop: monthlyGiving.length > 0 ? 18 : 0 }}>
+                {categoryGiving.map((row) => (
+                  <div key={row.name} style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 0", borderTop: `1px solid ${SHEET.line}`, fontSize: 14 }}>
+                    <span style={{ color: SHEET.muted }}>{row.name}</span>
+                    <span style={{ fontWeight: 600 }}>{row.value.toLocaleString()}</span>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+            {incomeList.length > 0 ? (
+              <div style={{ marginTop: 8 }}>
+                {incomeList.slice(0, 10).map((i) => (
+                  <div key={i.id} style={{ display: "grid", gridTemplateColumns: "120px 1fr auto", gap: 12, padding: "12px 0", borderTop: `1px solid ${SHEET.line}`, fontSize: 14 }}>
+                    <span style={{ fontWeight: 600 }}>{sheetDate(i.date)}</span>
+                    <span style={{ color: SHEET.muted }}>{i.type}</span>
+                    <span style={{ fontWeight: 600 }}>{i.amount.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            ) : <Empty>올해 헌금 기록이 없습니다.</Empty>}
           </div>
         )}
 
         {activeTab === "visits" && (
-          <div className="space-y-3">
-            {visits.length === 0 ? <p className="text-sm text-gray-500">심방 기록이 없습니다.</p> : visits.map((v) => (
-              <div key={v.id} className="border border-gray-100 rounded-lg p-3">
-                <div className="flex justify-between text-sm"><span className="font-medium text-gray-800">{v.date}</span><span className="text-gray-500">{v.type}</span></div>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{v.content}</p>
+          <div>
+            {visits.length === 0 ? <Empty>심방 기록이 없습니다.</Empty> : visits.map((v, i) => (
+              <div key={v.id} style={{ padding: "14px 0", borderTop: i === 0 ? "none" : `1px solid ${SHEET.line}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14 }}>
+                  <span style={{ fontWeight: 700 }}>{sheetDate(v.date)}</span>
+                  <span style={{ color: SHEET.muted }}>{v.type}</span>
+                </div>
+                {v.content ? <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.55, color: SHEET.ink }}>{v.content}</p> : null}
               </div>
             ))}
           </div>
         )}
 
         {activeTab === "newfamily" && (
-          <div className="space-y-4">
-            {!member.is_new_family && !newFamilyProgram && <p className="text-sm text-gray-500">해당 없음</p>}
+          <div>
+            {!member.is_new_family && !newFamilyProgram ? <Empty>새가족 과정이 없습니다.</Empty> : null}
+            {newFamilyProgress != null && (
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 16 }}>{newFamilyProgress}%</div>
+            )}
             {newFamilyProgram && (
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">4주 정착 프로그램</div>
-                <ul className="space-y-2">
-                  {[1, 2, 3, 4].map((w) => (
-                    <li key={w} className="flex items-center gap-2 text-sm">
-                      <span className={newFamilyProgram[`week${w}_completed` as keyof NewFamilyProgram] ? "text-green-600" : "text-gray-400"}>
-                        {newFamilyProgram[`week${w}_completed` as keyof NewFamilyProgram] ? "✓" : "○"} 주{w}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-xs text-gray-500 mt-2">상태: {newFamilyProgram.status}</p>
+                {[1, 2, 3, 4].map((w) => {
+                  const done = Boolean(newFamilyProgram[`week${w}_completed` as keyof NewFamilyProgram]);
+                  return (
+                    <div key={w} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: w === 1 ? "none" : `1px solid ${SHEET.line}`, fontSize: 15, fontWeight: 600, color: done ? SHEET.ink : SHEET.muted }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: done ? SHEET.ink : "#e3e4e8", flexShrink: 0 }} />
+                      {w}주
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
         {activeTab === "history" && (
-          <div className="space-y-3">
-            {displayStatusHistory.length === 0 ? <p className="text-sm text-gray-500">상태 변경 이력이 없습니다.</p> : displayStatusHistory.map((h) => (
-              <div key={h.id} className="border border-gray-100 rounded-lg p-3 text-sm">
-                <div className="text-gray-500">{h.changed_at?.slice(0, 10)}</div>
-                <div className="font-medium text-gray-800">{h.previous_status || "-"} → {h.new_status}</div>
-                {h.reason && <div className="text-gray-600 mt-1">{h.reason}</div>}
+          <div>
+            {displayStatusHistory.length === 0 ? <Empty>상태 변경 이력이 없습니다.</Empty> : displayStatusHistory.map((h, i) => (
+              <div key={h.id} style={{ padding: "14px 0", borderTop: i === 0 ? "none" : `1px solid ${SHEET.line}` }}>
+                <div style={{ fontSize: 12, color: SHEET.muted }}>{sheetDate(h.changed_at?.slice(0, 10))}</div>
+                <div style={{ marginTop: 4, fontSize: 15, fontWeight: 600 }}>{h.previous_status || "—"} → {h.new_status}</div>
+                {h.reason ? <div style={{ marginTop: 4, fontSize: 14, color: SHEET.muted }}>{h.reason}</div> : null}
               </div>
             ))}
           </div>
@@ -393,11 +426,15 @@ export function Member360View({ member, db, statusHistory = [], newFamilyProgram
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function Figure({ value, label, quiet }: { value: string; label: string; quiet?: boolean }) {
   return (
     <div>
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="text-sm text-gray-800">{value}</div>
+      <div style={{ fontSize: quiet ? 16 : 22, fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: quiet ? SHEET.muted : SHEET.ink }}>{value}</div>
+      <div style={{ marginTop: 8, fontSize: 12, fontWeight: 500, color: SHEET.muted }}>{label}</div>
     </div>
   );
+}
+
+function Empty({ children }: { children: ReactNode }) {
+  return <div style={{ fontSize: 14, color: SHEET.muted, padding: "8px 0 16px" }}>{children}</div>;
 }

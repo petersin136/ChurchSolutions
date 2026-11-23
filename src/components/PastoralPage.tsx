@@ -13,8 +13,8 @@ import {
   type PrayerAnswerRecord,
 } from "@/lib/prayerAnswers";
 import { useAuth } from "@/contexts/AuthContext";
-import { CHURCHUP_GO_HOME_EVENT } from "@/contexts/ShellNavContext";
-import { PASTORAL_SET_SUB_EVENT } from "@/lib/globalSearch";
+import { CHURCHUP_GO_HOME_EVENT, useShellNav } from "@/contexts/ShellNavContext";
+import { PASTORAL_SET_SUB_EVENT, VISIT_COUNSEL_SET_SUB_EVENT } from "@/lib/globalSearch";
 import {
   PASTORAL_MEMBERS_SEARCH_EVENT,
   PASTORAL_MEMBERS_SEARCH_KEY,
@@ -37,7 +37,7 @@ import { UnifiedPageLayout } from "@/components/layout/UnifiedPageLayout";
 import { DASH_CARD, DASH_GLOBAL, DASH_CHART, DASH_MID, DASH_BADGE, DASH_RADIUS, DASH_LAYOUT, DASH_COLOR, DASH_ICON_BTN, DASH_ATTENDANCE_CARD, DASH_MEMBER_CARD, DASH_MID_CARD, DASH_SECTION, DASH_DEPT_CARD, DASH_FEED_CARD, DASH_FEED_PAGINATION_HEIGHT, DASH_ATT_CHART_CTRL, DASH_ATT_CHART_BAR, DASH_ATT_YEAR_CHART, DASH_WEEK_CHART, DASH_MONTH_CHART, DASH_YEAR_CHART, DASH_YEAR_DROPDOWN, dashStatRowHeight, dashAttendanceSectionMinHeight, dashTopCardVisualMetrics, dashTopCardTypoScale, dashScalePx, scaleDashTypo, dashChartBarTypoScale, dashChartBarWidths, dashWeekBarLabelTypo, dashFeedRowHeight, dashFeedListAreaHeight, dashFeedCardContentMinHeight, dashDeptBlockMinHeight } from "@/styles/pastoralDashboardTokens";
 import "@/styles/pastoralDashboardChrome.css";
 import { PastoralFeedDetailModal } from "@/components/pastoral/PastoralFeedDetailModal";
-import { APP_MODAL } from "@/styles/appModalTokens";
+import { APP_MODAL, appModalBtnCancel, appModalBtnSubmit, appModalInputStyle } from "@/styles/appModalTokens";
 import { MemberDotGrid } from "@/components/pastoral/MemberDotGrid";
 import { Pagination, PAGINATION_LIST_PARENT_STYLE } from "@/components/common/Pagination";
 import { MemberStylePagination } from "@/components/common/MemberStylePagination";
@@ -48,6 +48,7 @@ import { PrayerMemoPanel } from "@/components/pastoral/PrayerMemoPanel";
 import { ActivityRecordModal } from "@/components/pastoral/ActivityRecordModal";
 import { PrayerHistoryModal } from "@/components/pastoral/PrayerHistoryModal";
 import { MemoHistoryModal } from "@/components/pastoral/MemoHistoryModal";
+import { VisitCounselHistoryModal } from "@/components/pastoral/VisitCounselHistoryModal";
 import { AttendanceCheck } from "@/components/attendance";
 import { ReportModal } from "@/components/report/ReportModal";
 import { REPORT_DEFS, ReportPreviewModal, type ReportId } from "@/components/report/A4Reports";
@@ -306,7 +307,7 @@ function FormInput({ label, ...props }: { label?: string; [k: string]: unknown }
   );
 }
 
-function FormSelect({ label, options, ...props }: { label?: string; options: { value: string; label: string }[]; [k: string]: unknown }) {
+function FormSelect({ label, options, quiet, ...props }: { label?: string; options: { value: string; label: string }[]; quiet?: boolean; [k: string]: unknown }) {
   const p = props as React.SelectHTMLAttributes<HTMLSelectElement> & { style?: CSSProperties };
   const value = String(p.value ?? "");
   return (
@@ -317,8 +318,17 @@ function FormSelect({ label, options, ...props }: { label?: string; options: { v
       onChange={(v) => p.onChange?.({ target: { value: v } } as React.ChangeEvent<HTMLSelectElement>)}
       disabled={p.disabled}
       id={p.id}
+      quiet={quiet}
       style={p.style}
     />
+  );
+}
+
+function SheetLabel({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ fontSize: 13, fontWeight: 500, color: APP_MODAL.labelMuted, marginBottom: 6, fontFamily: APP_MODAL.fontKR }}>
+      {children}
+    </div>
   );
 }
 
@@ -497,7 +507,7 @@ function DateWheelPicker({ value, onChange, onConfirm }: { value: string; onChan
   );
 }
 
-function Modal({ open, onClose, title, children, width = 540, hideScrollbar, ariaLabel }: {
+function Modal({ open, onClose, title, children, width = 540, hideScrollbar, ariaLabel, footer }: {
   open: boolean;
   onClose: () => void;
   title: string;
@@ -505,6 +515,7 @@ function Modal({ open, onClose, title, children, width = 540, hideScrollbar, ari
   width?: number;
   hideScrollbar?: boolean;
   ariaLabel?: string;
+  footer?: ReactNode;
 }) {
   return (
     <PcModalShell
@@ -513,6 +524,7 @@ function Modal({ open, onClose, title, children, width = 540, hideScrollbar, ari
       title={title}
       ariaLabel={ariaLabel}
       maxWidth={width}
+      footer={footer}
       bodyClassName={hideScrollbar ? "scrollbar-hide" : undefined}
     >
       {children}
@@ -1182,6 +1194,8 @@ function DashboardSub({
   const [deptWizard, setDeptWizard] = useState<OrgDeptWizardState | null>(null);
   const [deptDeleteName, setDeptDeleteName] = useState<string | null>(null);
   const [deptArrowOn, setDeptArrowOn] = useState(false);
+  /** 중간 카드(새가족·위험/휴면·심방·기도) 화살표 — 부서별 인원과 동일 idle/hover */
+  const [midArrowOn, setMidArrowOn] = useState<string | null>(null);
 
   const deptNames = useMemo(() => getDepts(db), [db.settings.depts]);
 
@@ -1943,10 +1957,12 @@ function DashboardSub({
                       transition: "box-shadow 0.15s ease, transform 0.12s ease",
                     }}
                     onMouseEnter={(e) => {
+                      setMidArrowOn(c.key);
                       e.currentTarget.style.boxShadow = "0 4px 18px rgba(17,17,26,0.09)";
                       e.currentTarget.style.transform = "translateY(-1px)";
                     }}
                     onMouseLeave={(e) => {
+                      setMidArrowOn(null);
                       e.currentTarget.style.boxShadow = DASH_CARD.floatShadow;
                       e.currentTarget.style.transform = "translateY(0)";
                     }}
@@ -1981,7 +1997,7 @@ function DashboardSub({
                         position: "absolute",
                         top: DASH_LAYOUT.midCardArrowInset,
                         right: DASH_LAYOUT.midCardArrowInset,
-                        color: DASH_COLOR.ink,
+                        color: midArrowOn === c.key ? DASH_DEPT_CARD.arrowHover : DASH_DEPT_CARD.arrowIdle,
                         lineHeight: 0,
                         pointerEvents: "none",
                       }}
@@ -2999,12 +3015,13 @@ function filterMembersMgmtSearch(members: Member[], query: string): Member[] {
   });
 }
 
-function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openNoteModal, openQuickNote, openActivityModal, churchId }: {
+function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, openNoteModal, openQuickNote, openMemberInfo, openVisitCounsel, churchId }: {
   db: DB; setDb: (fn: (prev: DB) => DB) => void; persist: () => void;
   toast: (m: string, t?: string) => void; currentWeek: number;
   openMemberModal: (id?: string) => void; openNoteModal: (id: string) => void;
-  openQuickNote: (memberId: string, memberName: string, type: "note" | "prayer") => void;
-  openActivityModal: (memberId: string, memberName: string, memberRole?: string) => void;
+  openQuickNote: (memberId: string, memberName: string, type: "note" | "prayer", fromMembers?: boolean) => void;
+  openMemberInfo: (id: string) => void;
+  openVisitCounsel: (id: string, name: string, role: string | undefined, focus: "visit" | "counsel") => void;
   churchId: string | null;
 }) {
   const mob = useIsMobile();
@@ -3153,9 +3170,11 @@ function MembersSub({ db, setDb, persist, toast, currentWeek, openMemberModal, o
                 currentPage={currentPageList}
       totalItems={filtered.length}
       onPageChange={setPageList}
-      onOpenQuickPrayer={(id, name) => openQuickNote(id, name, "prayer")}
-      onOpenQuickMemo={(id, name) => openQuickNote(id, name, "note")}
-      onOpenActivity={openActivityModal}
+      onOpenMember={openMemberInfo}
+      onOpenVisitCounsel={openVisitCounsel}
+      onOpenQuickPrayer={(id, name) => openQuickNote(id, name, "prayer", true)}
+      onOpenQuickMemo={(id, name) => openQuickNote(id, name, "note", true)}
+      churchId={churchId}
       onCapacityChange={setPageCapacity}
     />
   );
@@ -4540,6 +4559,14 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [activityMemberRole, setActivityMemberRole] = useState("");
   const [activitySaving, setActivitySaving] = useState(false);
   const [prayerHistoryOpen, setPrayerHistoryOpen] = useState(false);
+  const [historyFromMembers, setHistoryFromMembers] = useState(false);
+  const [visitHistory, setVisitHistory] = useState<{
+    memberId: string;
+    memberName: string;
+    memberRole?: string;
+    focus: "visit" | "counsel";
+  } | null>(null);
+  const shellNav = useShellNav();
   const [prayerHistoryMemberId, setPrayerHistoryMemberId] = useState("");
   const [memoHistoryOpen, setMemoHistoryOpen] = useState(false);
   const [memoHistoryMemberId, setMemoHistoryMemberId] = useState("");
@@ -4553,6 +4580,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [fPhotoServerUrl, setFPhotoServerUrl] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
   const [fVisitPath, setFVisitPath] = useState(""); const [fReferrerId, setFReferrerId] = useState(""); const [fJob, setFJob] = useState(""); const [fFirstVisitDate, setFFirstVisitDate] = useState(todayStr());
+  const [memberMore, setMemberMore] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
 
   // Note form
@@ -4709,12 +4737,14 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       setFPhotoServerUrl(m.photo || "");
       setFGroup((m.mokjang ?? m.group) && mokjangOptions.includes((m.mokjang ?? m.group) || "") ? ((m.mokjang ?? m.group) || "") : ((m.mokjang ?? m.group) || ""));
       setFVisitPath((m.visit_path ?? m.visitPath) || ""); setFReferrerId(m.referrer_id || ""); setFJob(m.job || ""); setFFirstVisitDate((m.first_visit_date ?? m.firstVisitDate) || todayStr());
+      setMemberMore(Boolean(m.birth || m.gender || m.role || m.address || m.photo || (m.visit_path ?? m.visitPath) || (m.status && m.status !== "새가족")));
     } else {
       setFName(""); setFDept(""); setFRole(""); setFBirth(""); setFGender("");
       setFPhone(""); setFAddr(""); setFFamily(""); setFStatus("새가족"); setFSource("");
       setFPrayer(""); setFMemo(""); setFPhoto(""); setFPhotoServerUrl("");
       setFGroup("");
       setFVisitPath(""); setFReferrerId(""); setFJob(""); setFFirstVisitDate(todayStr());
+      setMemberMore(false);
     }
     setShowMemberModal(true);
   }, [db.members, db.settings.mokjangList, depts]);
@@ -4850,6 +4880,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     const hasInput = fName.trim() || fRole.trim() || fBirth || fPhone.trim() || fAddr.trim() || fFamily.trim() || fPrayer.trim() || fMemo.trim() || fPhoto;
     if (hasInput && typeof window !== "undefined" && !window.confirm("작성 중인 내용이 있습니다. 닫으시겠습니까?")) return;
     setShowMemberModal(false);
+    setMemberMore(false);
   };
 
   const openDetail = useCallback((id: string) => { setDetailId(id); setShowDetailModal(true); }, []);
@@ -4893,7 +4924,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     toast("삭제 완료", "warn");
   };
 
-  const openQuickNote = useCallback((memberId: string, memberName: string, type: "note" | "prayer") => {
+  const openQuickNote = useCallback((memberId: string, memberName: string, type: "note" | "prayer", fromMembers = false) => {
+    setHistoryFromMembers(fromMembers);
     if (type === "prayer") {
       setPrayerHistoryMemberId(memberId);
       setPrayerHistoryOpen(true);
@@ -4905,6 +4937,19 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     setMemoHistoryOpen(true);
     void refreshNotes();
   }, [refreshNotes]);
+
+  const leaveHistoryToNotes = useCallback(() => {
+    setPrayerHistoryOpen(false);
+    setMemoHistoryOpen(false);
+    setHistoryFromMembers(false);
+    navigateToSub("notes");
+  }, [navigateToSub]);
+
+  const leaveHistoryToVisit = useCallback((tab: "visit" | "counsel") => {
+    setVisitHistory(null);
+    shellNav?.setCurrentPage("visit");
+    window.dispatchEvent(new CustomEvent(VISIT_COUNSEL_SET_SUB_EVENT, { detail: tab === "visit" ? "visits" : "counsels" }));
+  }, [shellNav]);
 
   const openActivityModal = useCallback((memberId: string, memberName: string, memberRole?: string) => {
     setActivityMemberId(memberId);
@@ -5342,7 +5387,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               onFeedItemOpen={setFeedDetailItem}
             />
           )}
-          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openNoteModal={openNoteModal} openQuickNote={openQuickNote} openActivityModal={openActivityModal} churchId={churchId} />}
+          {activeSub === "members" && <MembersSub db={db} setDb={fn => setDb(fn)} persist={persist} toast={toast} currentWeek={currentWeek} openMemberModal={openMemberModal} openNoteModal={openNoteModal} openQuickNote={openQuickNote} openMemberInfo={openDetail} openVisitCounsel={(id, name, role, focus) => setVisitHistory({ memberId: id, memberName: name, memberRole: role, focus })} churchId={churchId} />}
           {activeSub === "attendance" && (
             <AttendanceCheck
               members={db.members}
@@ -5379,107 +5424,129 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       {/* ===== MODALS ===== */}
 
       {/* Member Modal */}
-      <Modal open={showMemberModal} onClose={closeMemberModal} title={editMbrId ? "성도 수정" : "성도 등록"} hideScrollbar>
-        {/* 프로필 사진 — 맨 위, 원형 100px. 클릭 시 파일 선택. 미리보기는 <img>로 표시 (backgroundImage는 URL 특수문자로 깨질 수 있음) */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <label
-            onClick={() => {}}
-            style={{
-              display: "block",
-              width: 100, height: 100, borderRadius: "50%", background: "var(--color-surface-elevated)", cursor: "pointer",
-              overflow: "hidden", flexShrink: 0, position: "relative",
-              border: `2px solid ${C.border}`,
-            }}
-          >
-            <input
-              ref={photoRef}
-              type="file"
-              accept="image/*"
-              onChange={handlePhoto}
+      <Modal
+        open={showMemberModal}
+        onClose={closeMemberModal}
+        title={editMbrId ? "성도 수정" : "성도 등록"}
+        width={440}
+        hideScrollbar
+        footer={
+          <div style={{ display: "flex", gap: APP_MODAL.btnGap }}>
+            <button type="button" onClick={closeMemberModal} style={appModalBtnCancel}>취소</button>
+            <button type="button" onClick={saveMember} disabled={photoUploading} style={{ ...appModalBtnSubmit, opacity: photoUploading ? 0.6 : 1 }}>{photoUploading ? "사진 업로드 중…" : "저장"}</button>
+          </div>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 22, marginTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <label
               style={{
-                position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
-                opacity: 0, cursor: "pointer", zIndex: 1,
+                display: "block",
+                width: 64, height: 64, borderRadius: "50%", background: APP_MODAL.inputBg, cursor: "pointer",
+                overflow: "hidden", flexShrink: 0, position: "relative",
               }}
-              aria-label="프로필 사진 선택"
-            />
-            {fPhoto && isEphemeralMemberPhotoUrl(fPhoto) ? (
-              <img
-                src={fPhoto}
-                alt="프로필 미리보기"
-                style={{
-                  position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
-                  objectFit: "cover", borderRadius: "50%", display: "block", zIndex: 0,
-                }}
+            >
+              <input
+                ref={photoRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhoto}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer", zIndex: 1 }}
+                aria-label="프로필 사진 선택"
               />
-            ) : (fPhoto || fPhotoServerUrl) ? (
-              <MemberPhoto
-                photo={fPhotoServerUrl || fPhoto}
-                name={fName || "?"}
-                style={{
-                  position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
-                  objectFit: "cover", borderRadius: "50%", display: "block", zIndex: 0,
-                }}
-              />
-            ) : (
-              <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                <div style={{ color: C.textMuted, marginBottom: 4 }}><Icons.Camera /></div>
-                <span style={{ fontSize: 11, color: C.textMuted }}>사진 등록</span>
-              </div>
-            )}
-          </label>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
-          <FormInput label="이름 *" value={fName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFName(e.target.value)} placeholder="이름" />
-          <CalendarDropdown label="생년월일" value={fBirth} onChange={setFBirth} showClearButton />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
-          <FormSelect label="성별" value={fGender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGender(e.target.value)} options={[{ value: "", label: "선택" }, { value: "남", label: "남" }, { value: "여", label: "여" }]} />
-          <FormInput label="연락처" type="tel" value={fPhone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFPhone(e.target.value)} placeholder="010-0000-0000" />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
-          <FormSelect label="부서" value={fDept} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFDept(e.target.value)} options={depts.map(d => ({ value: d, label: d }))} />
-          <FormInput label="직분/학년" value={fRole} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFRole(e.target.value)} placeholder="예: 집사, 3학년" />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
-          <FormSelect label="목장" value={fGroup} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGroup(e.target.value)} options={[
+              {fPhoto && isEphemeralMemberPhotoUrl(fPhoto) ? (
+                <img src={fPhoto} alt="프로필 미리보기" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (fPhoto || fPhotoServerUrl) ? (
+                <MemberPhoto photo={fPhotoServerUrl || fPhoto} name={fName || "?"} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: APP_MODAL.labelMuted, pointerEvents: "none" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                </div>
+              )}
+            </label>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: APP_MODAL.ink }}>사진</div>
+              <div style={{ marginTop: 4, fontSize: 13, color: APP_MODAL.labelMuted }}>눌러서 등록합니다</div>
+            </div>
+          </div>
+          <div>
+            <SheetLabel>이름</SheetLabel>
+            <input value={fName} onChange={(e) => setFName(e.target.value)} placeholder="이름" style={appModalInputStyle} />
+          </div>
+          <div>
+            <SheetLabel>연락처</SheetLabel>
+            <input type="tel" value={fPhone} onChange={(e) => setFPhone(e.target.value)} placeholder="010-0000-0000" style={appModalInputStyle} />
+          </div>
+          <FormSelect quiet label="부서" value={fDept} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFDept(e.target.value)} options={depts.map(d => ({ value: d, label: d }))} />
+          <FormSelect quiet label="목장" value={fGroup} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGroup(e.target.value)} options={[
             { value: "", label: "미배정" },
             ...getMokjangList(db).map(g => ({ value: g, label: g })),
             ...(fGroup && !getMokjangList(db).includes(fGroup) ? [{ value: fGroup, label: fGroup }] : []),
           ]} />
-          <FormInput label="주소" value={fAddr} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFAddr(e.target.value)} placeholder="주소" />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
-          <FormSelect label="상태" value={fStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFStatus(e.target.value)} options={[
-            { value: "새가족", label: "새가족" }, { value: "정착중", label: "정착중" }, { value: "정착", label: "정착" },
-            { value: "간헐", label: "간헐" }, { value: "위험", label: "위험" }, { value: "휴면", label: "휴면" }, { value: "졸업/전출", label: "졸업/전출" },
-          ]} />
-          <FormSelect label="방문경로" value={fVisitPath} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFVisitPath(e.target.value)} options={[
-            { value: "", label: "선택" }, { value: "지인소개", label: "지인소개" }, { value: "전도", label: "전도" }, { value: "인터넷검색", label: "인터넷검색" }, { value: "자진방문", label: "자진방문" }, { value: "기타", label: "기타" },
-          ]} />
-        </div>
-        {(fStatus === "새가족" || fStatus === "정착중") && fVisitPath === "지인소개" && (
-          <div style={{ marginBottom: 12 }}>
-            <FormSelect label="소개자" value={fReferrerId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFReferrerId(e.target.value)} options={[
-              { value: "", label: "선택" },
-              ...db.members.filter(x => x.status !== "새가족" && x.id !== editMbrId).map(m => ({ value: m.id, label: `${m.name} (${m.dept || ""})` })),
+
+        <button
+          type="button"
+          onClick={() => setMemberMore(v => !v)}
+          style={{ marginTop: 22, border: "none", background: "none", padding: 0, fontFamily: APP_MODAL.fontKR, fontSize: 14, fontWeight: 600, color: APP_MODAL.ink, cursor: "pointer" }}
+        >
+          {memberMore ? "접기" : "생년월일, 주소 더 적기"}
+        </button>
+        {!memberMore && (
+          <div style={{ marginTop: 8, fontSize: 13, color: APP_MODAL.labelMuted, fontFamily: APP_MODAL.fontKR }}>상태는 {fStatus}입니다</div>
+        )}
+
+        {memberMore && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 22, marginTop: 22 }}>
+            <div>
+              <SheetLabel>생년월일</SheetLabel>
+              <CalendarDropdown
+                value={fBirth}
+                onChange={setFBirth}
+                showClearButton
+                triggerStyle={{ height: 48, background: APP_MODAL.inputBg, border: "none", borderRadius: 7, padding: "0 16px", fontSize: 15, color: fBirth ? APP_MODAL.ink : APP_MODAL.labelMuted }}
+              />
+            </div>
+            <FormSelect quiet label="성별" value={fGender} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFGender(e.target.value)} options={[{ value: "", label: "선택" }, { value: "남", label: "남" }, { value: "여", label: "여" }]} />
+            <div>
+              <SheetLabel>직분/학년</SheetLabel>
+              <input value={fRole} onChange={(e) => setFRole(e.target.value)} placeholder="집사, 3학년" style={appModalInputStyle} />
+            </div>
+            <div>
+              <SheetLabel>주소</SheetLabel>
+              <input value={fAddr} onChange={(e) => setFAddr(e.target.value)} placeholder="주소" style={appModalInputStyle} />
+            </div>
+            <FormSelect quiet label="상태" value={fStatus} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFStatus(e.target.value)} options={[
+              { value: "새가족", label: "새가족" }, { value: "정착중", label: "정착중" }, { value: "정착", label: "정착" },
+              { value: "간헐", label: "간헐" }, { value: "위험", label: "위험" }, { value: "휴면", label: "휴면" }, { value: "졸업/전출", label: "졸업/전출" },
             ]} />
+            <FormSelect quiet label="방문경로" value={fVisitPath} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFVisitPath(e.target.value)} options={[
+              { value: "", label: "선택" }, { value: "지인소개", label: "지인소개" }, { value: "전도", label: "전도" }, { value: "인터넷검색", label: "인터넷검색" }, { value: "자진방문", label: "자진방문" }, { value: "기타", label: "기타" },
+            ]} />
+            {(fStatus === "새가족" || fStatus === "정착중") && fVisitPath === "지인소개" && (
+              <FormSelect quiet label="소개자" value={fReferrerId} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFReferrerId(e.target.value)} options={[
+                { value: "", label: "선택" },
+                ...db.members.filter(x => x.status !== "새가족" && x.id !== editMbrId).map(m => ({ value: m.id, label: `${m.name} (${m.dept || ""})` })),
+              ]} />
+            )}
+            {(fStatus === "새가족" || fStatus === "정착중") && (
+              <div>
+                <SheetLabel>첫 방문일</SheetLabel>
+                <CalendarDropdown
+                  value={fFirstVisitDate}
+                  onChange={setFFirstVisitDate}
+                  triggerStyle={{ height: 48, background: APP_MODAL.inputBg, border: "none", borderRadius: 7, padding: "0 16px", fontSize: 15, color: fFirstVisitDate ? APP_MODAL.ink : APP_MODAL.labelMuted }}
+                />
+              </div>
+            )}
+            {editMbrId && (
+              <div style={{ display: "flex", gap: 18 }}>
+                <button type="button" onClick={() => { const m = db.members.find(x => x.id === editMbrId); if (m) openQuickNote(m.id, m.name || "?", "note"); }} style={{ border: "none", background: "none", padding: 0, fontFamily: APP_MODAL.fontKR, fontSize: 14, fontWeight: 600, color: APP_MODAL.ink, cursor: "pointer" }}>메모</button>
+                <button type="button" onClick={() => { const m = db.members.find(x => x.id === editMbrId); if (m) openQuickNote(m.id, m.name || "?", "prayer"); }} style={{ border: "none", background: "none", padding: 0, fontFamily: APP_MODAL.fontKR, fontSize: 14, fontWeight: 600, color: APP_MODAL.ink, cursor: "pointer" }}>기도</button>
+              </div>
+            )}
           </div>
         )}
-        {(fStatus === "새가족" || fStatus === "정착중") && (
-          <div style={{ marginBottom: 12 }}>
-            <CalendarDropdown label="첫 방문일" value={fFirstVisitDate} onChange={setFFirstVisitDate} />
-          </div>
-        )}
-        {editMbrId && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <Btn variant="soft" size="sm" onClick={() => { const m = db.members.find(x => x.id === editMbrId); if (m) openQuickNote(m.id, m.name || "?", "note"); }}>메모 보기</Btn>
-            <Btn variant="soft" size="sm" onClick={() => { const m = db.members.find(x => x.id === editMbrId); if (m) openQuickNote(m.id, m.name || "?", "prayer"); }}>기도 제목 보기</Btn>
-          </div>
-        )}
-        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 8 }}>
-          <Btn variant="ghost" onClick={closeMemberModal}>취소</Btn>
-          <Btn onClick={saveMember} disabled={photoUploading}>{photoUploading ? "사진 업로드 중…" : "저장"}</Btn>
-        </div>
       </Modal>
 
       {/* New Family Program Detail Modal */}
@@ -5513,7 +5580,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       })()}
 
       {/* Detail Modal — Member 360° 뷰 (성도 관리 등에서만 사용) */}
-      <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} title="" ariaLabel="성도 상세" width={mob ? undefined : 720}>
+      <Modal open={showDetailModal} onClose={() => setShowDetailModal(false)} title="" ariaLabel="성도 상세" width={mob ? undefined : 640}>
         {detailMember && (
           <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
             <Member360View
@@ -5525,11 +5592,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               onClose={() => setShowDetailModal(false)}
               toast={toast}
             />
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-              <Btn variant="danger" size="sm" onClick={() => detailMember && deleteMember(detailMember.id)}>삭제</Btn>
-              <Btn variant="soft" size="sm" onClick={() => detailMember && openQuickNote(detailMember.id, detailMember.name || "?", "note")}>메모</Btn>
-              <Btn variant="soft" size="sm" onClick={() => detailMember && openQuickNote(detailMember.id, detailMember.name || "?", "prayer")}>기도 제목</Btn>
-              <Btn variant="accent" size="sm" onClick={() => { detailMember && openNoteModal(detailMember.id); setShowDetailModal(false); }}>기도 추가</Btn>
+            <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 8, paddingTop: 16, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+              <button type="button" onClick={() => detailMember && deleteMember(detailMember.id)} style={{ border: "none", background: "none", padding: 0, fontFamily: APP_MODAL.fontKR, fontSize: 14, fontWeight: 600, color: APP_MODAL.deleteRed, cursor: "pointer" }}>삭제</button>
+              <span style={{ flex: 1 }} />
+              <button type="button" onClick={() => detailMember && openQuickNote(detailMember.id, detailMember.name || "?", "note")} style={{ border: "none", background: "none", padding: 0, fontFamily: APP_MODAL.fontKR, fontSize: 14, fontWeight: 600, color: APP_MODAL.ink, cursor: "pointer" }}>메모</button>
+              <button type="button" onClick={() => detailMember && openQuickNote(detailMember.id, detailMember.name || "?", "prayer")} style={{ border: "none", background: "none", padding: 0, fontFamily: APP_MODAL.fontKR, fontSize: 14, fontWeight: 600, color: APP_MODAL.ink, cursor: "pointer" }}>기도</button>
             </div>
           </div>
         )}
@@ -5620,6 +5687,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         onSaved={(memberId, items, latestContent) =>
           handleQuickNoteSaved(memberId, "prayer", items, latestContent)
         }
+        contentLocked={historyFromMembers}
+        onAdd={historyFromMembers ? leaveHistoryToNotes : undefined}
       />
 
       <MemoHistoryModal
@@ -5634,6 +5703,19 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         onSaved={(memberId, items, latestContent) =>
           handleQuickNoteSaved(memberId, "memo", items, latestContent)
         }
+        contentLocked={historyFromMembers}
+        onAdd={historyFromMembers ? leaveHistoryToNotes : undefined}
+      />
+
+      <VisitCounselHistoryModal
+        open={visitHistory != null}
+        onClose={() => setVisitHistory(null)}
+        memberId={visitHistory?.memberId ?? ""}
+        memberName={visitHistory?.memberName ?? "?"}
+        memberRole={visitHistory?.memberRole}
+        churchId={churchId ?? ""}
+        initialTab={visitHistory?.focus ?? "visit"}
+        onAdd={leaveHistoryToVisit}
       />
 
       {/* Toasts */}

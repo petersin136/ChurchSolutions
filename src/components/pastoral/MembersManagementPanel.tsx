@@ -7,7 +7,25 @@ import { MemberPhoto } from "@/components/common/MemberPhoto";
 import { MemberSearchCombo } from "@/components/pastoral/MemberSearchCombo";
 import { prayerAnswerKeyFromParts } from "@/lib/prayerAnswers";
 import { formatMemberRoleDisplay } from "@/lib/member-role-display";
-import { MEMBER_MGMT, MEMBER_MGMT_COLUMNS, MEMBER_MGMT_COL_LAYOUT, computeMemberPanelPageRows } from "@/styles/memberManagementTokens";
+import { supabase } from "@/lib/supabase";
+import { MEMBER_MGMT, computeMemberPanelPageRows } from "@/styles/memberManagementTokens";
+
+/** 성도관리 목록 — 시안 열 (번호·활동기록 없음) */
+const MEMBER_LIST_COLUMNS = ["이름", "구분", "부서/목장", "연락처", "최근 심방", "최근 상담", "최근 기도", "메모"] as const;
+const MEMBER_LIST_COL_TEMPLATE =
+  "minmax(180px, 1.2fr) 120px minmax(150px, 1fr) 132px 108px 108px minmax(180px, 1.3fr) minmax(150px, 1.15fr)";
+const MEMBER_LIST_MIN_WIDTH = 1100;
+
+function formatListDate(ymd: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd);
+  if (!m) return ymd;
+  return `${m[1].slice(2)}. ${m[2]}. ${m[3]}`;
+}
+
+function latestYmd(dates: string[]): string {
+  const sorted = dates.filter(Boolean).sort((a, b) => b.localeCompare(a));
+  return sorted[0] ?? "";
+}
 
 /** 번호식 페이지 목록 (1 2 3 4 5 … 21) — 앞·뒤 축약 */
 function buildPageList(current: number, total: number): (number | "…")[] {
@@ -236,19 +254,12 @@ function memoPreview(notes: DB["notes"][string] | undefined, memberMemo?: string
   return { text, extra, hasMemo: true };
 }
 
-function lastVisitDate(notes: DB["notes"][string] | undefined): string {
-  const visits = (notes ?? []).filter((n) => n.type === "visit");
-  if (!visits.length) return "-";
-  const sorted = [...visits].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-  return sorted[0]?.date ?? "-";
-}
-
 const memberGridColumns: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: MEMBER_MGMT.colTemplate,
+  gridTemplateColumns: MEMBER_LIST_COL_TEMPLATE,
   alignItems: "center",
   width: "100%",
-  minWidth: MEMBER_MGMT.colMinWidth,
+  minWidth: MEMBER_LIST_MIN_WIDTH,
   boxSizing: "border-box",
 };
 
@@ -272,10 +283,9 @@ function rowHoverBackground(isHovered: boolean): string {
   return `linear-gradient(to bottom, ${MEMBER_MGMT.rowHoverTopLine} 0px, ${MEMBER_MGMT.rowHoverTopFade} 2px, ${MEMBER_MGMT.rowHover} 3px, ${MEMBER_MGMT.rowHover} 100%)`;
 }
 
-function cellPadStyle(colIndex: number): CSSProperties {
-  const col = MEMBER_MGMT_COL_LAYOUT[colIndex];
+function cellPadStyle(_colIndex: number): CSSProperties {
   return {
-    textAlign: col.align,
+    textAlign: "left",
     minWidth: 0,
     overflow: "hidden",
   };
@@ -288,45 +298,6 @@ function emptyCellDashStyle(): CSSProperties {
     fontSize: MEMBER_MGMT.cellFontSize,
     fontWeight: MEMBER_MGMT.contentFontWeight,
   };
-}
-
-function columnOffsetX(colIndex: number): number | string {
-  const offsets: Record<number, number | string> = {
-    0: MEMBER_MGMT.headerNumOffsetX,
-    1: MEMBER_MGMT.headerNameOffsetX,
-    2: MEMBER_MGMT.headerRoleOffsetX,
-    3: MEMBER_MGMT.headerDeptOffsetX,
-    4: MEMBER_MGMT.headerPrayerOffsetX,
-    5: MEMBER_MGMT.headerVisitOffsetX,
-    6: MEMBER_MGMT.headerMemoOffsetX,
-  };
-  return offsets[colIndex] ?? 0;
-}
-
-function columnNudgeStyle(offsetX: number | string): CSSProperties | undefined {
-  if (offsetX === 0 || offsetX === "0") return undefined;
-  return {
-    display: "inline-block",
-    position: "relative",
-    left: offsetX,
-    maxWidth: "none",
-  };
-}
-
-/** 헤더·데이터 동일 오프셋 */
-function dataColumnNudgeStyle(offsetX: number | string): CSSProperties {
-  if (offsetX === 0 || offsetX === "0") return {};
-  return {
-    position: "relative",
-    left: offsetX,
-  };
-}
-
-function headerCellOverflow(colIndex: number): CSSProperties["overflow"] {
-  // nudge가 큰 열·번호는 잘리지 않게 visible
-  if (colIndex === 0 || colIndex === 5 || colIndex === 6) return "visible";
-  if (colIndex <= 4 && columnOffsetX(colIndex) !== 0) return "visible";
-  return "hidden";
 }
 
 function badgeChipStyle(variant: "prayer" | "memo"): CSSProperties {
@@ -435,9 +406,11 @@ export interface MembersManagementPanelProps {
   currentPage: number;
   totalItems: number;
   onPageChange: (page: number) => void;
+  onOpenMember: (id: string) => void;
+  onOpenVisitCounsel: (id: string, name: string, role: string | undefined, focus: "visit" | "counsel") => void;
   onOpenQuickPrayer: (id: string, name: string) => void;
   onOpenQuickMemo: (id: string, name: string) => void;
-  onOpenActivity: (id: string, name: string, role?: string) => void;
+  churchId: string | null;
   /** 화면 높이에 맞는 한 페이지 행 수를 부모로 전달 (반응형 페이지 크기) */
   onCapacityChange?: (rows: number) => void;
 }
@@ -463,11 +436,14 @@ export function MembersManagementPanel({
   currentPage,
   totalItems,
   onPageChange,
+  onOpenMember,
+  onOpenVisitCounsel,
   onOpenQuickPrayer,
   onOpenQuickMemo,
-  onOpenActivity,
+  churchId,
   onCapacityChange,
 }: MembersManagementPanelProps) {
+  const [counselDates, setCounselDates] = useState<Record<string, string>>({});
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [spotlightRowId, setSpotlightRowId] = useState<string | null>(null);
   const [hoveredCell, setHoveredCell] = useState<string | null>(null);
@@ -523,6 +499,33 @@ export function MembersManagementPanel({
     }
     return set;
   }, [db.answeredPrayerKeys, db.answeredPrayerByNoteId]);
+
+  useEffect(() => {
+    if (!churchId || !supabase) {
+      setCounselDates({});
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from("counsels")
+      .select("member_id, date")
+      .eq("church_id", churchId)
+      .order("date", { ascending: false })
+      .then(({ data, error }: { data: { member_id?: string; date?: string }[] | null; error: { message: string } | null }) => {
+        if (cancelled || error || !data) return;
+        const next: Record<string, string> = {};
+        for (const row of data) {
+          const id = row.member_id ? String(row.member_id) : "";
+          const date = row.date ? String(row.date) : "";
+          if (!id || !date || next[id]) continue;
+          next[id] = date;
+        }
+        setCounselDates(next);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [churchId]);
   const registerBtnStyle: CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -623,7 +626,7 @@ export function MembersManagementPanel({
           style={{
             // 열 너비 합(colMinWidth) + 행 좌우 안쪽 여백(gridPadX×2)까지 포함해야
             // 마지막 활동기록(+) 열이 잘리지 않고 스크롤 끝까지 닿는다.
-            minWidth: MEMBER_MGMT.colMinWidth + MEMBER_MGMT.gridPadX * 2,
+            minWidth: MEMBER_LIST_MIN_WIDTH + MEMBER_MGMT.gridPadX * 2,
             width: "100%",
             flex: "0 0 auto",
             display: "flex",
@@ -650,9 +653,7 @@ export function MembersManagementPanel({
             width: "100%",
           }}
         >
-          {MEMBER_MGMT_COLUMNS.map((h, i) => {
-            const nudge = columnOffsetX(i);
-            return (
+          {MEMBER_LIST_COLUMNS.map((h, i) => (
             <div
               key={h}
               style={{
@@ -662,15 +663,14 @@ export function MembersManagementPanel({
                 lineHeight: MEMBER_MGMT.headerLineHeight,
                 color: MEMBER_MGMT.headerText,
                 whiteSpace: "nowrap",
-                overflow: headerCellOverflow(i),
+                overflow: "hidden",
                 textOverflow: "ellipsis",
-                letterSpacing: i === 0 ? "0" : "-0.01em",
+                letterSpacing: "-0.01em",
               }}
             >
-              <span style={columnNudgeStyle(nudge)}>{h}</span>
+              {h}
             </div>
-          );
-          })}
+          ))}
         </div>
       </div>
 
@@ -709,16 +709,27 @@ export function MembersManagementPanel({
                 fontSize: MEMBER_MGMT.cellFontSize,
               }}
             >
-              성도 목록이 없습니다
+              <div style={{ textAlign: "center", lineHeight: 1.6 }}>
+                <div>아직 등록된 성도가 없습니다.</div>
+                <div>새 성도를 등록하면 출석부, 기도, 심방 기록을 시작할 수 있습니다.</div>
+              </div>
             </div>
           ) : (
             <>
               {pageMembers.map((m, idx) => {
-                const rowNum = (currentPage - 1) * pageSize + idx + 1;
                 const notes = db.notes[m.id];
                 const prayer = prayerPreview(m, notes, answeredPrayerKeySet);
                 const roleText = formatMemberRoleDisplay(m.role, m.dept);
-                const visitDate = lastVisitDate(notes);
+                const showNewFamily =
+                  (Boolean(m.is_new_family) || m.status === "새가족") && roleText !== "새가족";
+                const visitYmd = latestYmd([
+                  ...(db.visits ?? []).filter((v) => v.memberId === m.id).map((v) => v.date),
+                  ...(notes ?? []).filter((n) => n.type === "visit").map((n) => n.date),
+                ]);
+                const visitDate = visitYmd ? formatListDate(visitYmd) : "-";
+                const counselYmd = counselDates[m.id] || "";
+                const counselDate = counselYmd ? formatListDate(counselYmd) : "-";
+                const phone = (m.phone || "").trim() || "-";
                 const memo = memoPreview(notes, m.memo);
 
                 const isHovered = hoveredRow === m.id || spotlightRowId === m.id;
@@ -744,16 +755,14 @@ export function MembersManagementPanel({
                     }}
                   >
                     <div
-                      style={{
-                        ...cellPadStyle(0),
-                        color: MEMBER_MGMT.numText,
-                        fontSize: MEMBER_MGMT.cellFontSize,
-                        fontVariantNumeric: "tabular-nums",
+                      style={{ ...cellPadStyle(0), overflow: "hidden", cursor: "pointer" }}
+                      onMouseEnter={() => setHoveredCell(`${m.id}:name`)}
+                      onMouseLeave={() => setHoveredCell(null)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenMember(m.id);
                       }}
                     >
-                      {rowNum}
-                    </div>
-                    <div style={{ ...cellPadStyle(1), overflow: "hidden" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: MEMBER_MGMT.nameAvatarGap, minWidth: 0 }}>
                         <div
                           style={{
@@ -774,8 +783,6 @@ export function MembersManagementPanel({
                           <MemberPhoto photo={m.photo} name={m.name} className="h-full w-full object-cover" />
                         </div>
                         <span
-                          onMouseEnter={() => setHoveredCell(`${m.id}:name`)}
-                          onMouseLeave={() => setHoveredCell(null)}
                           style={{
                             fontSize: MEMBER_MGMT.nameFontSize,
                             fontWeight: MEMBER_MGMT.nameFontWeight,
@@ -800,7 +807,12 @@ export function MembersManagementPanel({
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {roleText}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{roleText}</span>
+                        {showNewFamily ? (
+                          <span style={{ flexShrink: 0, color: MEMBER_MGMT.cellHoverText, fontWeight: 700 }}>새가족</span>
+                        ) : null}
+                      </span>
                     </div>
                     <div
                       style={{
@@ -815,10 +827,77 @@ export function MembersManagementPanel({
                       {formatDeptMokjang(m)}
                     </div>
                     <div
-                      onMouseEnter={() => prayer.hasPrayer && setHoveredCell(`${m.id}:prayer`)}
+                      style={{
+                        ...cellPadStyle(3),
+                        fontSize: MEMBER_MGMT.cellFontSize,
+                        fontWeight: MEMBER_MGMT.contentFontWeight,
+                        color: phone === "-" ? MEMBER_MGMT.rowText : "#374151",
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {phone}
+                    </div>
+                    <div
+                      onMouseEnter={() => visitDate !== "-" && setHoveredCell(`${m.id}:visit`)}
                       onMouseLeave={() => setHoveredCell(null)}
                       style={{
                         ...cellPadStyle(4),
+                        overflow: "hidden",
+                        minWidth: 0,
+                        fontSize: MEMBER_MGMT.cellFontSize,
+                        fontWeight: visitDate !== "-" ? 600 : MEMBER_MGMT.contentFontWeight,
+                        color:
+                          visitDate !== "-" && cellHovered(m.id, "visit")
+                            ? MEMBER_MGMT.cellHoverText
+                            : visitDate !== "-"
+                              ? "#374151"
+                              : MEMBER_MGMT.rowText,
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
+                        transition: "color 0.12s ease",
+                        ...(visitDate !== "-" ? { cursor: "pointer" } : {}),
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (visitDate !== "-") onOpenVisitCounsel(m.id, m.name || "?", m.role, "visit");
+                      }}
+                    >
+                      {visitDate}
+                    </div>
+                    <div
+                      onMouseEnter={() => counselDate !== "-" && setHoveredCell(`${m.id}:counsel`)}
+                      onMouseLeave={() => setHoveredCell(null)}
+                      style={{
+                        ...cellPadStyle(5),
+                        overflow: "hidden",
+                        minWidth: 0,
+                        fontSize: MEMBER_MGMT.cellFontSize,
+                        fontWeight: counselDate !== "-" ? 600 : MEMBER_MGMT.contentFontWeight,
+                        color:
+                          counselDate !== "-" && cellHovered(m.id, "counsel")
+                            ? MEMBER_MGMT.cellHoverText
+                            : counselDate !== "-"
+                              ? "#374151"
+                              : MEMBER_MGMT.rowText,
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
+                        transition: "color 0.12s ease",
+                        ...(counselDate !== "-" ? { cursor: "pointer" } : {}),
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (counselDate !== "-") onOpenVisitCounsel(m.id, m.name || "?", m.role, "counsel");
+                      }}
+                    >
+                      {counselDate}
+                    </div>
+                    <div
+                      onMouseEnter={() => prayer.hasPrayer && setHoveredCell(`${m.id}:prayer`)}
+                      onMouseLeave={() => setHoveredCell(null)}
+                      style={{
+                        ...cellPadStyle(6),
                         overflow: "hidden",
                         minWidth: 0,
                         ...(prayer.hasPrayer ? { cursor: "pointer" } : {}),
@@ -845,40 +924,13 @@ export function MembersManagementPanel({
                       )}
                     </div>
                     <div
-                      onMouseEnter={() => visitDate !== "-" && setHoveredCell(`${m.id}:visit`)}
-                      onMouseLeave={() => setHoveredCell(null)}
-                      style={{
-                        ...cellPadStyle(5),
-                        overflow: "visible",
-                        minWidth: 0,
-                        fontSize: MEMBER_MGMT.cellFontSize,
-                        fontWeight:
-                          visitDate !== "-"
-                            ? 600
-                            : MEMBER_MGMT.contentFontWeight,
-                        color:
-                          visitDate !== "-" && cellHovered(m.id, "visit")
-                            ? MEMBER_MGMT.cellHoverText
-                            : visitDate !== "-"
-                              ? "#374151"
-                              : MEMBER_MGMT.rowText,
-                        whiteSpace: "nowrap",
-                        textOverflow: "ellipsis",
-                        transition: "color 0.12s ease",
-                        ...dataColumnNudgeStyle(columnOffsetX(5)),
-                      }}
-                    >
-                      {visitDate}
-                    </div>
-                    <div
                       onMouseEnter={() => memo.hasMemo && setHoveredCell(`${m.id}:memo`)}
                       onMouseLeave={() => setHoveredCell(null)}
                       style={{
-                        ...cellPadStyle(6),
-                        overflow: "visible",
+                        ...cellPadStyle(7),
+                        overflow: "hidden",
                         minWidth: 0,
                         fontSize: MEMBER_MGMT.cellFontSize,
-                        ...dataColumnNudgeStyle(columnOffsetX(6)),
                         ...(memo.hasMemo ? { cursor: "pointer" } : {}),
                       }}
                       onClick={(e) => {
@@ -901,47 +953,6 @@ export function MembersManagementPanel({
                       ) : (
                         <span style={emptyCellDashStyle()}>-</span>
                       )}
-                    </div>
-                    <div
-                      style={{
-                        ...cellPadStyle(7),
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-end",
-                        flexShrink: 0,
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        aria-label="활동기록 추가"
-                        onClick={() => onOpenActivity(m.id, m.name || "?", m.role)}
-                        style={{
-                          width: MEMBER_MGMT.activityBtnSize,
-                          height: MEMBER_MGMT.activityBtnSize,
-                          borderRadius: 7,
-                          border: `1px solid ${MEMBER_MGMT.activityBtnBorder}`,
-                          background: MEMBER_MGMT.activityBtnBg,
-                          color: MEMBER_MGMT.activityText,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: "pointer",
-                          padding: 0,
-                          fontSize: MEMBER_MGMT.activityPlusSize,
-                          fontWeight: 500,
-                          lineHeight: 1,
-                          fontFamily: MEMBER_MGMT.fontKR,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = MEMBER_MGMT.activityBtnHover;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = MEMBER_MGMT.activityBtnBg;
-                        }}
-                      >
-                        +
-                      </button>
                     </div>
                   </div>
                 );
@@ -966,19 +977,21 @@ export function MembersManagementPanel({
       <div
         ref={pagerRef}
         style={{
-          display: "flex",
+          display: totalItems > pageSize ? "flex" : "none",
           flexShrink: 0,
           alignItems: "center",
           justifyContent: "center",
-          padding: mob ? "28px 4px 6px" : "32px 4px 2px",
+          padding: totalItems > pageSize ? (mob ? "28px 4px 6px" : "32px 4px 2px") : 0,
         }}
       >
-        <MemberPagination
-          totalItems={totalItems}
-          itemsPerPage={pageSize}
-          currentPage={currentPage}
-          onPageChange={onPageChange}
-        />
+        {totalItems > pageSize ? (
+          <MemberPagination
+            totalItems={totalItems}
+            itemsPerPage={pageSize}
+            currentPage={currentPage}
+            onPageChange={onPageChange}
+          />
+        ) : null}
       </div>
     </div>
   );
