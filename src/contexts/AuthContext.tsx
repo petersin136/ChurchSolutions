@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
+import { restoreRememberedLogin, snapshotRememberedLogin } from "@/lib/remember-login";
 import type { User, Session } from "@supabase/supabase-js";
 
 const CHURCH_ID_KEY = "church_solution_church_id";
@@ -351,7 +352,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadChurchInflightRef.current = null;
 
     if (typeof window !== "undefined") {
+      const rememberedLogin = snapshotRememberedLogin();
       try { localStorage.clear(); } catch {}
+      restoreRememberedLogin(rememberedLogin);
       try { sessionStorage.clear(); } catch {}
     }
 

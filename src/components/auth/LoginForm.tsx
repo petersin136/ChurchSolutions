@@ -11,6 +11,13 @@ import {
   getInitialLoginEmail,
   loadPendingLoginEmail,
 } from "@/lib/pending-login";
+import {
+  clearRememberedLogin,
+  loadKeepLoggedIn,
+  loadRememberedLoginEmail,
+  requestBrowserPasswordSave,
+  saveRememberedLogin,
+} from "@/lib/remember-login";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { getOAuthRedirectUrl, isValidHttpUrl } from "@/lib/auth-redirect";
 
@@ -43,15 +50,35 @@ function LoginFormInner() {
       return;
     }
 
-    if (pendingEmail) setEmail(pendingEmail);
+    if (pendingEmail) {
+      setEmail(pendingEmail);
+      return;
+    }
+
+    if (loadKeepLoggedIn()) {
+      setKeepLoggedIn(true);
+      const savedEmail = loadRememberedLoginEmail();
+      if (savedEmail) setEmail(savedEmail);
+    }
   }, [searchParams]);
 
   useEffect(() => {
     if (!authLoading && user) router.replace("/");
   }, [user, authLoading, router]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const trimmedEmail = email.trim();
+
+    // 네트워크 요청 전에 처리해야 한다. await 이후에는 브라우저가 비밀번호 저장을 무시한다.
+    if (keepLoggedIn) {
+      saveRememberedLogin(trimmedEmail);
+      requestBrowserPasswordSave(form, trimmedEmail, password);
+    } else {
+      clearRememberedLogin();
+    }
+
     if (!supabase) {
       setError("서버 연결에 실패했습니다.");
       return;
@@ -60,7 +87,7 @@ function LoginFormInner() {
     setLoading(true);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: trimmedEmail,
       password,
     });
 
@@ -77,26 +104,6 @@ function LoginFormInner() {
     }
 
     clearPendingLoginEmail();
-
-    // 크롬이 "로그인 완료"로 인식하도록 실제 페이지 이동 + Credential 저장 시도
-    const trimmedEmail = email.trim();
-    try {
-      const PasswordCredentialCtor = (
-        window as Window & {
-          PasswordCredential?: new (data: { id: string; password: string }) => Credential;
-        }
-      ).PasswordCredential;
-      if (PasswordCredentialCtor && navigator.credentials?.store) {
-        const cred = new PasswordCredentialCtor({
-          id: trimmedEmail,
-          password,
-        });
-        await navigator.credentials.store(cred);
-      }
-    } catch {
-      // Credential API 미지원/거부 시 무시 — 아래 hard navigation이 저장 프롬프트를 유도
-    }
-
     window.location.assign("/");
   };
 
