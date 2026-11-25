@@ -11,9 +11,11 @@ function storageKey(churchId: string): string {
 
 export function isRemoteNoteId(id: string | number | null | undefined): boolean {
   if (id == null) return false;
-  if (typeof id === "number") return true;
+  if (typeof id === "number") return Number.isFinite(id);
   if (typeof id !== "string") return false;
   if (id.startsWith("local-") || id.startsWith("profile-")) return false;
+  // notes.id 는 bigint. PostgREST가 짧은 숫자를 문자열로 주면 기존 uuid 검사에서 빠졌다.
+  if (/^\d+$/.test(id)) return true;
   return /^[0-9a-f-]{8,}$/i.test(id);
 }
 

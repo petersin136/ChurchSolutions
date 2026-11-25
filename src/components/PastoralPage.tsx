@@ -9,6 +9,7 @@ import { getChurchId } from "@/lib/tenant";
 import {
   isRemoteNoteId,
   loadAnsweredPrayersFromStorage,
+  prayerAnswerKeyFromParts,
   saveAnsweredPrayersToStorage,
   type PrayerAnswerRecord,
 } from "@/lib/prayerAnswers";
@@ -3196,6 +3197,7 @@ function NotesSub({
   openActivityModal,
   openPrayerModal,
   churchId,
+  onTogglePrayerAnswered,
 }: {
   db: DB;
   setDb: (fn: (prev: DB) => DB) => void;
@@ -3204,6 +3206,7 @@ function NotesSub({
   openActivityModal: (memberId: string, memberName: string, memberRole?: string) => void;
   openPrayerModal: (id: string, focusContent?: string) => void;
   churchId: string | null;
+  onTogglePrayerAnswered: (key: string, noteId?: string | number) => void;
 }) {
   const mob = useIsMobile();
   const tabletOrLess = useIsMobile(1024);
@@ -3372,6 +3375,18 @@ function NotesSub({
       onPageChange={setPageList}
       onOpenQuickPrayer={(id, name) => openQuickNote(id, name, "prayer")}
       onOpenQuickMemo={(id, name) => openQuickNote(id, name, "note")}
+      onTogglePrayer={(memberId, note) => {
+        onTogglePrayerAnswered(
+          prayerAnswerKeyFromParts({
+            memberId,
+            noteId: note.id,
+            date: note.date,
+            createdAt: note.createdAt,
+            content: note.content,
+          }),
+          note.id,
+        );
+      }}
       onOpenActivity={openActivityModal}
       onCapacityChange={setPageCapacity}
     />
@@ -5074,8 +5089,31 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
 
       if (cid) saveAnsweredPrayersToStorage(cid, byNoteId);
 
+      const notes = { ...prev.notes };
+      const answeredAt = nextAnswered ? todayStr() : undefined;
+      for (const mid of Object.keys(notes)) {
+        if (!Array.isArray(notes[mid])) continue;
+        let changed = false;
+        const nextNotes = notes[mid].map((n) => {
+          const same = remoteId
+            ? n.id != null && String(n.id) === remoteId
+            : prayerAnswerKeyFromParts({
+                memberId: mid,
+                noteId: n.id,
+                date: n.date,
+                createdAt: n.createdAt || "",
+                content: n.content,
+              }) === stableKey;
+          if (!same) return n;
+          changed = true;
+          return { ...n, answered: nextAnswered, answeredAt };
+        });
+        if (changed) notes[mid] = nextNotes;
+      }
+
       return {
         ...prev,
+        notes,
         answeredPrayerKeys: [...list],
         answeredPrayerDates: dates,
         answeredPrayerComments: comments,
@@ -5366,7 +5404,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       SidebarIcon={Church}
       accentColor={tokens.color.navyEmphasis}
       contentBg={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.bg : undefined}
-      contentPaddingLeft={activeSub === "dashboard" || activeSub === "attendance" ? DASH_GLOBAL.dashboardPadLeft : activeSub === "members" || activeSub === "notes" || orgResourceLayout ? DASH_GLOBAL.contentPadLeft : undefined}
+      contentPaddingLeft={DASH_GLOBAL.dashboardPadLeft}
       contentPaddingRight={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.contentPadRight : undefined}
       contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "attendance" ? 0 : activeSub === "members" || activeSub === "notes" ? 20 : undefined}
       contentTopGap={activeSub === "dashboard" || activeSub === "attendance" ? DASH_GLOBAL.dashboardPadTop : orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" || activeSub === "notes" ? getMemberContentTopGap() : undefined}
@@ -5405,6 +5443,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               openActivityModal={openActivityModal}
               openPrayerModal={openPrayerModal}
               churchId={churchId}
+              onTogglePrayerAnswered={handleTogglePrayerAnswered}
             />
           )}
           {activeSub === "newfamily" && <NewFamilySub db={db} setDb={fn => setDb(fn)} openProgramDetail={setProgramDetailMemberId} openMemberModal={openMemberModal} toast={toast} />}
