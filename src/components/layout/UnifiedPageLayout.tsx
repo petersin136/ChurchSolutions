@@ -163,6 +163,11 @@ export interface UnifiedPageLayoutProps {
   topbarActions?: ReactNode;
   /** 데스크톱 상단 탭 nav 폭 — 금주 출석률 카드 등 콘텐츠 그리드와 맞출 때 calc(...) */
   topbarTabsWidth?: string;
+  /**
+   * true면 콘텐츠 영역 자체는 스크롤하지 않음(overflow hidden).
+   * 기도/메모처럼 상단 툴바는 고정하고 본문만 내부 스크롤할 때 사용.
+   */
+  contentLockScroll?: boolean;
 }
 
 export function UnifiedPageLayout({
@@ -191,6 +196,7 @@ export function UnifiedPageLayout({
   hideHeader = false,
   topbarActions,
   topbarTabsWidth,
+  contentLockScroll = false,
 }: UnifiedPageLayoutProps) {
   const mob = useIsMobile();
   const shellNav = useShellNav();
@@ -733,7 +739,9 @@ export function UnifiedPageLayout({
             flex: 1,
             minHeight: 0,
             width: "100%",
-            overflowY: "auto",
+            overflowY: contentLockScroll ? "hidden" : "auto",
+            display: contentLockScroll ? "flex" : undefined,
+            flexDirection: contentLockScroll ? "column" : undefined,
             background: contentBg ?? LAYOUT.contentAreaBg,
             WebkitOverflowScrolling: "touch",
             paddingTop: 0,
@@ -745,7 +753,16 @@ export function UnifiedPageLayout({
             lineHeight: 1.55,
           }}
         >
-          <div style={{ marginTop: contentMarginTop }}>{children}</div>
+          <div
+            style={{
+              marginTop: contentMarginTop,
+              ...(contentLockScroll
+                ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" as const }
+                : null),
+            }}
+          >
+            {children}
+          </div>
         </div>
         </div>
       </main>

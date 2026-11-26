@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState, type CSSProperties } from "react";
-import { Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Pencil, Plus } from "lucide-react";
 import type { DB, Member, Note } from "@/types/db";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
 import { MemberSearchCombo } from "@/components/pastoral/MemberSearchCombo";
@@ -104,6 +104,8 @@ export interface PrayerMemoPanelProps {
   onPageChange: (page: number) => void;
   onOpenQuickPrayer: (id: string, name: string) => void;
   onOpenQuickMemo: (id: string, name: string) => void;
+  onAddEntry?: (id: string, name: string, type: "prayer" | "memo") => void;
+  onEditNote?: (id: string, note: Note) => void;
   onTogglePrayer?: (memberId: string, note: Note) => void;
   onOpenActivity: (id: string, name: string, role?: string) => void;
   onCapacityChange?: (rows: number) => void;
@@ -125,12 +127,17 @@ export function PrayerMemoPanel({
   filtered,
   onOpenQuickPrayer,
   onOpenQuickMemo,
+  onAddEntry,
+  onEditNote,
   onTogglePrayer,
 }: PrayerMemoPanelProps) {
   const [prayerFilter, setPrayerFilter] = useState<PrayerFilter>("open");
   const [topHover, setTopHover] = useState(false);
+  const [showTop, setShowTop] = useState(false);
   const [checkedOverride, setCheckedOverride] = useState<Record<string, boolean>>({});
   const rootRef = useRef<HTMLDivElement | null>(null);
+  /** 상단 검색/추가 줄은 고정, 이 영역만 스크롤 */
+  const boardScrollRef = useRef<HTMLDivElement | null>(null);
 
   const answeredKeys = useMemo(() => {
     const set = new Set(db.answeredPrayerKeys ?? []);
@@ -157,7 +164,10 @@ export function PrayerMemoPanel({
         prayerLabel: prayerFilter === "answered" ? "응답" : "기도 중",
       });
     }
+    const seenMember = new Set<string>();
     for (const member of filtered) {
+      if (!member.id || seenMember.has(member.id)) continue;
+      seenMember.add(member.id);
       const notes = db.notes[member.id] ?? [];
       const prayers = sortNotes(notes.filter((n) => n.type === "prayer" && isMeaningfulText(n.content)))
         .map((n) => withAnswerState(member.id, n, answeredKeys))
@@ -192,6 +202,22 @@ export function PrayerMemoPanel({
     return list;
   }, [answeredKeys, churchName, db.notes, filtered, prayerFilter]);
 
+  useEffect(() => {
+    const scroller = boardScrollRef.current;
+    if (!scroller) return;
+    let last = scroller.scrollTop;
+    const onScroll = () => {
+      const y = scroller.scrollTop;
+      const delta = y - last;
+      if (y <= 4) setShowTop(false);
+      else if (delta <= -1) setShowTop(true);
+      else if (delta >= 1) setShowTop(false);
+      last = y;
+    };
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, [cards.length]);
+
   const selectStyle: CSSProperties = {
     height: PRAYER_BOARD.toolbarH,
     padding: "0 32px 0 14px",
@@ -221,14 +247,17 @@ export function PrayerMemoPanel({
         flexDirection: "column",
         width: "100%",
         minWidth: 0,
-        minHeight: mob ? "calc(100dvh - 140px)" : "calc(100vh - 168px)",
+        flex: 1,
+        minHeight: 0,
+        height: "100%",
+        overflow: "hidden",
         boxSizing: "border-box",
         fontFamily: PRAYER_BOARD.font,
         color: PRAYER_BOARD.ink,
         paddingTop: 20,
-        paddingBottom: 28,
       }}
     >
+      {/* 메뉴(목양…)와의 간격 유지한 채 고정 — sticky로 말려 올라가지 않음 */}
       <div
         style={{
           display: "flex",
@@ -238,6 +267,7 @@ export function PrayerMemoPanel({
           minWidth: 0,
           flexWrap: mob ? "wrap" : "nowrap",
           flexShrink: 0,
+          paddingBottom: 22,
         }}
       >
         <MemberSearchCombo
@@ -293,79 +323,94 @@ export function PrayerMemoPanel({
         </button>
       </div>
 
-      {cards.length === 0 ? (
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            color: PRAYER_BOARD.muted,
-            fontSize: 14,
-            lineHeight: 1.7,
-            fontWeight: 500,
-          }}
-        >
-          <div>아직 등록된 기도제목이 없습니다.</div>
-          <div>기도/메모 추가를 눌러 첫 기도제목을 적어보세요.</div>
-        </div>
-      ) : (
-        <div
-          style={{
-            marginTop: 22,
-            display: "flex",
-            gap: PRAYER_BOARD.gap,
-            alignItems: "flex-start",
-          }}
-        >
-          {(mob ? [cards] : [cards.filter((_, i) => i % 2 === 0), cards.filter((_, i) => i % 2 === 1)]).map((column, columnIndex) => (
-            <div
-              key={columnIndex}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: PRAYER_BOARD.gap,
-              }}
-            >
-              {column.map((card) => (
-                <PersonCard
-                  key={card.id}
-                  card={card}
-                  onOpenPrayers={() => onOpenQuickPrayer(card.id, card.name)}
-                  onOpenMemos={() => onOpenQuickMemo(card.id, card.name)}
-                  onTogglePrayer={onTogglePrayer}
-                  checkedOverride={checkedOverride}
-                  onToggleChecked={(note, next) => {
-                    setCheckedOverride((prev) => ({ ...prev, [rowKey(card.id, note)]: next }));
-                  }}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-      {cards.length > 0 && (
-        <div
-          style={{
-            marginTop: 36,
-            textAlign: "center",
-            fontSize: 13,
-            fontWeight: 500,
-            color: "#9aa0a8",
-          }}
-        >
-          모든 카드를 확인했습니다.
-        </div>
-      )}
-      {cards.length > 0 && (
+      <div
+        ref={boardScrollRef}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          WebkitOverflowScrolling: "touch",
+          paddingBottom: 28,
+        }}
+      >
+        {cards.length === 0 ? (
+          <div
+            style={{
+              minHeight: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              color: PRAYER_BOARD.muted,
+              fontSize: 14,
+              lineHeight: 1.7,
+              fontWeight: 500,
+            }}
+          >
+            <div>아직 등록된 기도제목이 없습니다.</div>
+            <div>기도/메모 추가를 눌러 첫 기도제목을 적어보세요.</div>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              gap: PRAYER_BOARD.gap,
+              alignItems: "flex-start",
+            }}
+          >
+            {(mob ? [cards] : [cards.filter((_, i) => i % 2 === 0), cards.filter((_, i) => i % 2 === 1)]).map((column, columnIndex) => (
+              <div
+                key={columnIndex}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: PRAYER_BOARD.gap,
+                }}
+              >
+                {column.map((card) => (
+                  <PersonCard
+                    key={card.id}
+                    card={card}
+                    onOpenPrayers={() => onOpenQuickPrayer(card.id, card.name)}
+                    onOpenMemos={() => onOpenQuickMemo(card.id, card.name)}
+                    onAddEntry={onAddEntry}
+                    onEditNote={onEditNote}
+                    onTogglePrayer={onTogglePrayer}
+                    checkedOverride={checkedOverride}
+                    onToggleChecked={(note, next) => {
+                      setCheckedOverride((prev) => ({ ...prev, [rowKey(card.id, note)]: next }));
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+        {cards.length > 0 && (
+          <div
+            style={{
+              marginTop: 36,
+              textAlign: "center",
+              fontSize: 13,
+              fontWeight: 500,
+              color: "#9aa0a8",
+            }}
+          >
+            모든 카드를 확인했습니다.
+          </div>
+        )}
+      </div>
+      {cards.length > 0 && showTop && (
         <button
           type="button"
           aria-label="맨 위로"
-          onClick={() => scrollBoardToTop(rootRef.current)}
+          onClick={() => {
+            boardScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+          }}
           onMouseEnter={() => setTopHover(true)}
           onMouseLeave={() => setTopHover(false)}
           style={{
@@ -400,20 +445,6 @@ export function PrayerMemoPanel({
   );
 }
 
-function scrollBoardToTop(from: HTMLElement | null) {
-  let el: HTMLElement | null = from?.parentElement ?? null;
-  while (el) {
-    const style = window.getComputedStyle(el);
-    const scrollable = style.overflowY === "auto" || style.overflowY === "scroll";
-    if (scrollable && el.scrollHeight > el.clientHeight + 8) {
-      el.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-    el = el.parentElement;
-  }
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
 type BoardCard = {
   id: string;
   kind: "church" | "member";
@@ -430,6 +461,8 @@ function PersonCard({
   card,
   onOpenPrayers,
   onOpenMemos,
+  onAddEntry,
+  onEditNote,
   onTogglePrayer,
   checkedOverride,
   onToggleChecked,
@@ -437,6 +470,8 @@ function PersonCard({
   card: BoardCard;
   onOpenPrayers: () => void;
   onOpenMemos: () => void;
+  onAddEntry?: (id: string, name: string, type: "prayer" | "memo") => void;
+  onEditNote?: (id: string, note: Note) => void;
   onTogglePrayer?: (memberId: string, note: Note) => void;
   checkedOverride: Record<string, boolean>;
   onToggleChecked: (note: Note, next: boolean) => void;
@@ -506,7 +541,10 @@ function PersonCard({
         </div>
         <button
           type="button"
-          onClick={card.prayers.length > 0 || card.kind === "church" ? onOpenPrayers : onOpenMemos}
+          onClick={() => {
+            if (card.kind === "church" || card.prayers.length > 0) onOpenPrayers();
+            else onOpenMemos();
+          }}
           style={{
             border: "none",
             background: "none",
@@ -525,9 +563,10 @@ function PersonCard({
 
       {answeredNotes.length > 0 && (
         <NoteBlock
-          label={prayerHeading("응답", card.prayerLabel === "응답" ? card.prayers.length : answeredNotes.length)}
-          notes={card.prayerLabel === "응답" && card.prayers.length > 3 ? answeredNotes.slice(0, 3) : answeredNotes}
-          onAdd={onOpenPrayers}
+          label={prayerHeading("응답", answeredNotes.length)}
+          notes={answeredNotes.slice(0, 3)}
+          onAdd={() => (onAddEntry ? onAddEntry(card.id, card.name, "prayer") : onOpenPrayers())}
+          onEdit={onEditNote ? (note) => onEditNote(card.id, note) : undefined}
           marked
           isChecked={() => true}
           onToggle={(note, next) => {
@@ -540,7 +579,7 @@ function PersonCard({
         <NoteBlock
           label="기도 중 0"
           notes={[]}
-          onAdd={onOpenPrayers}
+          onAdd={() => (onAddEntry ? onAddEntry(card.id, card.name, "prayer") : onOpenPrayers())}
           marked
         />
       )}
@@ -548,7 +587,8 @@ function PersonCard({
         <NoteBlock
           label={prayerHeading("기도 중", openNotes.length)}
           notes={openNotes}
-          onAdd={onOpenPrayers}
+          onAdd={() => (onAddEntry ? onAddEntry(card.id, card.name, "prayer") : onOpenPrayers())}
+          onEdit={onEditNote ? (note) => onEditNote(card.id, note) : undefined}
           marked
           spaced={answeredNotes.length > 0}
           isChecked={() => false}
@@ -560,9 +600,10 @@ function PersonCard({
       )}
       {card.kind === "member" && (
         <NoteBlock
-          label={`메모 ${card.memos.length}`}
-          notes={card.memos}
-          onAdd={onOpenMemos}
+          label={memoHeading(card.memos.length)}
+          notes={card.memos.slice(0, 1)}
+          onAdd={() => (onAddEntry ? onAddEntry(card.id, card.name, "memo") : onOpenMemos())}
+          onEdit={onEditNote ? (note) => onEditNote(card.id, note) : undefined}
           spaced
         />
       )}
@@ -579,10 +620,16 @@ function prayerHeading(label: string, count: number): string {
   return `${label} ${count}`;
 }
 
+function memoHeading(count: number): string {
+  if (count > 1) return `메모 ${count} · 최근 1개`;
+  return `메모 ${count}`;
+}
+
 function NoteBlock({
   label,
   notes,
   onAdd,
+  onEdit,
   spaced,
   marked,
   isChecked,
@@ -591,11 +638,13 @@ function NoteBlock({
   label: string;
   notes: Note[];
   onAdd: () => void;
+  onEdit?: (note: Note) => void;
   spaced?: boolean;
   marked?: boolean;
   isChecked?: (note: Note) => boolean;
   onToggle?: (note: Note, next: boolean) => void;
 }) {
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
   return (
     <div
       style={{
@@ -633,6 +682,8 @@ function NoteBlock({
         return (
         <div
           key={`${note.id ?? note.createdAt ?? i}-${i}`}
+          onMouseEnter={() => setHoverKey(rowKey("row", note) + i)}
+          onMouseLeave={() => setHoverKey(null)}
           style={{
             display: "flex",
             gap: 10,
@@ -694,6 +745,29 @@ function NoteBlock({
               <span style={{ marginLeft: 8, color: PRAYER_BOARD.date, fontWeight: 500, whiteSpace: "nowrap" }}>{shortDate(note.date)}</span>
             ) : null}
           </p>
+          {onEdit && hoverKey === rowKey("row", note) + i ? (
+            <button
+              type="button"
+              aria-label="내용 수정"
+              onClick={() => onEdit(note)}
+              style={{
+                width: 26,
+                height: 26,
+                border: "none",
+                borderRadius: 6,
+                background: PRAYER_BOARD.plusBg,
+                color: "#6b7078",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                flexShrink: 0,
+                padding: 0,
+              }}
+            >
+              <Pencil size={13} strokeWidth={2} />
+            </button>
+          ) : null}
         </div>
         );
       })}

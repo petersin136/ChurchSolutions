@@ -266,6 +266,17 @@ type CareMemo = {
   serviceType?: string;
 };
 
+function lastPresentTitle(marks: Map<string, "p" | "a"> | undefined): string {
+  if (!marks) return "마지막 출석 없음";
+  let last = "";
+  marks.forEach((status, week) => {
+    if (status === "p" && week > last) last = week;
+  });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(last)) return "마지막 출석 없음";
+  const [y, m, d] = last.split("-");
+  return `마지막 출석 ${y}.${m}.${d}`;
+}
+
 function deptMokjangText(m: Member): string {
   const dept = (m.dept || "").trim();
   const mokjang = memberMokjangLabel(m);
@@ -296,6 +307,7 @@ export function AbsenteeManagement({
   const [openContactId, setOpenContactId] = useState<string | null>(null);
   const [editingMemoId, setEditingMemoId] = useState<string | null>(null);
   const [memoDraft, setMemoDraft] = useState("");
+  const [visitPopup, setVisitPopup] = useState<{ memberId: string; name: string; text: string } | null>(null);
   /** 심방 칸 호버 시 과거 메모 드롭다운 (fixed — 상위 overflow에 안 잘리게) */
   const [memoHover, setMemoHover] = useState<{
     id: string;
@@ -1277,6 +1289,7 @@ export function AbsenteeManagement({
                           }}
                         />
                         <span
+                          title={lastPresentTitle(absenceMarksByMember.get(memberId))}
                           style={{
                             fontSize: ATT_CHECK.subFontSize,
                             fontWeight: 600,
@@ -1286,6 +1299,7 @@ export function AbsenteeManagement({
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             minWidth: 0,
+                            cursor: "default",
                           }}
                         >
                           {cw}주 {care.label}
@@ -1479,13 +1493,12 @@ export function AbsenteeManagement({
                             type="button"
                             aria-label="메모 입력"
                             onClick={() => {
-                              if (onAddVisit) {
-                                onAddVisit(memberId);
-                                return;
-                              }
                               setMemoHover(null);
-                              setEditingMemoId(memberId);
-                              setMemoDraft(memo?.content ?? "");
+                              setVisitPopup({
+                                memberId,
+                                name: member.name || "성도",
+                                text: memo?.content ?? "",
+                              });
                             }}
                             style={{
                               width: 32,
@@ -1598,6 +1611,97 @@ export function AbsenteeManagement({
               </div>
             );
           })}
+        </div>
+      ) : null}
+      {visitPopup ? (
+        <div
+          role="presentation"
+          onClick={() => setVisitPopup(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 80,
+            background: "rgba(11,12,14,0.28)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-label={`${visitPopup.name} 심방 메모`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              background: "#ffffff",
+              borderRadius: 8,
+              padding: 20,
+              boxSizing: "border-box",
+              fontFamily: ATT_CHECK.fontKR,
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 700, color: ATT_CHECK.ink, marginBottom: 12 }}>
+              {visitPopup.name} 심방
+            </div>
+            <textarea
+              value={visitPopup.text}
+              onChange={(e) => setVisitPopup({ ...visitPopup, text: e.target.value })}
+              placeholder="심방 내용을 입력하세요"
+              style={{
+                width: "100%",
+                minHeight: 120,
+                boxSizing: "border-box",
+                border: "1px solid #e2e4e8",
+                borderRadius: 7,
+                padding: 12,
+                fontFamily: ATT_CHECK.fontKR,
+                fontSize: 14,
+                resize: "vertical",
+              }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setVisitPopup(null)}
+                style={{
+                  height: 36,
+                  padding: "0 14px",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontFamily: ATT_CHECK.fontKR,
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = visitPopup;
+                  setVisitPopup(null);
+                  void saveCareMemo(next.memberId, next.text.trim());
+                }}
+                style={{
+                  height: 36,
+                  padding: "0 16px",
+                  border: "none",
+                  borderRadius: 7,
+                  background: "#0b0c0e",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  fontFamily: ATT_CHECK.fontKR,
+                  fontSize: 14,
+                  fontWeight: 700,
+                }}
+              >
+                저장
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

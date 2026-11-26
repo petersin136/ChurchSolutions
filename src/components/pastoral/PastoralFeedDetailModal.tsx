@@ -58,9 +58,10 @@ type PastoralFeedDetailModalProps = {
   item: PastoralFeedDetailItem;
   db: DB;
   onClose: () => void;
+  onOpenMember?: (memberId: string) => void;
 };
 
-export function PastoralFeedDetailModal({ item, db, onClose }: PastoralFeedDetailModalProps) {
+export function PastoralFeedDetailModal({ item, db, onClose, onOpenMember }: PastoralFeedDetailModalProps) {
   const member = useMemo(
     () => (item.memberId ? db.members.find((m) => m.id === item.memberId) : undefined),
     [db.members, item.memberId],
@@ -108,7 +109,23 @@ export function PastoralFeedDetailModal({ item, db, onClose }: PastoralFeedDetai
       ) : null}
 
       {member ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+        <button
+          type="button"
+          onClick={() => onOpenMember?.(member.id)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 20,
+            padding: 0,
+            border: "none",
+            background: "transparent",
+            cursor: onOpenMember ? "pointer" : "default",
+            textAlign: "left",
+            fontFamily: "inherit",
+            width: "100%",
+          }}
+        >
           <div
             style={{
               width: 40,
@@ -148,7 +165,7 @@ export function PastoralFeedDetailModal({ item, db, onClose }: PastoralFeedDetai
               </span>
             ) : null}
           </div>
-        </div>
+        </button>
       ) : null}
 
       <div

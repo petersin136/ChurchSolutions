@@ -3193,6 +3193,7 @@ function NotesSub({
   db,
   setDb,
   openNoteModal,
+  onEditNote,
   openQuickNote,
   openActivityModal,
   openPrayerModal,
@@ -3201,7 +3202,8 @@ function NotesSub({
 }: {
   db: DB;
   setDb: (fn: (prev: DB) => DB) => void;
-  openNoteModal: (id?: string) => void;
+  openNoteModal: (id?: string, type?: "prayer" | "memo") => void;
+  onEditNote: (id: string, note: Note) => void;
   openQuickNote: (memberId: string, memberName: string, type: "note" | "prayer") => void;
   openActivityModal: (memberId: string, memberName: string, memberRole?: string) => void;
   openPrayerModal: (id: string, focusContent?: string) => void;
@@ -3375,6 +3377,8 @@ function NotesSub({
       onPageChange={setPageList}
       onOpenQuickPrayer={(id, name) => openQuickNote(id, name, "prayer")}
       onOpenQuickMemo={(id, name) => openQuickNote(id, name, "note")}
+      onAddEntry={(id, _name, type) => openNoteModal(id, type)}
+      onEditNote={onEditNote}
       onTogglePrayer={(memberId, note) => {
         onTogglePrayerAnswered(
           prayerAnswerKeyFromParts({
@@ -4564,6 +4568,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const [detailId, setDetailId] = useState<string | null>(null);
   const [programDetailMemberId, setProgramDetailMemberId] = useState<string | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [noteEdit, setNoteEdit] = useState<{ memberId: string; note: Note } | null>(null);
+  const [noteEditText, setNoteEditText] = useState("");
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
   const [prayerModalMemberId, setPrayerModalMemberId] = useState<string | null>(null);
   const [prayerModalFocusContent, setPrayerModalFocusContent] = useState<string | null>(null);
@@ -5258,15 +5264,58 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
     });
   }, [churchId, setDb]);
 
-  const openNoteModal = useCallback((id?: string) => {
-    setNoteTargetId(id || null);
-    setNDate(todayStr()); setNType("prayer"); setNContent("");
-    setNoteTargetType(id ? "individual" : "all");
-    setNoteSelectedMemberId(id || "");
+  const openNoteModal = useCallback((id?: string, type?: "prayer" | "memo") => {
+    const church = id === NOTE_TARGET_CHURCH;
+    setNoteTargetId(church ? null : id || null);
+    setNDate(todayStr());
+    setNType(church ? "prayer" : type ?? "prayer");
+    setNContent("");
+    setNoteTargetType(church ? "all" : "individual");
+    setNoteSelectedMemberId(church ? "" : id || "");
     setNoteMemberSearchText("");
     setNoteMemberDropdownOpen(false);
     setShowNoteModal(true);
   }, []);
+
+  const beginEditNote = useCallback((memberId: string, note: Note) => {
+    setNoteEdit({ memberId, note });
+    setNoteEditText(note.content || "");
+  }, []);
+
+  const saveEditedNote = useCallback(() => {
+    if (!noteEdit) return;
+    const next = noteEditText.trim();
+    if (!next) {
+      toast("내용을 입력하세요", "err");
+      return;
+    }
+    const { memberId, note } = noteEdit;
+    const prevContent = note.content;
+    setDb((prev) => {
+      const notes = { ...prev.notes };
+      const list = notes[memberId] ? [...notes[memberId]] : [];
+      const idx = list.findIndex((n) =>
+        note.id != null
+          ? n.id === note.id
+          : n.type === note.type && n.content === prevContent && n.date === note.date && (n.createdAt || "") === (note.createdAt || ""),
+      );
+      if (idx >= 0) list[idx] = { ...list[idx], content: next };
+      notes[memberId] = list;
+      const members = prev.members.map((m) => {
+        if (m.id !== memberId) return m;
+        if (note.type === "prayer" && (idx < 0 || m.prayer === prevContent)) return { ...m, prayer: next };
+        if (note.type === "memo" && (idx < 0 || m.memo === prevContent)) return { ...m, memo: next };
+        return m;
+      });
+      return { ...prev, notes, members };
+    });
+    const cid = churchId ?? getChurchId();
+    if (supabase && cid && isRemoteNoteId(note.id)) {
+      void supabase.from("notes").update({ content: next }).eq("church_id", cid).eq("id", note.id);
+    }
+    setNoteEdit(null);
+    toast("수정했습니다", "ok");
+  }, [churchId, noteEdit, noteEditText, setDb, toast]);
 
   useEffect(() => {
     if (!noteMemberDropdownOpen) return;
@@ -5280,6 +5329,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
   const saveNote = () => {
     const mid: string = noteTargetType === "all" ? NOTE_TARGET_CHURCH : (noteSelectedMemberId || noteTargetId || "");
     if (!nContent.trim()) { toast("내용을 입력하세요", "err"); return; }
+    if (noteTargetType === "all" && nType === "memo") {
+      toast("교회 메모는 플래너에 적어 주세요", "err");
+      return;
+    }
     if (noteTargetType === "individual" && !mid) { toast("성도를 선택하세요", "err"); return; }
     const trimmed = nContent.trim();
     setDb(prev => {
@@ -5406,10 +5459,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
       contentBg={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.bg : undefined}
       contentPaddingLeft={DASH_GLOBAL.dashboardPadLeft}
       contentPaddingRight={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.contentPadRight : undefined}
-      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "attendance" ? 0 : activeSub === "members" || activeSub === "notes" ? 20 : undefined}
+      contentPaddingBottom={activeSub === "dashboard" ? DASH_LAYOUT.gridGap : orgResourceLayout ? ORG_RESOURCE.padBottom : activeSub === "attendance" || activeSub === "notes" ? 0 : activeSub === "members" ? 20 : undefined}
       contentTopGap={activeSub === "dashboard" || activeSub === "attendance" ? DASH_GLOBAL.dashboardPadTop : orgResourceLayout ? DASH_GLOBAL.contentPadTop : activeSub === "members" || activeSub === "notes" ? getMemberContentTopGap() : undefined}
       contentFontFamily={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance" ? DASH_GLOBAL.fontKR : undefined}
       hideHeader={activeSub === "dashboard" || orgResourceLayout || activeSub === "members" || activeSub === "notes" || activeSub === "attendance"}
+      contentLockScroll={activeSub === "notes"}
     >
           {activeSub === "dashboard" && (
             <DashboardSub
@@ -5439,6 +5493,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
               db={db}
               setDb={fn => setDb(fn)}
               openNoteModal={openNoteModal}
+              onEditNote={beginEditNote}
               openQuickNote={openQuickNote}
               openActivityModal={openActivityModal}
               openPrayerModal={openPrayerModal}
@@ -5597,6 +5652,10 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           item={feedDetailItem}
           db={db}
           onClose={() => setFeedDetailItem(null)}
+          onOpenMember={(id) => {
+            setFeedDetailItem(null);
+            openDetail(id);
+          }}
         />
       ) : null}
 
@@ -5646,7 +5705,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>대상</label>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => setNoteTargetType("all")} style={{ padding: "8px 16px", borderRadius: 7, border: `1px solid ${noteTargetType === "all" ? C.primary : C.border}`, background: noteTargetType === "all" ? C.primary : "#fff", color: noteTargetType === "all" ? "var(--color-primary-on)" : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>전체</button>
+            <button type="button" onClick={() => { setNoteTargetType("all"); setNType("prayer"); }} style={{ padding: "8px 16px", borderRadius: 7, border: `1px solid ${noteTargetType === "all" ? C.primary : C.border}`, background: noteTargetType === "all" ? C.primary : "#fff", color: noteTargetType === "all" ? "var(--color-primary-on)" : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>전체</button>
             <button type="button" onClick={() => setNoteTargetType("individual")} style={{ padding: "8px 16px", borderRadius: 7, border: `1px solid ${noteTargetType === "individual" ? C.primary : C.border}`, background: noteTargetType === "individual" ? C.primary : "#fff", color: noteTargetType === "individual" ? "var(--color-primary-on)" : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>개인</button>
           </div>
         </div>
@@ -5676,8 +5735,8 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         })()}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div style={{ marginBottom: 16 }}><CalendarDropdown label="날짜" value={nDate} onChange={setNDate} /></div>
-          <FormSelect label="유형" value={nType === "visit" || nType === "event" ? "prayer" : nType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNType(e.target.value as Note["type"])}
-            options={[{ value: "prayer", label: "기도" }, { value: "memo", label: "메모" }]} />
+          <FormSelect label="유형" value={noteTargetType === "all" || nType === "visit" || nType === "event" ? "prayer" : nType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNType(e.target.value as Note["type"])}
+            options={noteTargetType === "all" ? [{ value: "prayer", label: "기도" }] : [{ value: "prayer", label: "기도" }, { value: "memo", label: "메모" }]} />
         </div>
         <FormTextarea label="내용" value={nContent} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNContent(e.target.value)} placeholder="기록 내용" style={{ minHeight: 100 }} />
         <div style={{ marginTop: 16 }}>
@@ -5693,6 +5752,14 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 16 }}>
           <Btn variant="ghost" onClick={() => setShowNoteModal(false)}>취소</Btn>
           <Btn variant="accent" onClick={saveNote}>저장</Btn>
+        </div>
+      </Modal>
+
+      <Modal open={noteEdit != null} onClose={() => setNoteEdit(null)} title={noteEdit?.note.type === "memo" ? "메모 수정" : "기도 수정"} width={480}>
+        <FormTextarea label="내용" value={noteEditText} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNoteEditText(e.target.value)} placeholder="내용을 수정하세요" style={{ minHeight: 120 }} />
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 16 }}>
+          <Btn variant="ghost" onClick={() => setNoteEdit(null)}>취소</Btn>
+          <Btn variant="accent" onClick={saveEditedNote}>저장</Btn>
         </div>
       </Modal>
 
@@ -5712,7 +5779,7 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
         open={prayerHistoryOpen}
         onClose={() => setPrayerHistoryOpen(false)}
         memberId={prayerHistoryMemberId}
-        memberName={prayerHistoryMember?.name || "?"}
+        memberName={prayerHistoryMemberId === NOTE_TARGET_CHURCH ? "교회" : prayerHistoryMember?.name || "?"}
         memberRole={prayerHistoryMember?.role}
         churchId={churchId ?? ""}
         localSeedItems={prayerHistoryLocalSeed}
@@ -5727,7 +5794,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           handleQuickNoteSaved(memberId, "prayer", items, latestContent)
         }
         contentLocked={historyFromMembers}
-        onAdd={historyFromMembers ? leaveHistoryToNotes : undefined}
+        onAdd={historyFromMembers ? leaveHistoryToNotes : () => {
+          const id = prayerHistoryMemberId;
+          setPrayerHistoryOpen(false);
+          openNoteModal(id || undefined, "prayer");
+        }}
       />
 
       <MemoHistoryModal
@@ -5743,7 +5814,11 @@ export function PastoralPage({ db, setDb, saveDb }: { db: DB; setDb: (fn: (prev:
           handleQuickNoteSaved(memberId, "memo", items, latestContent)
         }
         contentLocked={historyFromMembers}
-        onAdd={historyFromMembers ? leaveHistoryToNotes : undefined}
+        onAdd={historyFromMembers ? leaveHistoryToNotes : () => {
+          const id = memoHistoryMemberId;
+          setMemoHistoryOpen(false);
+          openNoteModal(id || undefined, "memo");
+        }}
       />
 
       <VisitCounselHistoryModal
