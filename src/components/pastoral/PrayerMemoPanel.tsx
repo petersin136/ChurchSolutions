@@ -6,6 +6,7 @@ import type { DB, Member, Note } from "@/types/db";
 import { MemberPhoto } from "@/components/common/MemberPhoto";
 import { MemberSearchCombo } from "@/components/pastoral/MemberSearchCombo";
 import { prayerAnswerKeyFromParts } from "@/lib/prayerAnswers";
+import { DASH_GLOBAL } from "@/styles/pastoralDashboardTokens";
 
 const CHURCH_NOTE_ID = "__church__";
 
@@ -209,7 +210,10 @@ export function PrayerMemoPanel({
     const onScroll = () => {
       const y = scroller.scrollTop;
       const delta = y - last;
-      if (y <= 4) setShowTop(false);
+      const atTop = y <= 4;
+      const atBottom = y + scroller.clientHeight >= scroller.scrollHeight - 8;
+      if (atTop) setShowTop(false);
+      else if (atBottom) setShowTop(true);
       else if (delta <= -1) setShowTop(true);
       else if (delta >= 1) setShowTop(false);
       last = y;
@@ -245,7 +249,8 @@ export function PrayerMemoPanel({
       style={{
         display: "flex",
         flexDirection: "column",
-        width: "100%",
+        width: mob ? "100%" : `calc(100% + ${DASH_GLOBAL.contentPadRight}px)`,
+        marginRight: mob ? 0 : -DASH_GLOBAL.contentPadRight,
         minWidth: 0,
         flex: 1,
         minHeight: 0,
@@ -268,6 +273,8 @@ export function PrayerMemoPanel({
           flexWrap: mob ? "wrap" : "nowrap",
           flexShrink: 0,
           paddingBottom: 22,
+          paddingRight: mob ? 0 : DASH_GLOBAL.contentPadRight,
+          boxSizing: "border-box",
         }}
       >
         <MemberSearchCombo
@@ -331,7 +338,9 @@ export function PrayerMemoPanel({
           overflowY: "auto",
           overflowX: "hidden",
           WebkitOverflowScrolling: "touch",
+          paddingRight: mob ? 0 : DASH_GLOBAL.contentPadRight,
           paddingBottom: 28,
+          boxSizing: "border-box",
         }}
       >
         {cards.length === 0 ? (
@@ -360,7 +369,7 @@ export function PrayerMemoPanel({
               alignItems: "flex-start",
             }}
           >
-            {(mob ? [cards] : [cards.filter((_, i) => i % 2 === 0), cards.filter((_, i) => i % 2 === 1)]).map((column, columnIndex) => (
+            {splitBoardColumns(cards, mob, checkedOverride).map((column, columnIndex) => (
               <div
                 key={columnIndex}
                 style={{
@@ -456,6 +465,40 @@ type BoardCard = {
   role?: string;
   prayerLabel: string;
 };
+
+function cardWeight(card: BoardCard, checked: Record<string, boolean>): number {
+  const isAnswered = (note: Note) => {
+    const key = rowKey(card.id, note);
+    return key in checked ? checked[key] : !!note.answered;
+  };
+  const answered = card.prayers.filter(isAnswered);
+  const open = card.prayers.filter((note) => !isAnswered(note));
+  const showOpen = card.prayerLabel !== "응답";
+  let units = 8;
+  const block = (notes: Note[], cap: number) => {
+    units += 3;
+    for (const note of notes.slice(0, cap)) {
+      units += 3 + Math.floor((note.content || "").trim().length / 28);
+    }
+  };
+  if (answered.length > 0) block(answered, 3);
+  if (showOpen && open.length > 0) block(open, open.length);
+  if (answered.length === 0 && open.length === 0 && showOpen) units += 4;
+  if (card.kind === "member") block(card.memos, 1);
+  return units;
+}
+
+function splitBoardColumns(cards: BoardCard[], mob: boolean, checked: Record<string, boolean>): BoardCard[][] {
+  if (mob || cards.length === 0) return [cards];
+  const columns: BoardCard[][] = [[], []];
+  const height = [0, 0];
+  for (const card of cards) {
+    const side = height[0] <= height[1] ? 0 : 1;
+    columns[side].push(card);
+    height[side] += cardWeight(card, checked);
+  }
+  return columns;
+}
 
 function PersonCard({
   card,
